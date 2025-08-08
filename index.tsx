@@ -8,7 +8,6 @@ import {GoogleGenAI, LiveServerMessage, Modality, Session} from '@google/genai';
 import {LitElement, css, html} from 'lit';
 import {customElement, state} from 'lit/decorators.js';
 import {createBlob, decode, decodeAudioData} from './utils';
-import './visual-3d';
 import './live2d/live2d-gate';
 import './settings-menu';
 
@@ -338,7 +337,12 @@ export class GdmLiveAudio extends LitElement {
           .modelUrl=${localStorage.getItem('live2d-model-url') || ''}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
-        ></live2d-gate>
+        >
+          <gdm-live-audio-visuals-3d slot="fallback"
+            .inputNode=${this.inputNode}
+            .outputNode=${this.outputNode}
+          ></gdm-live-audio-visuals-3d>
+        </live2d-gate>
       </div>
     `;
   }

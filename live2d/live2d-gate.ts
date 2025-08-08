@@ -1,6 +1,5 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import '../visual-3d';
 import './live2d-visual';
 
 /**
@@ -15,6 +14,7 @@ export class Live2DGate extends LitElement {
 
   @state() private _live2dReady = false;
   @state() private _live2dError = '';
+  @state() private _fallbackLoaded = false;
 
   static styles = css`
     :host { position: absolute; inset: 0; display: block; }
@@ -34,9 +34,7 @@ export class Live2DGate extends LitElement {
   render() {
     const showFallback = !this._live2dReady;
     return html`
-      ${showFallback
-        ? html`<gdm-live-audio-visuals-3d class="layer" .inputNode=${this.inputNode} .outputNode=${this.outputNode}></gdm-live-audio-visuals-3d>`
-        : ''}
+      ${showFallback ? html`<slot name="fallback"></slot>` : ''}
 
       <live2d-visual
         class="layer"
