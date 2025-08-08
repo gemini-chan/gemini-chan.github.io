@@ -46,7 +46,7 @@ export class Live2DModelComponent extends LitElement {
     this._maybeLoad();
   };
 
-  protected willUpdate(changed: Map<string, unknown>) {
+  protected updated(changed: Map<string, unknown>) {
     if (changed.has('app') && this.app && !this._app) {
       console.log('[Live2D] app provided via prop');
       this._app = this.app;
@@ -60,6 +60,20 @@ export class Live2DModelComponent extends LitElement {
     if (changed.has('inputNode') || changed.has('outputNode')) {
       // re-init mapper
       this._initMapper();
+    }
+  }
+
+  protected firstUpdated() {
+    if (!this._app) {
+      const parentAny = (this.parentElement as any) ?? (this.getRootNode() as any)?.host;
+      const app = parentAny?.app;
+      if (app) {
+        console.log('[Live2D] got app from parent');
+        this._app = app;
+        this._maybeLoad();
+      } else {
+        console.warn('[Live2D] parent app not found at firstUpdated');
+      }
     }
   }
 
@@ -134,18 +148,6 @@ export class Live2DModelComponent extends LitElement {
     try { this._app.stage.removeChild(this._model as any); } catch {}
     try { this._model.destroy?.(); } catch {}
     this._model = undefined;
-  }
-
-  protected willUpdate(changed: Map<string, unknown>) {
-    if (changed.has('url')) {
-      // reload on url change
-      this._destroyModel();
-      this._maybeLoad();
-    }
-    if (changed.has('inputNode') || changed.has('outputNode')) {
-      // re-init mapper
-      this._initMapper();
-    }
   }
 
   render() {
