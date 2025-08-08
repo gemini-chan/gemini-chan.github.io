@@ -17,6 +17,7 @@ export class GdmLiveAudio extends LitElement {
   @state() status = '';
   @state() error = '';
   @state() showSettings = false;
+  @state() live2dModelUrl = 'https://gateway.xn--vck1b.shop/models/hiyori_pro_zh.zip';
 
   private client: GoogleGenAI;
   private session: Session;
@@ -273,7 +274,7 @@ export class GdmLiveAudio extends LitElement {
             ? html`<settings-menu
                 .apiKey=${localStorage.getItem('gemini-api-key') || ''}
                 @close=${() => (this.showSettings = false)}
-                @api-key-saved=${this.initClient}></settings-menu>`
+                @api-key-saved=${() => { this.initClient(); const url = localStorage.getItem('live2d-model-url'); if (url) this.live2dModelUrl = url; }}></settings-menu>`
             : ''
         }
         <div class="controls">
@@ -334,7 +335,7 @@ export class GdmLiveAudio extends LitElement {
 
         <div id="status"> ${this.error} </div>
         <live2d-gate
-          .modelUrl=${localStorage.getItem('live2d-model-url') || ''}
+          .modelUrl=${this.live2dModelUrl || localStorage.getItem('live2d-model-url') || ''}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
         ></live2d-gate>
