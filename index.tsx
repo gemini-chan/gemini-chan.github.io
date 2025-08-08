@@ -9,19 +9,21 @@ import {LitElement, css, html} from 'lit';
 import {customElement, state} from 'lit/decorators.js';
 import {createBlob, decode, decodeAudioData} from './utils';
 import './visual-3d';
+import './settings-menu';
 
 @customElement('gdm-live-audio')
 export class GdmLiveAudio extends LitElement {
   @state() isRecording = false;
   @state() status = '';
   @state() error = '';
+  @state() showSettings = false;
 
   private client: GoogleGenAI;
   private session: Session;
   private inputAudioContext = new (window.AudioContext ||
-    window.webkitAudioContext)({sampleRate: 16000});
+    (window as any).webkitAudioContext)({sampleRate: 16000});
   private outputAudioContext = new (window.AudioContext ||
-    window.webkitAudioContext)({sampleRate: 24000});
+    (window as any).webkitAudioContext)({samplerate: 24000});
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
   private nextStartTime = 0;
@@ -88,8 +90,15 @@ export class GdmLiveAudio extends LitElement {
   private async initClient() {
     this.initAudio();
 
+    const apiKey = localStorage.getItem('gemini-api-key');
+    if (!apiKey) {
+      this.showSettings = true;
+      this.error = 'Please set your API Key in the settings menu.';
+      return;
+    }
+
     this.client = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
+      apiKey,
     });
 
     this.outputNode.connect(this.outputAudioContext.destination);
@@ -252,10 +261,34 @@ export class GdmLiveAudio extends LitElement {
     this.updateStatus('Session cleared.');
   }
 
+  private _toggleSettings() {
+    this.showSettings = !this.showSettings;
+  }
+
   render() {
     return html`
       <div>
+        ${
+          this.showSettings
+            ? html`<settings-menu
+                @close=${() => (this.showSettings = false)}
+                @api-key-saved=${this.initClient}></settings-menu>`
+            : ''
+        }
         <div class="controls">
+          <button
+            id="settingsButton"
+            @click=${this._toggleSettings}
+            ?disabled=${this.isRecording}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="40px"
+              viewBox="0 -960 960 960"
+              width="40px"
+              fill="#ffffff">
+              <path d="M480-320q-75 0-127.5-52.5T300-500q0-75 52.5-127.5T480-680q75 0 127.5 52.5T660-500q0 75-52.5 127.5T480-320Zm0-80q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29ZM160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Z"/>
+            </svg>
+          </button>
           <button
             id="resetButton"
             @click=${this.reset}
