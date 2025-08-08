@@ -1,0 +1,73 @@
+<![CDATA[
+<best_practices>
+  <general_principles>
+    <principle priority="high">
+      <name>Value-Driven Requirements</name>
+      <description>Ensure every requirement and user story delivers clear, tangible value to the end-user or the business.</description>
+      <rationale>Requirements that don't provide value are a waste of development effort. The "so that" clause in a user story is critical for capturing this value.</rationale>
+    </principle>
+    <principle priority="medium">
+      <name>Clarity and Conciseness</name>
+      <description>Write requirements that are easy to understand, unambiguous, and free of technical jargon where possible.</description>
+      <rationale>Clear requirements reduce misunderstandings between stakeholders and the development team, leading to a better final product.</rationale>
+    </principle>
+    <principle priority="high">
+      <name>Iterative Refinement</name>
+      <description>Treat the initial requirements document as a draft. The primary goal is to facilitate a conversation with the user to refine and perfect the requirements through an iterative feedback loop.</description>
+      <rationale>It's more efficient to generate a comprehensive first draft and refine it based on user feedback than to engage in a lengthy, question-based clarification process upfront.</rationale>
+    </principle>
+  </general_principles>
+
+  <requirements_document_conventions>
+    <convention category="structure">
+      <rule>The `requirements.md` document must have a clear, hierarchical structure.</rule>
+      <template>
+# Feature: [Feature Name]
+
+## 1. Introduction
+[A brief summary of the feature, its purpose, and the problem it solves.]
+
+## 2. Requirements
+### 2.1. [High-Level Requirement 1]
+- **As a** [user role],
+- **I want** [to perform an action],
+- **so that** [I can achieve a benefit].
+
+#### 2.1.1. Acceptance Criteria
+- **GIVEN** [a precondition] **WHEN** [an action is taken] **THEN** [a result is expected].
+- **GIVEN** [another precondition] **WHEN** [a different action is taken] **THEN** [another result is expected].
+
+### 2.2. [High-Level Requirement 2]
+...
+      </template>
+    </convention>
+    <convention category="user_stories">
+      <rule>User stories must follow the "As a [role], I want [feature], so that [benefit]" format.</rule>
+      <example>
+        <good>**As a** photo editor, **I want** to apply filters to my images, **so that** I can enhance their visual appeal.</good>
+        <bad>The user should be able to apply filters.</bad>
+      </example>
+    </convention>
+    <convention category="acceptance_criteria">
+      <rule>Acceptance criteria must be written in the EARS (Easy Approach to Requirements Syntax) format to be testable and unambiguous.</rule>
+      <example>
+        <good>**GIVEN** I am on the image editing screen **WHEN** I select the "Vintage" filter **THEN** the image preview updates to show the vintage filter effect.</good>
+        <bad>The vintage filter should work correctly.</bad>
+      </example>
+    </convention>
+  </requirements_document_conventions>
+
+  <common_pitfalls>
+    <pitfall>
+      <description>Generating requirements that are too vague or high-level.</description>
+      <why_problematic>Vague requirements lead to ambiguity and incorrect implementation. They cannot be effectively tested.</why_problematic>
+      <correct_approach>Break down high-level ideas into specific, actionable user stories with detailed, testable acceptance criteria.</correct_approach>
+    </pitfall>
+    <pitfall>
+      <description>Proceeding to the design phase without explicit user approval.</description>
+      <why_problematic>This violates the core workflow and can lead to building the wrong feature, wasting significant time and effort.</why_problematic>
+      <correct_approach>Always wait for a clear, affirmative response from the user after asking for approval via the `userInput` tool. If the user's response is ambiguous, ask for clarification before proceeding.</correct_approach>
+    </pitfall>
+  </common_pitfalls>
+</best_practices>
+]]>

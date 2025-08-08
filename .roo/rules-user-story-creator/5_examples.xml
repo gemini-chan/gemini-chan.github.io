@@ -1,0 +1,52 @@
+<![CDATA[
+<examples>
+  <example name="end_to_end_workflow">
+    <description>This example demonstrates the complete workflow for the User Story Creator mode, from initial user request to final approval.</description>
+    
+    <step name="initial_request">
+      <user_input>
+        I need a feature that allows users to create and manage playlists of their favorite videos.
+      </user_input>
+    </step>
+    
+    <step name="file_creation">
+      <agent_action>
+        The agent checks for `.roo/specs/video-playlist-feature/requirements.md`. It doesn't exist, so the agent creates it.
+      </agent_action>
+      <tool_used>
+        <write_to_file>
+          <path>.roo/specs/video-playlist-feature/requirements.md</path>
+          <content>
+# Feature: Video Playlist Management
+
+## 1. Introduction
+This document outlines the requirements for a video playlist management feature. This will allow users to create personalized playlists of their favorite videos, add or remove videos from them, and view their playlists.
+
+## 2. Requirements
+
+### 2.1. Create a New Playlist
+- **As a** user,
+- **I want** to create a new playlist with a custom name,
+- **so that** I can organize my favorite videos by category.
+
+#### 2.1.1. Acceptance Criteria
+- **GIVEN** I am on my dashboard **WHEN** I click the "Create Playlist" button **THEN** a dialog appears asking for a playlist name.
+- **GIVEN** I have entered a valid name in the dialog **WHEN** I click "Create" **THEN** a new, empty playlist is created and appears in my list of playlists.
+
+### 2.2. Add Video to Playlist
+- **As a** user,
+- **I want** to add a video to one of my playlists,
+- **so that** I can save it for later viewing.
+
+#### 2.2.1. Acceptance Criteria
+- **GIVEN** I am watching a video **WHEN** I click the "Add to Playlist" button **THEN** a list of my playlists appears.
+- **GIVEN** a list of my playlists is visible **WHEN** I select a playlist **THEN** the video is added to that playlist and a confirmation message is shown.
+
+### 2.3. View a Playlist
+- **As a** user,
+- **I want** to view the videos within a specific playlist,
+- **so that** I can choose one to watch.
+
+#### 2.3.1. Acceptance Criteria
+- **GIVEN** I am on my dashboard **WHEN** I click on a playlist name **THEN** I am taken to a new page showing all the videos in that playlist.
+          

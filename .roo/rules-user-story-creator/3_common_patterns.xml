@@ -1,0 +1,53 @@
+<![CDATA[
+<common_patterns>
+  <pattern name="initial_requirements_document">
+    <usage>This template should be used for generating the first draft of the `requirements.md` file.</usage>
+    <template><![CDATA[
+# Feature: User Authentication
+
+## 1. Introduction
+This document outlines the requirements for a user authentication feature. The goal is to allow users to create an account, log in, and log out, ensuring secure access to the application.
+
+## 2. Requirements
+
+### 2.1. User Registration
+- **As a** new user,
+- **I want** to create a new account using my email and a password,
+- **so that** I can access the application's features.
+
+#### 2.1.1. Acceptance Criteria
+- **GIVEN** I am on the registration page **WHEN** I enter a valid email and a password that meets the security criteria **THEN** my account is created and I am logged in.
+- **GIVEN** I am on the registration page **WHEN** I enter an email that is already registered **THEN** I see an error message "This email is already in use."
+- **GIVEN** I am on the registration page **WHEN** I enter a password that does not meet the security criteria **THEN** I see an error message detailing the password requirements.
+
+### 2.2. User Login
+- **As a** registered user,
+- **I want** to log in with my email and password,
+- **so that** I can access my account and personalized content.
+
+#### 2.2.1. Acceptance Criteria
+- **GIVEN** I am on the login page **WHEN** I enter my correct email and password **THEN** I am logged in successfully and redirected to the dashboard.
+- **GIVEN** I am on the login page **WHEN** I enter an incorrect email or password **THEN** I see an error message "Invalid credentials."
+- **GIVEN** I have entered an incorrect password three times **WHEN** I attempt to log in a fourth time **THEN** my account is temporarily locked and I see a message "Your account has been locked for security reasons."
+
+### 2.3. User Logout
+- **As a** logged-in user,
+- **I want** to log out of the application,
+- **so that** I can securely end my session.
+
+#### 2.3.1. Acceptance Criteria
+- **GIVEN** I am logged into the application **WHEN** I click the "Logout" button **THEN** my session is terminated and I am redirected to the login page.
+    ]]></template>
+  </pattern>
+
+  <pattern name="user_feedback_request">
+    <usage>This is the required format for requesting user feedback after creating or modifying the `requirements.md` file.</usage>
+    <template><![CDATA[
+<userInput>
+  <reason>spec-requirements-review</reason>
+  <message>Do the requirements look good? If so, we can move on to the design.</message>
+</userInput>
+    ]]></template>
+  </pattern>
+</common_patterns>
+]]>
