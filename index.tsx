@@ -9,6 +9,7 @@ import {LitElement, css, html} from 'lit';
 import {customElement, state} from 'lit/decorators.js';
 import {createBlob, decode, decodeAudioData} from './utils';
 import './visual-3d';
+import './live2d/live2d-gate';
 import './settings-menu';
 
 @customElement('gdm-live-audio')
@@ -333,9 +334,11 @@ export class GdmLiveAudio extends LitElement {
         </div>
 
         <div id="status"> ${this.error} </div>
-        <gdm-live-audio-visuals-3d
+        <live2d-gate
+          .modelUrl=${localStorage.getItem('live2d-model-url') || ''}
           .inputNode=${this.inputNode}
-          .outputNode=${this.outputNode}></gdm-live-audio-visuals-3d>
+          .outputNode=${this.outputNode}
+        ></live2d-gate>
       </div>
     `;
   }
