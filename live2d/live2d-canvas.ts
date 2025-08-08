@@ -11,6 +11,8 @@ export class Live2DCanvas extends LitElement {
   @state() private _error: string = '';
 
   // Expose app via event for child components to hook into
+  get app() { return this._app; }
+
   private _dispatchAppReady(app: PixiApplicationLike) {
     this.dispatchEvent(new CustomEvent('pixi-ready', { detail: { app }, bubbles: true, composed: true }));
   }

@@ -15,7 +15,7 @@ export class Live2DVisual extends LitElement {
 
   render() {
     return html`
-      <live2d-canvas>
+      <live2d-canvas @pixi-ready=${(e: CustomEvent) => console.log('[Live2D] PIXI ready', e.detail)}>
         <live2d-model
           .url=${this.modelUrl}
           .inputNode=${this.inputNode}

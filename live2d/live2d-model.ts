@@ -39,6 +39,7 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private _onPixiReady = (ev: CustomEvent<{ app: PixiApplicationLike }>) => {
+    console.log('[Live2D] on pixi-ready');
     ev.stopPropagation();
     this._app = ev.detail.app;
     this._maybeLoad();
