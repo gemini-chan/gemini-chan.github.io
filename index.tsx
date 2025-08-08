@@ -271,6 +271,7 @@ export class GdmLiveAudio extends LitElement {
         ${
           this.showSettings
             ? html`<settings-menu
+                .apiKey=${localStorage.getItem('gemini-api-key') || ''}
                 @close=${() => (this.showSettings = false)}
                 @api-key-saved=${this.initClient}></settings-menu>`
             : ''

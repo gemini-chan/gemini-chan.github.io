@@ -12,6 +12,9 @@ export class SettingsMenu extends LitElement {
   @state()
   private _isSaving = false;
 
+  @state()
+  private _saved = false;
+
   static styles = css`
     :host {
       position: absolute;
@@ -74,7 +77,9 @@ export class SettingsMenu extends LitElement {
     return html`
       <div class="container">
         <h2>Settings</h2>
+        <label for="apiKey">API Key</label>
         <input
+          id="apiKey"
           type="password"
           .value=${this.apiKey}
           @input=${this._onApiKeyInput}
@@ -83,8 +88,8 @@ export class SettingsMenu extends LitElement {
         <div class="buttons">
           <button @click=${this._getApiKeyUrl}>Get API Key</button>
           <button @click=${this._onPaste}>Paste</button>
-          <button @click=${this._onSave} ?disabled=${this._isSaving}>
-            ${this._isSaving ? 'Saving...' : 'Save'}
+          <button @click=${this._onSave} ?disabled=${this._isSaving || this._saved}>
+            ${this._isSaving ? 'Saving...' : (this._saved ? 'Saved ✔' : 'Save')}
           </button>
         </div>
       </div>
@@ -113,9 +118,18 @@ export class SettingsMenu extends LitElement {
 
   private _onSave() {
     if (this._validateApiKey(this.apiKey)) {
-      this.dispatchEvent(new CustomEvent('close'));
+      this._isSaving = true;
       localStorage.setItem('gemini-api-key', this.apiKey);
       this.dispatchEvent(new CustomEvent('api-key-saved'));
+
+      setTimeout(() => {
+        this._isSaving = false;
+        this._saved = true;
+        setTimeout(() => {
+            this.dispatchEvent(new CustomEvent('close'))
+            this._saved = false
+        }, 1000);
+      }, 1000);
     }
   }
 
