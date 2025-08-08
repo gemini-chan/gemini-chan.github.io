@@ -17,6 +17,7 @@ export class Live2DModelComponent extends LitElement {
   @property({ attribute: false }) outputNode?: AudioNode;
 
   private _mapper?: (typeof import('./audio-mapper'))['AudioToAnimationMapper'];
+  private _idle?: (typeof import('./idle-eye-focus'))['IdleEyeFocus'];
 
   @state() private _error: string = '';
   @state() private _loading: boolean = false;
@@ -132,22 +133,39 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private async _initMapper() {
+    const { IdleEyeFocus } = await import('./idle-eye-focus');
+    this._idle = new IdleEyeFocus({
+      blinkMin: 2.8,
+      blinkMax: 5.8,
+      blinkDuration: 0.12,
+      saccadeMin: 1.0,
+      saccadeMax: 2.4,
+      saccadeSpeed: 2.8,
+      eyeRange: 0.12,
+    });
     const { AudioToAnimationMapper } = await import('./audio-mapper');
     this._mapper = new AudioToAnimationMapper({ inputNode: this.inputNode, outputNode: this.outputNode, attack: 0.5, release: 0.15, threshold: 0.04, scale: 1.0 });
   }
 
   private _startLoop() {
+    let last = performance.now();
     this._stopLoop();
     if (!this._app) return;
     // Ensure mapper exists
     if (!this._mapper) this._initMapper();
+    // Ensure idle system exists
+    if (!this._idle) this._initIdle();
 
     const appAny: any = this._app;
     const ticker = appAny.ticker;
     if (!ticker) return; // shouldn't happen with PIXI
 
     const cb = () => {
+      const now = performance.now();
+      const dt = (now - last) / 1000;
+      last = now;
       this._mapper?.update();
+      this._idle?.update(dt);
       const m = this._model as any;
       const internal = m?.internalModel;
       const mouth = this._mapper?.mouthOpen ?? 0;
@@ -156,13 +174,16 @@ export class Live2DModelComponent extends LitElement {
         internal?.coreModel?.setParameterValueById?.('ParamMouthOpenY', mouth);
         internal?.coreModel?.setParameterValueById?.('ParamMouthForm', Math.min(1, mouth * 1.2));
         // Apply some subtle idle motion to keep model alive when no audio
-        if (mouth < 0.01) {
+        if (mouth < 0.02 && this._idle) {
+          // Breathing micro-motion
           const t = performance.now() / 1000;
-          const breathe = (Math.sin(t * 1.2) + 1) * 0.03; // 0..0.06
-          internal?.coreModel?.setParameterValueById?.('ParamAngleX', breathe);
-          internal?.coreModel?.setParameterValueById?.('ParamBodyAngleX', breathe * 0.5);
-          internal?.coreModel?.setParameterValueById?.('ParamAngleY', Math.sin(t * 0.6) * 0.02);
-          internal?.coreModel?.setParameterValueById?.('ParamAngleZ', Math.sin(t * 0.4) * 0.02);
+          const breathe = (Math.sin(t * 1.1) + 1) * 0.025; // 0..0.05
+          internal?.coreModel?.setParameterValueById?.('ParamBodyAngleX', breathe * 0.6);
+          // Eye movement and blink
+          internal?.coreModel?.setParameterValueById?.('ParamEyeBallX', this._idle.eyeX);
+          internal?.coreModel?.setParameterValueById?.('ParamEyeBallY', this._idle.eyeY);
+          internal?.coreModel?.setParameterValueById?.('ParamEyeLOpen', this._idle.eyeOpen);
+          internal?.coreModel?.setParameterValueById?.('ParamEyeROpen', this._idle.eyeOpen);
         }
       } catch {}
     };
