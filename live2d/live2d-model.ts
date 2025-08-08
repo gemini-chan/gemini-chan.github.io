@@ -61,7 +61,19 @@ export class Live2DModelComponent extends LitElement {
       const mod: any = await import('pixi-live2d-display/cubism4');
       const Live2DModel = mod.Live2DModel ?? mod.default ?? mod;
 
-      const model: Live2DModelLike = (await Live2DModel.from(url)) as any;
+      // Retry mechanism with exponential backoff
+      const attemptLoad = async (attempt: number): Promise<Live2DModelLike> => {
+        try {
+          return (await Live2DModel.from(url)) as any;
+        } catch (err) {
+          if (attempt >= 3) throw err;
+          const delay = 300 * Math.pow(2, attempt); // 300ms, 600ms, 1200ms
+          await new Promise((res) => setTimeout(res, delay));
+          return attemptLoad(attempt + 1);
+        }
+      };
+
+      const model: Live2DModelLike = await attemptLoad(0);
 
       // basic transform
       try { model.anchor?.set?.(this.anchor[0], this.anchor[1]); } catch {}
@@ -121,7 +133,7 @@ export class Live2DModelComponent extends LitElement {
 
   private async _initMapper() {
     const { AudioToAnimationMapper } = await import('./audio-mapper');
-    this._mapper = new AudioToAnimationMapper({ inputNode: this.inputNode, outputNode: this.outputNode });
+    this._mapper = new AudioToAnimationMapper({ inputNode: this.inputNode, outputNode: this.outputNode, attack: 0.5, release: 0.15, threshold: 0.04, scale: 1.0 });
   }
 
   private _startLoop() {
@@ -143,6 +155,15 @@ export class Live2DModelComponent extends LitElement {
       try {
         internal?.coreModel?.setParameterValueById?.('ParamMouthOpenY', mouth);
         internal?.coreModel?.setParameterValueById?.('ParamMouthForm', Math.min(1, mouth * 1.2));
+        // Apply some subtle idle motion to keep model alive when no audio
+        if (mouth < 0.01) {
+          const t = performance.now() / 1000;
+          const breathe = (Math.sin(t * 1.2) + 1) * 0.03; // 0..0.06
+          internal?.coreModel?.setParameterValueById?.('ParamAngleX', breathe);
+          internal?.coreModel?.setParameterValueById?.('ParamBodyAngleX', breathe * 0.5);
+          internal?.coreModel?.setParameterValueById?.('ParamAngleY', Math.sin(t * 0.6) * 0.02);
+          internal?.coreModel?.setParameterValueById?.('ParamAngleZ', Math.sin(t * 0.4) * 0.02);
+        }
       } catch {}
     };
 

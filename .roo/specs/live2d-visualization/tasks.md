@@ -107,7 +107,7 @@
 - [x] 9.2 Add settings integration (commit: 0cc0de4)
   - Extend settings menu to include Live2D model selection
   - Add Live2D-specific configuration options
-  - Implement model file upload functionality
+  - Implement model file upload functionality (TODO)
   - _Requirements: 5.3_
 
 - [ ] 10. Implement responsive design and mobile support
@@ -127,10 +127,12 @@
 - [ ] 11.1 Create unit tests for core components
   - Write tests for Live2DCanvas component rendering
   - Test AudioToAnimationMapper volume processing
+  - TODO: 11.1.4 Test settings UI model URL input and persistence
   - Add tests for Live2DState management
   - _Requirements: All requirements_
 
 - [ ] 11.2 Add integration tests
+  - TODO: 11.2.4 Verify model ZIP upload round-trip (future)
   - Test complete audio-to-animation pipeline
   - Verify model loading and error handling
   - Test responsive behavior across different screen sizes

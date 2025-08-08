@@ -11,13 +11,19 @@ export class AudioToAnimationMapper {
   private inEnv = 0;
   private outEnv = 0;
 
-  // Smoothing factors
-  private attack = 0.5; // faster rise
-  private release = 0.1; // slower fall
+  // Config
+  private attack: number; // faster rise
+  private release: number; // slower fall
+  private threshold: number;
+  private scale: number;
 
-  constructor(opts: { inputNode?: AudioNode; outputNode?: AudioNode }) {
+  constructor(opts: { inputNode?: AudioNode; outputNode?: AudioNode; attack?: number; release?: number; threshold?: number; scale?: number }) {
     if (opts.inputNode) this.inputAnalyser = new Analyser(opts.inputNode);
     if (opts.outputNode) this.outputAnalyser = new Analyser(opts.outputNode);
+    this.attack = opts.attack ?? 0.5;
+    this.release = opts.release ?? 0.1;
+    this.threshold = opts.threshold ?? 0.05;
+    this.scale = opts.scale ?? 1.0;
   }
 
   update() {
@@ -48,8 +54,8 @@ export class AudioToAnimationMapper {
     }
     const rms = Math.sqrt(sum / data.length);
 
-    // Map and clamp
-    const mapped = Math.max(0, Math.min(1, (rms - 0.05) / 0.5));
+    // Map and clamp with threshold/scale
+    const mapped = Math.max(0, Math.min(1, ((rms - this.threshold) / 0.5) * this.scale));
     return mapped;
   }
 
