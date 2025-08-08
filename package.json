@@ -4,7 +4,8 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "test": "wtr '**/*.test.ts' --node-resolve"
   },
   "dependencies": {
     "@google/genai": "^1.13.0",
@@ -13,7 +14,12 @@
     "three": "^0.179.1"
   },
   "devDependencies": {
+    "@open-wc/testing": "^4.0.0",
+    "@types/chai": "^4.3.18",
+    "@types/mocha": "^10.0.7",
     "@types/node": "^24.2.0",
+    "@web/test-runner": "^0.18.2",
+    "chai": "^5.1.1",
     "typescript": "^6.0.0-dev.20250808",
     "vite": "^7.1.1"
   }
