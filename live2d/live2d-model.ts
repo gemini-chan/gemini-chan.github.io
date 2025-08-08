@@ -5,6 +5,7 @@ import type { PixiApplicationLike, Live2DModelLike, Live2DModelConfig } from './
 @customElement('live2d-model')
 export class Live2DModelComponent extends LitElement {
   private _app?: PixiApplicationLike;
+  @property({ attribute: false }) app?: PixiApplicationLike;
   private _model?: Live2DModelLike & { internalModel?: any } | undefined;
 
   @property({ type: String }) url: string = '';
@@ -16,8 +17,8 @@ export class Live2DModelComponent extends LitElement {
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
 
-  private _mapper?: (typeof import('./audio-mapper'))['AudioToAnimationMapper'];
-  private _idle?: (typeof import('./idle-eye-focus'))['IdleEyeFocus'];
+  private _mapper?: any;
+  private _idle?: any;
 
   @state() private _error: string = '';
   @state() private _loading: boolean = false;
@@ -44,6 +45,23 @@ export class Live2DModelComponent extends LitElement {
     this._app = ev.detail.app;
     this._maybeLoad();
   };
+
+  protected willUpdate(changed: Map<string, unknown>) {
+    if (changed.has('app') && this.app && !this._app) {
+      console.log('[Live2D] app provided via prop');
+      this._app = this.app;
+      this._maybeLoad();
+    }
+    if (changed.has('url')) {
+      // reload on url change
+      this._destroyModel();
+      this._maybeLoad();
+    }
+    if (changed.has('inputNode') || changed.has('outputNode')) {
+      // re-init mapper
+      this._initMapper();
+    }
+  }
 
   private async _maybeLoad() {
     if (!this._app) return;
@@ -138,7 +156,7 @@ export class Live2DModelComponent extends LitElement {
 
   private async _initMapper() {
     const { IdleEyeFocus } = await import('./idle-eye-focus');
-    this._idle = new IdleEyeFocus({
+    this._idle = new (IdleEyeFocus as any)({
       blinkMin: 2.8,
       blinkMax: 5.8,
       blinkDuration: 0.12,
@@ -148,7 +166,7 @@ export class Live2DModelComponent extends LitElement {
       eyeRange: 0.12,
     });
     const { AudioToAnimationMapper } = await import('./audio-mapper');
-    this._mapper = new AudioToAnimationMapper({ inputNode: this.inputNode, outputNode: this.outputNode, attack: 0.5, release: 0.15, threshold: 0.04, scale: 1.0 });
+    this._mapper = new (AudioToAnimationMapper as any)({ inputNode: this.inputNode, outputNode: this.outputNode, attack: 0.5, release: 0.15, threshold: 0.04, scale: 1.0 });
   }
 
   private _startLoop() {
@@ -158,7 +176,7 @@ export class Live2DModelComponent extends LitElement {
     // Ensure mapper exists
     if (!this._mapper) this._initMapper();
     // Ensure idle system exists
-    if (!this._idle) this._initIdle();
+    if (!this._idle) {/* no-op, created in _initMapper */}
 
     const appAny: any = this._app;
     const ticker = appAny.ticker;

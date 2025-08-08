@@ -20,6 +20,7 @@ export class Live2DVisual extends LitElement {
           .url=${this.modelUrl}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
+          .app=${(e.currentTarget as any)?.app}
         ></live2d-model>
       </live2d-canvas>
     `;
