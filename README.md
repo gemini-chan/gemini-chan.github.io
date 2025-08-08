@@ -5,6 +5,16 @@
 
 ## Wanna run me locally?
 
-1. `npm install`
-2. `npm run dev`
+0. 
+```bash
+git clone https://github.com/daoch4n/gemini-chan
+```
+1. 
+```bash
+npm install
+```
+2. 
+```bash
+npm run dev
+```
 3. P-please tell me ur gemini api key 👉🏻👈🏻
