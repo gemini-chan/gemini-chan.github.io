@@ -63,8 +63,6 @@ export class Live2DGate extends LitElement {
       <live2d-visual
         class="layer"
         .modelUrl=${this.modelUrl}
-        @live2d-loaded=${() => console.log('[Live2D Gate] child loaded event')}
-        @live2d-error=${(e: CustomEvent) => console.log('[Live2D Gate] child error event', e.detail)}
         .inputNode=${this.inputNode}
         .outputNode=${this.outputNode}
         @live2d-loaded=${this._onLoaded}
