@@ -2,5 +2,16 @@
   "name": "gemini-chan",
   "version": "0.0.1",
   "type": "module",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@google/genai": "^0.16.0",
+    "lit": "^3.1.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vite": "^5.3.5"
+  }
 }
