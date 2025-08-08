@@ -337,12 +337,7 @@ export class GdmLiveAudio extends LitElement {
           .modelUrl=${localStorage.getItem('live2d-model-url') || ''}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
-        >
-          <gdm-live-audio-visuals-3d slot="fallback"
-            .inputNode=${this.inputNode}
-            .outputNode=${this.outputNode}
-          ></gdm-live-audio-visuals-3d>
-        </live2d-gate>
+        ></live2d-gate>
       </div>
     `;
   }

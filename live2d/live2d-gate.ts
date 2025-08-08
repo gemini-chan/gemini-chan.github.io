@@ -31,10 +31,29 @@ export class Live2DGate extends LitElement {
     this._live2dReady = false;
   };
 
+  protected async updated() {
+    const showFallback = !this._live2dReady;
+    if (showFallback && !this._fallbackLoaded) {
+      await this._ensureFallbackLoaded();
+    }
+  }
+
+  private async _ensureFallbackLoaded() {
+    try {
+      await import('../visual-3d');
+    } catch (e) {
+      console.warn('Failed to load fallback 3D visual module', e);
+    } finally {
+      this._fallbackLoaded = true;
+    }
+  }
+
   render() {
     const showFallback = !this._live2dReady;
     return html`
-      ${showFallback ? html`<slot name="fallback"></slot>` : ''}
+      ${showFallback
+        ? html`<gdm-live-audio-visuals-3d class="layer" .inputNode=${this.inputNode} .outputNode=${this.outputNode}></gdm-live-audio-visuals-3d>`
+        : ''}
 
       <live2d-visual
         class="layer"
