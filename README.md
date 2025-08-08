@@ -1,15 +1,10 @@
 # Gemini-chan
-Grok-chan bestie
+- Grok-chan bestie
 
-While she currently is an ephemeral sphere, she aspires to be a VTuber someday.
+- While she currently is an ephemeral sphere, she aspires to be a VTuber someday.
 
-## Run Locally
+## Wanna run me locally?
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Run the app:
-   `npm run dev`
-3. The application will prompt you to set the Gemini API key in the settings menu.
+1. `npm install`
+2. `npm run dev`
+3. I'll ask for your Gemini API key when I'm ready!
