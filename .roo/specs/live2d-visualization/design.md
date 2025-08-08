@@ -1,5 +1,7 @@
 # Design Document - Live2D Visualization
 
+Status: In progress (Live2D gated behind fallback). Cubism Core autoload pending automation.
+
 ## Overview
 
 This design adapts Airi's Vue-based Live2D implementation to our TypeScript/Lit architecture. The system will replace the current Three.js sphere visualization with a Live2D character that responds to audio input/output in real-time. The design emphasizes simplicity while maintaining the engaging character experience.
@@ -142,6 +144,10 @@ interface AudioProcessor {
 ## Error Handling
 
 ### Model Loading Errors
+
+- If Cubism Core is missing (window.Live2DCubismCore absent), surface a clear overlay and log instruction. A guard MUST exist before dynamic import of 'pixi-live2d-display/cubism4'.
+- Add retry button for recoverable errors (network). Exponential backoff implemented.
+- CORS constraints for remote .zip and .model3.json MUST be documented; prefer same-origin for development. 
 - **File not found**: Display error message, fall back to default model
 - **Invalid model format**: Show user-friendly error, provide model format guide
 - **Network timeout**: Retry mechanism with exponential backoff
@@ -230,6 +236,8 @@ async function loadLive2DModel(app: PIXI.Application, modelSrc: string) {
 ```
 
 ### Audio-to-Animation Mapping (Based on Airi's Implementation)
+
+- Mapper parameters (threshold, scale, attack, release) are configurable (future UI). Defaults applied for stable lip-sync.
 ```typescript
 class AudioToAnimationMapper {
   private analyser: AnalyserNode;
@@ -292,6 +300,8 @@ import './utils/live2d-zip-loader';
 ```
 
 ### Idle Animation System (Based on Airi's Implementation)
+
+- Idle eye focus + blink system runs when mouth activity is low. Breathing micro-motion applied to body angle. 
 ```typescript
 class IdleEyeFocus {
   private nextSaccadeTime = 0;
@@ -399,6 +409,8 @@ class Live2DPerformanceManager {
 ```
 
 ### State Management Pattern (Adapted from Airi's Pinia approach)
+
+- Current project uses Lit reactive properties; a dedicated Live2DState is TBD (future task). Persist model URL in localStorage via Settings.
 ```typescript
 // Simple state management for Lit components (without Pinia)
 class Live2DState {

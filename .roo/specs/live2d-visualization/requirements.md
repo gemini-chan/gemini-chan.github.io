@@ -6,6 +6,8 @@ This feature involves replacing the current 3D sphere visualization with a Live2
 
 ## Requirements
 
+Note: This document reflects current progress and decisions. Live2D integration is gated behind a fallback with the 3D sphere, with an emphasis on graceful failure and performance (lazy-loading and teardown). A Cubism Core autoload requirement has been added.
+
 ### Requirement 1
 
 **User Story:** As a user, I want to see a Live2D animated character instead of a 3D sphere, so that I have a more engaging and character-focused interaction experience.
@@ -15,7 +17,7 @@ This feature involves replacing the current 3D sphere visualization with a Live2
 1. WHEN the application loads THEN the system SHALL display a Live2D character model instead of the current 3D sphere
 2. WHEN audio input is detected THEN the Live2D character SHALL respond with appropriate animations (mouth movement, eye blinks, etc.)
 3. WHEN the AI is speaking THEN the Live2D character SHALL animate to show speaking behavior
-4. WHEN there is no audio activity THEN the Live2D character SHALL display idle animations
+4. WHEN there is no audio activity THEN the Live2D character SHALL display idle animations (eye blinks, saccades, subtle breathing)
 
 ### Requirement 2
 
@@ -51,6 +53,8 @@ This feature involves replacing the current 3D sphere visualization with a Live2
 4. WHEN the system is processing THEN the character SHALL show appropriate waiting animations
 
 ### Requirement 5
+
+Note: Live2D uses the official Cubism 4 Core SDK. The application MUST ensure the core (live2dcubismcore.min.js + .wasm) is available globally before loading pixi-live2d-display/cubism4. This MUST be automated (no manual user steps).
 
 **User Story:** As a developer, I want to maintain the existing audio processing pipeline, so that the Live2D integration doesn't break current functionality.
 

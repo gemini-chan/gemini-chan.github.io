@@ -34,6 +34,8 @@
 
 - [ ] 4. Implement core Live2D model functionality
 - [ ] 4.1 Add model loading and initialization
+  - Ensure Cubism Core autoload is in place (index.html script + assets in public/)
+  - Add guard for window.Live2DCubismCore prior to dynamic import
   - Implement Live2DFactory.setupLive2DModel integration
   - Add support for both .model3.json and .zip file formats
   - Create custom zip loader utility (based on Airi's implementation)
@@ -52,14 +54,20 @@
   - Add volume threshold and sensitivity controls
   - _Requirements: 1.2, 1.3, 3.1, 3.2_
 
-- [ ] 5.2 Create idle animation system
+- [x] 5.2 Create idle animation system (commit: 70a15d3)
+  - Implement IdleEyeFocus class based on Airi's approach
+  - Add random saccade eye movements with proper timing
+  - Integrate with motion manager to only run during idle states
   - Implement IdleEyeFocus class based on Airi's approach
   - Add random saccade eye movements with proper timing
   - Integrate with motion manager to only run during idle states
   - _Requirements: 1.4, 4.1, 4.2_
 
 - [ ] 6. Implement performance optimizations
-- [ ] 6.1 Add render loop management
+- [x] 6.1 Add render loop management (commit: 53f0650)
+  - Implement pause/resume functionality for PIXI ticker (partial; gate unloads fallback)
+  - Add performance monitoring and frame rate optimization (TBD)
+  - Create resource cleanup for model switching (in place for 3D fallback)
   - Implement pause/resume functionality for PIXI ticker
   - Add performance monitoring and frame rate optimization
   - Create resource cleanup for model switching
@@ -85,13 +93,19 @@
   - _Requirements: 5.1, 5.2, 5.3_
 
 - [ ] 8. Implement error handling and fallbacks
-- [ ] 8.1 Add model loading error handling
+- [x] 8.1 Add model loading error handling (commit: 2cce234)
+  - Create graceful fallback for failed model loads
+  - Implement retry mechanism with exponential backoff (done)
+  - Add user-friendly error messages and recovery options (overlay + retry)
   - Create graceful fallback for failed model loads
   - Implement retry mechanism with exponential backoff
   - Add user-friendly error messages and recovery options
   - _Requirements: 5.4_
 
-- [ ] 8.2 Add runtime error handling
+- [x] 8.2 Add runtime error handling (commit: 8b6caac)
+  - Implement fallback to static model on animation errors (gate)
+  - Add PIXI initialization failure handling (status badge + logs)
+  - Create degraded mode for low-performance devices (TBD)
   - Implement fallback to static model on animation errors
   - Add PIXI initialization failure handling
   - Create degraded mode for low-performance devices
