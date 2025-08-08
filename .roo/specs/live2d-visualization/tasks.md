@@ -104,7 +104,7 @@
   - Ensure audio node connections work with new system
   - _Requirements: 1.1, 5.1, 5.2_
 
-- [ ] 9.2 Add settings integration
+- [x] 9.2 Add settings integration (commit: 0cc0de4)
   - Extend settings menu to include Live2D model selection
   - Add Live2D-specific configuration options
   - Implement model file upload functionality
