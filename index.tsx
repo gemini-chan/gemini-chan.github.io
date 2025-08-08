@@ -17,7 +17,7 @@ export class GdmLiveAudio extends LitElement {
   @state() status = '';
   @state() error = '';
   @state() showSettings = false;
-  @state() live2dModelUrl = 'https://gateway.xn--vck1b.shop/models/hiyori_pro_zh.zip';
+  @state() live2dModelUrl = localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_zh.zip';
 
   private client: GoogleGenAI;
   private session: Session;

@@ -22,11 +22,13 @@ export class Live2DGate extends LitElement {
   `;
 
   private _onLoaded = () => {
+    console.log('[Live2D Gate] loaded');
     // Live2D reported loaded, hide/remove fallback
     this._live2dReady = true;
   };
 
   private _onError = (e: CustomEvent<{ error: string }>) => {
+    console.warn('[Live2D Gate] error', e.detail);
     this._live2dError = e.detail?.error || 'Live2D failed';
     this._live2dReady = false;
   };

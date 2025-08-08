@@ -11,9 +11,9 @@
     "@google/genai": "^1.13.0",
     "@lit/context": "^1.1.6",
     "lit": "^3.3.1",
-    "three": "^0.179.1",
+    "pixi-live2d-display": "^0.5.0-beta",
     "pixi.js": "^7.3.3",
-    "pixi-live2d-display": "^0.5.0"
+    "three": "^0.179.1"
   },
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",

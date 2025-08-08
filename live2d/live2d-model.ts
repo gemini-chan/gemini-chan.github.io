@@ -52,6 +52,7 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private async _loadModel(url: string) {
+    console.log('[Live2D] loadModel start', url);
     if (!this._app) return;
 
     this._loading = true;
@@ -75,6 +76,7 @@ export class Live2DModelComponent extends LitElement {
       };
 
       const model: Live2DModelLike = await attemptLoad(0);
+      console.log('[Live2D] model loaded', model);
 
       // basic transform
       try { model.anchor?.set?.(this.anchor[0], this.anchor[1]); } catch {}
@@ -96,9 +98,10 @@ export class Live2DModelComponent extends LitElement {
       // add to stage
       this._app.stage.addChild(model as any);
       this._model = model;
+      console.log('[Live2D] added to stage');
       this.dispatchEvent(new CustomEvent('live2d-loaded', { bubbles: true, composed: true }));
     } catch (e: any) {
-      console.error('Failed to load Live2D model', e);
+      console.error('[Live2D] Failed to load Live2D model', e);
       this._error = 'Failed to load Live2D model';
       this.dispatchEvent(new CustomEvent('live2d-error', { detail: { error: String(e?.message || e) }, bubbles: true, composed: true }));
     } finally {
@@ -127,7 +130,7 @@ export class Live2DModelComponent extends LitElement {
   }
 
   render() {
-    if (this._error) return html`<div class="overlay">${this._error}</div>`;
+    if (this._error) return html`<div class="overlay">${this._error} <button @click=${() => this._maybeLoad()}>Retry</button></div>`;
     if (this._loading) return html`<div class="overlay">Loading Live2D...</div>`;
     return html``;
   }
