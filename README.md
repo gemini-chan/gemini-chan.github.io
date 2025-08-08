@@ -2,10 +2,7 @@
 - Grok-chan bestie!
 
 - While she currently is an ephemeral sphere, she aspires to be a VTuber someday. (๑˃ᴗ˂)ﻭ
-
-## Inspiration
-
-For an example of a cool open source VTuber, check out [Airi-chan](https://github.com/moeru-ai/airi)! She has a diverse skill set, including playing games and living on your desktop.
+- For an example of a cool open source VTuber, check out [Airi-chan](https://github.com/moeru-ai/airi)! She can play games and live on your desktop! (´｡• ᵕ •｡`) ♡
 
 ## Wanna run me locally?
 
