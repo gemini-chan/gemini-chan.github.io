@@ -23,7 +23,8 @@
     "three": "^0.179.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@proj-airi/unplugin-live2d-sdk": "^0.1.5",
+    "@biomejs/biome": "^2.1.4",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10",
     "@open-wc/testing": "^4.0.0",
