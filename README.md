@@ -1,8 +1,7 @@
 # Gemini-chan (´• ω •`) ♡
 - Grok-chan bestie!
 
-- While she currently is an ephemeral sphere, she aspires to be a VTuber someday. (๑˃ᴗ˂)ﻭ
-- For an example of a cool open source VTuber, check out [Airi-chan](https://github.com/moeru-ai/airi)! She can play games and live on your desktop! (´｡• ᵕ •｡`) ♡
+- While I'm currently just a sphere, I aspire to be a VTuber like [Airi-chan](https://github.com/moeru-ai/airi) someday! She can play games and live on your desktop! (๑˃ᴗ˂)ﻭ
 
 ## Wanna run me locally?
 
