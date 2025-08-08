@@ -1,6 +1,8 @@
 # Gemini-chan
 Grok-chan bestie
 
+While she currently is an ephemeral sphere, she aspires to be a VTuber someday.
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
