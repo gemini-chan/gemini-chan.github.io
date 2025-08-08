@@ -1,32 +1,32 @@
 # Implementation Plan
 
-- [ ] 1. Set up project structure and core interfaces
+- [x] 1. Set up project structure and core interfaces (commit: 6278ef9)
   - Create directory structure for Live2D components
   - Define TypeScript interfaces for Live2D integration
   - Set up PIXI.js and pixi-live2d-display dependencies
   - _Requirements: 1.1, 2.1_
 
 - [ ] 2. Implement Live2D canvas foundation
-- [ ] 2.1 Create Live2DCanvas component
+- [x] 2.1 Create Live2DCanvas component (commit: 6278ef9)
   - Write Live2DCanvas Lit component with PIXI.js initialization
   - Implement responsive canvas sizing and high-DPI support
   - Add proper cleanup and resource management
   - _Requirements: 1.1, 2.1_
 
-- [ ] 2.2 Create Live2DModel component skeleton
+- [x] 2.2 Create Live2DModel component skeleton (commit: 6278ef9)
   - Write Live2DModel Lit component structure
   - Implement model loading interface using Live2DFactory
   - Add basic error handling and fallback mechanisms
   - _Requirements: 1.1, 2.1, 5.4_
 
 - [ ] 3. Implement audio processing integration
-- [ ] 3.1 Create AudioToAnimationMapper class
+- [x] 3.1 Create AudioToAnimationMapper class (commit: 6278ef9)
   - Implement volume analysis with normalization (based on Airi's approach)
   - Create smooth volume history tracking for stable lip-sync
   - Add frequency data processing for enhanced animations
   - _Requirements: 3.1, 3.2_
 
-- [ ] 3.2 Integrate audio analysis with existing pipeline
+- [x] 3.2 Integrate audio analysis with existing pipeline (commit: 6278ef9)
   - Connect AudioToAnimationMapper to existing Analyser class
   - Modify GdmLiveAudio to provide audio nodes to Live2D system
   - Ensure audio processing doesn't interfere with existing visualization
@@ -98,7 +98,7 @@
   - _Requirements: 2.2, 5.4_
 
 - [ ] 9. Replace existing 3D visualization
-- [ ] 9.1 Integrate Live2D into main application
+- [x] 9.1 Integrate Live2D into main application (commit: 6278ef9)
   - Replace visual-3d component with live2d-visual in index.tsx
   - Update GdmLiveAudio to use Live2D instead of Three.js sphere
   - Ensure audio node connections work with new system
