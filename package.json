@@ -5,7 +5,14 @@
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite",
-    "test": "wtr '**/*.test.ts' --node-resolve"
+    "test": "wtr '**/*.test.ts' --node-resolve",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --apply .",
+    "format": "biome format .",
+    "check": "biome check .",
+    "check:fix": "biome check --apply .",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@google/genai": "^1.13.0",
@@ -16,6 +23,9 @@
     "three": "^0.179.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
     "@open-wc/testing": "^4.0.0",
     "@types/chai": "^4.3.18",
     "@types/mocha": "^10.0.7",

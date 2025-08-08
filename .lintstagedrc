@@ -1,0 +1,6 @@
+{
+  "*.{ts,tsx,js,jsx,json,css,md}": [
+    "biome check --apply",
+    "git add"
+  ]
+}
