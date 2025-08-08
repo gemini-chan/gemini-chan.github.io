@@ -177,14 +177,8 @@ The only data being managed is the API key. It will be stored in `localStorage` 
 
 ## 6. Testing Strategy
 
-*   **Component Tests:**
-    *   Verify that the settings menu opens and closes correctly.
-    *   Test the API key validation logic with valid and invalid keys.
-    *   Test the paste functionality.
-    *   Verify that the API key is correctly saved to `localStorage`.
-*   **Integration Tests:**
-    *   Test the interaction between `gdm-live-audio` and `settings-menu`.
-    *   Verify that the `GoogleGenAI` client is re-initialized with the new API key after it's saved.
+*   **Component Tests:** Unit tests will be written for the `settings-menu` component to verify its functionality in isolation.
+*   **Integration Tests:** Integration tests will be written to verify the interaction between the `gdm-live-audio` and `settings-menu` components.
 
 ## 7. Visual Diagram (Mermaid)
 

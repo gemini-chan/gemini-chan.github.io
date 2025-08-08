@@ -70,30 +70,7 @@ This document breaks down the implementation of the settings menu feature into a
   - **File to modify:** [`index.tsx`](index.tsx)
   - **References:** `design.md` section 2, `requirements.md` section 4.2
 
-### 4. Testing (Skipped due to environment issues)
+### 4. Testing
 
-- [ ] **4.1. Set up the testing environment for Lit components.**
-  - Ensure that the necessary testing libraries (e.g., `@web/test-runner`) are configured in the project.
-  - **Files to modify:** `package.json`, `web-test-runner.config.js` (if it exists)
-  - **References:** `design.md` section 6
-
-- [ ] **4.2. Write component tests for `settings-menu`.**
-  - **File to create:** `settings-menu.test.ts`
-  - **References:** `design.md` section 6
-  - **Test Cases:**
-    - [ ] **4.2.1.** It should render the API key input field and all buttons correctly.
-    - [ ] **4.2.2.** It should display an error message if the "Save" button is clicked with an empty API key.
-    - [ ] **4.2.3.** It should display an error message if the API key has an invalid format.
-    - [ ] **4.2.4.** It should clear the error message when the user starts typing in the input field.
-    - [ ] **4.2.5.** It should correctly save a valid API key to `localStorage` and dispatch the `api-key-saved` event.
-    - [ ] **4.2.6.** It should correctly paste text from the clipboard into the input field (mocking the Clipboard API).
-    - [ ] **4.2.7.** It should call `window.open` with the correct URL when the "Get API Key" button is clicked.
-
-- [ ] **4.3. Write integration tests.**
-  - **File to modify:** `index.test.ts` (or create a new integration test file `settings-integration.test.ts`)
-  - **References:** `design.md` section 6
-  - **Test Cases:**
-    - [ ] **4.3.1.** The `gdm-live-audio` component should render the "Settings" button.
-    - [ ] **4.3.2.** Clicking the "Settings" button should show the `settings-menu` component.
-    - [ ] **4.3.3.** The `gdm-live-audio` component should re-initialize the `GoogleGenAI` client when it receives the `api-key-saved` event.
-    - [ ] **4.3.4.** The application should load the API key from `localStorage` on initial load and pass it to the `GoogleGenAI` client.
+- [ ] **4.1. Write component tests for `settings-menu`.**
+- [ ] **4.2. Write integration tests.**
