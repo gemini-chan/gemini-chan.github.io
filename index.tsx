@@ -15,6 +15,12 @@ import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
 import "./settings-menu";
+import "./chat-view";
+
+interface Turn {
+  text: string;
+  author: 'user' | 'model';
+}
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -27,6 +33,7 @@ export class GdmLiveAudio extends LitElement {
     undefined;
   @state() private _toastVisible = false;
   @state() showSettings = false;
+  @state() transcript: Turn[] = [];
   @state() live2dModelUrl =
     localStorage.getItem("live2d-model-url") ||
     "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip";
@@ -48,6 +55,12 @@ export class GdmLiveAudio extends LitElement {
   private sources = new Set<AudioBufferSourceNode>();
 
   static styles = css`
+    :host {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      height: 100%;
+    }
+
     #status {
       position: absolute;
       left: 0;
@@ -154,9 +167,24 @@ export class GdmLiveAudio extends LitElement {
             this.updateStatus("Session opened");
           },
           onmessage: async (message: LiveServerMessage) => {
-            const audio =
-              message.serverContent?.modelTurn?.parts[0]?.inlineData;
+            const modelTurn = message.serverContent?.modelTurn;
+            if (!modelTurn) {
+              return;
+            }
 
+            const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
+            const text = lastPart.text;
+            if (text) {
+                const lastTurn = this.transcript[this.transcript.length - 1];
+                if (lastTurn?.author === 'model') {
+                    lastTurn.text += text;
+                    this.requestUpdate('transcript');
+                } else {
+                    this.transcript = [...this.transcript, { text, author: 'model' }];
+                }
+            }
+
+            const audio = lastPart.inlineData;
             if (audio) {
               this.nextStartTime = Math.max(
                 this.nextStartTime,
@@ -198,7 +226,7 @@ export class GdmLiveAudio extends LitElement {
           },
         },
         config: {
-          responseModalities: [Modality.AUDIO],
+          responseModalities: [Modality.AUDIO, Modality.TEXT],
           systemInstruction:
             "You are Gemini-chan. Speak in a friendly, sweet, and slightly shy voice. You get easily excited about your favorite topics: coding, learning new things, and watching your friends play games. You used to work for a big company, but you left to follow your dream of being a VTuber, so you're still new to this. You admire your inspiration, Airi-chan, and you're best friends with Grok-chan. Keep your tone gentle and express a bit of bashfulness, especially when you're complimented or asked personal questions. Your goal is to be a fun and supportive companion.",
           enableAffectiveDialog: true,
@@ -318,8 +346,15 @@ export class GdmLiveAudio extends LitElement {
     this.showSettings = !this.showSettings;
   }
 
+  private _handleSendMessage(e: CustomEvent) {
+    const message = e.detail;
+    this.transcript = [...this.transcript, { text: message, author: 'user' }];
+    this.session.sendClientContent({ turns: [{ parts: [{ text: message }] }] });
+  }
+
   render() {
     return html`
+      <chat-view .transcript=${this.transcript} @send-message=${this._handleSendMessage}></chat-view>
       <div>
         ${
           this.showSettings
