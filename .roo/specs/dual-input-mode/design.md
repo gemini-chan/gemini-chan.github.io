@@ -4,7 +4,9 @@
 This document outlines the technical design for a dual-input mode that simulates a realistic messaging/calling experience. The system maintains separate conversation contexts for texting (TTS flow) and calling (STS flow), with dynamic UI components that appear based on the active mode. The design features a messaging app interface with a persistent chat window for texting and a dynamically appearing call transcript window during voice calls. The Live2D model animates consistently across both modes.
 
 ## 2. Architecture
-The architecture implements a dual-context system with separate conversation histories for texting (TTS) and calling (STS) modes. The main application manages two independent AI sessions and dynamically shows/hides transcript windows based on the active mode. The interface simulates a messaging app with persistent texting on the left and call functionality.
+The architecture implements a dual-context system with separate conversation histories for texting (TTS) and calling (STS) modes. The main application manages two independent AI sessions with lazy initialization - sessions are only created when the user actually interacts (sends first message or starts a call). The system dynamically shows/hides transcript windows based on the active mode. The interface simulates a messaging app with persistent texting on the left and call functionality.
+
+The application now lands directly on the main UI instead of using the settings menu as a landing page. API key validation is performed on-demand when users attempt to use TTS or STS features. If no API key is configured, the settings menu opens automatically with a toast notification prompting the user to enter their API key.
 
 ```mermaid
 graph TD
@@ -14,6 +16,8 @@ graph TD
         C[call-transcript - Call Interface]
         D[gdm-live-audio - Call Button]
         F[live2d-visual]
+        N[settings-menu - API Key Management]
+        O[toast-notification - User Prompts]
     end
 
     subgraph "Context Management"
@@ -36,9 +40,15 @@ graph TD
     A -- "Manages visibility" --> C
     A -- "Manages" --> D
     A -- "Manages" --> F
+    A -- "Controls visibility" --> N
+    A -- "Shows/hides" --> O
 
     B -- "send-message event" --> A
     D -- "call-start/call-end events" --> A
+    N -- "api-key-saved event" --> A
+
+    A -- "API key validation" --> N
+    A -- "Shows toast on missing key" --> O
 
     A -- "Maintains" --> G
     A -- "Maintains" --> H
@@ -66,6 +76,8 @@ graph TD
     - Control visibility of chat-view and call-transcript components based on active mode.
     - Handle session lifecycle events for both texting and calling modes.
     - Provide the `outputNode` from active AI session to the `live2d-visual` component.
+    - Manage settings menu visibility and API key validation.
+    - Show toast notifications when API key is missing.
 - **State:**
     - `activeMode: 'texting' | 'calling' | null`
     - `textTranscript: Turn[]` - Persistent texting conversation history
@@ -73,12 +85,18 @@ graph TD
     - `textSession: Session | null` - Active TTS session
     - `callSession: Session | null` - Active STS session
     - `outputNode: AudioNode | null`
+    - `showSettings: boolean` - Controls settings menu visibility
+    - `showToast: boolean` - Controls toast notification visibility
+    - `toastMessage: string` - Toast notification text
 - **Methods:**
-    - `_handleSendMessage(e: CustomEvent)`: Initiates or sends message to TTS session.
-    - `_handleCallStart()`: Initiates STS session and shows call transcript.
+    - `_handleSendMessage(e: CustomEvent)`: Validates API key, shows settings/toast if missing, then lazily initiates TTS session and sends message.
+    - `_handleCallStart()`: Validates API key, shows settings/toast if missing, then lazily initiates STS session and shows call transcript.
     - `_handleCallEnd()`: Ends STS session and shows chat view.
-    - `_initTextSession()`: Connects to `gemini-2.5-flash-live-preview`.
-    - `_initCallSession()`: Connects to `gemini-2.5-flash-exp-native-audio-thinking-dialog`.
+    - `_initTextSession()`: Connects to `gemini-2.5-flash-live-preview` (called only when first message is sent).
+    - `_initCallSession()`: Connects to `gemini-2.5-flash-exp-native-audio-thinking-dialog` (called only when call starts).
+    - `_checkApiKeyExists()`: Checks if API key is present (not empty), returns boolean.
+    - `_showApiKeyPrompt()`: Opens settings menu and shows toast prompting for API key.
+    - `_handleApiKeySaved()`: Closes settings menu and toast when API key is saved.
 
 ### 3.2. `chat-view.ts` (Texting Interface)
 - **Responsibility:**
@@ -139,7 +157,70 @@ graph TD
 - **Methods:**
     - `update(dt)`: Updates idle parameters.
 
-## 4. Data Models
+### 3.8. `settings-menu` (API Key Management)
+- **Responsibility:**
+    - Provide interface for entering and saving Gemini API key.
+    - Show/hide based on API key validation requirements or manual access.
+    - Validate API key format and provide visual feedback.
+    - Support clipboard pasting and external API key link.
+    - Emit events when API key is saved successfully.
+- **Properties:**
+    - `visible: boolean` - Controls visibility (shown when API key missing or manually opened)
+    - `apiKey: string` - Current API key value
+- **State:**
+    - `_error: string` - Current validation error message
+    - `_isSaving: boolean` - Loading state during save operations
+- **Events:**
+    - `api-key-saved`: Dispatched when user saves a valid API key.
+- **Methods:**
+    - `_onApiKeyInput(e: Event)`: Updates apiKey property and clears validation errors.
+    - `_validateApiKey(key: string): boolean`: Validates API key format (starts with "AIzaSy", 39 characters total).
+    - `_onSave()`: Validates key, saves to localStorage, and emits `api-key-saved` event.
+    - `_onPaste()`: Reads from clipboard using Clipboard API and populates input field.
+    - `_getApiKeyUrl()`: Opens "https://aistudio.google.com/apikey" in new tab.
+    - `_handleCancel()`: Closes settings menu without saving.
+
+### 3.9. `toast-notification` (User Prompts)
+- **Responsibility:**
+    - Display temporary notification messages to guide user actions.
+    - Show API key prompts when validation fails.
+    - Auto-hide after user completes required actions.
+- **Properties:**
+    - `visible: boolean` - Controls visibility
+    - `message: string` - Toast notification text
+    - `type: 'info' | 'warning' | 'error'` - Toast styling type
+- **Methods:**
+    - `show(message: string, type?: string)`: Display toast with message.
+    - `hide()`: Hide toast notification.
+
+## 4. Session Lifecycle Management
+
+### 4.1. Lazy Initialization Pattern
+To conserve API usage and resources, AI sessions are initialized only when needed:
+
+- **TTS Session**: Created when user sends their first text message. The `_handleSendMessage` method first validates the API key, then checks if `textSession` is null and calls `_initTextSession()` before sending the message.
+- **STS Session**: Created when user clicks the "Call" button. The `_handleCallStart` method first validates the API key, then calls `_initCallSession()` as part of the call initiation process.
+- **App Startup**: No sessions are created during application initialization. The app starts with `textSession: null` and `callSession: null`. The main UI is displayed immediately.
+
+### 4.2. API Key Presence Check Flow
+Before any session initialization, the system checks that an API key is configured:
+
+1. **User Action**: User attempts to send message or start call
+2. **Presence Check**: `_checkApiKeyExists()` checks if API key is present (not empty)
+3. **Success Path**: If API key exists, proceed with session initialization
+4. **Missing Key Path**: If no API key, call `_showApiKeyPrompt()` which:
+   - Sets `showSettings: true` to display settings menu
+   - Sets `showToast: true` with message "Please enter your Gemini API key to start chatting"
+   - Blocks the intended action until API key is provided
+5. **Resolution**: When user saves API key (settings menu handles validation), `_handleApiKeySaved()` closes settings and toast, allowing the original action to proceed
+
+### 4.3. Session State Management
+- Sessions remain active until explicitly closed (via reset or app termination)
+- Switching between modes preserves both sessions if they exist
+- Each session maintains its own conversation history independently
+- API key validation occurs before each new session creation, not during mode switching
+
+## 5. Data Models
 
 ```typescript
 interface Turn {
@@ -156,6 +237,17 @@ interface DualContext {
 }
 
 type ActiveMode = 'texting' | 'calling' | null;
+
+interface ToastState {
+  visible: boolean;
+  message: string;
+  type: 'info' | 'warning' | 'error';
+}
+
+interface SettingsState {
+  visible: boolean;
+  apiKey: string;
+}
 ```
 
 ## 5. Error Handling

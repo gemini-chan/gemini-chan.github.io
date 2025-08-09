@@ -12,8 +12,10 @@ This document outlines the requirements for a dual-input mode that simulates a r
 
 #### 2.1.1. Acceptance Criteria
 - **WHEN** the application loads **THEN** the chat window is visible on the left side displaying the texting interface
+- **WHEN** the application loads **THEN** no TTS session is initialized (to conserve API usage)
 - **WHEN** no call is active **THEN** the chat window remains visible for text messaging
-- **WHEN** I type a message and click "Send" **THEN** a TTS session is initiated with the `gemini-2.5-flash-live-preview` model
+- **WHEN** I type a message and click "Send" for the first time **THEN** a TTS session is initiated with the `gemini-2.5-flash-live-preview` model
+- **WHEN** I type a message and click "Send" and a TTS session already exists **THEN** the message is sent to the existing TTS session
 - **WHEN** I send a message in TTS mode **THEN** the message appears in the chat transcript and the model's audio response is streamed back
 - **WHEN** the model responds in TTS mode **THEN** the chat transcript is updated with the model's response text
 
@@ -24,6 +26,7 @@ This document outlines the requirements for a dual-input mode that simulates a r
 
 #### 2.2.1. Acceptance Criteria
 - **WHEN** the application loads **THEN** a "Call" button is visible (not "Record" button)
+- **WHEN** the application loads **THEN** no STS session is initialized (to conserve API usage)
 - **WHEN** I click the "Call" button **THEN** a STS session is initiated with the `gemini-2.5-flash-exp-native-audio-thinking-dialog` model and audio recording starts immediately
 - **WHEN** a call is active **THEN** the chat window is hidden and a separate call transcript window appears
 - **WHEN** the model responds during a call **THEN** the audio is played back and transcribed text appears in the call transcript window
@@ -70,3 +73,64 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** I reset during texting mode **THEN** only the texting context and chat transcript are cleared
 - **WHEN** I reset during calling mode **THEN** only the calling context and call transcript are cleared
 - **WHEN** I reset one mode **THEN** the other mode's context remains intact
+
+### 2.7. Direct Main UI Landing with API Key Validation
+- **As a** user,
+- **I want** the application to land directly on the main UI instead of the settings menu,
+- **so that** I can immediately see the chat interface and start interacting.
+
+#### 2.7.1. Acceptance Criteria
+- **WHEN** the application loads **THEN** the main UI (chat interface) is displayed immediately instead of the settings menu
+- **WHEN** the application loads **THEN** the settings menu is hidden by default
+- **WHEN** the application loads and API key is configured **THEN** the user can immediately start texting or calling
+- **WHEN** the application loads and API key is not configured **THEN** the main UI is still shown but interactions are blocked
+
+### 2.8. API Key Management with Settings Menu and Toast
+- **As a** user,
+- **I want** to be prompted to enter my API key when I try to use features that require it,
+- **so that** I understand what's needed to start using the application.
+
+#### 2.8.1. Acceptance Criteria
+- **WHEN** I try to send my first text message and API key is empty **THEN** the settings menu opens automatically and a toast message prompts me to enter the API key
+- **WHEN** I try to start a call and API key is empty **THEN** the settings menu opens automatically and a toast message prompts me to enter the API key
+- **WHEN** the settings menu opens due to missing API key **THEN** a toast message displays "Please enter your Gemini API key to start chatting"
+- **WHEN** I enter a valid API key in the settings menu **THEN** the settings menu closes automatically and I can proceed with my intended action
+- **WHEN** I enter a valid API key and close the settings menu **THEN** the toast message disappears
+- **WHEN** API key is already configured **THEN** no settings menu or toast appears during normal usage
+
+### 2.9. Settings Menu Access
+- **As a** user,
+- **I want** to access a settings menu manually,
+- **so that** I can configure the application to my preferences at any time.
+
+#### 2.9.1. Acceptance Criteria
+- **WHEN** the application is running **THEN** a settings icon or button is visible in the main interface
+- **WHEN** I click the settings icon or button **THEN** the settings menu opens
+- **WHEN** the settings menu is open **THEN** the UI is consistent with the existing application style
+
+### 2.10. API Key Input and Validation
+- **As a** user,
+- **I want** to enter and validate my API key in the settings menu,
+- **so that** I can authenticate with the service correctly.
+
+#### 2.10.1. Acceptance Criteria
+- **WHEN** the settings menu is open **THEN** an input field labeled "API Key" is displayed
+- **WHEN** I type in the API key input field **THEN** the field's value updates
+- **WHEN** I finish entering the API key **THEN** the system validates the key's format
+- **WHEN** the API key is valid (starts with "AIzaSy" and is 39 characters total) **THEN** a visual confirmation appears
+- **WHEN** the API key is empty **THEN** an error message "API key cannot be empty" is displayed
+- **WHEN** the API key format is invalid **THEN** an error message "Invalid API key format" is displayed
+- **WHEN** I start correcting invalid input **THEN** the error message clears immediately
+
+### 2.11. API Key Persistence and Clipboard Support
+- **As a** user,
+- **I want** the application to save my API key and support clipboard pasting,
+- **so that** I don't have to re-enter it every time and can input it quickly.
+
+#### 2.11.1. Acceptance Criteria
+- **WHEN** the API key is successfully validated **THEN** the system automatically saves it to browser's local storage
+- **WHEN** I reopen the application **THEN** the saved API key is loaded from local storage and populates the field
+- **WHEN** the settings menu is open **THEN** a "Paste" button is displayed next to the API key input field
+- **WHEN** I click the "Paste" button **THEN** the system reads text from clipboard and populates the input field
+- **WHEN** the settings menu is open **THEN** a "Get API Key" button or link is displayed
+- **WHEN** I click the "Get API Key" button **THEN** the URL "https://aistudio.google.com/apikey" opens in a new browser tab

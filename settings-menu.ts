@@ -1,13 +1,13 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 
-@customElement('settings-menu')
+@customElement("settings-menu")
 export class SettingsMenu extends LitElement {
   @property({ type: String })
-  apiKey = '';
+  apiKey = "";
 
   @state()
-  private _error = '';
+  private _error = "";
 
   @state()
   private _isSaving = false;
@@ -96,20 +96,21 @@ export class SettingsMenu extends LitElement {
           .value=${this.apiKey}
           @input=${this._onApiKeyInput}
           placeholder="Enter your API Key" />
-        ${this._error ? html`<div class="error">${this._error}</div>` : ''}
+        ${this._error ? html`<div class="error">${this._error}</div>` : ""}
 
         <label for="modelUrl">Live2D Model URL</label>
         <input
           id="modelUrl"
           type="text"
-          .value=${localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip'}
+          .value=${localStorage.getItem("live2d-model-url") || "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip"}
           placeholder="Enter model3.json or .zip URL" />
 
         <div class="buttons">
           <button @click=${this._getApiKeyUrl}>Get API Key</button>
           <button @click=${this._onPaste}>Paste</button>
-          <button @click=${this._onSave} ?disabled=${this._isSaving || this._saved}>
-            ${this._isSaving ? 'Saving...' : (this._saved ? 'Saved ✔' : 'Save')}
+          <button @click=${this._handleCancel}>Cancel</button>
+          <button @click=${this._handleSave} ?disabled=${this._isSaving || this._saved}>
+            ${this._isSaving ? "Saving..." : this._saved ? "Saved ✔" : "Save"}
           </button>
         </div>
       </div>
@@ -117,13 +118,13 @@ export class SettingsMenu extends LitElement {
   }
 
   firstUpdated() {
-    this.shadowRoot.host.setAttribute('active', 'true');
+    this.shadowRoot.host.setAttribute("active", "true");
   }
 
   private _onApiKeyInput(e: Event) {
     const input = e.target as HTMLInputElement;
     this.apiKey = input.value;
-    this._error = ''; // Clear error on input
+    this._error = ""; // Clear error on input
   }
 
   private async _onPaste() {
@@ -131,47 +132,53 @@ export class SettingsMenu extends LitElement {
       const text = await navigator.clipboard.readText();
       this.apiKey = text;
     } catch (err) {
-      this._error = 'Failed to paste from clipboard.';
-      console.error('Failed to read clipboard contents: ', err);
+      this._error = "Failed to paste from clipboard.";
+      console.error("Failed to read clipboard contents: ", err);
     }
   }
 
-  private _onSave() {
+  private _handleSave() {
     if (this._validateApiKey(this.apiKey)) {
       this._isSaving = true;
-      localStorage.setItem('gemini-api-key', this.apiKey);
+      localStorage.setItem("gemini-api-key", this.apiKey);
       // Save model URL if present
-      const modelInput = this.shadowRoot!.querySelector<HTMLInputElement>('#modelUrl');
+      const modelInput =
+        this.shadowRoot!.querySelector<HTMLInputElement>("#modelUrl");
       if (modelInput && modelInput.value) {
-        localStorage.setItem('live2d-model-url', modelInput.value);
+        localStorage.setItem("live2d-model-url", modelInput.value);
       }
-      this.dispatchEvent(new CustomEvent('api-key-saved'));
+      this.dispatchEvent(new CustomEvent("api-key-saved"));
 
       setTimeout(() => {
         this._isSaving = false;
         this._saved = true;
         setTimeout(() => {
-            this.dispatchEvent(new CustomEvent('close'))
-            this._saved = false
+          this.dispatchEvent(new CustomEvent("close"));
+          this._saved = false;
         }, 1000);
       }, 1000);
     }
   }
 
+  private _handleCancel() {
+    // Close settings menu without saving
+    this.dispatchEvent(new CustomEvent("close"));
+  }
+
   private _validateApiKey(key: string): boolean {
     if (!key) {
-      this._error = 'API key cannot be empty.';
+      this._error = "API key cannot be empty.";
       return false;
     }
     // Basic format validation
-    if (!key.startsWith('AIzaSy') || key.length !== 39) {
-      this._error = 'Invalid API key format.';
+    if (!key.startsWith("AIzaSy") || key.length !== 39) {
+      this._error = "Invalid API key format.";
       return false;
     }
     return true;
   }
 
   private _getApiKeyUrl() {
-    window.open('https://aistudio.google.com/apikey', '_blank');
+    window.open("https://aistudio.google.com/apikey", "_blank");
   }
 }

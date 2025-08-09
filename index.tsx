@@ -17,6 +17,7 @@ import "./live2d/live2d-gate";
 import "./settings-menu";
 import "./chat-view";
 import "./call-transcript";
+import "./toast-notification";
 
 interface Turn {
   text: string;
@@ -36,9 +37,14 @@ export class GdmLiveAudio extends LitElement {
     undefined;
   @state() private _toastVisible = false;
   @state() showSettings = false;
+  @state() showToast = false;
+  @state() toastMessage = "";
   @state() live2dModelUrl =
     localStorage.getItem("live2d-model-url") ||
     "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip";
+
+  // Track pending user action for API key validation flow
+  private pendingAction: (() => void) | null = null;
 
   // Dual-context state management
   @state() activeMode: ActiveMode = null;
@@ -149,27 +155,30 @@ export class GdmLiveAudio extends LitElement {
   private async initClient() {
     this.initAudio();
 
+    // Always initialize with texting mode by default (main UI)
+    this.activeMode = "texting";
+
+    // Connect both session output nodes to the main audio destination
+    this.textOutputNode.connect(this.outputAudioContext.destination);
+    this.callOutputNode.connect(this.outputAudioContext.destination);
+    this._updateActiveOutputNode();
+
     const apiKey = localStorage.getItem("gemini-api-key");
     if (!apiKey) {
-      this.showSettings = true;
+      // Don't show settings menu on startup - just clear any error/status
       this.error = "";
       this.status = "";
+      // Main UI will be shown by default, API key check will happen when user tries to interact
       return;
     }
 
+    // Initialize Google GenAI client if API key exists
     this.client = new GoogleGenAI({
       apiKey,
       httpOptions: { apiVersion: "v1alpha" },
     });
 
-    // Connect both session output nodes to the main audio destination
-    this.textOutputNode.connect(this.outputAudioContext.destination);
-    this.callOutputNode.connect(this.outputAudioContext.destination);
-
-    // Initialize with texting mode by default
-    this.activeMode = "texting";
-    this._updateActiveOutputNode();
-    // Remove automatic text session initialization - sessions will be created lazily
+    // Sessions will be created lazily when user actually interacts
   }
 
   private _updateActiveOutputNode() {
@@ -395,6 +404,12 @@ export class GdmLiveAudio extends LitElement {
   private async _handleCallStart() {
     if (this.isCallActive) return;
 
+    // Check API key presence before proceeding
+    if (!this._checkApiKeyExists()) {
+      this._showApiKeyPrompt(() => this._handleCallStart());
+      return;
+    }
+
     // Switch to calling mode and initialize call session
     this.activeMode = "calling";
     this._updateActiveOutputNode();
@@ -545,9 +560,63 @@ export class GdmLiveAudio extends LitElement {
     this.showSettings = !this.showSettings;
   }
 
+  private _checkApiKeyExists(): boolean {
+    const apiKey = localStorage.getItem("gemini-api-key");
+    return apiKey !== null && apiKey.trim() !== "";
+  }
+
+  private _showApiKeyPrompt(pendingAction?: () => void) {
+    // Store the pending action to execute after API key is saved
+    this.pendingAction = pendingAction || null;
+
+    // Open settings menu and show toast prompting for API key
+    this.showSettings = true;
+    this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    this.showToast = true;
+  }
+
+  private _handleApiKeySaved() {
+    // Close settings menu and toast when API key is saved
+    this.showSettings = false;
+    this.showToast = false;
+    this.toastMessage = "";
+
+    // Reinitialize the client with the new API key
+    this.initClient();
+
+    // Execute the pending action if there is one
+    if (this.pendingAction) {
+      const action = this.pendingAction;
+      this.pendingAction = null; // Clear the pending action
+
+      // Execute the action after a brief delay to ensure client is initialized
+      setTimeout(() => {
+        action();
+      }, 100);
+    }
+  }
+
+  private _showCuteToast() {
+    // Show the cute API key request message
+    this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    this.showToast = true;
+
+    // Auto-hide after 6 seconds to give time to read the cute message
+    setTimeout(() => {
+      this.showToast = false;
+      this.toastMessage = "";
+    }, 6000);
+  }
+
   private async _handleSendMessage(e: CustomEvent) {
     const message = e.detail;
     if (!message || !message.trim()) {
+      return;
+    }
+
+    // Check API key presence before proceeding
+    if (!this._checkApiKeyExists()) {
+      this._showApiKeyPrompt(() => this._handleSendMessage(e));
       return;
     }
 
@@ -610,11 +679,7 @@ export class GdmLiveAudio extends LitElement {
                 @close=${() => {
                   this.showSettings = false;
                 }}
-                @api-key-saved=${() => {
-                  this.initClient();
-                  const url = localStorage.getItem("live2d-model-url");
-                  if (url) this.live2dModelUrl = url;
-                }}></settings-menu>`
+                @api-key-saved=${this._handleApiKeySaved}></settings-menu>`
             : ""
         }
         <div class="controls">
@@ -631,6 +696,8 @@ export class GdmLiveAudio extends LitElement {
               <path d="M480-320q-75 0-127.5-52.5T300-500q0-75 52.5-127.5T480-680q75 0 127.5 52.5T660-500q0 75-52.5 127.5T480-320Zm0-80q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29ZM160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Z"/>
             </svg>
           </button>
+
+
           <button
             id="resetButton"
             @click=${this.reset}
@@ -674,6 +741,13 @@ export class GdmLiveAudio extends LitElement {
         </div>
 
         <div id="status"> ${this.error || this.status ? html`<div class="toast ${this._toastVisible ? "" : "hide"}">${this.error || this.status}</div>` : ""} </div>
+        
+        <toast-notification
+          .visible=${this.showToast}
+          .message=${this.toastMessage}
+          type="info">
+        </toast-notification>
+        
         <live2d-gate
           .modelUrl=${this.live2dModelUrl || ""}
           .inputNode=${this.inputNode}
