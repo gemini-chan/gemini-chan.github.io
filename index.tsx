@@ -125,6 +125,7 @@ export class GdmLiveAudio extends LitElement {
 
     this.client = new GoogleGenAI({
       apiKey,
+      httpOptions: {'apiVersion': 'v1alpha'},
     });
 
     this.outputNode.connect(this.outputAudioContext.destination);
@@ -190,6 +191,7 @@ export class GdmLiveAudio extends LitElement {
         },
         config: {
           responseModalities: [Modality.AUDIO],
+          enableAffectiveDialog: true,
           speechConfig: {
             voiceConfig: {prebuiltVoiceConfig: {voiceName: 'Kore'}},
             // languageCode: 'ja-JP'
