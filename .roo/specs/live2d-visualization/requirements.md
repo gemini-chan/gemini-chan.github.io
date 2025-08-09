@@ -6,7 +6,7 @@ This feature involves replacing the current 3D sphere visualization with a Live2
 
 ## Requirements
 
-Note: This document reflects current progress and decisions. Live2D integration is gated behind a fallback with the 3D sphere, with an emphasis on graceful failure and performance (lazy-loading and teardown). A Cubism Core autoload requirement has been added.
+Note: This document reflects current progress and decisions. We have reached a working Proof of Concept (PoC): Live2D models, including ZIP archives without model3.json, load and render correctly with audio-responsive animations. Live2D integration is gated behind a fallback with the 3D sphere, with an emphasis on graceful failure and performance (lazy-loading and teardown). A Cubism Core autoload requirement has been added.
 
 ### Requirement 1
 

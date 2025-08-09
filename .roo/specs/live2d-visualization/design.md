@@ -1,6 +1,6 @@
 # Design Document - Live2D Visualization
 
-Status: In progress (Live2D gated behind fallback). Cubism Core autoload pending automation.
+Status: PoC complete (Live2D gated behind fallback). ZIP models load and render; audio-responsive animations active. Cubism Core autoload via Vite plugin + runtime guard.
 
 ## Overview
 

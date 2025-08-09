@@ -33,7 +33,13 @@
   - _Requirements: 3.1, 3.2, 5.1, 5.2_
 
 - [ ] 4. Implement core Live2D model functionality
-- [ ] 4.1 Add model loading and initialization
+- [x] 4.1 Add model loading and initialization (commit: 3aa39b0)
+  - Ensure Cubism Core autoload is in place (index.html script + assets in public/ via @proj-airi/unplugin-live2d-sdk)
+  - Add guard for window.Live2DCubismCore prior to dynamic import, with dynamic <script> fallback
+  - Implement Live2DModel.from(modelUrl) integration
+  - Add support for both .model3.json and .zip file formats (zip optional, document CORS requirements)
+  - Create custom zip loader utility (based on Airi's implementation) or rely on library support
+  - _Requirements: 1.1, 5.4, 7.1, 8.4_
   - Ensure Cubism Core autoload is in place (index.html script + assets in public/ via @proj-airi/unplugin-live2d-sdk)
   - Add guard for window.Live2DCubismCore prior to dynamic import, with dynamic <script> fallback
   - Implement Live2DModel.from(modelUrl) integration
@@ -48,7 +54,11 @@
   - _Requirements: 1.1, 1.4_
 
 - [ ] 5. Implement real-time audio-responsive animations
-- [ ] 5.1 Add lip-sync functionality
+- [x] 5.1 Add lip-sync functionality (commit: 3aa39b0)
+  - Connect volume data to ParamMouthOpenY parameter
+  - Implement smooth mouth movement transitions
+  - Add volume threshold and sensitivity controls
+  - _Requirements: 1.2, 1.3, 3.1, 3.2_
   - Connect volume data to ParamMouthOpenY parameter
   - Implement smooth mouth movement transitions
   - Add volume threshold and sensitivity controls
@@ -111,7 +121,7 @@
   - Create degraded mode for low-performance devices
   - _Requirements: 2.2, 5.4_
 
-- [ ] 9. Replace existing 3D visualization
+- [x] 9. Replace existing 3D visualization (commit: 3aa39b0)
 - [x] 9.1 Integrate Live2D into main application (commit: 6278ef9)
   - Replace visual-3d component with live2d-visual in index.tsx
   - Update GdmLiveAudio to use Live2D instead of Three.js sphere
