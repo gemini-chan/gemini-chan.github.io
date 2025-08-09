@@ -6,8 +6,11 @@
  * ensure this module is imported before Live2DModel.from(url).
  */
 
-// Lazy import JSZip only when this module is imported
-import JSZip from 'jszip';
+// Lazy-load JSZip from CDN at runtime to avoid bundling dependency issues
+async function loadJSZip(): Promise<any> {
+  const mod: any = await import('https://esm.sh/jszip@3.10.1');
+  return mod?.default ?? mod;
+}
 
 async function getZipLoader(): Promise<any> {
   try {
@@ -32,6 +35,7 @@ export async function configureZipLoader() {
   // Provide a JSZip-based reader for ArrayBuffer/Blob inputs
   ZipLoader.zipReader = async (data: ArrayBuffer | Blob) => {
     const buf = data instanceof Blob ? await data.arrayBuffer() : data;
+    const JSZip = await loadJSZip();
     return JSZip.loadAsync(buf);
   };
 
