@@ -144,7 +144,8 @@ export class GdmLiveAudio extends LitElement {
 
   private async initSession() {
     const model = "gemini-2.5-flash-exp-native-audio-thinking-dialog";
-
+    // gemini-2.5-flash-preview-native-audio-dialog
+    // gemini-2.5-flash-live-preview
     try {
       this.session = await this.client.live.connect({
         model: model,
@@ -201,7 +202,9 @@ export class GdmLiveAudio extends LitElement {
           enableAffectiveDialog: true,
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
-            // languageCode: 'ja-JP'
+            // languageCode: 'ja-JP' // for gemini-2.5-flash-live-preview
+            // Native audio output models automatically choose the appropriate language
+            // and don't support explicitly setting the language code.
           },
         },
       });
