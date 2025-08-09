@@ -8,6 +8,7 @@ import {GoogleGenAI, LiveServerMessage, Modality, Session} from '@google/genai';
 import {LitElement, css, html} from 'lit';
 import {customElement, state} from 'lit/decorators.js';
 import {createBlob, decode, decodeAudioData} from './utils';
+import './live2d/zip-loader';
 import './live2d/live2d-gate';
 import './settings-menu';
 

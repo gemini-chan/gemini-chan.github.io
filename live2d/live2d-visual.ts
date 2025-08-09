@@ -24,12 +24,14 @@ export class Live2DVisual extends LitElement {
   render() {
     return html`
       <div class="status">${this._status}${this._error ? `: ${this._error}` : ''}</div>
-      <live2d-canvas @pixi-ready=${(e: CustomEvent) => { console.log('[Live2D] PIXI ready', e.detail); this._onPixiReady(); this._app = (e.detail as any).app; }}>
+      <live2d-canvas @pixi-ready=${(e: CustomEvent) => { console.log('[Live2D] PIXI ready', e.detail); this._onPixiReady(); this._app = (e.detail as any).app; (this as any)._containerWidth = (e.detail as any).width; (this as any)._containerHeight = (e.detail as any).height; }}>
         <live2d-model
           .url=${this.modelUrl}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
           .app=${this._app}
+          .containerWidth=${(this as any)._containerWidth}
+          .containerHeight=${(this as any)._containerHeight}
           @live2d-loaded=${this._onLoaded}
           @live2d-error=${this._onError}
         ></live2d-model>

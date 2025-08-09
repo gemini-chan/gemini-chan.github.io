@@ -14,7 +14,8 @@ export class Live2DCanvas extends LitElement {
   get app() { return this._app; }
 
   private _dispatchAppReady(app: PixiApplicationLike) {
-    this.dispatchEvent(new CustomEvent('pixi-ready', { detail: { app }, bubbles: true, composed: true }));
+    const rect = this._container?.getBoundingClientRect();
+    this.dispatchEvent(new CustomEvent('pixi-ready', { detail: { app, width: rect?.width ?? 0, height: rect?.height ?? 0 }, bubbles: true, composed: true }));
   }
 
   static styles = css`
@@ -39,12 +40,15 @@ export class Live2DCanvas extends LitElement {
     if (this._app) return;
     try {
       // Dynamically import to avoid bundling if not used
-      const [pixi] = await Promise.all([
+      const [pixi, live2d] = await Promise.all([
         import('pixi.js') as any,
+        import('pixi-live2d-display/cubism4') as any,
       ]);
-      const { Application } = pixi as any;
-      // Expose PIXI globally so pixi-live2d-display can access the Ticker if needed
+      const { Application, Ticker } = pixi as any;
+      const { Live2DModel } = live2d as any;
+      // Expose PIXI globally and register ticker for Live2D
       (window as any).PIXI = pixi;
+      Live2DModel?.registerTicker?.(Ticker);
 
       // create canvas and container
       this._container = this.shadowRoot!.querySelector('.root') as HTMLDivElement;
@@ -53,17 +57,28 @@ export class Live2DCanvas extends LitElement {
         this._container = this.shadowRoot!.querySelector('.root') as HTMLDivElement;
       }
 
-      // Create application (prefer WebGL)
+      // Create application (Pixi v6 requires manual view append)
       const app = new Application({
         antialias: true,
         backgroundAlpha: 0,
-        resizeTo: this._container,
+        // We'll manage resize manually via ResizeObserver
+        width: Math.max(1, this._container?.clientWidth || 1),
+        height: Math.max(1, this._container?.clientHeight || 1),
       }) as unknown as PixiApplicationLike;
 
-      // pixi v8 attaches view automatically if resizeTo provided; ensure canvas reference
-      const canvas = (app as any).renderer?.view ?? this._container?.querySelector('canvas');
-      if (canvas instanceof HTMLCanvasElement) this._canvas = canvas;
+      const view = (app as any).view as HTMLCanvasElement;
+      if (this._container && view && !view.isConnected) {
+        this._container.appendChild(view);
+      }
+      // Style canvas to fill container
+      if (view) {
+        view.style.width = '100%';
+        view.style.height = '100%';
+        view.style.display = 'block';
+        (app as any).renderer?.resize?.(this._container.clientWidth, this._container.clientHeight);
+      }
 
+      this._canvas = view;
       this._app = app;
       this._dispatchAppReady(app);
     } catch (e: any) {

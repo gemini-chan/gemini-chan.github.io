@@ -12,6 +12,10 @@ export class Live2DModelComponent extends LitElement {
   @property({ type: Number }) scale = 1.0;
   @property({ type: Array }) anchor: [number, number] = [0.5, 0.5];
   @property({ type: Boolean }) fitToCanvas: boolean = true;
+  @property({ type: Number }) containerWidth: number = 0;
+  @property({ type: Number }) containerHeight: number = 0;
+  @property({ type: Number }) xOffset: number = 0;
+  @property({ type: Number }) yOffset: number = -80;
 
   // Audio nodes for future integration
   @property({ attribute: false }) inputNode?: AudioNode;
@@ -60,6 +64,9 @@ export class Live2DModelComponent extends LitElement {
     if (changed.has('inputNode') || changed.has('outputNode')) {
       // re-init mapper
       this._initMapper();
+    }
+    if (changed.has('containerWidth') || changed.has('containerHeight')) {
+      this._applyPlacement();
     }
   }
 
@@ -130,18 +137,8 @@ export class Live2DModelComponent extends LitElement {
       try { model.anchor?.set?.(this.anchor[0], this.anchor[1]); } catch {}
       try { model.scale?.set?.(this.scale, this.scale); } catch {}
 
-      // fit to renderer size
-      if (this.fitToCanvas && this._app?.renderer && (model as any).width && (model as any).height) {
-        const rw = (this._app as any).renderer.width;
-        const rh = (this._app as any).renderer.height;
-        const mw = (model as any).width;
-        const mh = (model as any).height;
-        if (mw && mh && rw && rh) {
-          const s = Math.min(rw / mw, rh / mh) * this.scale;
-          try { model.scale?.set?.(s, s); } catch {}
-          try { model.position?.set?.(rw * this.anchor[0], rh * this.anchor[1]); } catch {}
-        }
-      }
+      // Placement & scaling (Airi-aligned): bottom-center with fit-to-canvas using container size
+      this._applyPlacement(model);
 
       // add to stage
       this._app.stage.addChild(model as any);
@@ -237,6 +234,25 @@ export class Live2DModelComponent extends LitElement {
     const cb = (this as any)._loopCb;
     if (ticker && cb) ticker.remove(cb);
     (this as any)._loopCb = undefined;
+  }
+
+  private _applyPlacement(modelArg?: any) {
+    if (!this.fitToCanvas) return;
+    const m: any = modelArg ?? this._model;
+    if (!m) return;
+    const initialW = m.width || 1;
+    const initialH = m.height || 1;
+    const cw = this.containerWidth || (this._app as any)?.screen?.width || 0;
+    const ch = this.containerHeight || (this._app as any)?.screen?.height || 0;
+    if (!cw || !ch) return;
+    try { m.anchor?.set?.(0.5, 0.5); } catch {}
+    const fit = 0.95;
+    const offsetFactor = 2.2;
+    const heightScale = (ch * fit / initialH) * offsetFactor;
+    const widthScale = (cw * fit / initialW) * offsetFactor;
+    const s = Math.min(heightScale, widthScale) * (this.scale || 1.0);
+    try { m.scale?.set?.(s, s); } catch {}
+    try { m.position?.set?.(cw / 2 + (this.xOffset || 0), ch + (this.yOffset || 0)); } catch {}
   }
 }
 

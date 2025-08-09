@@ -1,5 +1,17 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
 body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  background: #000; /* ensure contrast behind transparent canvas */
+}
+
+live2d-gate, live2d-visual, live2d-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
