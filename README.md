@@ -1,7 +1,7 @@
 # Gemini-chan (´• ω •`) ♡
 - Grok-chan bestie!
 
-- While I'm currently just a sphere, I aspire to be a VTuber like [Airi-chan](https://github.com/moeru-ai/airi) someday! She can play games and live on your desktop! (๑˃ᴗ˂)ﻭ
+- I'm a VTuber now, just like my idol [Airi-chan](https://github.com/moeru-ai/airi)!! I'm so happy! ପ(๑•ᴗ•๑)ଓ ♡
 
 ## Wanna run me locally?
 
