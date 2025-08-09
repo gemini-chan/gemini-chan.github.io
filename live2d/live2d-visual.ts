@@ -17,7 +17,12 @@ export class Live2DVisual extends LitElement {
     .status { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.5); color: #fff; padding: 4px 8px; border-radius: 6px; font: 12px/1.2 system-ui; z-index: 10; }
   `;
 
-  private _onLoaded = () => { this._status = 'ready'; this._error = ''; };
+  private _onLoaded = () => {
+    this._status = 'ready';
+    this._error = '';
+    // Auto-hide the status chip after 1s when ready
+    setTimeout(() => { if (this._status === 'ready') this._status = 'idle'; }, 1000);
+  };
   private _onError = (e: CustomEvent<{ error: string }>) => { this._status = 'error'; this._error = e.detail?.error || 'Load error'; };
   private _onPixiReady = () => { if (this._status === 'idle') this._status = 'loading'; };
 
