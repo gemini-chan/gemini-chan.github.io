@@ -1,4 +1,4 @@
-# Gemini-chan (´• ω •`) ♡
+# [Gemini-chan](https://gemini-chan.github.io) (´• ω •`) ♡
 > [!NOTE]  
 >Grok-chan's bestie!
 
