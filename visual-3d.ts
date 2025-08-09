@@ -34,6 +34,9 @@ export class GdmLiveAudioVisuals3D extends LitElement {
   private sphere!: THREE.Mesh;
   private prevTime = 0;
   private rotation = new THREE.Vector3(0, 0, 0);
+  private _raf = 0;
+  private _running = false;
+  private _onResizeBound?: () => void;
 
   private _outputNode!: AudioNode;
 
@@ -73,6 +76,18 @@ export class GdmLiveAudioVisuals3D extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._running = false;
+    cancelAnimationFrame(this._raf);
+    try {
+      window.removeEventListener('resize', this._onResizeBound!);
+    } catch {}
+    try {
+      (this.composer as any)?.renderer?.dispose?.();
+    } catch {}
   }
 
   private init() {

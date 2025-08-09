@@ -85,6 +85,14 @@ export class SettingsMenu extends LitElement {
           @input=${this._onApiKeyInput}
           placeholder="Enter your API Key" />
         ${this._error ? html`<div class="error">${this._error}</div>` : ''}
+
+        <label for="modelUrl">Live2D Model URL</label>
+        <input
+          id="modelUrl"
+          type="text"
+          .value=${localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_zh.zip'}
+          placeholder="Enter model3.json or .zip URL" />
+
         <div class="buttons">
           <button @click=${this._getApiKeyUrl}>Get API Key</button>
           <button @click=${this._onPaste}>Paste</button>
@@ -120,6 +128,11 @@ export class SettingsMenu extends LitElement {
     if (this._validateApiKey(this.apiKey)) {
       this._isSaving = true;
       localStorage.setItem('gemini-api-key', this.apiKey);
+      // Save model URL if present
+      const modelInput = this.shadowRoot!.querySelector<HTMLInputElement>('#modelUrl');
+      if (modelInput && modelInput.value) {
+        localStorage.setItem('live2d-model-url', modelInput.value);
+      }
       this.dispatchEvent(new CustomEvent('api-key-saved'));
 
       setTimeout(() => {

@@ -1,18 +1,34 @@
 # Design Document - Live2D Visualization
 
+Status: PoC complete (Live2D gated behind fallback). ZIP models load and render; audio-responsive animations active. Cubism Core autoload via Vite plugin + runtime guard.
+
 ## Overview
 
 This design adapts Airi's Vue-based Live2D implementation to our TypeScript/Lit architecture. The system will replace the current Three.js sphere visualization with a Live2D character that responds to audio input/output in real-time. The design emphasizes simplicity while maintaining the engaging character experience.
 
 ## Architecture
 
+### Build & Assets Management
+- Use @proj-airi/unplugin-live2d-sdk (Vite) to download and place Cubism Core assets under public/assets/js/CubismSdkForWeb-5-r.3/.
+- Keep a resilient script include in index.html that points to Core: /assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js.
+- At runtime, guard for window.Live2DCubismCore before importing pixi-live2d-display/cubism4; if absent, inject the script tag dynamically and surface a loading message.
+- Document the expected public path layout so self-hosting remains straightforward.
+
+### CORS & Hosting Guidance
+- Prefer same-origin hosting for model3.json and texture assets to avoid CORS issues during development.
+- When using remote URLs, ensure appropriate CORS headers (Access-Control-Allow-Origin) are present.
+- For .zip models, consider hosting on static origins that serve appropriate content types and allow range requests.
+
+
 ### Component Hierarchy
 ```
 gdm-live-audio (existing)
 ├── settings-menu (existing)
-├── live2d-visual (new - replaces visual-3d)
-│   ├── live2d-canvas (new)
-│   └── live2d-model (new)
+├── live2d-gate (new)
+│   ├── visual-3d fallback (existing)
+│   └── live2d-visual (new)
+│       ├── live2d-canvas (new)
+│       └── live2d-model (new)
 └── status display (existing)
 ```
 
@@ -141,7 +157,17 @@ interface AudioProcessor {
 
 ## Error Handling
 
+### Live2D Gate Fallback Flow
+- Live2DGate renders visual-3d until live2d-visual dispatches `live2d-loaded`.
+- On `live2d-error`, Live2DGate continues showing the fallback and surfaces the error.
+- Live2DGate lazy-loads the fallback module (`visual-3d`) and detaches it once Live2D is ready to free GPU resources.
+- Visibility handling: when page is hidden, pause PIXI ticker; resume on visible.
+
 ### Model Loading Errors
+
+- If Cubism Core is missing (window.Live2DCubismCore absent), surface a clear overlay and log instruction. A guard MUST exist before dynamic import of 'pixi-live2d-display/cubism4'.
+- Add retry button for recoverable errors (network). Exponential backoff implemented.
+- CORS constraints for remote .zip and .model3.json MUST be documented; prefer same-origin for development. 
 - **File not found**: Display error message, fall back to default model
 - **Invalid model format**: Show user-friendly error, provide model format guide
 - **Network timeout**: Retry mechanism with exponential backoff
@@ -213,23 +239,35 @@ async function initPixiApp(container: HTMLElement, width: number, height: number
 ### Live2D Model Loading (adapted from Airi)
 ```typescript
 async function loadLive2DModel(app: PIXI.Application, modelSrc: string) {
-  const model = new Live2DModel();
-  await Live2DFactory.setupLive2DModel(model, modelSrc, { 
-    autoInteract: false 
-  });
-  
+  // Guard: ensure Cubism Core is available BEFORE importing cubism4
+  if (!(window as any).Live2DCubismCore) {
+    // Attempt to load from public path
+    await new Promise<void>((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Cubism Core missing'));
+      document.head.appendChild(s);
+    });
+  }
+
+  const { Live2DModel } = await import('pixi-live2d-display/cubism4');
+  const model = await Live2DModel.from(modelSrc);
+
   // Configure model
   model.anchor.set(0.5, 0.5);
   model.scale.set(1.0, 1.0);
   model.x = app.screen.width / 2;
   model.y = app.screen.height;
-  
+
   app.stage.addChild(model);
   return model;
 }
 ```
 
 ### Audio-to-Animation Mapping (Based on Airi's Implementation)
+
+- Mapper parameters (threshold, scale, attack, release) are configurable (future UI). Defaults applied for stable lip-sync.
 ```typescript
 class AudioToAnimationMapper {
   private analyser: AnalyserNode;
@@ -292,6 +330,8 @@ import './utils/live2d-zip-loader';
 ```
 
 ### Idle Animation System (Based on Airi's Implementation)
+
+- Idle eye focus + blink system runs when mouth activity is low. Breathing micro-motion applied to body angle. 
 ```typescript
 class IdleEyeFocus {
   private nextSaccadeTime = 0;
@@ -399,6 +439,8 @@ class Live2DPerformanceManager {
 ```
 
 ### State Management Pattern (Adapted from Airi's Pinia approach)
+
+- Current project uses Lit reactive properties; a dedicated Live2DState is TBD (future task). Persist model URL in localStorage via Settings.
 ```typescript
 // Simple state management for Lit components (without Pinia)
 class Live2DState {

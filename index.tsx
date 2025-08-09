@@ -8,7 +8,8 @@ import {GoogleGenAI, LiveServerMessage, Modality, Session} from '@google/genai';
 import {LitElement, css, html} from 'lit';
 import {customElement, state} from 'lit/decorators.js';
 import {createBlob, decode, decodeAudioData} from './utils';
-import './visual-3d';
+import './live2d/zip-loader';
+import './live2d/live2d-gate';
 import './settings-menu';
 
 @customElement('gdm-live-audio')
@@ -17,13 +18,15 @@ export class GdmLiveAudio extends LitElement {
   @state() status = '';
   @state() error = '';
   @state() showSettings = false;
+  @state() live2dModelUrl = localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_zh.zip';
 
   private client: GoogleGenAI;
   private session: Session;
+  private sessionOpen = false;
   private inputAudioContext = new (window.AudioContext ||
     (window as any).webkitAudioContext)({sampleRate: 16000});
   private outputAudioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)({samplerate: 24000});
+    (window as any).webkitAudioContext)({sampleRate: 24000});
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
   private nextStartTime = 0;
@@ -114,6 +117,7 @@ export class GdmLiveAudio extends LitElement {
         model: model,
         callbacks: {
           onopen: () => {
+            this.sessionOpen = true;
             this.updateStatus('Opened');
           },
           onmessage: async (message: LiveServerMessage) => {
@@ -157,6 +161,7 @@ export class GdmLiveAudio extends LitElement {
             this.updateError(e.message);
           },
           onclose: (e: CloseEvent) => {
+            this.sessionOpen = false;
             this.updateStatus('Close:' + e.reason);
           },
         },
@@ -182,9 +187,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async startRecording() {
-    if (this.isRecording) {
-      return;
-    }
+    if (this.isRecording) return;
 
     this.inputAudioContext.resume();
 
@@ -203,7 +206,7 @@ export class GdmLiveAudio extends LitElement {
       );
       this.sourceNode.connect(this.inputNode);
 
-      const bufferSize = 256;
+      const bufferSize = 1024;
       this.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
         bufferSize,
         1,
@@ -215,7 +218,6 @@ export class GdmLiveAudio extends LitElement {
 
         const inputBuffer = audioProcessingEvent.inputBuffer;
         const pcmData = inputBuffer.getChannelData(0);
-
         this.session.sendRealtimeInput({media: createBlob(pcmData)});
       };
 
@@ -273,7 +275,7 @@ export class GdmLiveAudio extends LitElement {
             ? html`<settings-menu
                 .apiKey=${localStorage.getItem('gemini-api-key') || ''}
                 @close=${() => (this.showSettings = false)}
-                @api-key-saved=${this.initClient}></settings-menu>`
+                @api-key-saved=${() => { this.initClient(); const url = localStorage.getItem('live2d-model-url'); if (url) this.live2dModelUrl = url; }}></settings-menu>`
             : ''
         }
         <div class="controls">
@@ -333,9 +335,11 @@ export class GdmLiveAudio extends LitElement {
         </div>
 
         <div id="status"> ${this.error} </div>
-        <gdm-live-audio-visuals-3d
+        <live2d-gate
+          .modelUrl=${this.live2dModelUrl || ''}
           .inputNode=${this.inputNode}
-          .outputNode=${this.outputNode}></gdm-live-audio-visuals-3d>
+          .outputNode=${this.outputNode}
+        ></live2d-gate>
       </div>
     `;
   }
