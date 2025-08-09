@@ -28,7 +28,7 @@ export class Live2DVisual extends LitElement {
 
   render() {
     return html`
-      <div class="status">${this._status}${this._error ? `: ${this._error}` : ''}</div>
+      ${this._status !== 'idle' ? html`<div class="status">${this._status}${this._error ? `: ${this._error}` : ''}</div>` : ''}
       <live2d-canvas @pixi-ready=${(e: CustomEvent) => { console.log('[Live2D] PIXI ready', e.detail); this._onPixiReady(); this._app = (e.detail as any).app; (this as any)._containerWidth = (e.detail as any).width; (this as any)._containerHeight = (e.detail as any).height; }}>
         <live2d-model
           .url=${this.modelUrl}
