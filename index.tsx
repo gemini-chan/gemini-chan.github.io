@@ -169,7 +169,7 @@ export class GdmLiveAudio extends LitElement {
     // Initialize with texting mode by default
     this.activeMode = "texting";
     this._updateActiveOutputNode();
-    this._initTextSession();
+    // Remove automatic text session initialization - sessions will be created lazily
   }
 
   private _updateActiveOutputNode() {
@@ -480,10 +480,7 @@ export class GdmLiveAudio extends LitElement {
     this.activeMode = "texting";
     this._updateActiveOutputNode();
 
-    // Ensure text session is available when switching back to texting
-    if (!this.textSession) {
-      this._initTextSession();
-    }
+    // Text session will be lazily initialized when user sends first message
 
     // Dispatch call-end event
     this.dispatchEvent(
@@ -519,8 +516,7 @@ export class GdmLiveAudio extends LitElement {
     // Clear text transcript
     this.textTranscript = [];
 
-    // Reinitialize text session
-    this._initTextSession();
+    // Text session will be lazily initialized when user sends next message
     this.updateStatus("Text conversation cleared.");
   }
 
