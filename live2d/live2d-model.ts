@@ -225,7 +225,7 @@ export class Live2DModelComponent extends LitElement {
     };
 
     ticker.add(cb);
-    (this as any)._loopCb = cb;
+    this._loopCb = cb;
   }
 
   private _stopLoop() {
