@@ -221,7 +221,11 @@ export class Live2DModelComponent extends LitElement {
           internal?.coreModel?.setParameterValueById?.('ParamEyeLOpen', this._idle.eyeOpen);
           internal?.coreModel?.setParameterValueById?.('ParamEyeROpen', this._idle.eyeOpen);
         }
-      } catch {}
+      } catch (err) {
+        // Log and halt the animation loop to avoid spamming if model internals error
+        console.error('[Live2D] animation update error', err);
+        this._stopLoop();
+      }
     };
 
     ticker.add(cb);
