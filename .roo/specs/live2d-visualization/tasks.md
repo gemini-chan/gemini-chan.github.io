@@ -34,12 +34,12 @@
 
 - [ ] 4. Implement core Live2D model functionality
 - [ ] 4.1 Add model loading and initialization
-  - Ensure Cubism Core autoload is in place (index.html script + assets in public/)
-  - Add guard for window.Live2DCubismCore prior to dynamic import
-  - Implement Live2DFactory.setupLive2DModel integration
-  - Add support for both .model3.json and .zip file formats
-  - Create custom zip loader utility (based on Airi's implementation)
-  - _Requirements: 1.1, 5.4_
+  - Ensure Cubism Core autoload is in place (index.html script + assets in public/ via @proj-airi/unplugin-live2d-sdk)
+  - Add guard for window.Live2DCubismCore prior to dynamic import, with dynamic <script> fallback
+  - Implement Live2DModel.from(modelUrl) integration
+  - Add support for both .model3.json and .zip file formats (zip optional, document CORS requirements)
+  - Create custom zip loader utility (based on Airi's implementation) or rely on library support
+  - _Requirements: 1.1, 5.4, 7.1, 8.4_
 
 - [ ] 4.2 Implement basic model rendering and positioning
   - Add model scaling and positioning logic
@@ -126,30 +126,32 @@
 
 - [ ] 10. Implement responsive design and mobile support
 - [ ] 10.1 Add responsive model scaling
-  - Implement ResponsiveManager class based on Airi's approach
-  - Add breakpoint detection and mobile-specific adjustments
-  - Create adaptive model positioning for different screen sizes
-  - _Requirements: 1.4, 4.4_
+  - Implement ResponsiveManager class based on Airi's approach (spec in design.md)
+  - Add breakpoint detection and mobile-specific adjustments (scale, position)
+  - Create adaptive model positioning for different screen sizes and orientations
+  - _Requirements: 1.4, 4.4, 9.1_
 
 - [ ] 10.2 Optimize for mobile performance
-  - Add mobile-specific performance optimizations
-  - Implement reduced animation complexity for low-end devices
-  - Add touch interaction support for model
-  - _Requirements: 2.2, 4.4_
+  - Add mobile-specific performance optimizations (reduced tick rate, simplified idle)
+  - Implement reduced animation complexity for low-end devices (feature flags)
+  - Add touch interaction support for model (do not obstruct app controls)
+  - _Requirements: 2.2, 4.4, 9.2, 9.3_
 
 - [ ] 11. Add comprehensive testing
 - [ ] 11.1 Create unit tests for core components
-  - Write tests for Live2DCanvas component rendering
-  - Test AudioToAnimationMapper volume processing
-  - TODO: 11.1.4 Test settings UI model URL input and persistence
-  - Add tests for Live2DState management
+  - Write tests for Live2DCanvas component rendering (PIXI mocked)
+  - Test AudioToAnimationMapper volume processing (deterministic arrays)
+  - Test settings UI model URL input and persistence
+  - Add tests for Live2DState management (subscribe/update/unsubscribe)
   - _Requirements: All requirements_
 
 - [ ] 11.2 Add integration tests
-  - TODO: 11.2.4 Verify model ZIP upload round-trip (future)
-  - Test complete audio-to-animation pipeline
-  - Verify model loading and error handling
+  - Test complete audio-to-animation pipeline (mock audio nodes/analyser)
+  - Verify model loading and error handling (mock pixi-live2d-display/cubism4)
+  - Verify live2d-gate fallback flow and event handling
   - Test responsive behavior across different screen sizes
+  - Verify Cubism Core guard path (inject script, missing script)
+  - TODO: 11.2.6 Verify model ZIP upload round-trip (future)
   - _Requirements: All requirements_
 
 - [ ] 12. Final integration and polish

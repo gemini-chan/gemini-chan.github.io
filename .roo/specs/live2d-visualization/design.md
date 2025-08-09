@@ -8,13 +8,27 @@ This design adapts Airi's Vue-based Live2D implementation to our TypeScript/Lit 
 
 ## Architecture
 
+### Build & Assets Management
+- Use @proj-airi/unplugin-live2d-sdk (Vite) to download and place Cubism Core assets under public/assets/js/CubismSdkForWeb-5-r.3/.
+- Keep a resilient script include in index.html that points to Core: /assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js.
+- At runtime, guard for window.Live2DCubismCore before importing pixi-live2d-display/cubism4; if absent, inject the script tag dynamically and surface a loading message.
+- Document the expected public path layout so self-hosting remains straightforward.
+
+### CORS & Hosting Guidance
+- Prefer same-origin hosting for model3.json and texture assets to avoid CORS issues during development.
+- When using remote URLs, ensure appropriate CORS headers (Access-Control-Allow-Origin) are present.
+- For .zip models, consider hosting on static origins that serve appropriate content types and allow range requests.
+
+
 ### Component Hierarchy
 ```
 gdm-live-audio (existing)
 ├── settings-menu (existing)
-├── live2d-visual (new - replaces visual-3d)
-│   ├── live2d-canvas (new)
-│   └── live2d-model (new)
+├── live2d-gate (new)
+│   ├── visual-3d fallback (existing)
+│   └── live2d-visual (new)
+│       ├── live2d-canvas (new)
+│       └── live2d-model (new)
 └── status display (existing)
 ```
 
@@ -143,6 +157,12 @@ interface AudioProcessor {
 
 ## Error Handling
 
+### Live2D Gate Fallback Flow
+- Live2DGate renders visual-3d until live2d-visual dispatches `live2d-loaded`.
+- On `live2d-error`, Live2DGate continues showing the fallback and surfaces the error.
+- Live2DGate lazy-loads the fallback module (`visual-3d`) and detaches it once Live2D is ready to free GPU resources.
+- Visibility handling: when page is hidden, pause PIXI ticker; resume on visible.
+
 ### Model Loading Errors
 
 - If Cubism Core is missing (window.Live2DCubismCore absent), surface a clear overlay and log instruction. A guard MUST exist before dynamic import of 'pixi-live2d-display/cubism4'.
@@ -219,17 +239,27 @@ async function initPixiApp(container: HTMLElement, width: number, height: number
 ### Live2D Model Loading (adapted from Airi)
 ```typescript
 async function loadLive2DModel(app: PIXI.Application, modelSrc: string) {
-  const model = new Live2DModel();
-  await Live2DFactory.setupLive2DModel(model, modelSrc, { 
-    autoInteract: false 
-  });
-  
+  // Guard: ensure Cubism Core is available BEFORE importing cubism4
+  if (!(window as any).Live2DCubismCore) {
+    // Attempt to load from public path
+    await new Promise<void>((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Cubism Core missing'));
+      document.head.appendChild(s);
+    });
+  }
+
+  const { Live2DModel } = await import('pixi-live2d-display/cubism4');
+  const model = await Live2DModel.from(modelSrc);
+
   // Configure model
   model.anchor.set(0.5, 0.5);
   model.scale.set(1.0, 1.0);
   model.x = app.screen.width / 2;
   model.y = app.screen.height;
-  
+
   app.stage.addChild(model);
   return model;
 }
