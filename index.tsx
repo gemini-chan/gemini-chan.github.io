@@ -118,7 +118,8 @@ export class GdmLiveAudio extends LitElement {
     const apiKey = localStorage.getItem('gemini-api-key');
     if (!apiKey) {
       this.showSettings = true;
-      this.error = 'Please set your API Key in the settings menu.';
+      this.error = '';
+      this.status = '';
       return;
     }
 
