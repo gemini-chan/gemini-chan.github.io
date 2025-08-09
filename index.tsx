@@ -22,6 +22,7 @@ export class GdmLiveAudio extends LitElement {
 
   private client: GoogleGenAI;
   private session: Session;
+  private sessionOpen = false;
   private inputAudioContext = new (window.AudioContext ||
     (window as any).webkitAudioContext)({sampleRate: 16000});
   private outputAudioContext = new (window.AudioContext ||
@@ -116,6 +117,7 @@ export class GdmLiveAudio extends LitElement {
         model: model,
         callbacks: {
           onopen: () => {
+            this.sessionOpen = true;
             this.updateStatus('Opened');
           },
           onmessage: async (message: LiveServerMessage) => {
@@ -159,6 +161,7 @@ export class GdmLiveAudio extends LitElement {
             this.updateError(e.message);
           },
           onclose: (e: CloseEvent) => {
+            this.sessionOpen = false;
             this.updateStatus('Close:' + e.reason);
           },
         },
@@ -184,8 +187,14 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async startRecording() {
-    if (this.isRecording) {
-      return;
+    if (this.isRecording) return;
+    if (!this.sessionOpen) {
+      // Attempt to open a new session if closed
+      await this.initSession();
+      if (!this.sessionOpen) {
+        this.updateStatus('Session not open. Please try again.');
+        return;
+      }
     }
 
     this.inputAudioContext.resume();
@@ -205,7 +214,7 @@ export class GdmLiveAudio extends LitElement {
       );
       this.sourceNode.connect(this.inputNode);
 
-      const bufferSize = 256;
+      const bufferSize = 1024;
       this.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
         bufferSize,
         1,
@@ -217,8 +226,13 @@ export class GdmLiveAudio extends LitElement {
 
         const inputBuffer = audioProcessingEvent.inputBuffer;
         const pcmData = inputBuffer.getChannelData(0);
-
-        this.session.sendRealtimeInput({media: createBlob(pcmData)});
+        try {
+          this.session.sendRealtimeInput({media: createBlob(pcmData)});
+        } catch (e) {
+          // Avoid spamming errors if socket is closing/closed
+          console.warn('sendRealtimeInput failed; buffering halted', e);
+          this.isRecording = false;
+        }
       };
 
       this.sourceNode.connect(this.scriptProcessorNode);
@@ -258,8 +272,9 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private reset() {
-    this.session?.close();
-    this.initSession();
+    try { this.session?.close(); } catch {}
+    this.sessionOpen = false;
+    await this.initSession();
     this.updateStatus('Session cleared.');
   }
 
