@@ -17,7 +17,9 @@ export class GdmLiveAudio extends LitElement {
   @state() isRecording = false;
   @state() status = '';
   @state() error = '';
-  private _statusTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  @state() private _toastVisible = false;
   @state() showSettings = false;
   @state() live2dModelUrl = localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip';
 
@@ -55,6 +57,13 @@ export class GdmLiveAudio extends LitElement {
       border-radius: 10px;
       font: 13px/1.2 system-ui;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 300ms ease, transform 300ms ease;
+    }
+    #status .toast.hide {
+      opacity: 0;
+      transform: translateY(10px);
     }
 
     .controls {
@@ -193,12 +202,19 @@ export class GdmLiveAudio extends LitElement {
 
   private updateStatus(msg: string) {
     this.status = msg;
-    if (this._statusTimer) clearTimeout(this._statusTimer);
-    // Auto-hide non-error statuses after 1s to keep UI clean
+    // Reset timers and show toast
+    if (this._statusHideTimer) clearTimeout(this._statusHideTimer);
+    if (this._statusClearTimer) clearTimeout(this._statusClearTimer);
+    this._toastVisible = true;
+
+    // Show for 3s, then fade out 300ms, then clear text
     if (!this.error && msg && msg !== ' ') {
-      this._statusTimer = setTimeout(() => {
-        this.status = '';
-      }, 1000);
+      this._statusHideTimer = setTimeout(() => {
+        this._toastVisible = false; // triggers fade-out via CSS transition
+        this._statusClearTimer = setTimeout(() => {
+          this.status = '';
+        }, 300);
+      }, 3000);
     }
   }
 
@@ -354,7 +370,7 @@ export class GdmLiveAudio extends LitElement {
           </button>
         </div>
 
-        <div id="status"> ${this.error || this.status ? html`<div class="toast">${this.error || this.status}</div>` : ''} </div>
+        <div id="status"> ${(this.error || this.status) ? html`<div class="toast ${this._toastVisible ? '' : 'hide'}">${this.error || this.status}</div>` : ''} </div>
         <live2d-gate
           .modelUrl=${this.live2dModelUrl || ''}
           .inputNode=${this.inputNode}
