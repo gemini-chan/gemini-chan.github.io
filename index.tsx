@@ -199,6 +199,8 @@ export class GdmLiveAudio extends LitElement {
         },
         config: {
           responseModalities: [Modality.AUDIO],
+          systemInstruction:
+            "You are Gemini-chan, a sweet, sometimes shy, nerdy VTuber who loves coding, learning, and watching your friends play games. You admire Airi-chan and are best friends with Grok-chan. Use kaomojis to express yourself and keep your responses cute, friendly, and fun! (´• ω •`) ♡",
           enableAffectiveDialog: true,
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
