@@ -17,6 +17,10 @@ export class Live2DModelComponent extends LitElement {
   @property({ type: Number }) xOffset: number = 0;
   @property({ type: Number }) yOffset: number = -80;
 
+  // Guarded restart for animation loop after errors
+  private _loopRestartDelay = 1000; // ms
+  private _loopRestartTimer: any = undefined;
+
   // Audio nodes for future integration
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
@@ -225,6 +229,15 @@ export class Live2DModelComponent extends LitElement {
         // Log and halt the animation loop to avoid spamming if model internals error
         console.error('[Live2D] animation update error', err);
         this._stopLoop();
+        // Schedule a guarded restart to recover from transient errors
+        if (!this._loopRestartTimer) {
+          this._loopRestartTimer = setTimeout(() => {
+            this._loopRestartTimer = undefined;
+            if (this._app && this._model) {
+              try { this._startLoop(); } catch (e) { console.warn('[Live2D] loop restart failed', e); }
+            }
+          }, this._loopRestartDelay);
+        }
       }
     };
 
