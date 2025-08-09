@@ -336,7 +336,7 @@ export class GdmLiveAudio extends LitElement {
 
         <div id="status"> ${this.error} </div>
         <live2d-gate
-          .modelUrl=${this.live2dModelUrl || localStorage.getItem('live2d-model-url') || ''}
+          .modelUrl=${this.live2dModelUrl || ''}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
         ></live2d-gate>
