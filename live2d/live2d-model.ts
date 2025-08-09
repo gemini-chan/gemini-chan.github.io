@@ -163,7 +163,7 @@ export class Live2DModelComponent extends LitElement {
   }
 
   render() {
-    if (this._error) return html`<div class="overlay">${this._error} <button @click=${() => this._maybeLoad()}>Retry</button></div>`;
+    if (this._error) return html`<div class="overlay">${this._error} <button style="pointer-events: auto" @click=${() => this._maybeLoad()}>Retry</button></div>`;
     if (this._loading) return html`<div class="overlay">Loading Live2D...</div>`;
     return html``;
   }
