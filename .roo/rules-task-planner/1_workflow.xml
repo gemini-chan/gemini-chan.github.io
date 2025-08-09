@@ -72,7 +72,7 @@
             <ask_followup_question>
               <question>Do the tasks look good?</question>
               <follow_up>
-                <suggest mode="orchestrator">Yes, the tasks are approved. Begin implementation.</suggest>
+                <suggest mode="codehe tasks are approved. Begin implementation.</suggest>
                 <suggest>No, I have some changes.</suggest>
               </follow_up>
             </ask_followup_question>
@@ -100,6 +100,6 @@
 
   <completion_criteria>
     <criterion>The `tasks.md` file has been created and approved by the user.</criterion>
-    <criterion>The mode has switched to the Orchestrator to begin implementation of the approved tasks.</criterion>
+    <criterion>The mode has switched to the coden implementation of the approved tasks.</criterion>
   </completion_criteria>
 </workflow_instructions>

@@ -93,7 +93,7 @@
     <tool name="ask_followup_question">
       <best_practices>
         <practice>Always use the exact question "Do the tasks look good?" to initiate the review.</practice>
-        <practice>The approval suggestion must include `mode="orchestrator"` to automatically hand off the task for implementation.</practice>
+        <practice>The approval suggestion must include `mode="codetomatically hand off the task for implementation.</practice>
         <practice>The suggestion text should clearly state that implementation will begin, e.g., "Yes, they are approved. Begin implementation."</practice>
       </best_practices>
       <example>
@@ -101,7 +101,7 @@
 <ask_followup_question>
   <question>Do the tasks look good?</question>
   <follow_up>
-    <suggest mode="orchestrator">Yes, they are approved. Begin implementation.</suggest>
+    <suggest mode="code">Yes, they are approved. Begin implementation.</suggest>
     <suggest>No, I want to suggest a few modifications.</suggest>
   </follow_up>
 </ask_followup_question>
