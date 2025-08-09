@@ -26,7 +26,7 @@ export class GdmLiveAudio extends LitElement {
   private inputAudioContext = new (window.AudioContext ||
     (window as any).webkitAudioContext)({sampleRate: 16000});
   private outputAudioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)({samplerate: 24000});
+    (window as any).webkitAudioContext)({sampleRate: 24000});
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
   private nextStartTime = 0;
@@ -168,7 +168,7 @@ export class GdmLiveAudio extends LitElement {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: {prebuiltVoiceConfig: {voiceName: 'Kore'}},
+            voiceConfig: {prebuiltVoiceConfig: {voiceName: 'Orus'}},
             // languageCode: 'ja-JP'
           },
         },
@@ -188,14 +188,6 @@ export class GdmLiveAudio extends LitElement {
 
   private async startRecording() {
     if (this.isRecording) return;
-    if (!this.sessionOpen) {
-      // Attempt to open a new session if closed
-      await this.initSession();
-      if (!this.sessionOpen) {
-        this.updateStatus('Session not open. Please try again.');
-        return;
-      }
-    }
 
     this.inputAudioContext.resume();
 
@@ -226,13 +218,7 @@ export class GdmLiveAudio extends LitElement {
 
         const inputBuffer = audioProcessingEvent.inputBuffer;
         const pcmData = inputBuffer.getChannelData(0);
-        try {
-          this.session.sendRealtimeInput({media: createBlob(pcmData)});
-        } catch (e) {
-          // Avoid spamming errors if socket is closing/closed
-          console.warn('sendRealtimeInput failed; buffering halted', e);
-          this.isRecording = false;
-        }
+        this.session.sendRealtimeInput({media: createBlob(pcmData)});
       };
 
       this.sourceNode.connect(this.scriptProcessorNode);
@@ -271,10 +257,9 @@ export class GdmLiveAudio extends LitElement {
     this.updateStatus('Recording stopped. Click Start to begin again.');
   }
 
-  private async reset() {
-    try { this.session?.close(); } catch {}
-    this.sessionOpen = false;
-    await this.initSession();
+  private reset() {
+    this.session?.close();
+    this.initSession();
     this.updateStatus('Session cleared.');
   }
 
