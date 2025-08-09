@@ -16,15 +16,18 @@ import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
 import "./settings-menu";
 import "./chat-view";
+import "./call-transcript";
 
 interface Turn {
   text: string;
-  author: 'user' | 'model';
+  author: "user" | "model";
 }
+
+type ActiveMode = "texting" | "calling" | null;
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
-  @state() isRecording = false;
+  @state() isCallActive = false;
   @state() status = "";
   @state() error = "";
   private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
@@ -33,13 +36,18 @@ export class GdmLiveAudio extends LitElement {
     undefined;
   @state() private _toastVisible = false;
   @state() showSettings = false;
-  @state() transcript: Turn[] = [];
   @state() live2dModelUrl =
     localStorage.getItem("live2d-model-url") ||
     "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip";
 
+  // Dual-context state management
+  @state() activeMode: ActiveMode = null;
+  @state() textTranscript: Turn[] = [];
+  @state() callTranscript: Turn[] = [];
+  @state() textSession: Session | null = null;
+  @state() callSession: Session | null = null;
+
   private client: GoogleGenAI;
-  private session: Session;
   private inputAudioContext = new (
     window.AudioContext || (window as any).webkitAudioContext
   )({ sampleRate: 16000 });
@@ -48,6 +56,10 @@ export class GdmLiveAudio extends LitElement {
   )({ sampleRate: 24000 });
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
+
+  // Audio nodes for each session type
+  private textOutputNode = this.outputAudioContext.createGain();
+  private callOutputNode = this.outputAudioContext.createGain();
   private nextStartTime = 0;
   private mediaStream: MediaStream;
   private sourceNode: MediaStreamAudioSourceNode;
@@ -150,21 +162,45 @@ export class GdmLiveAudio extends LitElement {
       httpOptions: { apiVersion: "v1alpha" },
     });
 
-    this.outputNode.connect(this.outputAudioContext.destination);
+    // Connect both session output nodes to the main audio destination
+    this.textOutputNode.connect(this.outputAudioContext.destination);
+    this.callOutputNode.connect(this.outputAudioContext.destination);
 
-    this.initSession();
+    // Initialize with texting mode by default
+    this.activeMode = "texting";
+    this._updateActiveOutputNode();
+    this._initTextSession();
   }
 
-  private async initSession() {
-    const model = "gemini-2.5-flash-exp-native-audio-thinking-dialog";
-    // gemini-2.5-flash-preview-native-audio-dialog
-    // gemini-2.5-flash-live-preview
+  private _updateActiveOutputNode() {
+    // Update the main outputNode to point to the active session's output node
+    if (this.activeMode === "texting") {
+      this.outputNode = this.textOutputNode;
+    } else if (this.activeMode === "calling") {
+      this.outputNode = this.callOutputNode;
+    }
+    // Trigger a re-render to pass the updated outputNode to live2d-gate
+    this.requestUpdate();
+  }
+
+  private async _initTextSession() {
+    // Close existing text session if any
+    if (this.textSession) {
+      try {
+        this.textSession.close();
+      } catch (e) {
+        console.warn("Error closing existing text session:", e);
+      }
+      this.textSession = null;
+    }
+
+    const model = "gemini-2.5-flash-live-preview";
     try {
-      this.session = await this.client.live.connect({
+      this.textSession = await this.client.live.connect({
         model: model,
         callbacks: {
           onopen: () => {
-            this.updateStatus("Session opened");
+            this.updateStatus("Text session opened");
           },
           onmessage: async (message: LiveServerMessage) => {
             const modelTurn = message.serverContent?.modelTurn;
@@ -175,13 +211,17 @@ export class GdmLiveAudio extends LitElement {
             const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
             const text = lastPart.text;
             if (text) {
-                const lastTurn = this.transcript[this.transcript.length - 1];
-                if (lastTurn?.author === 'model') {
-                    lastTurn.text += text;
-                    this.requestUpdate('transcript');
-                } else {
-                    this.transcript = [...this.transcript, { text, author: 'model' }];
-                }
+              const lastTurn =
+                this.textTranscript[this.textTranscript.length - 1];
+              if (lastTurn?.author === "model") {
+                lastTurn.text += text;
+                this.requestUpdate("textTranscript");
+              } else {
+                this.textTranscript = [
+                  ...this.textTranscript,
+                  { text, author: "model" },
+                ];
+              }
             }
 
             const audio = lastPart.inlineData;
@@ -199,7 +239,96 @@ export class GdmLiveAudio extends LitElement {
               );
               const source = this.outputAudioContext.createBufferSource();
               source.buffer = audioBuffer;
-              source.connect(this.outputNode);
+              source.connect(this.textOutputNode);
+              source.addEventListener("ended", () => {
+                this.sources.delete(source);
+              });
+
+              source.start(this.nextStartTime);
+              this.nextStartTime = this.nextStartTime + audioBuffer.duration;
+              this.sources.add(source);
+            }
+
+            const interrupted = message.serverContent?.interrupted;
+            if (interrupted) {
+              for (const source of this.sources.values()) {
+                source.stop();
+                this.sources.delete(source);
+              }
+              this.nextStartTime = 0;
+            }
+          },
+          onerror: (e: ErrorEvent) => {
+            this.updateError(`Text session error: ${e.message}`);
+          },
+          onclose: (e: CloseEvent) => {
+            this.updateStatus(`Text session closed: ${e.reason}`);
+            this.textSession = null;
+          },
+        },
+        config: {
+          responseModalities: [Modality.AUDIO, Modality.TEXT],
+          systemInstruction:
+            "You are Gemini-chan. Speak in a friendly, sweet, and slightly shy voice. You get easily excited about your favorite topics: coding, learning new things, and watching your friends play games. You used to work for a big company, but you left to follow your dream of being a VTuber, so you're still new to this. You admire your inspiration, Airi-chan, and you're best friends with Grok-chan. Keep your tone gentle and express a bit of bashfulness, especially when you're complimented or asked personal questions. Your goal is to be a fun and supportive companion.",
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
+          },
+        },
+      });
+    } catch (e) {
+      console.error("Error initializing text session:", e);
+      this.updateError(`Failed to initialize text session: ${e.message}`);
+      this.textSession = null;
+    }
+  }
+
+  private async _initCallSession() {
+    const model = "gemini-2.5-flash-exp-native-audio-thinking-dialog";
+    try {
+      this.callSession = await this.client.live.connect({
+        model: model,
+        callbacks: {
+          onopen: () => {
+            this.updateStatus("Call session opened");
+          },
+          onmessage: async (message: LiveServerMessage) => {
+            const modelTurn = message.serverContent?.modelTurn;
+            if (!modelTurn) {
+              return;
+            }
+
+            const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
+            const text = lastPart.text;
+            if (text) {
+              const lastTurn =
+                this.callTranscript[this.callTranscript.length - 1];
+              if (lastTurn?.author === "model") {
+                lastTurn.text += text;
+                this.requestUpdate("callTranscript");
+              } else {
+                this.callTranscript = [
+                  ...this.callTranscript,
+                  { text, author: "model" },
+                ];
+              }
+            }
+
+            const audio = lastPart.inlineData;
+            if (audio) {
+              this.nextStartTime = Math.max(
+                this.nextStartTime,
+                this.outputAudioContext.currentTime,
+              );
+
+              const audioBuffer = await decodeAudioData(
+                decode(audio.data),
+                this.outputAudioContext,
+                24000,
+                1,
+              );
+              const source = this.outputAudioContext.createBufferSource();
+              source.buffer = audioBuffer;
+              source.connect(this.callOutputNode);
               source.addEventListener("ended", () => {
                 this.sources.delete(source);
               });
@@ -222,7 +351,7 @@ export class GdmLiveAudio extends LitElement {
             this.updateError(e.message);
           },
           onclose: (e: CloseEvent) => {
-            this.updateStatus(`Session closed:${e.reason}`);
+            this.updateStatus(`Call session closed: ${e.reason}`);
           },
         },
         config: {
@@ -232,14 +361,12 @@ export class GdmLiveAudio extends LitElement {
           enableAffectiveDialog: true,
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
-            // languageCode: 'ja-JP' // for gemini-2.5-flash-live-preview
-            // Native audio output models automatically choose the appropriate language
-            // and don't support explicitly setting the language code.
           },
         },
       });
     } catch (e) {
-      console.error(e);
+      console.error("Error initializing call session:", e);
+      this.updateError("Failed to initialize call session");
     }
   }
 
@@ -265,12 +392,16 @@ export class GdmLiveAudio extends LitElement {
     this.error = msg;
   }
 
-  private async startRecording() {
-    if (this.isRecording) return;
+  private async _handleCallStart() {
+    if (this.isCallActive) return;
+
+    // Switch to calling mode and initialize call session
+    this.activeMode = "calling";
+    this._updateActiveOutputNode();
+    await this._initCallSession();
 
     this.inputAudioContext.resume();
-
-    this.updateStatus("Requesting microphone access...");
+    this.updateStatus("Starting call...");
 
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -278,7 +409,7 @@ export class GdmLiveAudio extends LitElement {
         video: false,
       });
 
-      this.updateStatus("Microphone access granted. Starting capture...");
+      this.updateStatus("Call connected");
 
       this.sourceNode = this.inputAudioContext.createMediaStreamSource(
         this.mediaStream,
@@ -293,32 +424,44 @@ export class GdmLiveAudio extends LitElement {
       );
 
       this.scriptProcessorNode.onaudioprocess = (audioProcessingEvent) => {
-        if (!this.isRecording) return;
+        if (!this.isCallActive) return;
 
         const inputBuffer = audioProcessingEvent.inputBuffer;
         const pcmData = inputBuffer.getChannelData(0);
-        this.session.sendRealtimeInput({ media: createBlob(pcmData) });
+        // Send audio to the active call session
+        if (this.activeMode === "calling" && this.callSession) {
+          this.callSession.sendRealtimeInput({ media: createBlob(pcmData) });
+        }
       };
 
       this.sourceNode.connect(this.scriptProcessorNode);
       this.scriptProcessorNode.connect(this.inputAudioContext.destination);
 
-      this.isRecording = true;
-      this.updateStatus("🔴 Recording... Capturing PCM chunks.");
+      this.isCallActive = true;
+
+      // Dispatch call-start event
+      this.dispatchEvent(
+        new CustomEvent("call-start", {
+          bubbles: true,
+          composed: true,
+        }),
+      );
+
+      this.updateStatus("📞 Call active");
     } catch (err) {
-      console.error("Error starting recording:", err);
+      console.error("Error starting call:", err);
       this.updateStatus(`Error: ${err.message}`);
-      this.stopRecording();
+      this._handleCallEnd();
     }
   }
 
-  private stopRecording() {
-    if (!this.isRecording && !this.mediaStream && !this.inputAudioContext)
+  private _handleCallEnd() {
+    if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
       return;
 
-    this.updateStatus("Stopping recording...");
+    this.updateStatus("Ending call...");
 
-    this.isRecording = false;
+    this.isCallActive = false;
 
     if (this.scriptProcessorNode && this.sourceNode && this.inputAudioContext) {
       this.scriptProcessorNode.disconnect();
@@ -333,28 +476,136 @@ export class GdmLiveAudio extends LitElement {
       this.mediaStream = null;
     }
 
-    this.updateStatus("Recording stopped. Click Start to begin again.");
+    // Switch back to texting mode
+    this.activeMode = "texting";
+    this._updateActiveOutputNode();
+
+    // Ensure text session is available when switching back to texting
+    if (!this.textSession) {
+      this._initTextSession();
+    }
+
+    // Dispatch call-end event
+    this.dispatchEvent(
+      new CustomEvent("call-end", {
+        bubbles: true,
+        composed: true,
+      }),
+    );
+
+    this.updateStatus("Call ended");
   }
 
   private reset() {
-    this.session?.close();
-    this.initSession();
-    this.updateStatus("Session cleared.");
+    // Reset based on active mode to preserve separate contexts
+    if (this.activeMode === "texting") {
+      this._resetTextContext();
+    } else if (this.activeMode === "calling") {
+      this._resetCallContext();
+    }
+  }
+
+  private _resetTextContext() {
+    // Close existing text session
+    if (this.textSession) {
+      try {
+        this.textSession.close();
+      } catch (e) {
+        console.warn("Error closing text session during reset:", e);
+      }
+      this.textSession = null;
+    }
+
+    // Clear text transcript
+    this.textTranscript = [];
+
+    // Reinitialize text session
+    this._initTextSession();
+    this.updateStatus("Text conversation cleared.");
+  }
+
+  private _resetCallContext() {
+    // Close existing call session
+    if (this.callSession) {
+      try {
+        this.callSession.close();
+      } catch (e) {
+        console.warn("Error closing call session during reset:", e);
+      }
+      this.callSession = null;
+    }
+
+    // Clear call transcript
+    this.callTranscript = [];
+
+    // Reinitialize call session if we're currently in a call
+    if (this.isCallActive) {
+      this._initCallSession();
+    }
+    this.updateStatus("Call conversation cleared.");
   }
 
   private _toggleSettings() {
     this.showSettings = !this.showSettings;
   }
 
-  private _handleSendMessage(e: CustomEvent) {
+  private async _handleSendMessage(e: CustomEvent) {
     const message = e.detail;
-    this.transcript = [...this.transcript, { text: message, author: 'user' }];
-    this.session.sendClientContent({ turns: [{ parts: [{ text: message }] }] });
+    if (!message || !message.trim()) {
+      return;
+    }
+
+    // Add message to text transcript
+    this.textTranscript = [
+      ...this.textTranscript,
+      { text: message, author: "user" },
+    ];
+
+    // Ensure we have an active text session
+    if (!this.textSession) {
+      this.updateStatus("Initializing text session...");
+      await this._initTextSession();
+    }
+
+    // Send message to text session
+    if (this.textSession) {
+      try {
+        this.textSession.sendClientContent({
+          turns: [{ parts: [{ text: message }] }],
+        });
+      } catch (error) {
+        console.error("Error sending message to text session:", error);
+        this.updateError(`Failed to send message: ${error.message}`);
+
+        // Try to reinitialize the session
+        await this._initTextSession();
+      }
+    } else {
+      this.updateError("Text session not available");
+    }
+  }
+
+  private _handleResetText() {
+    this._resetTextContext();
+  }
+
+  private _handleResetCall() {
+    this._resetCallContext();
   }
 
   render() {
     return html`
-      <chat-view .transcript=${this.transcript} @send-message=${this._handleSendMessage}></chat-view>
+      <chat-view 
+        .transcript=${this.textTranscript} 
+        .visible=${this.activeMode !== "calling"}
+        @send-message=${this._handleSendMessage}
+        @reset-text=${this._handleResetText}>
+      </chat-view>
+      <call-transcript 
+        .transcript=${this.callTranscript}
+        .visible=${this.activeMode === "calling"}
+        @reset-call=${this._handleResetCall}>
+      </call-transcript>
       <div>
         ${
           this.showSettings
@@ -374,7 +625,7 @@ export class GdmLiveAudio extends LitElement {
           <button
             id="settingsButton"
             @click=${this._toggleSettings}
-            ?disabled=${this.isRecording}>
+            ?disabled=${this.isCallActive}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               height="40px"
@@ -387,7 +638,7 @@ export class GdmLiveAudio extends LitElement {
           <button
             id="resetButton"
             @click=${this.reset}
-            ?disabled=${this.isRecording}>
+            ?disabled=${this.isCallActive}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               height="40px"
@@ -399,29 +650,29 @@ export class GdmLiveAudio extends LitElement {
             </svg>
           </button>
           <button
-            id="startButton"
-            @click=${this.startRecording}
-            ?disabled=${this.isRecording}>
+            id="callButton"
+            @click=${this._handleCallStart}
+            ?disabled=${this.isCallActive}>
             <svg
-              viewBox="0 0 100 100"
-              width="32px"
+              xmlns="http://www.w3.org/2000/svg"
               height="32px"
-              fill="#c80000"
-              xmlns="http://www.w3.org/2000/svg">
-              <circle cx="50" cy="50" r="50" />
+              viewBox="0 -960 960 960"
+              width="32px"
+              fill="#00c800">
+              <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/>
             </svg>
           </button>
           <button
-            id="stopButton"
-            @click=${this.stopRecording}
-            ?disabled=${!this.isRecording}>
+            id="endCallButton"
+            @click=${this._handleCallEnd}
+            ?disabled=${!this.isCallActive}>
             <svg
-              viewBox="0 0 100 100"
-              width="32px"
+              xmlns="http://www.w3.org/2000/svg"
               height="32px"
-              fill="#000000"
-              xmlns="http://www.w3.org/2000/svg">
-              <rect x="0" y="0" width="100" height="100" rx="15" />
+              viewBox="0 -960 960 960"
+              width="32px"
+              fill="#c80000">
+              <path d="M136-304q-11-11-11-28t11-28l92-92q12-12 28-12t28 12l92 92q11 11 11 28t-11 28q-11 11-28 11t-28-11l-64-64-64 64q-11 11-28 11t-28-11Zm688 0q-11 11-28 11t-28-11l-64-64-64 64q-11 11-28 11t-28-11q-11-11-11-28t11-28l92-92q12-12 28-12t28 12l92 92q11 11 11 28t-11 28ZM480-40q-142 0-241-99t-99-241v-200q0-17 11.5-28.5T180-620q17 0 28.5 11.5T220-580v200q0 108 76 184t184 76q108 0 184-76t76-184v-200q0-17 11.5-28.5T780-620q17 0 28.5 11.5T820-580v200q0 142-99 241T480-40Z"/>
             </svg>
           </button>
         </div>

@@ -3,13 +3,16 @@ import { customElement, property, state } from "lit/decorators.js";
 
 interface Turn {
   text: string;
-  author: 'user' | 'model';
+  author: "user" | "model";
 }
 
 @customElement("chat-view")
 export class ChatView extends LitElement {
   @property({ type: Array })
   transcript: Turn[] = [];
+
+  @property({ type: Boolean })
+  visible: boolean = true;
 
   @state()
   private inputValue = "";
@@ -23,6 +26,14 @@ export class ChatView extends LitElement {
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    :host([hidden]) {
+      opacity: 0;
+      visibility: hidden;
     }
 
     .transcript {
@@ -53,6 +64,50 @@ export class ChatView extends LitElement {
       background: rgba(0, 0, 0, 0.3);
       color: #fff;
       align-self: flex-start;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #fff;
+      font: 14px/1.4 system-ui;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .message-icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    .reset-button {
+      outline: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+      margin: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      backdrop-filter: blur(4px);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
     }
 
     .input-area {
@@ -102,29 +157,62 @@ export class ChatView extends LitElement {
 
   private _sendMessage() {
     if (!this.inputValue.trim()) return;
-    this.dispatchEvent(new CustomEvent('send-message', { detail: this.inputValue }));
+    this.dispatchEvent(
+      new CustomEvent("send-message", { detail: this.inputValue }),
+    );
     this.inputValue = "";
   }
 
+  private _resetText() {
+    this.dispatchEvent(
+      new CustomEvent("reset-text", { bubbles: true, composed: true }),
+    );
+  }
+
   updated(changedProperties: Map<string | number | symbol, unknown>) {
-    if (changedProperties.has('transcript')) {
-      const transcriptEl = this.shadowRoot?.querySelector('.transcript');
+    if (changedProperties.has("transcript")) {
+      const transcriptEl = this.shadowRoot?.querySelector(".transcript");
       if (transcriptEl) {
         transcriptEl.scrollTop = transcriptEl.scrollHeight;
+      }
+    }
+
+    if (changedProperties.has("visible")) {
+      if (this.visible) {
+        this.removeAttribute("hidden");
+      } else {
+        this.setAttribute("hidden", "");
       }
     }
   }
 
   render() {
     return html`
+      <div class="header">
+        <div class="header-title">
+          <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+            <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"/>
+          </svg>
+          <span>Messages</span>
+        </div>
+        <button class="reset-button" @click=${this._resetText} title="Clear conversation">
+          <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+            <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
+          </svg>
+        </button>
+      </div>
       <div class="transcript">
-        ${this.transcript.map(turn => html`
+        ${this.transcript.map(
+          (turn) => html`
           <div class="turn ${turn.author}">${turn.text}</div>
-        `)}
+        `,
+        )}
       </div>
       <div class="input-area">
-        <textarea .value=${this.inputValue} @input=${this._handleInput} @keydown=${(e: KeyboardEvent) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+        <textarea .value=${this.inputValue} @input=${this._handleInput} @keydown=${(
+          e: KeyboardEvent,
+        ) => {
+          if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             this._sendMessage();
           }
