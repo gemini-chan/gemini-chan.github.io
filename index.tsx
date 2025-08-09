@@ -17,6 +17,7 @@ export class GdmLiveAudio extends LitElement {
   @state() isRecording = false;
   @state() status = '';
   @state() error = '';
+  private _statusTimer: any = undefined;
   @state() showSettings = false;
   @state() live2dModelUrl = localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_zh.zip';
 
@@ -181,6 +182,13 @@ export class GdmLiveAudio extends LitElement {
 
   private updateStatus(msg: string) {
     this.status = msg;
+    if (this._statusTimer) clearTimeout(this._statusTimer);
+    // Auto-hide non-error statuses after 1s to keep UI clean
+    if (!this.error && msg && msg !== ' ') {
+      this._statusTimer = setTimeout(() => {
+        this.status = '';
+      }, 1000);
+    }
   }
 
   private updateError(msg: string) {
@@ -335,7 +343,7 @@ export class GdmLiveAudio extends LitElement {
           </button>
         </div>
 
-        <div id="status"> ${this.error} </div>
+        <div id="status"> ${this.error || this.status} </div>
         <live2d-gate
           .modelUrl=${this.live2dModelUrl || ''}
           .inputNode=${this.inputNode}
