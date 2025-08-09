@@ -35,12 +35,24 @@ export class SettingsMenu extends LitElement {
     }
     .container {
       background: #222;
+      color: #eee;
       padding: 2em;
       border-radius: 12px;
       display: flex;
       flex-direction: column;
       gap: 1em;
       width: 400px;
+    }
+    h2 {
+      color: #fff;
+      margin: 0 0 0.5em 0;
+    }
+    label {
+      color: #ccc;
+      font-size: 0.9em;
+    }
+    input::placeholder {
+      color: #aaa;
     }
     input {
       background: #333;
