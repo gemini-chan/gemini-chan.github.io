@@ -92,6 +92,18 @@ export class Live2DModelComponent extends LitElement {
     this._error = '';
 
     try {
+      // Ensure Cubism Core is present before importing cubism4
+      if (!(window as any).Live2DCubismCore) {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = '/assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js';
+          s.async = true;
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error('Cubism Core missing'));
+          document.head.appendChild(s);
+        });
+      }
+
       // Dynamically import Live2D to avoid bundling if unused
       // Configure ZipLoader if available so .zip URLs work
       await import('./zip-loader');

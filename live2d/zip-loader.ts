@@ -8,8 +8,17 @@
 
 // Lazy-load JSZip from CDN at runtime to avoid bundling dependency issues
 async function loadJSZip(): Promise<any> {
-  const mod: any = await import('https://esm.sh/jszip@3.10.1');
-  return mod?.default ?? mod;
+  const w = window as any;
+  if (w.JSZip) return w.JSZip;
+  await new Promise<void>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Failed to load JSZip'));
+    document.head.appendChild(s);
+  });
+  return (window as any).JSZip;
 }
 
 async function getZipLoader(): Promise<any> {
@@ -39,8 +48,54 @@ export async function configureZipLoader() {
     return JSZip.loadAsync(buf);
   };
 
-  // Leave createSettings as default (library will read model3.json from zip)
-  // If needed, we can patch createSettings to synthesize settings when missing.
+  // Map zip entries to file paths
+  ZipLoader.getFilePaths = async (zip: any) => {
+    const files = zip?.files ?? {};
+    return Object.keys(files).filter((k) => !files[k]?.dir);
+  };
+
+  // Read a file from zip with desired type
+  ZipLoader.readFile = async (zip: any, path: string, type: 'text' | 'json' | 'arraybuffer' | 'blob' = 'blob') => {
+    const file = zip.file(path);
+    if (!file) return null;
+    switch (type) {
+      case 'text':
+        return file.async('string');
+      case 'json':
+        return JSON.parse(await file.async('string'));
+      case 'arraybuffer':
+        return file.async('arraybuffer');
+      case 'blob':
+      default:
+        return new Blob([await file.async('arraybuffer')]);
+    }
+  };
+
+  // Create settings JSON when model3.json is missing
+  ZipLoader.createSettings = async (zip: any, filePaths: string[]) => {
+    const modelJsonPath = filePaths.find((p) => p.toLowerCase().endsWith('.model3.json'));
+    if (modelJsonPath) {
+      return ZipLoader.readFile(zip, modelJsonPath, 'json');
+    }
+
+    // Fallback synthesis: pick first .moc3 and textures
+    const moc3 = filePaths.find((p) => p.toLowerCase().endsWith('.moc3'));
+    const textures = filePaths
+      .filter((p) => /texture_\d+\.png$/i.test(p))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    if (moc3 && textures.length) {
+      return {
+        FileReferences: {
+          Moc: moc3,
+          Textures: textures,
+        },
+        Groups: [],
+      };
+    }
+
+    throw new Error('No model3.json found and unable to synthesize settings');
+  };
 
   configured = true;
 }
