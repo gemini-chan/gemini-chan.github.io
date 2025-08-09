@@ -59,8 +59,8 @@ export class AudioToAnimationMapper {
     return mapped;
   }
 
-  // Mouth open value driven more by output (TTS) but reacts to input as well
+  // Mouth open is driven purely by output (TTS) so the avatar speaks when it talks
   get mouthOpen(): number {
-    return Math.max(this.outEnv * 1.0, this.inEnv * 0.7);
+    return this.outEnv;
   }
 }
