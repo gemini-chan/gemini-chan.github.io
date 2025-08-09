@@ -21,6 +21,9 @@ export class Live2DModelComponent extends LitElement {
   private _loopRestartDelay = 1000; // ms
   private _loopRestartTimer: any = undefined;
 
+  // Ticker callback reference for start/stop control
+  private _loopCb?: (...args: any[]) => void;
+
   // Audio nodes for future integration
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
