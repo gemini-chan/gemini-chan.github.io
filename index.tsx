@@ -142,7 +142,7 @@ export class GdmLiveAudio extends LitElement {
         callbacks: {
           onopen: () => {
             this.sessionOpen = true;
-            this.updateStatus('Opened');
+            this.updateStatus('Session opened');
           },
           onmessage: async (message: LiveServerMessage) => {
             const audio =
@@ -186,7 +186,7 @@ export class GdmLiveAudio extends LitElement {
           },
           onclose: (e: CloseEvent) => {
             this.sessionOpen = false;
-            this.updateStatus('Close:' + e.reason);
+            this.updateStatus('Session closed:' + e.reason);
           },
         },
         config: {
