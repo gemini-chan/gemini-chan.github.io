@@ -93,12 +93,15 @@ export class Live2DModelComponent extends LitElement {
 
     try {
       // Dynamically import Live2D to avoid bundling if unused
+      // Configure ZipLoader if available so .zip URLs work
+      await import('./zip-loader');
       const mod: any = await import('pixi-live2d-display/cubism4');
       const Live2DModel = mod.Live2DModel ?? mod.default ?? mod;
 
       // Retry mechanism with exponential backoff
       const attemptLoad = async (attempt: number): Promise<Live2DModelLike> => {
         try {
+          // If URL is a Blob URL or remote .zip, Live2DModel.from should pick up our ZipLoader
           return (await Live2DModel.from(url)) as any;
         } catch (err) {
           if (attempt >= 3) throw err;
