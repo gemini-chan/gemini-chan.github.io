@@ -48,14 +48,13 @@ export class GdmLiveAudio extends LitElement {
     .controls {
       z-index: 10;
       position: absolute;
-      bottom: 10vh;
-      left: 0;
-      right: 0;
+      right: 24px;
+      bottom: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
 
       button {
         outline: none;
@@ -63,12 +62,14 @@ export class GdmLiveAudio extends LitElement {
         color: white;
         border-radius: 12px;
         background: rgba(255, 255, 255, 0.1);
-        width: 64px;
-        height: 64px;
+        width: 56px;
+        height: 56px;
         cursor: pointer;
         font-size: 24px;
         padding: 0;
         margin: 0;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        backdrop-filter: blur(4px);
 
         &:hover {
           background: rgba(255, 255, 255, 0.2);
