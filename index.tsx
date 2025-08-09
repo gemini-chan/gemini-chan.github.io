@@ -271,7 +271,7 @@ export class GdmLiveAudio extends LitElement {
     this.updateStatus('Recording stopped. Click Start to begin again.');
   }
 
-  private reset() {
+  private async reset() {
     try { this.session?.close(); } catch {}
     this.sessionOpen = false;
     await this.initSession();
