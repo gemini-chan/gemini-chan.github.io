@@ -25,11 +25,10 @@ export class GdmLiveAudio extends LitElement {
 
   private client: GoogleGenAI;
   private session: Session;
-  private sessionOpen = false;
   private inputAudioContext = new (window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)({sampleRate: 16000});
+    (window as any).webkitAudioContext)({sampleRate: 16000});
   private outputAudioContext = new (window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)({sampleRate: 24000});
+    (window as any).webkitAudioContext)({sampleRate: 24000});
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
   private nextStartTime = 0;
@@ -134,14 +133,13 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async initSession() {
-    const model = 'gemini-2.5-flash-preview-native-audio-dialog';
+    const model = 'gemini-2.5-flash-exp-native-audio-thinking-dialog';
 
     try {
       this.session = await this.client.live.connect({
         model: model,
         callbacks: {
           onopen: () => {
-            this.sessionOpen = true;
             this.updateStatus('Session opened');
           },
           onmessage: async (message: LiveServerMessage) => {
@@ -185,8 +183,7 @@ export class GdmLiveAudio extends LitElement {
             this.updateError(e.message);
           },
           onclose: (e: CloseEvent) => {
-            this.sessionOpen = false;
-            this.updateStatus('Session closed:' + e.reason);
+            this.updateStatus(`Session closed:${e.reason}`);
           },
         },
         config: {
@@ -313,7 +310,7 @@ export class GdmLiveAudio extends LitElement {
           this.showSettings
             ? html`<settings-menu
                 .apiKey=${localStorage.getItem('gemini-api-key') || ''}
-                @close=${() => (this.showSettings = false)}
+                @close=${() => { this.showSettings = false; }}
                 @api-key-saved=${() => { this.initClient(); const url = localStorage.getItem('live2d-model-url'); if (url) this.live2dModelUrl = url; }}></settings-menu>`
             : ''
         }
