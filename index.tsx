@@ -55,7 +55,7 @@ export class GdmLiveAudio extends LitElement {
       color: #fff;
       padding: 8px 12px;
       border-radius: 10px;
-      font: 13px/1.2 system-ui;
+      font: 26px/1.2 system-ui;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
       opacity: 1;
       transform: translateY(0);
