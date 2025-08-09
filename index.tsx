@@ -39,11 +39,22 @@ export class GdmLiveAudio extends LitElement {
   static styles = css`
     #status {
       position: absolute;
-      bottom: 5vh;
       left: 0;
       right: 0;
+      bottom: 24px;
       z-index: 10;
-      text-align: center;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+    #status .toast {
+      display: inline-block;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font: 13px/1.2 system-ui;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
     }
 
     .controls {
@@ -343,7 +354,7 @@ export class GdmLiveAudio extends LitElement {
           </button>
         </div>
 
-        <div id="status"> ${this.error || this.status} </div>
+        <div id="status"> ${this.error || this.status ? html`<div class="toast">${this.error || this.status}</div>` : ''} </div>
         <live2d-gate
           .modelUrl=${this.live2dModelUrl || ''}
           .inputNode=${this.inputNode}
