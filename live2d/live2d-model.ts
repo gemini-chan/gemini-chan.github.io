@@ -248,7 +248,7 @@ export class Live2DModelComponent extends LitElement {
   private _stopLoop() {
     const appAny: any = this._app;
     const ticker = appAny?.ticker;
-    const cb = (this as any)._loopCb;
+    const cb: ((...args: any[]) => void) | undefined = (this as any)._loopCb;
     if (ticker && cb) ticker.remove(cb);
     (this as any)._loopCb = undefined;
   }
