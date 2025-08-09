@@ -39,9 +39,12 @@ export class Live2DCanvas extends LitElement {
     if (this._app) return;
     try {
       // Dynamically import to avoid bundling if not used
-      const [{ Application }] = await Promise.all([
+      const [pixi] = await Promise.all([
         import('pixi.js') as any,
       ]);
+      const { Application } = pixi as any;
+      // Expose PIXI globally so pixi-live2d-display can access the Ticker if needed
+      (window as any).PIXI = pixi;
 
       // create canvas and container
       this._container = this.shadowRoot!.querySelector('.root') as HTMLDivElement;
