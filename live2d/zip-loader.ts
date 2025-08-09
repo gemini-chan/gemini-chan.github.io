@@ -72,29 +72,97 @@ export async function configureZipLoader() {
   };
 
   // Create settings JSON when model3.json is missing
-  ZipLoader.createSettings = async (zip: any, filePaths: string[]) => {
-    const modelJsonPath = filePaths.find((p) => p.toLowerCase().endsWith('.model3.json'));
+  ZipLoader.createSettings = async (zip: any, filePaths?: string[]) => {
+    const paths = filePaths ?? (await ZipLoader.getFilePaths(zip));
+    const modelJsonPath = paths.find((p: string) => p.toLowerCase().endsWith('.model3.json'));
+
+    const readSettingsJson = async (p: string) => {
+      try {
+        const json = await ZipLoader.readFile(zip, p, 'json');
+        return json;
+      } catch (e) {
+        return undefined;
+      }
+    };
+
+    let settingsJson: any | undefined;
+
     if (modelJsonPath) {
-      return ZipLoader.readFile(zip, modelJsonPath, 'json');
+      settingsJson = await readSettingsJson(modelJsonPath);
     }
 
-    // Fallback synthesis: pick first .moc3 and textures
-    const moc3 = filePaths.find((p) => p.toLowerCase().endsWith('.moc3'));
-    const textures = filePaths
-      .filter((p) => /texture_\d+\.png$/i.test(p))
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    // Fallback synthesis when model3.json missing or unreadable
+    if (!settingsJson) {
+      const moc3 = paths.find((p: string) => p.toLowerCase().endsWith('.moc3'));
+      const textures = paths
+        .filter((p: string) => /texture_\d+\.png$/i.test(p))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-    if (moc3 && textures.length) {
-      return {
-        FileReferences: {
-          Moc: moc3,
-          Textures: textures,
-        },
-        Groups: [],
-      };
+      if (moc3 && textures.length) {
+        settingsJson = {
+          FileReferences: {
+            Moc: moc3,
+            Textures: textures,
+          },
+          Groups: [],
+        };
+      } else {
+        throw new Error('No model3.json found and unable to synthesize settings');
+      }
     }
 
-    throw new Error('No model3.json found and unable to synthesize settings');
+    // Wrap the JSON with a minimal interface expected by pixi-live2d-display
+    const fr = settingsJson.FileReferences ?? {};
+    const wrapper = {
+      json: settingsJson,
+      url: modelJsonPath || '.',
+      getDefinedFiles: (..._args: any[]) => {
+        const files: string[] = [];
+        if (fr.Moc) files.push(fr.Moc);
+        if (Array.isArray(fr.Textures)) files.push(...fr.Textures);
+        if (fr.Physics) files.push(fr.Physics);
+        if (fr.Pose) files.push(fr.Pose);
+        if (fr.UserData) files.push(fr.UserData);
+        if (fr.Motions) {
+          for (const key of Object.keys(fr.Motions)) {
+            const list = fr.Motions[key];
+            if (Array.isArray(list)) {
+              for (const m of list) {
+                if (m?.File) files.push(m.File);
+              }
+            }
+          }
+        }
+        if (fr.Expressions) {
+          for (const key of Object.keys(fr.Expressions)) {
+            const list = fr.Expressions[key];
+            if (Array.isArray(list)) {
+              for (const ex of list) {
+                if (ex?.File) files.push(ex.File);
+              }
+            }
+          }
+        }
+        return files;
+      },
+    };
+    return wrapper;
+  };
+
+  // Provide files as blob URLs for loader consumption
+  ZipLoader.getFiles = async (zip: any, settings?: any) => {
+    const collect = settings?.getDefinedFiles ? (settings.getDefinedFiles() as string[]) : ((await ZipLoader.getFilePaths(zip)) as string[]);
+    const unique: string[] = Array.from(new Set<string>(collect)).filter((v): v is string => typeof v === 'string' && v.length > 0);
+    const out: Record<string, string> = {};
+    for (const p of unique) {
+      try {
+        const blob = (await ZipLoader.readFile(zip, p, 'blob')) as Blob | null;
+        if (blob) out[p] = URL.createObjectURL(blob);
+      } catch (e) {
+        // ignore missing
+      }
+    }
+    return out;
   };
 
   configured = true;
