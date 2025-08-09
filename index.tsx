@@ -1,34 +1,44 @@
-/* tslint:disable */
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {GoogleGenAI, LiveServerMessage, Modality, Session} from '@google/genai';
-import {LitElement, css, html} from 'lit';
-import {customElement, state} from 'lit/decorators.js';
-import {createBlob, decode, decodeAudioData} from './utils';
-import './live2d/zip-loader';
-import './live2d/live2d-gate';
-import './settings-menu';
+import {
+  GoogleGenAI,
+  type LiveServerMessage,
+  Modality,
+  type Session,
+} from "@google/genai";
+import { css, html, LitElement } from "lit";
+import { customElement, state } from "lit/decorators.js";
+import { createBlob, decode, decodeAudioData } from "./utils";
+import "./live2d/zip-loader";
+import "./live2d/live2d-gate";
+import "./settings-menu";
 
-@customElement('gdm-live-audio')
+@customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
   @state() isRecording = false;
-  @state() status = '';
-  @state() error = '';
-  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined = undefined;
-  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  @state() status = "";
+  @state() error = "";
+  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
+    undefined;
+  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
+    undefined;
   @state() private _toastVisible = false;
   @state() showSettings = false;
-  @state() live2dModelUrl = localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip';
+  @state() live2dModelUrl =
+    localStorage.getItem("live2d-model-url") ||
+    "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip";
 
   private client: GoogleGenAI;
   private session: Session;
-  private inputAudioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)({sampleRate: 16000});
-  private outputAudioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)({sampleRate: 24000});
+  private inputAudioContext = new (
+    window.AudioContext || (window as any).webkitAudioContext
+  )({ sampleRate: 16000 });
+  private outputAudioContext = new (
+    window.AudioContext || (window as any).webkitAudioContext
+  )({ sampleRate: 24000 });
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
   private nextStartTime = 0;
@@ -114,17 +124,17 @@ export class GdmLiveAudio extends LitElement {
   private async initClient() {
     this.initAudio();
 
-    const apiKey = localStorage.getItem('gemini-api-key');
+    const apiKey = localStorage.getItem("gemini-api-key");
     if (!apiKey) {
       this.showSettings = true;
-      this.error = '';
-      this.status = '';
+      this.error = "";
+      this.status = "";
       return;
     }
 
     this.client = new GoogleGenAI({
       apiKey,
-      httpOptions: {'apiVersion': 'v1alpha'},
+      httpOptions: { apiVersion: "v1alpha" },
     });
 
     this.outputNode.connect(this.outputAudioContext.destination);
@@ -133,14 +143,14 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async initSession() {
-    const model = 'gemini-2.5-flash-exp-native-audio-thinking-dialog';
+    const model = "gemini-2.5-flash-exp-native-audio-thinking-dialog";
 
     try {
       this.session = await this.client.live.connect({
         model: model,
         callbacks: {
           onopen: () => {
-            this.updateStatus('Session opened');
+            this.updateStatus("Session opened");
           },
           onmessage: async (message: LiveServerMessage) => {
             const audio =
@@ -161,7 +171,7 @@ export class GdmLiveAudio extends LitElement {
               const source = this.outputAudioContext.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(this.outputNode);
-              source.addEventListener('ended', () =>{
+              source.addEventListener("ended", () => {
                 this.sources.delete(source);
               });
 
@@ -171,8 +181,8 @@ export class GdmLiveAudio extends LitElement {
             }
 
             const interrupted = message.serverContent?.interrupted;
-            if(interrupted) {
-              for(const source of this.sources.values()) {
+            if (interrupted) {
+              for (const source of this.sources.values()) {
                 source.stop();
                 this.sources.delete(source);
               }
@@ -190,7 +200,7 @@ export class GdmLiveAudio extends LitElement {
           responseModalities: [Modality.AUDIO],
           enableAffectiveDialog: true,
           speechConfig: {
-            voiceConfig: {prebuiltVoiceConfig: {voiceName: 'Kore'}},
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
             // languageCode: 'ja-JP'
           },
         },
@@ -208,11 +218,11 @@ export class GdmLiveAudio extends LitElement {
     this._toastVisible = true;
 
     // Show for 3s, then fade out 300ms, then clear text
-    if (!this.error && msg && msg !== ' ') {
+    if (!this.error && msg && msg !== " ") {
       this._statusHideTimer = setTimeout(() => {
         this._toastVisible = false; // triggers fade-out via CSS transition
         this._statusClearTimer = setTimeout(() => {
-          this.status = '';
+          this.status = "";
         }, 300);
       }, 3000);
     }
@@ -227,7 +237,7 @@ export class GdmLiveAudio extends LitElement {
 
     this.inputAudioContext.resume();
 
-    this.updateStatus('Requesting microphone access...');
+    this.updateStatus("Requesting microphone access...");
 
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -235,7 +245,7 @@ export class GdmLiveAudio extends LitElement {
         video: false,
       });
 
-      this.updateStatus('Microphone access granted. Starting capture...');
+      this.updateStatus("Microphone access granted. Starting capture...");
 
       this.sourceNode = this.inputAudioContext.createMediaStreamSource(
         this.mediaStream,
@@ -254,16 +264,16 @@ export class GdmLiveAudio extends LitElement {
 
         const inputBuffer = audioProcessingEvent.inputBuffer;
         const pcmData = inputBuffer.getChannelData(0);
-        this.session.sendRealtimeInput({media: createBlob(pcmData)});
+        this.session.sendRealtimeInput({ media: createBlob(pcmData) });
       };
 
       this.sourceNode.connect(this.scriptProcessorNode);
       this.scriptProcessorNode.connect(this.inputAudioContext.destination);
 
       this.isRecording = true;
-      this.updateStatus('🔴 Recording... Capturing PCM chunks.');
+      this.updateStatus("🔴 Recording... Capturing PCM chunks.");
     } catch (err) {
-      console.error('Error starting recording:', err);
+      console.error("Error starting recording:", err);
       this.updateStatus(`Error: ${err.message}`);
       this.stopRecording();
     }
@@ -273,7 +283,7 @@ export class GdmLiveAudio extends LitElement {
     if (!this.isRecording && !this.mediaStream && !this.inputAudioContext)
       return;
 
-    this.updateStatus('Stopping recording...');
+    this.updateStatus("Stopping recording...");
 
     this.isRecording = false;
 
@@ -290,13 +300,13 @@ export class GdmLiveAudio extends LitElement {
       this.mediaStream = null;
     }
 
-    this.updateStatus('Recording stopped. Click Start to begin again.');
+    this.updateStatus("Recording stopped. Click Start to begin again.");
   }
 
   private reset() {
     this.session?.close();
     this.initSession();
-    this.updateStatus('Session cleared.');
+    this.updateStatus("Session cleared.");
   }
 
   private _toggleSettings() {
@@ -309,10 +319,16 @@ export class GdmLiveAudio extends LitElement {
         ${
           this.showSettings
             ? html`<settings-menu
-                .apiKey=${localStorage.getItem('gemini-api-key') || ''}
-                @close=${() => { this.showSettings = false; }}
-                @api-key-saved=${() => { this.initClient(); const url = localStorage.getItem('live2d-model-url'); if (url) this.live2dModelUrl = url; }}></settings-menu>`
-            : ''
+                .apiKey=${localStorage.getItem("gemini-api-key") || ""}
+                @close=${() => {
+                  this.showSettings = false;
+                }}
+                @api-key-saved=${() => {
+                  this.initClient();
+                  const url = localStorage.getItem("live2d-model-url");
+                  if (url) this.live2dModelUrl = url;
+                }}></settings-menu>`
+            : ""
         }
         <div class="controls">
           <button
@@ -370,9 +386,9 @@ export class GdmLiveAudio extends LitElement {
           </button>
         </div>
 
-        <div id="status"> ${(this.error || this.status) ? html`<div class="toast ${this._toastVisible ? '' : 'hide'}">${this.error || this.status}</div>` : ''} </div>
+        <div id="status"> ${this.error || this.status ? html`<div class="toast ${this._toastVisible ? "" : "hide"}">${this.error || this.status}</div>` : ""} </div>
         <live2d-gate
-          .modelUrl=${this.live2dModelUrl || ''}
+          .modelUrl=${this.live2dModelUrl || ""}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
         ></live2d-gate>
