@@ -17,22 +17,22 @@ export class GdmLiveAudio extends LitElement {
   @state() isRecording = false;
   @state() status = '';
   @state() error = '';
-  private _statusTimer: any = undefined;
+  private _statusTimer: ReturnType<typeof setTimeout> | undefined = undefined;
   @state() showSettings = false;
-  @state() live2dModelUrl = localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_zh.zip';
+  @state() live2dModelUrl = localStorage.getItem('live2d-model-url') || 'https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip';
 
   private client: GoogleGenAI;
   private session: Session;
   private sessionOpen = false;
   private inputAudioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)({sampleRate: 16000});
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)({sampleRate: 16000});
   private outputAudioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)({sampleRate: 24000});
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)({sampleRate: 24000});
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
   private nextStartTime = 0;
   private mediaStream: MediaStream;
-  private sourceNode: AudioBufferSourceNode;
+  private sourceNode: MediaStreamAudioSourceNode;
   private scriptProcessorNode: ScriptProcessorNode;
   private sources = new Set<AudioBufferSourceNode>();
 

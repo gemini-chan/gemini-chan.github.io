@@ -1,4 +1,4 @@
-The process of unzipping and loading a Live2D model like `hiyori_pro_zh.zip` is handled entirely on the client-side using `JSZip` and `pixi-live2d-display`. The ZIP file is not extracted to a directory on the file system; instead, it is read and processed in memory.
+The process of unzipping and loading a Live2D model like `hiyori_pro_en.zip` is handled entirely on the client-side using `JSZip` and `pixi-live2d-display`. The ZIP file is not extracted to a directory on the file system; instead, it is read and processed in memory.
 
 ### Detailed Analysis
 
@@ -43,7 +43,7 @@ sequenceDiagram
     participant live2d-zip-loader.ts
     participant pixi-live2d-display
 
-    User->>Live2D.vue: Selects hiyori_pro_zh.zip
+    User->>Live2D.vue: Selects hiyori_pro_en.zip
     Live2D.vue->>Model.vue: Updates modelFile ref
     Model.vue->>Model.vue: watch triggers loadModel()
     Model.vue->>pixi-live2d-display: Live2DFactory.setupLive2DModel(zipUrl)
