@@ -27,10 +27,10 @@ export class ToastNotification extends LitElement {
 
     .toast {
       display: inline-block;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font: 16px/1.4 system-ui;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font: 17px/1.2 system-ui;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(8px);
       opacity: 0;
       transform: translateY(-20px);
