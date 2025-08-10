@@ -20,7 +20,7 @@ export class CallTranscript extends LitElement {
       display: flex;
       flex-direction: column;
       height: 100%;
-      width: 100%;
+      width: 400px;
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;

@@ -126,7 +126,14 @@
   - Add proper styling and positioning for settings button in main UI
   - _Requirements: 2.9.1_
 
-- [ ] 16. Update unit test suite for settings menu and API key presence check
+- [x] 16. Fix call transcript layout to match chat transcript dimensions
+  - Update main application CSS grid layout to support three-column approach (chat, model, call transcript)
+  - Modify call-transcript component positioning to appear on the right side with 400px width
+  - Ensure call transcript doesn't extend into Live2D model area for better readability
+  - Update layout transitions to maintain consistent positioning between texting and calling modes
+  - _Requirements: 2.12.1_
+
+- [ ] 17. Update unit test suite for settings menu and API key presence check
   - Write unit tests for API key presence check logic
   - Write unit tests for settings menu conditional display
   - Write unit tests for toast notification behavior

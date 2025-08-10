@@ -75,7 +75,7 @@ export class GdmLiveAudio extends LitElement {
   static styles = css`
     :host {
       display: grid;
-      grid-template-columns: 400px 1fr;
+      grid-template-columns: 400px 1fr 400px;
       height: 100%;
     }
 
@@ -666,11 +666,7 @@ export class GdmLiveAudio extends LitElement {
         @send-message=${this._handleSendMessage}
         @reset-text=${this._handleResetText}>
       </chat-view>
-      <call-transcript 
-        .transcript=${this.callTranscript}
-        .visible=${this.activeMode === "calling"}
-        @reset-call=${this._handleResetCall}>
-      </call-transcript>
+      
       <div>
         ${
           this.showSettings
@@ -735,7 +731,7 @@ export class GdmLiveAudio extends LitElement {
               viewBox="0 -960 960 960"
               width="32px"
               fill="#c80000">
-              <path d="M136-304q-11-11-11-28t11-28l92-92q12-12 28-12t28 12l92 92q11 11 11 28t-11 28q-11 11-28 11t-28-11l-64-64-64 64q-11 11-28 11t-28-11Zm688 0q-11 11-28 11t-28-11l-64-64-64 64q-11 11-28 11t-28-11q-11-11-11-28t11-28l92-92q12-12 28-12t28 12l92 92q11 11 11 28t-11 28ZM480-40q-142 0-241-99t-99-241v-200q0-17 11.5-28.5T180-620q17 0 28.5 11.5T220-580v200q0 108 76 184t184 76q108 0 184-76t76-184v-200q0-17 11.5-28.5T780-620q17 0 28.5 11.5T820-580v200q0 142-99 241T480-40Z"/>
+              <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/>
             </svg>
           </button>
         </div>
@@ -754,6 +750,12 @@ export class GdmLiveAudio extends LitElement {
           .outputNode=${this.outputNode}
         ></live2d-gate>
       </div>
+      
+      <call-transcript 
+        .transcript=${this.callTranscript}
+        .visible=${this.activeMode === "calling"}
+        @reset-call=${this._handleResetCall}>
+      </call-transcript>
     `;
   }
 }

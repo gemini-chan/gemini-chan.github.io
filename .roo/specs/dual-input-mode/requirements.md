@@ -134,3 +134,15 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** I click the "Paste" button **THEN** the system reads text from clipboard and populates the input field
 - **WHEN** the settings menu is open **THEN** a "Get API Key" button or link is displayed
 - **WHEN** I click the "Get API Key" button **THEN** the URL "https://aistudio.google.com/apikey" opens in a new browser tab
+
+### 2.12. Call Transcript Layout Optimization
+- **As a** user,
+- **I want** the call transcript to have the same dimensions as the chat transcript and be positioned on the right side,
+- **so that** the transcript is readable without covering the Live2D model area.
+
+#### 2.12.1. Acceptance Criteria
+- **WHEN** a call is active **THEN** the call transcript window appears with the same width as the chat window (400px)
+- **WHEN** a call is active **THEN** the call transcript is positioned on the right side of the interface
+- **WHEN** a call is active **THEN** the Live2D model area remains unoccupied by transcript windows for better visibility
+- **WHEN** a call is active **THEN** the call transcript does not extend into the space under the Live2D model
+- **WHEN** switching between texting and calling modes **THEN** both transcript windows maintain consistent dimensions and positioning

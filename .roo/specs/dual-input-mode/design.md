@@ -4,9 +4,11 @@
 This document outlines the technical design for a dual-input mode that simulates a realistic messaging/calling experience. The system maintains separate conversation contexts for texting (TTS flow) and calling (STS flow), with dynamic UI components that appear based on the active mode. The design features a messaging app interface with a persistent chat window for texting and a dynamically appearing call transcript window during voice calls. The Live2D model animates consistently across both modes.
 
 ## 2. Architecture
-The architecture implements a dual-context system with separate conversation histories for texting (TTS) and calling (STS) modes. The main application manages two independent AI sessions with lazy initialization - sessions are only created when the user actually interacts (sends first message or starts a call). The system dynamically shows/hides transcript windows based on the active mode. The interface simulates a messaging app with persistent texting on the left and call functionality.
+The architecture implements a dual-context system with separate conversation histories for texting (TTS) and calling (STS) modes. The main application manages two independent AI sessions with lazy initialization - sessions are only created when the user actually interacts (sends first message or starts a call). The system dynamically shows/hides transcript windows based on the active mode. The interface simulates a messaging app with persistent texting on the left and call functionality on the right, both maintaining consistent 400px widths to preserve the Live2D model viewing area.
 
 The application now lands directly on the main UI instead of using the settings menu as a landing page. API key validation is performed on-demand when users attempt to use TTS or STS features. If no API key is configured, the settings menu opens automatically with a toast notification prompting the user to enter their API key.
+
+The layout uses a three-column approach: chat transcript (400px, left), Live2D model (flexible center), and call transcript (400px, right when active). This ensures optimal readability while maintaining the immersive character experience.
 
 ```mermaid
 graph TD
