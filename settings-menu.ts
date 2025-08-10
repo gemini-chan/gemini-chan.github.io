@@ -371,8 +371,32 @@ export class SettingsMenu extends LitElement {
         this.shadowRoot!.querySelector<HTMLInputElement>(`#${fieldName}`);
       if (input) {
         input.value = text;
+
         if (fieldName === "apiKey") {
           this.apiKey = text;
+          this._autoSave(
+            text,
+            {
+              storageKey: "gemini-api-key",
+              validator: this._validateApiKey.bind(this),
+              eventName: undefined,
+              required: true,
+              preserveOnEmpty: true,
+            },
+            "apiKey",
+          );
+        } else { // modelUrl
+          this._autoSave(
+            text,
+            {
+              storageKey: "live2d-model-url",
+              validator: this._validateLive2dUrl.bind(this),
+              eventName: "model-url-changed",
+              required: false,
+              preserveOnEmpty: true,
+            },
+            "modelUrl",
+          );
         }
       }
     } catch (err) {
