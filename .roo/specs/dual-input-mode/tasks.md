@@ -167,7 +167,17 @@
   - Test that switching between sessions doesn't cause audio timing conflicts or memory leaks
   - _Requirements: 2.3.1, 2.5.1_
 
-- [ ] 21. Update unit test suite for settings menu and API key presence check
+- [x] 21. Refactor session management with Session Manager pattern to eliminate code duplication
+  - Create abstract `BaseSessionManager` class with common audio processing logic
+  - Extract shared audio pipeline: `decodeAudioData`, buffer creation, timeline management, interruption handling
+  - Create `TextSessionManager` extending `BaseSessionManager` with text-specific model and config
+  - Create `CallSessionManager` extending `BaseSessionManager` with call-specific model and config
+  - Refactor main `GdmLiveAudio` component to use session managers instead of direct session handling
+  - Ensure isolated audio management (nextStartTime, sources) is preserved in each manager
+  - Test that both text and call modes work identically after refactor
+  - _Requirements: 2.1.1, 2.2.1, 2.3.1_
+
+- [ ] 22. Update unit test suite for settings menu and API key presence check
   - Write unit tests for API key presence check logic
   - Write unit tests for settings menu conditional display
   - Write unit tests for toast notification behavior
@@ -175,7 +185,7 @@
   - Update existing tests to account for new application startup behavior
   - _Requirements: 2.7.1, 2.8.1_
 
-- [ ] 21. Create unit test suite for unified call/reset button functionality
+- [ ] 23. Create unit test suite for unified call/reset button functionality
   - Write unit tests for long press detection logic with 1-second threshold
   - Write unit tests for reset-context event emission on long press
   - Write unit tests for normal click behavior preservation when long press doesn't complete
@@ -183,7 +193,15 @@
   - Write unit tests for mode-specific reset behavior (text vs call vs both)
   - _Requirements: 2.6.1_
 
-- [*] 22. Create unit test suite for dual-context system
+- [ ] 24. Create unit test suite for session manager architecture
+  - Write unit tests for `BaseSessionManager` common audio processing logic
+  - Write unit tests for `TextSessionManager` and `CallSessionManager` specific behaviors
+  - Write unit tests for session manager lifecycle management
+  - Write unit tests for isolated audio management in each session manager
+  - Write unit tests for main component delegation to session managers
+  - _Requirements: 2.1.1, 2.2.1, 2.3.1_
+
+- [*] 25. Create unit test suite for dual-context system
   - Write unit tests for dual-context state management logic
   - Write unit tests for transcript window visibility controls
   - Write unit tests for TTS and STS session management

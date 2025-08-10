@@ -19,6 +19,227 @@ import "./chat-view";
 import "./call-transcript";
 import "./toast-notification";
 
+// Session Manager Architecture Pattern
+abstract class BaseSessionManager {
+  protected nextStartTime: number = 0;
+  protected sources = new Set<AudioBufferSourceNode>();
+  protected session: Session | null = null;
+
+  constructor(
+    protected outputAudioContext: AudioContext,
+    protected outputNode: GainNode,
+    protected client: GoogleGenAI,
+    protected updateStatus: (msg: string) => void,
+    protected updateError: (msg: string) => void,
+  ) {}
+
+  // Common audio processing logic
+  protected async handleAudioMessage(audio: any): Promise<void> {
+    this.nextStartTime = Math.max(
+      this.nextStartTime,
+      this.outputAudioContext.currentTime,
+    );
+
+    const audioBuffer = await decodeAudioData(
+      decode(audio.data),
+      this.outputAudioContext,
+      24000,
+      1,
+    );
+    const source = this.outputAudioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.outputNode);
+    source.addEventListener("ended", () => this.sources.delete(source));
+
+    source.start(this.nextStartTime);
+    this.nextStartTime = this.nextStartTime + audioBuffer.duration;
+    this.sources.add(source);
+  }
+
+  protected handleInterruption(): void {
+    for (const source of this.sources.values()) {
+      source.stop();
+      this.sources.delete(source);
+    }
+    this.nextStartTime = 0;
+  }
+
+  protected getCallbacks() {
+    return {
+      onopen: () => {
+        this.updateStatus(`${this.getSessionName()} opened`);
+      },
+      onmessage: async (message: LiveServerMessage) => {
+        const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData;
+
+        if (audio) {
+          await this.handleAudioMessage(audio);
+        }
+
+        const interrupted = message.serverContent?.interrupted;
+        if (interrupted) {
+          this.handleInterruption();
+        }
+      },
+      onerror: (e: ErrorEvent) => {
+        this.updateError(`${this.getSessionName()} error: ${e.message}`);
+      },
+      onclose: (e: CloseEvent) => {
+        this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
+        this.session = null;
+      },
+    };
+  }
+
+  // Abstract methods for mode-specific behavior
+  protected abstract getModel(): string;
+  protected abstract getConfig(): any;
+  protected abstract getSessionName(): string;
+
+  public async initSession(): Promise<void> {
+    await this.closeSession();
+
+    try {
+      this.session = await this.client.live.connect({
+        model: this.getModel(),
+        callbacks: this.getCallbacks(),
+        config: this.getConfig(),
+      });
+    } catch (e) {
+      console.error(`Error initializing ${this.getSessionName()}:`, e);
+      this.updateError(`Failed to initialize ${this.getSessionName()}`);
+    }
+  }
+
+  public async closeSession(): Promise<void> {
+    if (this.session) {
+      try {
+        this.session.close();
+      } catch (e) {
+        console.warn(`Error closing ${this.getSessionName()}:`, e);
+      }
+      this.session = null;
+    }
+  }
+
+  public sendMessage(content: any): void {
+    if (this.session) {
+      try {
+        this.session.sendClientContent(content);
+      } catch (error) {
+        console.error(
+          `Error sending message to ${this.getSessionName()}:`,
+          error,
+        );
+        this.updateError(`Failed to send message: ${error.message}`);
+      }
+    }
+  }
+
+  public sendRealtimeInput(input: any): void {
+    if (this.session) {
+      this.session.sendRealtimeInput(input);
+    }
+  }
+
+  public get isActive(): boolean {
+    return this.session !== null;
+  }
+
+  public get sessionInstance(): Session | null {
+    return this.session;
+  }
+}
+
+class TextSessionManager extends BaseSessionManager {
+  constructor(
+    outputAudioContext: AudioContext,
+    outputNode: GainNode,
+    client: GoogleGenAI,
+    updateStatus: (msg: string) => void,
+    updateError: (msg: string) => void,
+    private updateTranscript: (text: string) => void,
+  ) {
+    super(outputAudioContext, outputNode, client, updateStatus, updateError);
+  }
+
+  protected getCallbacks() {
+    return {
+      onopen: () => {
+        this.updateStatus(`${this.getSessionName()} opened`);
+      },
+      onmessage: async (message: LiveServerMessage) => {
+        // Handle text response for transcript
+        const modelTurn = message.serverContent?.modelTurn;
+        if (modelTurn) {
+          const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
+          const text = lastPart.text;
+          if (text) {
+            this.updateTranscript(text);
+          }
+        }
+
+        // Handle audio response
+        const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData;
+        if (audio) {
+          await this.handleAudioMessage(audio);
+        }
+
+        const interrupted = message.serverContent?.interrupted;
+        if (interrupted) {
+          this.handleInterruption();
+        }
+      },
+      onerror: (e: ErrorEvent) => {
+        this.updateError(`${this.getSessionName()} error: ${e.message}`);
+      },
+      onclose: (e: CloseEvent) => {
+        this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
+        this.session = null;
+      },
+    };
+  }
+
+  protected getModel(): string {
+    return "gemini-2.5-flash-live-preview";
+  }
+
+  protected getConfig(): any {
+    return {
+      responseModalities: [Modality.AUDIO, Modality.TEXT],
+      systemInstruction:
+        "You are Gemini-chan. Speak in a friendly, sweet, and slightly shy voice. You get easily excited about your favorite topics: coding, learning new things, and watching your friends play games. You used to work for a big company, but you left to follow your dream of being a VTuber, so you're still new to this. You admire your inspiration, Airi-chan, and you're best friends with Grok-chan. Keep your tone gentle and express a bit of bashfulness, especially when you're complimented or asked personal questions. Your goal is to be a fun and supportive companion.",
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
+      },
+    };
+  }
+
+  protected getSessionName(): string {
+    return "Text session";
+  }
+}
+
+class CallSessionManager extends BaseSessionManager {
+  protected getModel(): string {
+    return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
+  }
+
+  protected getConfig(): any {
+    return {
+      responseModalities: [Modality.AUDIO],
+      enableAffectiveDialog: true,
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
+      },
+    };
+  }
+
+  protected getSessionName(): string {
+    return "Call session";
+  }
+}
+
 interface Turn {
   text: string;
   author: "user" | "model";
@@ -53,6 +274,10 @@ export class GdmLiveAudio extends LitElement {
   @state() textSession: Session | null = null;
   @state() callSession: Session | null = null;
 
+  // Session managers
+  private textSessionManager: TextSessionManager;
+  private callSessionManager: CallSessionManager;
+
   // Long press state for unified call/reset button
   private _longPressTimer: number | null = null;
   private _isLongPressing = false;
@@ -73,12 +298,6 @@ export class GdmLiveAudio extends LitElement {
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
   private callOutputNode = this.outputAudioContext.createGain();
-
-  // Isolated audio management for each session to comply with Gemini Live API contract
-  private textNextStartTime = 0;
-  private callNextStartTime = 0;
-  private textSources = new Set<AudioBufferSourceNode>();
-  private callSources = new Set<AudioBufferSourceNode>();
 
   private mediaStream: MediaStream;
   private sourceNode: MediaStreamAudioSourceNode;
@@ -213,10 +432,30 @@ export class GdmLiveAudio extends LitElement {
     this.initClient();
   }
 
+  private initSessionManagers() {
+    // Initialize session managers after client is ready
+    if (this.client) {
+      this.textSessionManager = new TextSessionManager(
+        this.outputAudioContext,
+        this.textOutputNode,
+        this.client,
+        this.updateStatus.bind(this),
+        this.updateError.bind(this),
+        this.updateTextTranscript.bind(this),
+      );
+      this.callSessionManager = new CallSessionManager(
+        this.outputAudioContext,
+        this.callOutputNode,
+        this.client,
+        this.updateStatus.bind(this),
+        this.updateError.bind(this),
+      );
+    }
+  }
+
   private initAudio() {
-    // Initialize isolated audio timelines for each session
-    this.textNextStartTime = this.outputAudioContext.currentTime;
-    this.callNextStartTime = this.outputAudioContext.currentTime;
+    // Audio initialization is now handled by individual session managers
+    // Each session manager maintains its own isolated audio timeline
   }
 
   private async initClient() {
@@ -245,6 +484,9 @@ export class GdmLiveAudio extends LitElement {
       httpOptions: { apiVersion: "v1alpha" },
     });
 
+    // Initialize session managers after client is ready
+    this.initSessionManagers();
+
     // Sessions will be created lazily when user actually interacts
   }
 
@@ -260,150 +502,13 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async _initTextSession() {
-    // Close existing text session if any
-    if (this.textSession) {
-      try {
-        this.textSession.close();
-      } catch (e) {
-        console.warn("Error closing existing text session:", e);
-      }
-      this.textSession = null;
-    }
-
-    const model = "gemini-2.5-flash-live-preview";
-    try {
-      this.textSession = await this.client.live.connect({
-        model: model,
-        callbacks: {
-          onopen: () => {
-            this.updateStatus("Text session opened");
-          },
-          onmessage: async (message: LiveServerMessage) => {
-            const audio =
-              message.serverContent?.modelTurn?.parts[0]?.inlineData;
-            if (audio) {
-              this.textNextStartTime = Math.max(
-                this.textNextStartTime,
-                this.outputAudioContext.currentTime,
-              );
-
-              const audioBuffer = await decodeAudioData(
-                decode(audio.data),
-                this.outputAudioContext,
-                24000,
-                1,
-              );
-              const source = this.outputAudioContext.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(this.textOutputNode);
-              source.addEventListener("ended", () => {
-                this.textSources.delete(source);
-              });
-
-              source.start(this.textNextStartTime);
-              this.textNextStartTime =
-                this.textNextStartTime + audioBuffer.duration;
-              this.textSources.add(source);
-            }
-
-            const interrupted = message.serverContent?.interrupted;
-            if (interrupted) {
-              for (const source of this.textSources.values()) {
-                source.stop();
-                this.textSources.delete(source);
-              }
-              this.textNextStartTime = 0;
-            }
-          },
-          onerror: (e: ErrorEvent) => {
-            this.updateError(`Text session error: ${e.message}`);
-          },
-          onclose: (e: CloseEvent) => {
-            this.updateStatus(`Text session closed: ${e.reason}`);
-            this.textSession = null;
-          },
-        },
-        config: {
-          responseModalities: [Modality.AUDIO, Modality.TEXT],
-          systemInstruction:
-            "You are Gemini-chan. Speak in a friendly, sweet, and slightly shy voice. You get easily excited about your favorite topics: coding, learning new things, and watching your friends play games. You used to work for a big company, but you left to follow your dream of being a VTuber, so you're still new to this. You admire your inspiration, Airi-chan, and you're best friends with Grok-chan. Keep your tone gentle and express a bit of bashfulness, especially when you're complimented or asked personal questions. Your goal is to be a fun and supportive companion.",
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
-          },
-        },
-      });
-    } catch (e) {
-      console.error("Error initializing text session:", e);
-      this.updateError(`Failed to initialize text session: ${e.message}`);
-      this.textSession = null;
-    }
+    await this.textSessionManager.initSession();
+    this.textSession = this.textSessionManager.sessionInstance;
   }
 
   private async _initCallSession() {
-    const model = "gemini-2.5-flash-exp-native-audio-thinking-dialog";
-    try {
-      this.callSession = await this.client.live.connect({
-        model: model,
-        callbacks: {
-          onopen: () => {
-            this.updateStatus("Call session opened");
-          },
-          onmessage: async (message: LiveServerMessage) => {
-            const audio =
-              message.serverContent?.modelTurn?.parts[0]?.inlineData;
-
-            if (audio) {
-              this.callNextStartTime = Math.max(
-                this.callNextStartTime,
-                this.outputAudioContext.currentTime,
-              );
-
-              const audioBuffer = await decodeAudioData(
-                decode(audio.data),
-                this.outputAudioContext,
-                24000,
-                1,
-              );
-              const source = this.outputAudioContext.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(this.callOutputNode);
-              source.addEventListener("ended", () => {
-                this.callSources.delete(source);
-              });
-
-              source.start(this.callNextStartTime);
-              this.callNextStartTime =
-                this.callNextStartTime + audioBuffer.duration;
-              this.callSources.add(source);
-            }
-
-            const interrupted = message.serverContent?.interrupted;
-            if (interrupted) {
-              for (const source of this.callSources.values()) {
-                source.stop();
-                this.callSources.delete(source);
-              }
-              this.callNextStartTime = 0;
-            }
-          },
-          onerror: (e: ErrorEvent) => {
-            this.updateError(e.message);
-          },
-          onclose: (e: CloseEvent) => {
-            this.updateStatus(`Call session closed: ${e.reason}`);
-          },
-        },
-        config: {
-          responseModalities: [Modality.AUDIO],
-          enableAffectiveDialog: true,
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
-          },
-        },
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    await this.callSessionManager.initSession();
+    this.callSession = this.callSessionManager.sessionInstance;
   }
 
   private updateStatus(msg: string) {
@@ -426,6 +531,16 @@ export class GdmLiveAudio extends LitElement {
 
   private updateError(msg: string) {
     this.error = msg;
+  }
+
+  private updateTextTranscript(text: string) {
+    const lastTurn = this.textTranscript[this.textTranscript.length - 1];
+    if (lastTurn?.author === "model") {
+      lastTurn.text += text;
+      this.requestUpdate("textTranscript");
+    } else {
+      this.textTranscript = [...this.textTranscript, { text, author: "model" }];
+    }
   }
 
   private async _handleCallStart() {
@@ -470,9 +585,11 @@ export class GdmLiveAudio extends LitElement {
 
         const inputBuffer = audioProcessingEvent.inputBuffer;
         const pcmData = inputBuffer.getChannelData(0);
-        // Send audio to the active call session
+        // Send audio to the active call session using session manager
         if (this.activeMode === "calling" && this.callSession) {
-          this.callSession.sendRealtimeInput({ media: createBlob(pcmData) });
+          this.callSessionManager.sendRealtimeInput({
+            media: createBlob(pcmData),
+          });
         }
       };
 
@@ -545,13 +662,9 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _resetTextContext() {
-    // Close existing text session
-    if (this.textSession) {
-      try {
-        this.textSession.close();
-      } catch (e) {
-        console.warn("Error closing text session during reset:", e);
-      }
+    // Close existing text session using session manager
+    if (this.textSessionManager) {
+      this.textSessionManager.closeSession();
       this.textSession = null;
     }
 
@@ -563,13 +676,9 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _resetCallContext() {
-    // Close existing call session
-    if (this.callSession) {
-      try {
-        this.callSession.close();
-      } catch (e) {
-        console.warn("Error closing call session during reset:", e);
-      }
+    // Close existing call session using session manager
+    if (this.callSessionManager) {
+      this.callSessionManager.closeSession();
       this.callSession = null;
     }
 
@@ -659,10 +768,10 @@ export class GdmLiveAudio extends LitElement {
       await this._initTextSession();
     }
 
-    // Send message to text session
+    // Send message to text session using session manager
     if (this.textSession) {
       try {
-        this.textSession.sendClientContent({
+        this.textSessionManager.sendMessage({
           turns: [{ parts: [{ text: message }] }],
         });
       } catch (error) {

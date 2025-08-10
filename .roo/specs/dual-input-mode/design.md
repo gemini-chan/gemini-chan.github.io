@@ -318,17 +318,185 @@ private callSources = new Set<AudioBufferSourceNode>();
 - **UI State Recovery:** Ensure transcript windows return to correct visibility states after any errors.
 - **Audio Contract Compliance:** Each session manages its own audio resources to prevent cross-session interference.
 
-## 6. Testing Strategy
+## 7. Session Manager Architecture Pattern
+
+### 7.1. Code Duplication Analysis
+The current implementation has significant code duplication between `_initTextSession()` and `_initCallSession()` methods:
+
+**Shared Logic (~80% identical):**
+- Audio processing pipeline (`decodeAudioData`, buffer creation, timeline management)
+- Source lifecycle management (`sources` Set operations, event listeners)
+- Interruption handling pattern
+- Session closing/cleanup logic
+- Error handling patterns
+
+**Mode-Specific Differences (~20%):**
+- Model selection (`gemini-2.5-flash-live-preview` vs `gemini-2.5-flash-exp-native-audio-thinking-dialog`)
+- Configuration (`responseModalities`, `systemInstruction` vs `enableAffectiveDialog`)
+- Output routing (`textOutputNode` vs `callOutputNode`)
+- State management (isolated `nextStartTime` and `sources` per session)
+
+### 7.2. Proposed Session Manager Pattern
+
+```typescript
+abstract class BaseSessionManager {
+  protected nextStartTime: number = 0;
+  protected sources = new Set<AudioBufferSourceNode>();
+  protected session: Session | null = null;
+  
+  constructor(
+    protected outputAudioContext: AudioContext,
+    protected outputNode: GainNode,
+    protected client: GoogleGenAI,
+    protected updateStatus: (msg: string) => void,
+    protected updateError: (msg: string) => void
+  ) {}
+
+  // Common audio processing logic
+  protected async handleAudioMessage(audio: any): Promise<void> {
+    this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
+    
+    const audioBuffer = await decodeAudioData(decode(audio.data), this.outputAudioContext, 24000, 1);
+    const source = this.outputAudioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.outputNode);
+    source.addEventListener("ended", () => this.sources.delete(source));
+    
+    source.start(this.nextStartTime);
+    this.nextStartTime = this.nextStartTime + audioBuffer.duration;
+    this.sources.add(source);
+  }
+
+  protected handleInterruption(): void {
+    for (const source of this.sources.values()) {
+      source.stop();
+      this.sources.delete(source);
+    }
+    this.nextStartTime = 0;
+  }
+
+  // Abstract methods for mode-specific behavior
+  protected abstract getModel(): string;
+  protected abstract getConfig(): any;
+  protected abstract getSessionName(): string;
+  
+  public async initSession(): Promise<void> {
+    await this.closeSession();
+    
+    try {
+      this.session = await this.client.live.connect({
+        model: this.getModel(),
+        callbacks: this.getCallbacks(),
+        config: this.getConfig(),
+      });
+    } catch (e) {
+      console.error(`Error initializing ${this.getSessionName()}:`, e);
+      this.updateError(`Failed to initialize ${this.getSessionName()}`);
+    }
+  }
+
+  public async closeSession(): Promise<void> {
+    if (this.session) {
+      try {
+        this.session.close();
+      } catch (e) {
+        console.warn(`Error closing ${this.getSessionName()}:`, e);
+      }
+      this.session = null;
+    }
+  }
+}
+
+class TextSessionManager extends BaseSessionManager {
+  protected getModel(): string {
+    return "gemini-2.5-flash-live-preview";
+  }
+
+  protected getConfig(): any {
+    return {
+      responseModalities: [Modality.AUDIO, Modality.TEXT],
+      systemInstruction: "You are Gemini-chan...",
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
+    };
+  }
+
+  protected getSessionName(): string {
+    return "text session";
+  }
+}
+
+class CallSessionManager extends BaseSessionManager {
+  protected getModel(): string {
+    return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
+  }
+
+  protected getConfig(): any {
+    return {
+      responseModalities: [Modality.AUDIO],
+      enableAffectiveDialog: true,
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
+    };
+  }
+
+  protected getSessionName(): string {
+    return "call session";
+  }
+}
+```
+
+### 7.3. Main Component Integration
+
+```typescript
+export class GdmLiveAudio extends LitElement {
+  private textSessionManager: TextSessionManager;
+  private callSessionManager: CallSessionManager;
+
+  constructor() {
+    super();
+    this.textSessionManager = new TextSessionManager(
+      this.outputAudioContext, this.textOutputNode, this.client,
+      this.updateStatus.bind(this), this.updateError.bind(this)
+    );
+    this.callSessionManager = new CallSessionManager(
+      this.outputAudioContext, this.callOutputNode, this.client,
+      this.updateStatus.bind(this), this.updateError.bind(this)
+    );
+  }
+
+  private async _initTextSession() {
+    await this.textSessionManager.initSession();
+  }
+
+  private async _initCallSession() {
+    await this.callSessionManager.initSession();
+  }
+}
+```
+
+### 7.4. Benefits of Session Manager Pattern
+
+1. **DRY Principle**: Eliminates ~80% code duplication in audio processing
+2. **Single Responsibility**: Each manager handles one session type with clear boundaries
+3. **Easier Testing**: Test common audio logic once in base class, mode-specific logic separately
+4. **Better Maintainability**: Changes to audio processing automatically affect both modes
+5. **Type Safety**: Better TypeScript support with abstract methods and generics
+6. **Future Extensibility**: Easy to add new session types (e.g., video calls, different models)
+7. **Isolated State**: Maintains API contract compliance with per-session audio management
+
+## 8. Testing Strategy
 - **Unit Tests:**
     - Test dual-context state management logic in `index.tsx` (separate TTS/STS contexts).
     - Test transcript window visibility logic based on active mode.
     - Test event emission in `chat-view`, `call-transcript`, and `gdm-live-audio`.
     - Test context preservation when switching between modes.
     - Test audio analysis in `audio-mapper.ts`.
+    - Test `BaseSessionManager` common audio processing logic.
+    - Test `TextSessionManager` and `CallSessionManager` specific behaviors.
 - **Integration Tests:**
     - Test communication between main application and dynamic transcript components.
     - Test the connection between active session `outputNode` and `live2d-visual`.
     - Test proper hiding/showing of chat-view and call-transcript components.
+    - Test session manager lifecycle and delegation from main component.
 - **End-to-End (E2E) Tests:**
     - Simulate full texting flow (TTS) with chat window visibility.
     - Simulate full calling flow (STS) with call transcript window visibility.
