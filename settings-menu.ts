@@ -6,6 +6,7 @@ interface FieldConfig {
   validator?: (value: string) => boolean;
   eventName?: string;
   required?: boolean;
+  preserveOnEmpty?: boolean;
 }
 
 @customElement("settings-menu")
@@ -244,6 +245,17 @@ export class SettingsMenu extends LitElement {
 
     // If field is not required and empty, save empty value without validation
     if (!config.required && !value) {
+      if (config.preserveOnEmpty && localStorage.getItem(config.storageKey)) {
+        // Value exists, user cleared it, so we restore it and do nothing.
+        const input =
+          this.shadowRoot!.querySelector<HTMLInputElement>(`#${fieldName}`);
+        if (input) {
+          input.value = localStorage.getItem(config.storageKey)!;
+        }
+        this._setValidationState(fieldName, true);
+        return true; // No-op, but validation is OK.
+      }
+
       localStorage.setItem(config.storageKey, value);
       if (config.eventName) {
         this.dispatchEvent(new CustomEvent(config.eventName));
@@ -311,6 +323,7 @@ export class SettingsMenu extends LitElement {
         validator: this._validateLive2dUrl.bind(this),
         eventName: "model-url-changed",
         required: false,
+        preserveOnEmpty: true,
       },
       "modelUrl",
     );
