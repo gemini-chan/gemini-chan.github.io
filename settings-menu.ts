@@ -226,6 +226,11 @@ export class SettingsMenu extends LitElement {
 
   firstUpdated() {
     this.shadowRoot!.host.setAttribute("active", "true");
+    this._validateApiKey(this.apiKey);
+    this._validateLive2dUrl(
+      localStorage.getItem("live2d-model-url") ||
+        "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip",
+    );
   }
 
   private _handleBackdropClick(e: Event) {
