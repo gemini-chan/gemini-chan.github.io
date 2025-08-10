@@ -775,17 +775,6 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleApiKeyError(e: CustomEvent) {
-    const errorMessage = e.detail?.error || "API key validation failed";
-    console.error("[API Key Error]", errorMessage);
-
-    // Show error toast notification
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
-    if (toast) {
-      toast.show(errorMessage, "error", 4000);
-    }
-  }
-
   private _handleModelUrlError(e: CustomEvent) {
     const errorMessage = e.detail?.error || "Live2D URL validation failed";
     console.error("[Model URL Error]", errorMessage);
@@ -1016,7 +1005,6 @@ export class GdmLiveAudio extends LitElement {
                   this.showSettings = false;
                 }}
                 @api-key-saved=${this._handleApiKeySaved}
-                @api-key-error=${this._handleApiKeyError}
                 @model-url-changed=${this._handleModelUrlChanged}
                 @model-url-error=${this._handleModelUrlError}></settings-menu>`
             : ""

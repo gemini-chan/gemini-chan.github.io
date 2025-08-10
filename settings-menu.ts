@@ -320,14 +320,14 @@ export class SettingsMenu extends LitElement {
     try {
       const text = await navigator.clipboard.readText();
       this.apiKey = text;
+
+      // Also update the DOM element to ensure blur validation works correctly
+      const apiKeyInput =
+        this.shadowRoot!.querySelector<HTMLInputElement>("#apiKey");
+      if (apiKeyInput) {
+        apiKeyInput.value = text;
+      }
     } catch (err) {
-      this.dispatchEvent(
-        new CustomEvent("api-key-error", {
-          detail: { error: "Failed to paste from clipboard." },
-          bubbles: true,
-          composed: true,
-        }),
-      );
       console.error("Failed to read clipboard contents: ", err);
     }
   }
@@ -354,24 +354,10 @@ export class SettingsMenu extends LitElement {
 
   private _validateApiKey(key: string): boolean {
     if (!key) {
-      this.dispatchEvent(
-        new CustomEvent("api-key-error", {
-          detail: { error: "API key cannot be empty." },
-          bubbles: true,
-          composed: true,
-        }),
-      );
       return false;
     }
     // Basic format validation
     if (!key.startsWith("AIzaSy") || key.length !== 39) {
-      this.dispatchEvent(
-        new CustomEvent("api-key-error", {
-          detail: { error: "Invalid API key format." },
-          bubbles: true,
-          composed: true,
-        }),
-      );
       return false;
     }
     return true;
