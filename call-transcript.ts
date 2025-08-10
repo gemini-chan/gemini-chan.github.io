@@ -19,7 +19,8 @@ export class CallTranscript extends LitElement {
   rateLimited: boolean = false;
 
   @property({ type: String })
-  rateLimitMessage: string = "Rate limit: responses may be delayed or unavailable";
+  rateLimitMessage: string =
+    "E-eh? I'm getting a bit sleepy... I can't talk right now... (ρω-).oO";
 
   static styles = css`
     :host {
