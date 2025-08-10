@@ -33,6 +33,8 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** a call is active **THEN** the chat window is hidden and a separate call transcript window appears
 - **WHEN** the model responds during a call **THEN** the audio is played back and transcribed text appears in the call transcript window
 - **WHEN** I end the call **THEN** the call transcript window disappears and the chat window becomes visible again
+- **WHEN** a call is active AND a request is rate-limited **THEN** a toast appears explaining the rate limit and no new audio is queued
+- **WHEN** a call is active AND the API key is overloaded (rate-limited) and an existing session is reused **THEN** the UI must not silently fail: show a call-side warning (e.g., a banner or transcript entry) indicating responses may be delayed or unavailable
 
 ### 2.3. Separate Context Management
 - **As a** user,
@@ -110,6 +112,7 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** the application is running **THEN** a settings icon or button is visible in the main interface
 - **WHEN** I click the settings icon or button **THEN** the settings menu opens
 - **WHEN** the settings menu is open **THEN** the UI is consistent with the existing application style
+- **WHEN** a call is active **THEN** the settings icon/button is hidden and the settings menu cannot be opened
 
 ### 2.10. API Key Input and Validation
 - **As a** user,

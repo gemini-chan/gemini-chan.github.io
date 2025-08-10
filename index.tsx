@@ -31,15 +31,17 @@ abstract class BaseSessionManager {
     protected client: GoogleGenAI,
     protected updateStatus: (msg: string) => void,
     protected updateError: (msg: string) => void,
+    protected onRateLimit: (msg: string) => void = () => {},
   ) {}
 
   // Common audio processing logic
-  protected async handleAudioMessage(audio: any): Promise<void> {
+  protected async handleAudioMessage(audio: { data?: string }): Promise<void> {
     this.nextStartTime = Math.max(
       this.nextStartTime,
       this.outputAudioContext.currentTime,
     );
 
+    if (!audio?.data) return;
     const audioBuffer = await decodeAudioData(
       decode(audio.data),
       this.outputAudioContext,
@@ -82,6 +84,12 @@ abstract class BaseSessionManager {
         }
       },
       onerror: (e: ErrorEvent) => {
+        // Surface rate-limit hints in error messages
+        const msg = e.message || "";
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
         this.updateError(`${this.getSessionName()} error: ${e.message}`);
       },
       onclose: (e: CloseEvent) => {
@@ -93,10 +101,10 @@ abstract class BaseSessionManager {
 
   // Abstract methods for mode-specific behavior
   protected abstract getModel(): string;
-  protected abstract getConfig(): any;
+  protected abstract getConfig(): Record<string, unknown>;
   protected abstract getSessionName(): string;
 
-  public async initSession(): Promise<void> {
+  public async initSession(): Promise<boolean> {
     await this.closeSession();
 
     try {
@@ -105,9 +113,12 @@ abstract class BaseSessionManager {
         callbacks: this.getCallbacks(),
         config: this.getConfig(),
       });
-    } catch (e) {
+      return true;
+    } catch (e: any) {
       console.error(`Error initializing ${this.getSessionName()}:`, e);
-      this.updateError(`Failed to initialize ${this.getSessionName()}`);
+      const msg = String(e?.message || e || "");
+      this.updateError(`Failed to initialize ${this.getSessionName()}: ${msg}`);
+      return false;
     }
   }
 
@@ -122,7 +133,11 @@ abstract class BaseSessionManager {
     }
   }
 
-  public sendMessage(content: any): void {
+  public sendMessage(content: {
+    turns: Array<{
+      parts: Array<{ text?: string; inlineData?: { data: string } }>;
+    }>;
+  }): void {
     if (this.session) {
       try {
         this.session.sendClientContent(content);
@@ -136,9 +151,15 @@ abstract class BaseSessionManager {
     }
   }
 
-  public sendRealtimeInput(input: any): void {
-    if (this.session) {
+  public sendRealtimeInput(input: {
+    media: { data?: string; mimeType?: string };
+  }): void {
+    if (!this.session) return;
+    try {
       this.session.sendRealtimeInput(input);
+    } catch (e: any) {
+      const msg = String(e?.message || e || "");
+      this.updateError(`Failed to stream audio: ${msg}`);
     }
   }
 
@@ -191,6 +212,12 @@ class TextSessionManager extends BaseSessionManager {
         }
       },
       onerror: (e: ErrorEvent) => {
+        // Surface rate-limit hints in error messages
+        const msg = e.message || "";
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
         this.updateError(`${this.getSessionName()} error: ${e.message}`);
       },
       onclose: (e: CloseEvent) => {
@@ -204,7 +231,7 @@ class TextSessionManager extends BaseSessionManager {
     return "gemini-2.5-flash-live-preview";
   }
 
-  protected getConfig(): any {
+  protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO, Modality.TEXT],
       systemInstruction:
@@ -225,12 +252,28 @@ class CallSessionManager extends BaseSessionManager {
     return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
   }
 
-  protected getConfig(): any {
+  protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
       enableAffectiveDialog: true,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
+      },
+    };
+  }
+
+  protected getCallbacks() {
+    const base = super.getCallbacks();
+    // Extend callbacks to detect rate-limit while in-call and surface a non-silent failure
+    return {
+      ...base,
+      onerror: (e: ErrorEvent) => {
+        const msg = e.message || "";
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
+        base.onerror?.(e);
       },
     };
   }
@@ -287,13 +330,16 @@ export class GdmLiveAudio extends LitElement {
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
-    window.AudioContext || (window as any).webkitAudioContext
+    (window as any).AudioContext || (window as any).webkitAudioContext
   )({ sampleRate: 16000 });
   private outputAudioContext = new (
-    window.AudioContext || (window as any).webkitAudioContext
+    (window as any).AudioContext || (window as any).webkitAudioContext
   )({ sampleRate: 24000 });
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
+
+  // Rate-limit UX state for calls
+  private _callRateLimitNotified = false;
 
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
@@ -502,14 +548,16 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async _initTextSession() {
-    await this.textSessionManager.initSession();
+    const ok = await this.textSessionManager.initSession();
     this.textSession = this.textSessionManager.sessionInstance;
+    return ok;
   }
 
   private async _initCallSession() {
     console.log("[Debug] Initializing new call session.");
-    await this.callSessionManager.initSession();
+    const ok = await this.callSessionManager.initSession();
     this.callSession = this.callSessionManager.sessionInstance;
+    return ok;
   }
 
   private updateStatus(msg: string) {
@@ -532,6 +580,11 @@ export class GdmLiveAudio extends LitElement {
 
   private updateError(msg: string) {
     this.error = msg;
+    // Non-silent failure during calls on rate limit
+    const isRateLimited = /rate[- ]?limit|quota/i.test(msg || "");
+    if (isRateLimited && this.isCallActive) {
+      this._handleCallRateLimit(msg);
+    }
   }
 
   private updateTextTranscript(text: string) {
@@ -542,6 +595,35 @@ export class GdmLiveAudio extends LitElement {
     } else {
       this.textTranscript = [...this.textTranscript, { text, author: "model" }];
     }
+  }
+
+  private _appendCallNotice(text: string) {
+    // Append a system-style notice to the call transcript to avoid silent failures
+    const notice = { text, author: "model" as const, timestamp: new Date() };
+    this.callTranscript = [...this.callTranscript, notice];
+  }
+
+  private _handleCallRateLimit(msg?: string) {
+    if (this._callRateLimitNotified) return;
+    this._callRateLimitNotified = true;
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    toast?.show(
+      "Rate limit reached: responses may be delayed or unavailable",
+      "warning",
+      4000,
+    );
+    this._appendCallNotice(
+      "[Rate limited] Responses may be delayed or unavailable.",
+    );
+    // Reset the flag after a brief period to allow future notifications if sustained
+    setTimeout(() => {
+      this._callRateLimitNotified = false;
+    }, 8000);
+  }
+
+  private _handleTextRateLimit(msg?: string) {
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    toast?.show("Rate limit reached. Please wait a moment.", "warning", 3000);
   }
 
   private async _handleCallStart() {
@@ -558,9 +640,12 @@ export class GdmLiveAudio extends LitElement {
     this.activeMode = "calling";
     this._updateActiveOutputNode();
 
-    // Initialize call session only if it doesn't exist
-    if (!this.callSession) {
-      await this._initCallSession();
+    // Initialize or reinitialize call session; if initialization fails, show non-silent failure and abort
+    const ok = await this._initCallSession();
+    if (!ok || !this.callSession) {
+      this._handleCallRateLimit("Call session init failed");
+      this.updateStatus("Unable to start call (rate limited or network error)");
+      return;
     }
 
     this.inputAudioContext.resume();
@@ -593,9 +678,14 @@ export class GdmLiveAudio extends LitElement {
         const pcmData = inputBuffer.getChannelData(0);
         // Send audio to the active call session using session manager
         if (this.activeMode === "calling" && this.callSession) {
-          this.callSessionManager.sendRealtimeInput({
-            media: createBlob(pcmData),
-          });
+          try {
+            this.callSessionManager.sendRealtimeInput({
+              media: createBlob(pcmData),
+            });
+          } catch (e: any) {
+            const msg = String(e?.message || e || "");
+            this.updateError(`Failed to stream audio: ${msg}`);
+          }
         }
       };
 
@@ -656,9 +746,8 @@ export class GdmLiveAudio extends LitElement {
     );
 
     this.updateStatus("Call ended");
-    console.log('[Debug] Call ended. callSession preserved:', this.callSession);
+    console.log("[Debug] Call ended. callSession preserved:", this.callSession);
   }
-
 
   private _resetTextContext() {
     // Close existing text session using session manager
@@ -675,7 +764,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _resetCallContext() {
-    console.log('[Debug] Resetting call context. Closing session.');
+    console.log("[Debug] Resetting call context. Closing session.");
     // Close existing call session using session manager
     if (this.callSessionManager) {
       this.callSessionManager.closeSession();
@@ -830,7 +919,13 @@ export class GdmLiveAudio extends LitElement {
     // Ensure we have an active text session
     if (!this.textSession) {
       this.updateStatus("Initializing text session...");
-      await this._initTextSession();
+      const ok = await this._initTextSession();
+      if (!ok || !this.textSession) {
+        this.updateError(
+          "Unable to start text session (rate limited or network error)",
+        );
+        return;
+      }
     }
 
     // Send message to text session using session manager
@@ -839,18 +934,21 @@ export class GdmLiveAudio extends LitElement {
         this.textSessionManager.sendMessage({
           turns: [{ parts: [{ text: message }] }],
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error sending message to text session:", error);
-        this.updateError(`Failed to send message: ${error.message}`);
+        const msg = String(error?.message || error || "");
+        this.updateError(`Failed to send message: ${msg}`);
 
-        // Try to reinitialize the session
-        await this._initTextSession();
+        // Try to reinitialize the session and abort if still failing
+        const ok = await this._initTextSession();
+        if (!ok) {
+          return;
+        }
       }
     } else {
       this.updateError("Text session not available");
     }
   }
-
 
   // Long press detection methods for unified call/reset button
   private _handleMouseDown() {
@@ -937,7 +1035,6 @@ export class GdmLiveAudio extends LitElement {
       this._resetCallContext();
     }
   }
-
 
   private _updateProgressIndicator() {
     if (!this._isLongPressing) return;
