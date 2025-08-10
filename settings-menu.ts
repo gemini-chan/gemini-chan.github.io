@@ -235,12 +235,29 @@ export class SettingsMenu extends LitElement {
     e.stopPropagation();
   }
 
+  private _apiKeyInputDebounceTimer: number | undefined;
+
   private _onApiKeyInput(e: Event) {
     const input = e.target as HTMLInputElement;
     this.apiKey = input.value;
     this._error = ""; // Clear error on input
-    this._apiKeyValid = false; // Clear validation tick while typing
+    this._apiKeyValid = false;
     this._apiKeyInvalid = false;
+
+    clearTimeout(this._apiKeyInputDebounceTimer);
+    this._apiKeyInputDebounceTimer = window.setTimeout(() => {
+      this._autoSave(
+        input.value,
+        {
+          storageKey: "gemini-api-key",
+          validator: this._validateApiKey.bind(this),
+          eventName: undefined,
+          required: true,
+          preserveOnEmpty: true,
+        },
+        "apiKey",
+      );
+    }, 500); // 500ms debounce
   }
 
   private _onModelUrlInput(e: Event) {
