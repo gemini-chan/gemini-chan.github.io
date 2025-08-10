@@ -1,6 +1,13 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
+interface FieldConfig {
+  storageKey: string;
+  validator?: (value: string) => boolean;
+  eventName?: string;
+  required?: boolean;
+}
+
 @customElement("settings-menu")
 export class SettingsMenu extends LitElement {
   @property({ type: String })
@@ -10,13 +17,26 @@ export class SettingsMenu extends LitElement {
   private _error = "";
 
   @state()
-  private _isSaving = false;
+  private _apiKeyValid = false;
 
   @state()
-  private _saved = false;
+  private _modelUrlValid = false;
 
   static styles = css`
     :host {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    :host([active]) {
+      opacity: 1;
+    }
+    .backdrop {
       position: absolute;
       top: 0;
       left: 0;
@@ -26,12 +46,6 @@ export class SettingsMenu extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 20;
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out;
-    }
-    :host([active]) {
-      opacity: 1;
     }
     .container {
       background: #222;
@@ -63,7 +77,7 @@ export class SettingsMenu extends LitElement {
       background: #333;
       border: 1px solid #555;
       color: white;
-      padding: 0.5em 2.5em 0.5em 0.5em;
+      padding: 0.5em 5.5em 0.5em 0.5em;
       border-radius: 6px;
       flex: 1;
     }
@@ -86,6 +100,30 @@ export class SettingsMenu extends LitElement {
       background: rgba(255, 255, 255, 0.1);
     }
     .paste-icon {
+      width: 16px;
+      height: 16px;
+    }
+    .validation-tick {
+      position: absolute;
+      right: 3em;
+      background: transparent;
+      border: none;
+      color: #4caf50;
+      padding: 0.25em;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.2s ease-in-out;
+      pointer-events: none;
+    }
+    .validation-tick.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .tick-icon {
       width: 16px;
       height: 16px;
     }
@@ -115,50 +153,69 @@ export class SettingsMenu extends LitElement {
 
   render() {
     return html`
-      <div class="container" @click=${this._stopPropagation}>
-        <h2>Settings</h2>
-        <label for="modelUrl">Live2D Model URL</label>
-        <input
-          id="modelUrl"
-          type="text"
-          .value=${localStorage.getItem("live2d-model-url") || "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip"}
-          placeholder="Enter model3.json or .zip URL" />
+      <div class="backdrop" @click=${this._handleBackdropClick}>
+        <div class="container" @click=${this._stopPropagation}>
+          <h2>Settings</h2>
+          <label for="modelUrl">Live2D Model URL</label>
+          <div class="input-group">
+            <input
+              id="modelUrl"
+              type="text"
+              .value=${localStorage.getItem("live2d-model-url") || "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip"}
+              @input=${this._onModelUrlInput}
+              @blur=${this._onModelUrlBlur}
+              placeholder="Enter model3.json or .zip URL" />
+            <div class="validation-tick ${this._modelUrlValid ? "show" : ""}" title="Valid URL">
+              <svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
+              </svg>
+            </div>
+            <button class="paste-button" @click=${this._onPasteModelUrl} title="Paste from clipboard">
+              <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
+              </svg>
+            </button>
+          </div>
 
-        <label for="apiKey">API Key</label>
-        <div class="input-group">
-          <input
-            id="apiKey"
-            type="password"
-            .value=${this.apiKey}
-            @input=${this._onApiKeyInput}
-            placeholder="Enter your API Key" />
-          <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
-            <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
-            </svg>
-          </button>
-        </div>
-        ${this._error ? html`<div class="error">${this._error}</div>` : ""}
+          <label for="apiKey">API Key</label>
+          <div class="input-group">
+            <input
+              id="apiKey"
+              type="password"
+              .value=${this.apiKey}
+              @input=${this._onApiKeyInput}
+              @blur=${this._onApiKeyBlur}
+              placeholder="Enter your API Key" />
+            <div class="validation-tick ${this._apiKeyValid ? "show" : ""}" title="Valid API Key">
+              <svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
+              </svg>
+            </div>
+            <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
+              <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
+              </svg>
+            </button>
+          </div>
+          ${this._error ? html`<div class="error">${this._error}</div>` : ""}
 
-        <div class="buttons">
-          <button @click=${this._getApiKeyUrl}>Get API Key</button>
-          <button @click=${this._handleSave} ?disabled=${this._isSaving || this._saved}>
-            ${this._isSaving ? "Saving..." : this._saved ? "Saved ✔" : "Save"}
-          </button>
+          <div class="buttons">
+            <button @click=${this._getApiKeyUrl}>Get API Key</button>
+          </div>
         </div>
       </div>
     `;
   }
 
   firstUpdated() {
-    this.shadowRoot.host.setAttribute("active", "true");
-    // Add click-outside functionality
-    this.addEventListener("click", this._handleBackdropClick);
+    this.shadowRoot!.host.setAttribute("active", "true");
   }
 
   private _handleBackdropClick(e: Event) {
-    // Close the modal when clicking on the backdrop
-    this.dispatchEvent(new CustomEvent("close"));
+    // Only close if clicking directly on the backdrop element
+    if (e.target === e.currentTarget) {
+      this.dispatchEvent(new CustomEvent("close"));
+    }
   }
 
   private _stopPropagation(e: Event) {
@@ -170,6 +227,93 @@ export class SettingsMenu extends LitElement {
     const input = e.target as HTMLInputElement;
     this.apiKey = input.value;
     this._error = ""; // Clear error on input
+    this._apiKeyValid = false; // Clear validation tick while typing
+  }
+
+  private _onModelUrlInput(e: Event) {
+    this._error = ""; // Clear error on input
+    this._modelUrlValid = false; // Clear validation tick while typing
+  }
+
+  private _autoSave(
+    value: string,
+    config: FieldConfig,
+    fieldName: "apiKey" | "modelUrl",
+  ): boolean {
+    let isValid = false;
+
+    // If field is not required and empty, save empty value without validation
+    if (!config.required && !value) {
+      localStorage.setItem(config.storageKey, value);
+      if (config.eventName) {
+        this.dispatchEvent(new CustomEvent(config.eventName));
+      }
+      isValid = true;
+    } else {
+      // If validator exists, use it
+      if (config.validator) {
+        isValid = config.validator(value);
+        if (!isValid) {
+          // Validation failed, error should be set by validator
+          this._setValidationState(fieldName, false);
+          return false;
+        }
+      } else {
+        isValid = true;
+      }
+
+      // Save to localStorage
+      localStorage.setItem(config.storageKey, value);
+
+      // Dispatch event if specified
+      if (config.eventName) {
+        this.dispatchEvent(new CustomEvent(config.eventName));
+      }
+    }
+
+    // Update validation state
+    this._setValidationState(fieldName, isValid);
+    return isValid;
+  }
+
+  private _setValidationState(
+    fieldName: "apiKey" | "modelUrl",
+    isValid: boolean,
+  ) {
+    if (fieldName === "apiKey") {
+      this._apiKeyValid = isValid;
+    } else if (fieldName === "modelUrl") {
+      this._modelUrlValid = isValid;
+    }
+  }
+
+  private _onApiKeyBlur(e: Event) {
+    const input = e.target as HTMLInputElement;
+    // Just save and validate, don't dispatch the auto-close event on blur
+    this._autoSave(
+      input.value,
+      {
+        storageKey: "gemini-api-key",
+        validator: this._validateApiKey.bind(this),
+        eventName: undefined, // No auto-close on blur
+        required: true,
+      },
+      "apiKey",
+    );
+  }
+
+  private _onModelUrlBlur(e: Event) {
+    const input = e.target as HTMLInputElement;
+    this._autoSave(
+      input.value,
+      {
+        storageKey: "live2d-model-url",
+        validator: this._validateLive2dUrl.bind(this),
+        eventName: "model-url-changed",
+        required: false,
+      },
+      "modelUrl",
+    );
   }
 
   private async _onPaste() {
@@ -182,26 +326,17 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _handleSave() {
-    if (this._validateApiKey(this.apiKey)) {
-      this._isSaving = true;
-      localStorage.setItem("gemini-api-key", this.apiKey);
-      // Save model URL if present
+  private async _onPasteModelUrl() {
+    try {
+      const text = await navigator.clipboard.readText();
       const modelInput =
         this.shadowRoot!.querySelector<HTMLInputElement>("#modelUrl");
-      if (modelInput && modelInput.value) {
-        localStorage.setItem("live2d-model-url", modelInput.value);
+      if (modelInput) {
+        modelInput.value = text;
       }
-      this.dispatchEvent(new CustomEvent("api-key-saved"));
-
-      setTimeout(() => {
-        this._isSaving = false;
-        this._saved = true;
-        setTimeout(() => {
-          this.dispatchEvent(new CustomEvent("close"));
-          this._saved = false;
-        }, 1000);
-      }, 1000);
+    } catch (err) {
+      this._error = "Failed to paste from clipboard.";
+      console.error("Failed to read clipboard contents: ", err);
     }
   }
 
@@ -216,6 +351,50 @@ export class SettingsMenu extends LitElement {
       return false;
     }
     return true;
+  }
+
+  private _validateLive2dUrl(url: string): boolean {
+    if (!url) {
+      // Empty is OK - will fallback to sphere
+      return true;
+    }
+
+    try {
+      const urlObj = new URL(url);
+
+      // Check protocol - allow HTTP, HTTPS, IPFS, and blob
+      const validProtocols = ["http:", "https:", "ipfs:", "blob:"];
+      if (!validProtocols.includes(urlObj.protocol)) {
+        this._error =
+          "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.";
+        return false;
+      }
+
+      // For IPFS, basic format check
+      if (urlObj.protocol === "ipfs:" && !urlObj.pathname) {
+        this._error = "IPFS URL must include a valid hash.";
+        return false;
+      }
+
+      // If it has a file extension, validate it's supported
+      const pathname = urlObj.pathname.toLowerCase();
+      const hasExtension = /\.[a-z0-9]+$/i.test(pathname);
+      if (
+        hasExtension &&
+        !pathname.endsWith(".zip") &&
+        !pathname.endsWith(".model3.json")
+      ) {
+        this._error =
+          "If specified, file extension must be .zip or .model3.json";
+        return false;
+      }
+
+      // All other cases pass - let the Live2D loader handle it
+      return true;
+    } catch (err) {
+      this._error = "Invalid URL format.";
+      return false;
+    }
   }
 
   private _getApiKeyUrl() {
