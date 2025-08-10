@@ -278,10 +278,28 @@ export class SettingsMenu extends LitElement {
     }, 500); // 500ms debounce
   }
 
+  private _modelUrlInputDebounceTimer: number | undefined;
+
   private _onModelUrlInput(e: Event) {
+    const input = e.target as HTMLInputElement;
     this._error = ""; // Clear error on input
     this._modelUrlValid = false; // Clear validation tick while typing
     this._modelUrlInvalid = false;
+
+    clearTimeout(this._modelUrlInputDebounceTimer);
+    this._modelUrlInputDebounceTimer = window.setTimeout(() => {
+      this._autoSave(
+        input.value,
+        {
+          storageKey: "live2d-model-url",
+          validator: this._validateLive2dUrl.bind(this),
+          eventName: "model-url-changed",
+          required: false,
+          preserveOnEmpty: true,
+        },
+        "modelUrl",
+      );
+    }, 500);
   }
 
   private _autoSave(
