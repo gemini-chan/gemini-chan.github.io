@@ -51,6 +51,11 @@ export class SettingsMenu extends LitElement {
       color: #ccc;
       font-size: 0.9em;
     }
+    .input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
     input::placeholder {
       color: #aaa;
     }
@@ -58,8 +63,31 @@ export class SettingsMenu extends LitElement {
       background: #333;
       border: 1px solid #555;
       color: white;
-      padding: 0.5em;
+      padding: 0.5em 2.5em 0.5em 0.5em;
       border-radius: 6px;
+      flex: 1;
+    }
+    .paste-button {
+      position: absolute;
+      right: 0.5em;
+      background: transparent;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      padding: 0.25em;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease-in-out;
+    }
+    .paste-button:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .paste-icon {
+      width: 16px;
+      height: 16px;
     }
     .buttons {
       display: flex;
@@ -87,17 +115,8 @@ export class SettingsMenu extends LitElement {
 
   render() {
     return html`
-      <div class="container">
+      <div class="container" @click=${this._stopPropagation}>
         <h2>Settings</h2>
-        <label for="apiKey">API Key</label>
-        <input
-          id="apiKey"
-          type="password"
-          .value=${this.apiKey}
-          @input=${this._onApiKeyInput}
-          placeholder="Enter your API Key" />
-        ${this._error ? html`<div class="error">${this._error}</div>` : ""}
-
         <label for="modelUrl">Live2D Model URL</label>
         <input
           id="modelUrl"
@@ -105,10 +124,24 @@ export class SettingsMenu extends LitElement {
           .value=${localStorage.getItem("live2d-model-url") || "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip"}
           placeholder="Enter model3.json or .zip URL" />
 
+        <label for="apiKey">API Key</label>
+        <div class="input-group">
+          <input
+            id="apiKey"
+            type="password"
+            .value=${this.apiKey}
+            @input=${this._onApiKeyInput}
+            placeholder="Enter your API Key" />
+          <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
+            <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
+            </svg>
+          </button>
+        </div>
+        ${this._error ? html`<div class="error">${this._error}</div>` : ""}
+
         <div class="buttons">
           <button @click=${this._getApiKeyUrl}>Get API Key</button>
-          <button @click=${this._onPaste}>Paste</button>
-          <button @click=${this._handleCancel}>Cancel</button>
           <button @click=${this._handleSave} ?disabled=${this._isSaving || this._saved}>
             ${this._isSaving ? "Saving..." : this._saved ? "Saved ✔" : "Save"}
           </button>
@@ -119,6 +152,18 @@ export class SettingsMenu extends LitElement {
 
   firstUpdated() {
     this.shadowRoot.host.setAttribute("active", "true");
+    // Add click-outside functionality
+    this.addEventListener("click", this._handleBackdropClick);
+  }
+
+  private _handleBackdropClick(e: Event) {
+    // Close the modal when clicking on the backdrop
+    this.dispatchEvent(new CustomEvent("close"));
+  }
+
+  private _stopPropagation(e: Event) {
+    // Prevent clicks inside the container from closing the modal
+    e.stopPropagation();
   }
 
   private _onApiKeyInput(e: Event) {
@@ -158,11 +203,6 @@ export class SettingsMenu extends LitElement {
         }, 1000);
       }, 1000);
     }
-  }
-
-  private _handleCancel() {
-    // Close settings menu without saving
-    this.dispatchEvent(new CustomEvent("close"));
   }
 
   private _validateApiKey(key: string): boolean {
