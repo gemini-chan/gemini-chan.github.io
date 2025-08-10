@@ -334,40 +334,28 @@ export class SettingsMenu extends LitElement {
     );
   }
 
-  private async _onPaste() {
+  private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
       const text = await navigator.clipboard.readText();
-      this.apiKey = text;
-
-      // Also update the DOM element to ensure blur validation works correctly
-      const apiKeyInput =
-        this.shadowRoot!.querySelector<HTMLInputElement>("#apiKey");
-      if (apiKeyInput) {
-        apiKeyInput.value = text;
+      const input =
+        this.shadowRoot!.querySelector<HTMLInputElement>(`#${fieldName}`);
+      if (input) {
+        input.value = text;
+        if (fieldName === "apiKey") {
+          this.apiKey = text;
+        }
       }
     } catch (err) {
       console.error("Failed to read clipboard contents: ", err);
     }
   }
 
-  private async _onPasteModelUrl() {
-    try {
-      const text = await navigator.clipboard.readText();
-      const modelInput =
-        this.shadowRoot!.querySelector<HTMLInputElement>("#modelUrl");
-      if (modelInput) {
-        modelInput.value = text;
-      }
-    } catch (err) {
-      this.dispatchEvent(
-        new CustomEvent("model-url-error", {
-          detail: { error: "Failed to paste from clipboard." },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-      console.error("Failed to read clipboard contents: ", err);
-    }
+  private _onPaste() {
+    this._handlePaste("apiKey");
+  }
+
+  private _onPasteModelUrl() {
+    this._handlePaste("modelUrl");
   }
 
   private _validateApiKey(key: string): boolean {
