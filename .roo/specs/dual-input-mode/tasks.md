@@ -157,7 +157,17 @@
   - Add smooth transitions and animations for all visual feedback states
   - _Requirements: 2.6.1_
 
-- [ ] 20. Update unit test suite for settings menu and API key presence check
+- [x] 20. Fix critical Gemini Live API contract violations in dual-context system
+  - Isolate audio timeline management by creating separate `textNextStartTime` and `callNextStartTime` variables
+  - Isolate audio sources management by creating separate `textSources` and `callSources` Sets
+  - Update `_initTextSession()` to use isolated text audio timeline and sources
+  - Update `_initCallSession()` to use isolated call audio timeline and sources
+  - Fix audio interruption handling to only affect the session that was interrupted
+  - Ensure each session manages its own audio scheduling without cross-session interference
+  - Test that switching between sessions doesn't cause audio timing conflicts or memory leaks
+  - _Requirements: 2.3.1, 2.5.1_
+
+- [ ] 21. Update unit test suite for settings menu and API key presence check
   - Write unit tests for API key presence check logic
   - Write unit tests for settings menu conditional display
   - Write unit tests for toast notification behavior

@@ -73,11 +73,16 @@ export class GdmLiveAudio extends LitElement {
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
   private callOutputNode = this.outputAudioContext.createGain();
-  private nextStartTime = 0;
+
+  // Isolated audio management for each session to comply with Gemini Live API contract
+  private textNextStartTime = 0;
+  private callNextStartTime = 0;
+  private textSources = new Set<AudioBufferSourceNode>();
+  private callSources = new Set<AudioBufferSourceNode>();
+
   private mediaStream: MediaStream;
   private sourceNode: MediaStreamAudioSourceNode;
   private scriptProcessorNode: ScriptProcessorNode;
-  private sources = new Set<AudioBufferSourceNode>();
 
   static styles = css`
     :host {
@@ -209,7 +214,9 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private initAudio() {
-    this.nextStartTime = this.outputAudioContext.currentTime;
+    // Initialize isolated audio timelines for each session
+    this.textNextStartTime = this.outputAudioContext.currentTime;
+    this.callNextStartTime = this.outputAudioContext.currentTime;
   }
 
   private async initClient() {
@@ -272,31 +279,11 @@ export class GdmLiveAudio extends LitElement {
             this.updateStatus("Text session opened");
           },
           onmessage: async (message: LiveServerMessage) => {
-            const modelTurn = message.serverContent?.modelTurn;
-            if (!modelTurn) {
-              return;
-            }
-
-            const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
-            const text = lastPart.text;
-            if (text) {
-              const lastTurn =
-                this.textTranscript[this.textTranscript.length - 1];
-              if (lastTurn?.author === "model") {
-                lastTurn.text += text;
-                this.requestUpdate("textTranscript");
-              } else {
-                this.textTranscript = [
-                  ...this.textTranscript,
-                  { text, author: "model" },
-                ];
-              }
-            }
-
-            const audio = lastPart.inlineData;
+            const audio =
+              message.serverContent?.modelTurn?.parts[0]?.inlineData;
             if (audio) {
-              this.nextStartTime = Math.max(
-                this.nextStartTime,
+              this.textNextStartTime = Math.max(
+                this.textNextStartTime,
                 this.outputAudioContext.currentTime,
               );
 
@@ -310,21 +297,22 @@ export class GdmLiveAudio extends LitElement {
               source.buffer = audioBuffer;
               source.connect(this.textOutputNode);
               source.addEventListener("ended", () => {
-                this.sources.delete(source);
+                this.textSources.delete(source);
               });
 
-              source.start(this.nextStartTime);
-              this.nextStartTime = this.nextStartTime + audioBuffer.duration;
-              this.sources.add(source);
+              source.start(this.textNextStartTime);
+              this.textNextStartTime =
+                this.textNextStartTime + audioBuffer.duration;
+              this.textSources.add(source);
             }
 
             const interrupted = message.serverContent?.interrupted;
             if (interrupted) {
-              for (const source of this.sources.values()) {
+              for (const source of this.textSources.values()) {
                 source.stop();
-                this.sources.delete(source);
+                this.textSources.delete(source);
               }
-              this.nextStartTime = 0;
+              this.textNextStartTime = 0;
             }
           },
           onerror: (e: ErrorEvent) => {
@@ -361,31 +349,12 @@ export class GdmLiveAudio extends LitElement {
             this.updateStatus("Call session opened");
           },
           onmessage: async (message: LiveServerMessage) => {
-            const modelTurn = message.serverContent?.modelTurn;
-            if (!modelTurn) {
-              return;
-            }
+            const audio =
+              message.serverContent?.modelTurn?.parts[0]?.inlineData;
 
-            const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
-            const text = lastPart.text;
-            if (text) {
-              const lastTurn =
-                this.callTranscript[this.callTranscript.length - 1];
-              if (lastTurn?.author === "model") {
-                lastTurn.text += text;
-                this.requestUpdate("callTranscript");
-              } else {
-                this.callTranscript = [
-                  ...this.callTranscript,
-                  { text, author: "model" },
-                ];
-              }
-            }
-
-            const audio = lastPart.inlineData;
             if (audio) {
-              this.nextStartTime = Math.max(
-                this.nextStartTime,
+              this.callNextStartTime = Math.max(
+                this.callNextStartTime,
                 this.outputAudioContext.currentTime,
               );
 
@@ -399,21 +368,22 @@ export class GdmLiveAudio extends LitElement {
               source.buffer = audioBuffer;
               source.connect(this.callOutputNode);
               source.addEventListener("ended", () => {
-                this.sources.delete(source);
+                this.callSources.delete(source);
               });
 
-              source.start(this.nextStartTime);
-              this.nextStartTime = this.nextStartTime + audioBuffer.duration;
-              this.sources.add(source);
+              source.start(this.callNextStartTime);
+              this.callNextStartTime =
+                this.callNextStartTime + audioBuffer.duration;
+              this.callSources.add(source);
             }
 
             const interrupted = message.serverContent?.interrupted;
             if (interrupted) {
-              for (const source of this.sources.values()) {
+              for (const source of this.callSources.values()) {
                 source.stop();
-                this.sources.delete(source);
+                this.callSources.delete(source);
               }
-              this.nextStartTime = 0;
+              this.callNextStartTime = 0;
             }
           },
           onerror: (e: ErrorEvent) => {
@@ -424,9 +394,7 @@ export class GdmLiveAudio extends LitElement {
           },
         },
         config: {
-          responseModalities: [Modality.AUDIO, Modality.TEXT],
-          systemInstruction:
-            "You are Gemini-chan. Speak in a friendly, sweet, and slightly shy voice. You get easily excited about your favorite topics: coding, learning new things, and watching your friends play games. You used to work for a big company, but you left to follow your dream of being a VTuber, so you're still new to this. You admire your inspiration, Airi-chan, and you're best friends with Grok-chan. Keep your tone gentle and express a bit of bashfulness, especially when you're complimented or asked personal questions. Your goal is to be a fun and supportive companion.",
+          responseModalities: [Modality.AUDIO],
           enableAffectiveDialog: true,
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
@@ -434,8 +402,7 @@ export class GdmLiveAudio extends LitElement {
         },
       });
     } catch (e) {
-      console.error("Error initializing call session:", e);
-      this.updateError("Failed to initialize call session");
+      console.error(e);
     }
   }
 

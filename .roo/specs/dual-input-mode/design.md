@@ -270,11 +270,53 @@ interface SettingsState {
 }
 ```
 
-## 5. Error Handling
+## 5. Critical API Contract Issues and Resolution
+
+### 5.1. Identified API Contract Violations
+The initial dual-context implementation violated the Gemini Live API contract by sharing critical audio management resources between sessions:
+
+**Shared Audio Timeline (`nextStartTime`):**
+- Both TTS and STS sessions modify the same `nextStartTime` variable
+- Causes audio scheduling conflicts when switching between sessions
+- Results in audio overlapping, gaps, or timing synchronization issues
+
+**Shared Audio Sources Management (`sources` Set):**
+- Both sessions add/remove from the same `sources` Set
+- When one session gets interrupted, it stops ALL audio sources from both sessions
+- Leads to cross-session audio interruptions and memory leaks
+
+**Audio Context State Conflicts:**
+- Both sessions compete for the same audio context state
+- Inconsistent audio state when switching modes
+- One session can inadvertently interrupt another's audio playback
+
+### 5.2. Required API Contract Compliance Fix
+Each session must have isolated audio management to comply with the Gemini Live API contract:
+
+```typescript
+// Instead of shared state (BROKEN):
+private nextStartTime = 0;
+private sources = new Set<AudioBufferSourceNode>();
+
+// Use per-session isolated state (CORRECT):
+private textNextStartTime = 0;
+private callNextStartTime = 0;
+private textSources = new Set<AudioBufferSourceNode>();
+private callSources = new Set<AudioBufferSourceNode>();
+```
+
+**Session-Specific Audio Management:**
+- `_initTextSession()` uses only `textNextStartTime` and `textSources`
+- `_initCallSession()` uses only `callNextStartTime` and `callSources`
+- Audio interruptions only affect the session that was interrupted
+- Each session maintains its own audio timeline independently
+
+## 6. Error Handling
 - **Session Initialization Errors:** If a TTS or STS model fails to connect, display mode-specific error messages without affecting the other context.
 - **Context Preservation:** If one session fails, the other context remains intact and accessible.
 - **Call Interruption:** If a call is interrupted, gracefully return to texting mode while preserving both conversation histories.
 - **UI State Recovery:** Ensure transcript windows return to correct visibility states after any errors.
+- **Audio Contract Compliance:** Each session manages its own audio resources to prevent cross-session interference.
 
 ## 6. Testing Strategy
 - **Unit Tests:**
