@@ -843,32 +843,9 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleResetText() {
-    this._resetTextContext();
-  }
-
-  private _handleResetCall() {
-    this._resetCallContext();
-  }
 
   // Long press detection methods for unified call/reset button
   private _handleMouseDown() {
-    this._startLongPress();
-  }
-
-  private _handleMouseUp() {
-    this._handleButtonRelease();
-  }
-
-  private _handleTouchStart() {
-    this._startLongPress();
-  }
-
-  private _handleTouchEnd() {
-    this._handleButtonRelease();
-  }
-
-  private _startLongPress() {
     this._isLongPressing = true;
     this._showLongPressVisual = true;
     this._longPressProgress = 0;
@@ -881,7 +858,7 @@ export class GdmLiveAudio extends LitElement {
     }, 1000); // 1 second threshold
   }
 
-  private _handleButtonRelease() {
+  private _handleMouseUp() {
     const wasLongPressing = this._isLongPressing;
     const hadTimer = this._longPressTimer !== null;
 
@@ -905,6 +882,14 @@ export class GdmLiveAudio extends LitElement {
     } else {
       this._handleCallEnd();
     }
+  }
+
+  private _handleTouchStart() {
+    this._handleMouseDown();
+  }
+
+  private _handleTouchEnd() {
+    this._handleMouseUp();
   }
 
   private _handleLongPress() {
@@ -945,11 +930,6 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _resetAllContexts() {
-    this._resetTextContext();
-    this._resetCallContext();
-    this.updateStatus("All conversations cleared.");
-  }
 
   private _updateProgressIndicator() {
     if (!this._isLongPressing) return;
@@ -981,11 +961,11 @@ export class GdmLiveAudio extends LitElement {
 
   render() {
     return html`
-      <chat-view 
-        .transcript=${this.textTranscript} 
+      <chat-view
+        .transcript=${this.textTranscript}
         .visible=${this.activeMode !== "calling"}
         @send-message=${this._handleSendMessage}
-        @reset-text=${this._handleResetText}>
+        @reset-text=${this._resetTextContext}>
       </chat-view>
       
       <div>
@@ -1076,10 +1056,10 @@ export class GdmLiveAudio extends LitElement {
         ></live2d-gate>
       </div>
       
-      <call-transcript 
+      <call-transcript
         .transcript=${this.callTranscript}
         .visible=${this.activeMode === "calling"}
-        @reset-call=${this._handleResetCall}>
+        @reset-call=${this._resetCallContext}>
       </call-transcript>
     `;
   }
