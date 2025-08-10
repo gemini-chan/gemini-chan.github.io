@@ -383,11 +383,10 @@ export class SettingsMenu extends LitElement {
       // Check protocol - allow HTTP, HTTPS, IPFS, and blob
       const validProtocols = ["http:", "https:", "ipfs:", "blob:"];
       if (!validProtocols.includes(urlObj.protocol)) {
+        this._error = "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.";
         this.dispatchEvent(
           new CustomEvent("model-url-error", {
-            detail: {
-              error: "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.",
-            },
+            detail: { error: this._error },
             bubbles: true,
             composed: true,
           }),
@@ -397,9 +396,10 @@ export class SettingsMenu extends LitElement {
 
       // For IPFS, basic format check
       if (urlObj.protocol === "ipfs:" && !urlObj.pathname) {
+        this._error = "IPFS URL must include a valid hash.";
         this.dispatchEvent(
           new CustomEvent("model-url-error", {
-            detail: { error: "IPFS URL must include a valid hash." },
+            detail: { error: this._error },
             bubbles: true,
             composed: true,
           }),
@@ -415,11 +415,11 @@ export class SettingsMenu extends LitElement {
         !pathname.endsWith(".zip") &&
         !pathname.endsWith(".model3.json")
       ) {
+        this._error = "If specified, file extension must be .zip or .model3.json";
         this.dispatchEvent(
           new CustomEvent("model-url-error", {
             detail: {
-              error:
-                "If specified, file extension must be .zip or .model3.json",
+              error: this._error,
             },
             bubbles: true,
             composed: true,
@@ -431,9 +431,10 @@ export class SettingsMenu extends LitElement {
       // All other cases pass - let the Live2D loader handle it
       return true;
     } catch (err) {
+      this._error = "Invalid URL format.";
       this.dispatchEvent(
         new CustomEvent("model-url-error", {
-          detail: { error: "Invalid URL format." },
+          detail: { error: this._error },
           bubbles: true,
           composed: true,
         }),
