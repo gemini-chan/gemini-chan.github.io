@@ -150,7 +150,7 @@ graph TD
     - `_updateProgressIndicator()`: Updates circular progress indicator during long press.
     - `_triggerResetConfirmation()`: Brief flash/pulse animation when reset is triggered.
 
-### 3.4. `live2d-visual`
+### 3.5. `live2d-visual`
 - **Responsibility:**
     - The main entry point for the Live2D visualization.
     - Wraps the `live2d-canvas` and `live2d-model` components.
@@ -158,7 +158,7 @@ graph TD
     - `modelUrl: string`
     - `outputNode: AudioNode`
 
-### 3.5. `live2d-model`
+### 3.6. `live2d-model`
 - **Responsibility:**
     - Loads the Live2D model.
     - Manages the animation loop.
@@ -166,20 +166,20 @@ graph TD
 - **Properties:**
     - `outputNode: AudioNode`
 
-### 3.6. `audio-mapper.ts`
+### 3.7. `audio-mapper.ts`
 - **Responsibility:**
     - Analyzes the `outputNode` to drive lip-sync animations.
 - **Methods:**
     - `update()`: Calculates the current audio level.
     - `get mouthOpen()`: Returns the smoothed audio level.
 
-### 3.7. `idle-eye-focus.ts`
+### 3.8. `idle-eye-focus.ts`
 - **Responsibility:**
     - Manages idle animations (blinking, eye movement).
 - **Methods:**
     - `update(dt)`: Updates idle parameters.
 
-### 3.8. `settings-menu` (API Key Management)
+### 3.9. `settings-menu` (API Key Management)
 - **Responsibility:**
     - Provide interface for entering and saving Gemini API key.
     - Show/hide based on API key validation requirements or manual access.
@@ -202,7 +202,7 @@ graph TD
     - `_getApiKeyUrl()`: Opens "https://aistudio.google.com/apikey" in new tab.
     - `_handleCancel()`: Closes settings menu without saving.
 
-### 3.9. `toast-notification` (User Prompts)
+### 3.10. `toast-notification` (User Prompts)
 - **Responsibility:**
     - Display temporary notification messages to guide user actions.
     - Show API key prompts when validation fails.
@@ -272,9 +272,9 @@ interface SettingsState {
 }
 ```
 
-## 5. Critical API Contract Issues and Resolution
+## 6. Critical API Contract Issues and Resolution
 
-### 5.1. Identified API Contract Violations
+### 6.1. Identified API Contract Violations
 The initial dual-context implementation violated the Gemini Live API contract by sharing critical audio management resources between sessions:
 
 **Shared Audio Timeline (`nextStartTime`):**
@@ -292,7 +292,7 @@ The initial dual-context implementation violated the Gemini Live API contract by
 - Inconsistent audio state when switching modes
 - One session can inadvertently interrupt another's audio playback
 
-### 5.2. Required API Contract Compliance Fix
+### 6.2. Required API Contract Compliance Fix
 Each session must have isolated audio management to comply with the Gemini Live API contract:
 
 ```typescript
@@ -313,16 +313,16 @@ private callSources = new Set<AudioBufferSourceNode>();
 - Audio interruptions only affect the session that was interrupted
 - Each session maintains its own audio timeline independently
 
-## 6. Error Handling
+## 7. Error Handling
 - **Session Initialization Errors:** If a TTS or STS model fails to connect, display mode-specific error messages without affecting the other context.
 - **Context Preservation:** If one session fails, the other context remains intact and accessible.
 - **Call Interruption:** If a call is interrupted, gracefully return to texting mode while preserving both conversation histories.
 - **UI State Recovery:** Ensure transcript windows return to correct visibility states after any errors.
 - **Audio Contract Compliance:** Each session manages its own audio resources to prevent cross-session interference.
 
-## 7. Session Manager Architecture Pattern
+## 8. Session Manager Architecture Pattern
 
-### 7.1. Code Duplication Analysis
+### 8.1. Code Duplication Analysis
 The current implementation has significant code duplication between `_initTextSession()` and `_initCallSession()` methods:
 
 **Shared Logic (~80% identical):**
@@ -338,7 +338,7 @@ The current implementation has significant code duplication between `_initTextSe
 - Output routing (`textOutputNode` vs `callOutputNode`)
 - State management (isolated `nextStartTime` and `sources` per session)
 
-### 7.2. Proposed Session Manager Pattern
+### 8.2. Proposed Session Manager Pattern
 
 ```typescript
 abstract class BaseSessionManager {
@@ -446,7 +446,7 @@ class CallSessionManager extends BaseSessionManager {
 }
 ```
 
-### 7.3. Main Component Integration
+### 8.3. Main Component Integration
 
 ```typescript
 export class GdmLiveAudio extends LitElement {
@@ -475,7 +475,7 @@ export class GdmLiveAudio extends LitElement {
 }
 ```
 
-### 7.4. Benefits of Session Manager Pattern
+### 8.4. Benefits of Session Manager Pattern
 
 1. **DRY Principle**: Eliminates ~80% code duplication in audio processing
 2. **Single Responsibility**: Each manager handles one session type with clear boundaries
@@ -485,7 +485,7 @@ export class GdmLiveAudio extends LitElement {
 6. **Future Extensibility**: Easy to add new session types (e.g., video calls, different models)
 7. **Isolated State**: Maintains API contract compliance with per-session audio management
 
-## 8. Testing Strategy
+## 9. Testing Strategy
 - **Unit Tests:**
     - Test dual-context state management logic in `index.tsx` (separate TTS/STS contexts).
     - Test transcript window visibility logic based on active mode.
