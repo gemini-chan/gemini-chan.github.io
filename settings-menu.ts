@@ -372,10 +372,12 @@ export class SettingsMenu extends LitElement {
 
   private _validateApiKey(key: string): boolean {
     if (!key) {
+      this._error = 'API key cannot be empty.';
       return false;
     }
     // Basic format validation
-    if (!key.startsWith("AIzaSy") || key.length !== 39) {
+    if (!key.startsWith('AIzaSy') || key.length !== 39) {
+      this._error = 'Invalid API key format.';
       return false;
     }
     return true;
