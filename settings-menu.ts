@@ -21,6 +21,9 @@ export class SettingsMenu extends LitElement {
   private _apiKeyValid = false;
 
   @state()
+  private _apiKeyInvalid = false;
+
+  @state()
   private _modelUrlValid = false;
 
   static styles = css`
@@ -104,12 +107,11 @@ export class SettingsMenu extends LitElement {
       width: 16px;
       height: 16px;
     }
-    .validation-tick {
+    .validation-icon {
       position: absolute;
       right: 3em;
       background: transparent;
       border: none;
-      color: #4caf50;
       padding: 0.25em;
       border-radius: 4px;
       display: flex;
@@ -120,13 +122,20 @@ export class SettingsMenu extends LitElement {
       transition: all 0.2s ease-in-out;
       pointer-events: none;
     }
-    .validation-tick.show {
+    .validation-icon.show {
       opacity: 1;
       transform: scale(1);
     }
-    .tick-icon {
+    .tick-icon,
+    .cross-icon {
       width: 16px;
       height: 16px;
+    }
+    .tick-icon {
+      color: #4caf50;
+    }
+    .cross-icon {
+      color: #ff8a80;
     }
     .buttons {
       display: flex;
@@ -166,7 +175,7 @@ export class SettingsMenu extends LitElement {
               @input=${this._onModelUrlInput}
               @blur=${this._onModelUrlBlur}
               placeholder="Enter model3.json or .zip URL" />
-            <div class="validation-tick ${this._modelUrlValid ? "show" : ""}" title="Valid URL">
+            <div class="validation-icon ${this._modelUrlValid ? "show" : ""}" title="Valid URL">
               <svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
               </svg>
@@ -187,10 +196,12 @@ export class SettingsMenu extends LitElement {
               @input=${this._onApiKeyInput}
               @blur=${this._onApiKeyBlur}
               placeholder="Enter your API Key" />
-            <div class="validation-tick ${this._apiKeyValid ? "show" : ""}" title="Valid API Key">
-              <svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
-              </svg>
+            <div class="validation-icon ${this._apiKeyValid || this._apiKeyInvalid ? "show" : ""}" title="${this._apiKeyValid ? "Valid API Key" : "Invalid API Key"}">
+              ${this._apiKeyValid
+                ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
+                : this._apiKeyInvalid
+                  ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
+                  : ""}
             </div>
             <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
               <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -229,6 +240,7 @@ export class SettingsMenu extends LitElement {
     this.apiKey = input.value;
     this._error = ""; // Clear error on input
     this._apiKeyValid = false; // Clear validation tick while typing
+    this._apiKeyInvalid = false;
   }
 
   private _onModelUrlInput(e: Event) {
@@ -298,6 +310,7 @@ export class SettingsMenu extends LitElement {
   ) {
     if (fieldName === "apiKey") {
       this._apiKeyValid = isValid;
+      this._apiKeyInvalid = !isValid;
     } else if (fieldName === "modelUrl") {
       this._modelUrlValid = isValid;
     }
