@@ -15,6 +15,12 @@ export class CallTranscript extends LitElement {
   @property({ type: Boolean })
   visible: boolean = false;
 
+  @property({ type: Boolean })
+  rateLimited: boolean = false;
+
+  @property({ type: String })
+  rateLimitMessage: string = "Rate limit: responses may be delayed or unavailable";
+
   static styles = css`
     :host {
       display: flex;
@@ -50,6 +56,23 @@ export class CallTranscript extends LitElement {
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 0 0;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font: 13px/1.3 system-ui;
+      color: #fff;
+      background: rgba(255, 152, 0, 0.2);
+      border: 1px solid rgba(255, 152, 0, 0.4);
+    }
+
+    :host([ratelimited]) .banner {
+      display: flex;
     }
 
     .reset-button {
@@ -143,6 +166,13 @@ export class CallTranscript extends LitElement {
   `;
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
+    if (changedProperties.has("rateLimited")) {
+      if (this.rateLimited) {
+        this.setAttribute("ratelimited", "");
+      } else {
+        this.removeAttribute("ratelimited");
+      }
+    }
     if (changedProperties.has("transcript")) {
       // Auto-scroll to bottom when new transcript entries are added
       const transcriptEl = this.shadowRoot?.querySelector(".transcript");
@@ -188,6 +218,12 @@ export class CallTranscript extends LitElement {
             <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
           </svg>
         </button>
+      </div>
+      <div class="banner" role="status" aria-live="polite">
+        <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+          <path d="M120-160v-640h720v640H120Zm80-80h560v-480H200v480Zm200-80h160v-80H400v80Zm-80-160h320v-80H320v80Z"/>
+        </svg>
+        <span>${this.rateLimitMessage}</span>
       </div>
       
       <div class="transcript">

@@ -606,19 +606,23 @@ export class GdmLiveAudio extends LitElement {
   private _handleCallRateLimit(msg?: string) {
     if (this._callRateLimitNotified) return;
     this._callRateLimitNotified = true;
+
     const toast = this.shadowRoot?.querySelector("toast-notification") as any;
     toast?.show(
       "Rate limit reached: responses may be delayed or unavailable",
       "warning",
       4000,
     );
+
     this._appendCallNotice(
       "[Rate limited] Responses may be delayed or unavailable.",
     );
-    // Reset the flag after a brief period to allow future notifications if sustained
-    setTimeout(() => {
-      this._callRateLimitNotified = false;
-    }, 8000);
+
+    // Also surface the banner in the call transcript
+    const callT = this.shadowRoot?.querySelector('call-transcript') as HTMLElement & { rateLimited?: boolean };
+    if (callT) {
+      callT.rateLimited = true;
+    }
   }
 
   private _handleTextRateLimit(msg?: string) {
@@ -771,8 +775,13 @@ export class GdmLiveAudio extends LitElement {
       this.callSession = null;
     }
 
-    // Clear call transcript
+    // Clear call transcript and reset rate-limit states
     this.callTranscript = [];
+    this._callRateLimitNotified = false;
+    const callT = this.shadowRoot?.querySelector('call-transcript') as HTMLElement & { rateLimited?: boolean };
+    if (callT) {
+      callT.rateLimited = false;
+    }
 
     // Reinitialize call session if we're currently in a call
     if (this.isCallActive) {
