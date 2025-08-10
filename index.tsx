@@ -221,6 +221,11 @@ class TextSessionManager extends BaseSessionManager {
         this.updateError(`${this.getSessionName()} error: ${e.message}`);
       },
       onclose: (e: CloseEvent) => {
+        const msg = e.reason || "";
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
         this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
         this.session = null;
       },
