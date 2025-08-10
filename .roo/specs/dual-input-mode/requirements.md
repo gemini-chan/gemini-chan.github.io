@@ -66,21 +66,16 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** the model is listening or idle **THEN** the model exhibits subtle idle animations
 - **WHEN** switching between modes **THEN** the model animation continues seamlessly
 
-### 2.6. Unified Call/Reset Button Functionality
+### 2.6. Dedicated Conversation Reset
 - **As a** user,
-- **I want** the call button to act as a reset button on long press,
-- **so that** I can easily reset conversations without needing separate reset controls.
+- **I want** to use separate, dedicated buttons to reset the text and call conversations,
+- **so that** I can clearly and intentionally clear the context for each mode.
 
 #### 2.6.1. Acceptance Criteria
-- **WHEN** I click the call button normally **THEN** it starts or ends a call as expected
-- **WHEN** I long press the call button for 1 second or more **THEN** it acts as a reset button that clears call history and context
-- **WHEN** I start a long press on the call button **THEN** the button immediately changes color to red and scales down to indicate reset mode
-- **WHEN** I continue holding the call button **THEN** a circular progress indicator appears around the button showing the countdown to reset
-- **WHEN** the long press reaches 1 second **THEN** the button briefly flashes or pulses to confirm the reset action is triggered
-- **WHEN** I long press the call button **THEN** only the calling context and call transcript are cleared, regardless of current mode
-- **WHEN** I long press the call button during an active call **THEN** the call is ended first, then the calling context and call transcript are cleared
-- **WHEN** I reset the call context via long press **THEN** the texting context remains intact
-- **WHEN** I start a long press but release before 1 second **THEN** no reset action occurs, the visual indicators disappear, and normal call behavior is preserved
+- **GIVEN** I am in the text messaging view **WHEN** I click the "Clear conversation" button in the header **THEN** the text transcript and its corresponding context are cleared.
+- **GIVEN** I am in the voice calling view **WHEN** I click the "Clear call history" button in the header **THEN** the call transcript and its corresponding context are cleared.
+- **WHEN** I reset the text context **THEN** the call context remains unaffected.
+- **WHEN** I reset the call context **THEN** the text context remains unaffected.
 
 ### 2.7. Direct Main UI Landing with API Key Validation
 - **As a** user,

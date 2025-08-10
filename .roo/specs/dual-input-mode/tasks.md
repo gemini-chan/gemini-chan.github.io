@@ -18,8 +18,18 @@
 - [ ] 6. **Implement API Key Management**: Add API key validation, on-demand prompts, and persistence using `localStorage`.
   - _Requirements: 2.8.1, 2.10.1, 2.11.1_
 
-- [ ] 7. **Implement Unified Call/Reset Button**: Add long-press functionality to the call button for resetting the call context.
+- [ ] 7. **Implement Dedicated Reset Buttons**: Refactor the reset functionality to use dedicated buttons in each view.
   - _Requirements: 2.6.1_
+  - [ ] 7.1. **Refactor `gdm-live-audio` to remove long-press functionality.**
+    - Remove all code related to the long-press timer, state, and event dispatch.
+    - The component should now only be responsible for emitting `call-start` and `call-end` events.
+  - [ ] 7.2. **Update `index.tsx` to handle dedicated reset events.**
+    - Remove the `_handleResetContext` method.
+    - Implement `@listen("reset-text")` and `@listen("reset-call")` event listeners to call the appropriate reset methods.
+  - [ ] 7.3. **Implement the "Clear conversation" button in `chat-view.ts`.**
+    - Add a button that dispatches the `reset-text` custom event.
+  - [ ] 7.4. **Implement the "Clear call history" button in `call-transcript.ts`.**
+    - Add a button that dispatches the `reset-call` custom event.
 
 - [ ] 8. **API Contract Compliance**: Refactor session handling to use a `SessionManager` pattern, ensuring audio resources are properly isolated.
   - _Requirements: 2.3.1, 2.5.1_
@@ -29,5 +39,5 @@
     - [ ] 9.1. Test dual-context state management.
     - [ ] 9.2. Test TTS and STS session management.
     - [ ] 9.3. Test API key validation and settings menu.
-    - [ ] 9.4. Test unified call/reset button functionality.
+    - [ ] 9.4. Test dedicated reset button functionality.
     - [ ] 9.5. Test session manager architecture.

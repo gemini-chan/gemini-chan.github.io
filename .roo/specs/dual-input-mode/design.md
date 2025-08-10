@@ -48,7 +48,9 @@ graph TD
     A -- "Shows/hides" --> O
 
     B -- "send-message event" --> A
-    D -- "call-start/call-end/reset-context events" --> A
+    D -- "call-start/call-end events" --> A
+    B -- "reset-text event" --> A
+    C -- "reset-call event" --> A
     N -- "api-key-saved event" --> A
 
     A -- "API key validation" --> N
@@ -96,7 +98,6 @@ graph TD
     - `_handleSendMessage(e: CustomEvent)`: Validates API key, shows settings/toast if missing, then lazily initiates TTS session and sends message.
     - `_handleCallStart()`: Validates API key, shows settings/toast if missing, then lazily initiates STS session and shows call transcript.
     - `_handleCallEnd()`: Ends STS session and shows chat view.
-    - `_handleResetContext()`: Handles reset-context event from unified call/reset button, always resets call context only.
     - `_resetTextContext()`: Clears text transcript and closes text session.
     - `_resetCallContext()`: Clears call transcript and closes call session.
     - `_initTextSession()`: Connects to `gemini-2.5-flash-live-preview` (called only when first message is sent).
@@ -109,46 +110,36 @@ graph TD
 - **Responsibility:**
     - Display the texting conversation transcript (always visible when not calling).
     - Provide text input field and send button for messaging simulation.
+    - Provides a "Clear conversation" button in its header.
     - Emit `send-message` event when user sends a text message.
 - **Properties:**
     - `transcript: Turn[]` - The text conversation history
     - `visible: boolean` - Controls visibility (hidden during calls)
 - **Events:**
     - `send-message`: Dispatched with message text as detail.
+    - `reset-text`: Dispatched when the "Clear conversation" button is clicked.
 
 ### 3.3. `call-transcript.ts` (Call Interface)
 - **Responsibility:**
     - Display real-time call transcript (only visible during active calls).
     - Show transcribed conversation from voice interactions.
+    - Provides a "Clear call history" button in its header.
     - Automatically appear when call starts, disappear when call ends.
 - **Properties:**
     - `transcript: Turn[]` - The call conversation history
     - `visible: boolean` - Controls visibility (only shown during calls)
-
-### 3.4. `gdm-live-audio` (Unified Call/Reset Button)
-- **Responsibility:**
-    - Provide a "Call" button to start and end voice calls (not "Record").
-    - Act as a reset button when long pressed (1+ seconds) with enhanced visual feedback.
-    - Manage call state and emit appropriate events for both call and reset actions.
-    - Display progressive visual indicators during long press to clearly communicate reset intent.
-- **Properties:**
-    - `isCallActive: boolean` - Whether a call is currently active
-- **State:**
-    - `_longPressTimer: number | null` - Timer for tracking long press duration
-    - `_isLongPressing: boolean` - Flag to track if long press is in progress
-    - `_showLongPressVisual: boolean` - Controls visual feedback during long press
-    - `_longPressProgress: number` - Progress value (0-1) for circular progress indicator
 - **Events:**
-    - `call-start`: Dispatched when call begins (normal click).
-    - `call-end`: Dispatched when call ends (normal click).
-    - `reset-context`: Dispatched when long press (1+ seconds) is detected.
-- **Methods:**
-    - `_handleMouseDown()` / `_handleTouchStart()`: Start long press timer and visual feedback.
-    - `_handleMouseUp()` / `_handleTouchEnd()`: Handle normal click or long press completion.
-    - `_handleLongPress()`: Emit reset-context event after 1 second with confirmation flash.
-    - `_clearLongPressTimer()`: Clean up timer and reset long press state.
-    - `_updateProgressIndicator()`: Updates circular progress indicator during long press.
-    - `_triggerResetConfirmation()`: Brief flash/pulse animation when reset is triggered.
+    - `reset-call`: Dispatched when the "Clear call history" button is clicked.
+
+### 3.4. `gdm-live-audio` (Call Button)
+- **Responsibility:**
+    - Provide a "Call" button to start and end voice calls.
+    - Manage call state and emit `call-start` and `call-end` events.
+- **Properties:**
+    - `isCallActive: boolean` - Whether a call is currently active.
+- **Events:**
+    - `call-start`: Dispatched when a call begins.
+    - `call-end`: Dispatched when a call ends.
 
 ### 3.5. `live2d-visual`
 - **Responsibility:**
