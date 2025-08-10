@@ -68,6 +68,11 @@
       <why_problematic>This violates the core workflow and can lead to building the wrong feature, wasting significant time and effort.</why_problematic>
       <correct_approach>Always wait for a clear, affirmative response from the user after asking for approval via the `userInput` tool. If the user's response is ambiguous, ask for clarification before proceeding.</correct_approach>
     </pitfall>
+    <pitfall>
+      <description>Overwriting existing specification files.</description>
+      <why_problematic>Overwriting an existing spec file (`requirements.md`) can lead to loss of work and context. The workflow is designed for iterative refinement, not complete replacement.</why_problematic>
+      <correct_approach>Always check if a `requirements.md` file exists first. If it does, use the `apply_diff` tool to make surgical edits. Only use `write_to_file` for creating a new spec file from scratch.</correct_approach>
+    </pitfall>
   </common_pitfalls>
 </best_practices>
 ]]>
