@@ -507,6 +507,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async _initCallSession() {
+    console.log("[Debug] Initializing new call session.");
     await this.callSessionManager.initSession();
     this.callSession = this.callSessionManager.sessionInstance;
   }
@@ -552,10 +553,15 @@ export class GdmLiveAudio extends LitElement {
       return;
     }
 
-    // Switch to calling mode and initialize call session
+    console.log("[Debug] Call start. Existing callSession:", this.callSession);
+    // Switch to calling mode
     this.activeMode = "calling";
     this._updateActiveOutputNode();
-    await this._initCallSession();
+
+    // Initialize call session only if it doesn't exist
+    if (!this.callSession) {
+      await this._initCallSession();
+    }
 
     this.inputAudioContext.resume();
     this.updateStatus("Starting call...");
@@ -650,6 +656,7 @@ export class GdmLiveAudio extends LitElement {
     );
 
     this.updateStatus("Call ended");
+    console.log('[Debug] Call ended. callSession preserved:', this.callSession);
   }
 
 
@@ -668,6 +675,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _resetCallContext() {
+    console.log('[Debug] Resetting call context. Closing session.');
     // Close existing call session using session manager
     if (this.callSessionManager) {
       this.callSessionManager.closeSession();
