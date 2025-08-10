@@ -1,5 +1,7 @@
 # Feature: Dual-Input Mode
 
+> **Note:** This document outlines the complete feature requirements. The initial implementation phase focuses on building the UI scaffolding; the backend logic and session management are pending.
+
 ## 1. Introduction
 This document outlines the requirements for a dual-input mode that simulates a realistic messaging/calling experience. Users can interact via text messaging (TTS flow) or voice calling (STS flow) with separate contexts for each mode. The interface mimics a messaging app with texting on the left and calling functionality, featuring dynamic transcript windows that appear based on the active mode.
 

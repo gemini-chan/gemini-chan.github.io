@@ -1,5 +1,7 @@
 # Technical Design: Dual-Input Mode
 
+> **Note:** This document outlines the complete technical design. The initial implementation phase focuses on building the UI scaffolding; the backend logic and session management are pending.
+
 ## 1. Overview
 This document outlines the technical design for a dual-input mode that simulates a realistic messaging/calling experience. The system maintains separate conversation contexts for texting (TTS flow) and calling (STS flow), with dynamic UI components that appear based on the active mode. The design features a messaging app interface with a persistent chat window for texting and a dynamically appearing call transcript window during voice calls. The Live2D model animates consistently across both modes.
 
