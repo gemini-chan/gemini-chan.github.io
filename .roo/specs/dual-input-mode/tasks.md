@@ -133,7 +133,31 @@
   - Update layout transitions to maintain consistent positioning between texting and calling modes
   - _Requirements: 2.12.1_
 
-- [ ] 17. Update unit test suite for settings menu and API key presence check
+- [x] 17. Implement unified call/reset button long press functionality
+  - Add long press detection to gdm-live-audio component with 1-second threshold
+  - Implement `_handleMouseDown`, `_handleMouseUp`, `_handleTouchStart`, `_handleTouchEnd` methods
+  - Add `_longPressTimer` and `_isLongPressing` state management
+  - Implement `_handleLongPress` method to emit `reset-context` event after 1 second
+  - Add `_clearLongPressTimer` method for cleanup and prevent normal click when long press occurs
+  - _Requirements: 2.6.1_
+
+- [x] 18. Implement context reset handling in main application
+  - Add `_handleResetContext` method to handle reset-context events from call button
+  - Implement `_resetTextContext` method to clear text transcript and close text session
+  - Implement `_resetCallContext` method to clear call transcript and close call session
+  - Update `_handleResetContext` to always reset call context only (regardless of current mode)
+  - Wire up reset-context event listener to gdm-live-audio component
+  - _Requirements: 2.6.1_
+
+- [x] 19. Add enhanced visual feedback for long press reset functionality
+  - Add immediate visual indication (button color change to red and scale down) when long press starts
+  - Implement circular progress indicator around button showing countdown to reset
+  - Add confirmation flash/pulse animation when reset action is triggered at 1 second
+  - Ensure visual indicators disappear if long press is released before 1 second
+  - Add smooth transitions and animations for all visual feedback states
+  - _Requirements: 2.6.1_
+
+- [ ] 20. Update unit test suite for settings menu and API key presence check
   - Write unit tests for API key presence check logic
   - Write unit tests for settings menu conditional display
   - Write unit tests for toast notification behavior
@@ -141,7 +165,15 @@
   - Update existing tests to account for new application startup behavior
   - _Requirements: 2.7.1, 2.8.1_
 
-- [*] 17. Create unit test suite for dual-context system
+- [ ] 21. Create unit test suite for unified call/reset button functionality
+  - Write unit tests for long press detection logic with 1-second threshold
+  - Write unit tests for reset-context event emission on long press
+  - Write unit tests for normal click behavior preservation when long press doesn't complete
+  - Write unit tests for context reset handling in main application
+  - Write unit tests for mode-specific reset behavior (text vs call vs both)
+  - _Requirements: 2.6.1_
+
+- [*] 22. Create unit test suite for dual-context system
   - Write unit tests for dual-context state management logic
   - Write unit tests for transcript window visibility controls
   - Write unit tests for TTS and STS session management

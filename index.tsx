@@ -53,6 +53,13 @@ export class GdmLiveAudio extends LitElement {
   @state() textSession: Session | null = null;
   @state() callSession: Session | null = null;
 
+  // Long press state for unified call/reset button
+  private _longPressTimer: number | null = null;
+  private _isLongPressing = false;
+  @state() private _showLongPressVisual = false;
+  @state() private _longPressProgress = 0;
+  private _progressTimer: number | null = null;
+
   private client: GoogleGenAI;
   private inputAudioContext = new (
     window.AudioContext || (window as any).webkitAudioContext
@@ -131,9 +138,62 @@ export class GdmLiveAudio extends LitElement {
         margin: 0;
         box-shadow: 0 4px 16px rgba(0,0,0,0.25);
         backdrop-filter: blur(4px);
+        transition: all 0.2s ease;
 
         &:hover {
           background: rgba(255, 255, 255, 0.2);
+        }
+
+        &.long-pressing {
+          background: rgba(255, 100, 100, 0.3);
+          border-color: rgba(255, 100, 100, 0.5);
+          transform: scale(0.95);
+          box-shadow: 0 2px 8px rgba(255, 100, 100, 0.4);
+        }
+
+        &.reset-confirmed {
+          animation: resetPulse 0.3s ease-out;
+        }
+      }
+
+      .progress-ring {
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        width: 64px;
+        height: 64px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+
+        &.visible {
+          opacity: 1;
+        }
+
+        circle {
+          fill: none;
+          stroke: rgba(255, 100, 100, 0.8);
+          stroke-width: 3;
+          stroke-linecap: round;
+          transform-origin: 50% 50%;
+          transform: rotate(-90deg);
+          transition: stroke-dasharray 0.1s ease;
+        }
+      }
+
+      @keyframes resetPulse {
+        0% { 
+          transform: scale(0.95);
+          background: rgba(255, 100, 100, 0.3);
+        }
+        50% { 
+          transform: scale(1.05);
+          background: rgba(255, 50, 50, 0.6);
+          box-shadow: 0 0 20px rgba(255, 100, 100, 0.8);
+        }
+        100% { 
+          transform: scale(1);
+          background: rgba(255, 255, 255, 0.1);
         }
       }
 
@@ -658,6 +718,134 @@ export class GdmLiveAudio extends LitElement {
     this._resetCallContext();
   }
 
+  // Long press detection methods for unified call/reset button
+  private _handleMouseDown() {
+    this._startLongPress();
+  }
+
+  private _handleMouseUp() {
+    this._handleButtonRelease();
+  }
+
+  private _handleTouchStart() {
+    this._startLongPress();
+  }
+
+  private _handleTouchEnd() {
+    this._handleButtonRelease();
+  }
+
+  private _startLongPress() {
+    this._isLongPressing = true;
+    this._showLongPressVisual = true;
+    this._longPressProgress = 0;
+
+    // Start progress animation
+    this._updateProgressIndicator();
+
+    this._longPressTimer = window.setTimeout(() => {
+      this._handleLongPress();
+    }, 1000); // 1 second threshold
+  }
+
+  private _handleButtonRelease() {
+    const wasLongPressing = this._isLongPressing;
+    const hadTimer = this._longPressTimer !== null;
+
+    if (this._longPressTimer) {
+      clearTimeout(this._longPressTimer);
+      this._longPressTimer = null;
+    }
+
+    this._isLongPressing = false;
+    this._showLongPressVisual = false;
+
+    // If the long press timer was already cleared (meaning long press was triggered),
+    // don't execute normal click behavior
+    if (wasLongPressing && !hadTimer) {
+      return;
+    }
+
+    // Execute normal call button behavior only if it wasn't a long press
+    if (!this.isCallActive) {
+      this._handleCallStart();
+    } else {
+      this._handleCallEnd();
+    }
+  }
+
+  private _handleLongPress() {
+    this._clearLongPressTimer();
+
+    // Trigger reset confirmation animation
+    this._triggerResetConfirmation();
+
+    // Emit reset-context event
+    this.dispatchEvent(
+      new CustomEvent("reset-context", {
+        bubbles: true,
+        composed: true,
+      }),
+    );
+
+    // Handle the reset based on current active mode
+    this._handleResetContext();
+  }
+
+  private _clearLongPressTimer() {
+    if (this._longPressTimer) {
+      clearTimeout(this._longPressTimer);
+      this._longPressTimer = null;
+    }
+    this._isLongPressing = false;
+  }
+
+  private _handleResetContext() {
+    // Call button long press always resets call context only
+    if (this.isCallActive) {
+      // If currently in a call, end it first, then reset call context
+      this._handleCallEnd();
+      this._resetCallContext();
+    } else {
+      // Just reset call context
+      this._resetCallContext();
+    }
+  }
+
+  private _resetAllContexts() {
+    this._resetTextContext();
+    this._resetCallContext();
+    this.updateStatus("All conversations cleared.");
+  }
+
+  private _updateProgressIndicator() {
+    if (!this._isLongPressing) return;
+
+    this._longPressProgress += 0.05; // Increment by 5% each frame
+
+    if (this._longPressProgress >= 1) {
+      this._longPressProgress = 1;
+      return;
+    }
+
+    this.requestUpdate(); // Trigger re-render to update progress
+
+    this._progressTimer = window.requestAnimationFrame(() => {
+      this._updateProgressIndicator();
+    });
+  }
+
+  private _triggerResetConfirmation() {
+    // Add reset-confirmed class for pulse animation
+    const callButton = this.shadowRoot?.querySelector("#callButton");
+    if (callButton) {
+      callButton.classList.add("reset-confirmed");
+      setTimeout(() => {
+        callButton.classList.remove("reset-confirmed");
+      }, 300);
+    }
+  }
+
   render() {
     return html`
       <chat-view 
@@ -694,24 +882,15 @@ export class GdmLiveAudio extends LitElement {
           </button>
 
 
-          <button
-            id="resetButton"
-            @click=${this.reset}
-            ?disabled=${this.isCallActive}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="40px"
-              viewBox="0 -960 960 960"
-              width="40px"
-              fill="#ffffff">
-              <path
-                d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z" />
-            </svg>
-          </button>
+
           <button
             id="callButton"
-            @click=${this._handleCallStart}
-            ?disabled=${this.isCallActive}>
+            class=${this._showLongPressVisual ? "long-pressing" : ""}
+            ?disabled=${this.isCallActive}
+            @mousedown=${this._handleMouseDown}
+            @mouseup=${this._handleMouseUp}
+            @touchstart=${this._handleTouchStart}
+            @touchend=${this._handleTouchEnd}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               height="32px"
@@ -719,6 +898,15 @@ export class GdmLiveAudio extends LitElement {
               width="32px"
               fill="#00c800">
               <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/>
+            </svg>
+            <svg class="progress-ring ${this._showLongPressVisual ? "visible" : ""}" viewBox="0 0 64 64">
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                stroke-dasharray="${2 * Math.PI * 28}"
+                stroke-dashoffset="${2 * Math.PI * 28 * (1 - this._longPressProgress)}">
+              </circle>
             </svg>
           </button>
           <button

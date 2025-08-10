@@ -64,15 +64,21 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** the model is listening or idle **THEN** the model exhibits subtle idle animations
 - **WHEN** switching between modes **THEN** the model animation continues seamlessly
 
-### 2.6. Reset Functionality
+### 2.6. Unified Call/Reset Button Functionality
 - **As a** user,
-- **I want** to be able to reset conversations independently for each mode,
-- **so that** I can start fresh in either texting or calling without affecting the other.
+- **I want** the call button to act as a reset button on long press,
+- **so that** I can easily reset conversations without needing separate reset controls.
 
 #### 2.6.1. Acceptance Criteria
-- **WHEN** I reset during texting mode **THEN** only the texting context and chat transcript are cleared
-- **WHEN** I reset during calling mode **THEN** only the calling context and call transcript are cleared
-- **WHEN** I reset one mode **THEN** the other mode's context remains intact
+- **WHEN** I click the call button normally **THEN** it starts or ends a call as expected
+- **WHEN** I long press the call button for 1 second or more **THEN** it acts as a reset button that clears call history and context
+- **WHEN** I start a long press on the call button **THEN** the button immediately changes color to red and scales down to indicate reset mode
+- **WHEN** I continue holding the call button **THEN** a circular progress indicator appears around the button showing the countdown to reset
+- **WHEN** the long press reaches 1 second **THEN** the button briefly flashes or pulses to confirm the reset action is triggered
+- **WHEN** I long press the call button **THEN** only the calling context and call transcript are cleared, regardless of current mode
+- **WHEN** I long press the call button during an active call **THEN** the call is ended first, then the calling context and call transcript are cleared
+- **WHEN** I reset the call context via long press **THEN** the texting context remains intact
+- **WHEN** I start a long press but release before 1 second **THEN** no reset action occurs, the visual indicators disappear, and normal call behavior is preserved
 
 ### 2.7. Direct Main UI Landing with API Key Validation
 - **As a** user,
