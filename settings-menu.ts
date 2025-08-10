@@ -197,7 +197,7 @@ export class SettingsMenu extends LitElement {
               </svg>
             </button>
           </div>
-          ${this._error ? html`<div class="error">${this._error}</div>` : ""}
+  
 
           <div class="buttons">
             <button @click=${this._getApiKeyUrl}>Get API Key</button>
@@ -321,7 +321,13 @@ export class SettingsMenu extends LitElement {
       const text = await navigator.clipboard.readText();
       this.apiKey = text;
     } catch (err) {
-      this._error = "Failed to paste from clipboard.";
+      this.dispatchEvent(
+        new CustomEvent("api-key-error", {
+          detail: { error: "Failed to paste from clipboard." },
+          bubbles: true,
+          composed: true,
+        }),
+      );
       console.error("Failed to read clipboard contents: ", err);
     }
   }
@@ -335,19 +341,37 @@ export class SettingsMenu extends LitElement {
         modelInput.value = text;
       }
     } catch (err) {
-      this._error = "Failed to paste from clipboard.";
+      this.dispatchEvent(
+        new CustomEvent("model-url-error", {
+          detail: { error: "Failed to paste from clipboard." },
+          bubbles: true,
+          composed: true,
+        }),
+      );
       console.error("Failed to read clipboard contents: ", err);
     }
   }
 
   private _validateApiKey(key: string): boolean {
     if (!key) {
-      this._error = "API key cannot be empty.";
+      this.dispatchEvent(
+        new CustomEvent("api-key-error", {
+          detail: { error: "API key cannot be empty." },
+          bubbles: true,
+          composed: true,
+        }),
+      );
       return false;
     }
     // Basic format validation
     if (!key.startsWith("AIzaSy") || key.length !== 39) {
-      this._error = "Invalid API key format.";
+      this.dispatchEvent(
+        new CustomEvent("api-key-error", {
+          detail: { error: "Invalid API key format." },
+          bubbles: true,
+          composed: true,
+        }),
+      );
       return false;
     }
     return true;
@@ -365,14 +389,27 @@ export class SettingsMenu extends LitElement {
       // Check protocol - allow HTTP, HTTPS, IPFS, and blob
       const validProtocols = ["http:", "https:", "ipfs:", "blob:"];
       if (!validProtocols.includes(urlObj.protocol)) {
-        this._error =
-          "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.";
+        this.dispatchEvent(
+          new CustomEvent("model-url-error", {
+            detail: {
+              error: "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.",
+            },
+            bubbles: true,
+            composed: true,
+          }),
+        );
         return false;
       }
 
       // For IPFS, basic format check
       if (urlObj.protocol === "ipfs:" && !urlObj.pathname) {
-        this._error = "IPFS URL must include a valid hash.";
+        this.dispatchEvent(
+          new CustomEvent("model-url-error", {
+            detail: { error: "IPFS URL must include a valid hash." },
+            bubbles: true,
+            composed: true,
+          }),
+        );
         return false;
       }
 
@@ -384,15 +421,29 @@ export class SettingsMenu extends LitElement {
         !pathname.endsWith(".zip") &&
         !pathname.endsWith(".model3.json")
       ) {
-        this._error =
-          "If specified, file extension must be .zip or .model3.json";
+        this.dispatchEvent(
+          new CustomEvent("model-url-error", {
+            detail: {
+              error:
+                "If specified, file extension must be .zip or .model3.json",
+            },
+            bubbles: true,
+            composed: true,
+          }),
+        );
         return false;
       }
 
       // All other cases pass - let the Live2D loader handle it
       return true;
     } catch (err) {
-      this._error = "Invalid URL format.";
+      this.dispatchEvent(
+        new CustomEvent("model-url-error", {
+          detail: { error: "Invalid URL format." },
+          bubbles: true,
+          composed: true,
+        }),
+      );
       return false;
     }
   }

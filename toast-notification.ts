@@ -10,7 +10,7 @@ export class ToastNotification extends LitElement {
   message = "";
 
   @property({ type: String })
-  type: "info" | "warning" | "error" = "info";
+  type: "info" | "success" | "warning" | "error" = "info";
 
   @state()
   private _isAnimating = false;
@@ -21,7 +21,7 @@ export class ToastNotification extends LitElement {
       top: 24px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 30;
+      z-index: 50;
       pointer-events: none;
     }
 
@@ -55,6 +55,12 @@ export class ToastNotification extends LitElement {
       background: rgba(255, 152, 0, 0.9);
       color: white;
       border: 1px solid rgba(255, 152, 0, 0.3);
+    }
+
+    .toast.success {
+      background: rgba(76, 175, 80, 0.9);
+      color: white;
+      border: 1px solid rgba(76, 175, 80, 0.3);
     }
 
     .toast.error {
@@ -93,6 +99,8 @@ export class ToastNotification extends LitElement {
     switch (this.type) {
       case "info":
         return "ℹ️";
+      case "success":
+        return "✅";
       case "warning":
         return "⚠️";
       case "error":
@@ -105,12 +113,12 @@ export class ToastNotification extends LitElement {
   /**
    * Show the toast with a message
    * @param message - The message to display
-   * @param type - The type of toast (info, warning, error)
+   * @param type - The type of toast (info, success, warning, error)
    * @param duration - How long to show the toast in milliseconds (0 = manual hide)
    */
   show(
     message: string,
-    type: "info" | "warning" | "error" = "info",
+    type: "info" | "success" | "warning" | "error" = "info",
     duration: number = 0,
   ) {
     this.message = message;

@@ -712,13 +712,21 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleApiKeySaved() {
+    // Show success toast for API key saved
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    if (toast) {
+      toast.show("API key saved successfully! ✨", "success", 3000);
+    }
+
+    console.log("[API Key] API key saved, reinitializing client");
+
+    // Reinitialize the client with the new API key
+    this.initClient();
+
     // Close settings menu and toast when API key is saved
     this.showSettings = false;
     this.showToast = false;
     this.toastMessage = "";
-
-    // Reinitialize the client with the new API key
-    this.initClient();
 
     // Execute the pending action if there is one
     if (this.pendingAction) {
@@ -729,6 +737,74 @@ export class GdmLiveAudio extends LitElement {
       setTimeout(() => {
         action();
       }, 100);
+    }
+  }
+
+  private _handleModelUrlChanged() {
+    // Update the Live2D model URL from localStorage and trigger re-render
+    const newModelUrl = localStorage.getItem("live2d-model-url") || "";
+    const currentModelUrl = this.live2dModelUrl || "";
+
+    // Check if the URL actually changed
+    if (newModelUrl === currentModelUrl) {
+      console.log(
+        "[Runtime Model Swap] URL unchanged, skipping reload:",
+        newModelUrl,
+      );
+      return; // Silently skip reload - no toast needed
+    }
+
+    this.live2dModelUrl = newModelUrl;
+
+    // Show toast notification to indicate model is changing
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    if (toast) {
+      toast.show("Loading new Live2D model...", "info", 3000);
+    }
+
+    console.log("[Runtime Model Swap] Model URL changed to:", newModelUrl);
+  }
+
+  private _handleLive2dLoaded() {
+    console.log("[Live2D Success] Model loaded successfully");
+
+    // Show success toast notification
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    if (toast) {
+      toast.show("Live2D model loaded successfully! ✨", "success", 3000);
+    }
+  }
+
+  private _handleApiKeyError(e: CustomEvent) {
+    const errorMessage = e.detail?.error || "API key validation failed";
+    console.error("[API Key Error]", errorMessage);
+
+    // Show error toast notification
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    if (toast) {
+      toast.show(errorMessage, "error", 4000);
+    }
+  }
+
+  private _handleModelUrlError(e: CustomEvent) {
+    const errorMessage = e.detail?.error || "Live2D URL validation failed";
+    console.error("[Model URL Error]", errorMessage);
+
+    // Show error toast notification
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    if (toast) {
+      toast.show(errorMessage, "error", 4000);
+    }
+  }
+
+  private _handleLive2dError(e: CustomEvent) {
+    const errorMessage = e.detail?.error || "Failed to load Live2D model";
+    console.error("[Live2D Error]", errorMessage);
+
+    // Show error toast notification
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    if (toast) {
+      toast.show(`Live2D model failed to load: ${errorMessage}`, "error", 5000);
     }
   }
 
@@ -939,7 +1015,10 @@ export class GdmLiveAudio extends LitElement {
                 @close=${() => {
                   this.showSettings = false;
                 }}
-                @api-key-saved=${this._handleApiKeySaved}></settings-menu>`
+                @api-key-saved=${this._handleApiKeySaved}
+                @api-key-error=${this._handleApiKeyError}
+                @model-url-changed=${this._handleModelUrlChanged}
+                @model-url-error=${this._handleModelUrlError}></settings-menu>`
             : ""
         }
         <div class="controls">
@@ -1012,6 +1091,8 @@ export class GdmLiveAudio extends LitElement {
           .modelUrl=${this.live2dModelUrl || ""}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
+          @live2d-loaded=${this._handleLive2dLoaded}
+          @live2d-error=${this._handleLive2dError}
         ></live2d-gate>
       </div>
       
