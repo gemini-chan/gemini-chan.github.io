@@ -100,6 +100,6 @@
 
   <completion_criteria>
     <criterion>The `tasks.md` file has been created and approved by the user.</criterion>
-    <criterion>The mode has switched to the coden implementation of the approved tasks.</criterion>
+    <criterion>The mode has switched to the code implementation of the approved tasks.</criterion>
   </completion_criteria>
 </workflow_instructions>
