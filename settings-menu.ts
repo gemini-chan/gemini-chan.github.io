@@ -26,6 +26,9 @@ export class SettingsMenu extends LitElement {
   @state()
   private _modelUrlValid = false;
 
+  @state()
+  private _modelUrlInvalid = false;
+
   static styles = css`
     :host {
       position: absolute;
@@ -175,10 +178,12 @@ export class SettingsMenu extends LitElement {
               @input=${this._onModelUrlInput}
               @blur=${this._onModelUrlBlur}
               placeholder="Enter model3.json or .zip URL" />
-            <div class="validation-icon ${this._modelUrlValid ? "show" : ""}" title="Valid URL">
-              <svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/>
-              </svg>
+            <div class="validation-icon ${this._modelUrlValid || this._modelUrlInvalid ? "show" : ""}" title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}">
+              ${this._modelUrlValid
+                ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
+                : this._modelUrlInvalid
+                  ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
+                  : ""}
             </div>
             <button class="paste-button" @click=${this._onPasteModelUrl} title="Paste from clipboard">
               <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -263,6 +268,7 @@ export class SettingsMenu extends LitElement {
   private _onModelUrlInput(e: Event) {
     this._error = ""; // Clear error on input
     this._modelUrlValid = false; // Clear validation tick while typing
+    this._modelUrlInvalid = false;
   }
 
   private _autoSave(
@@ -330,6 +336,7 @@ export class SettingsMenu extends LitElement {
       this._apiKeyInvalid = !isValid;
     } else if (fieldName === "modelUrl") {
       this._modelUrlValid = isValid;
+      this._modelUrlInvalid = !isValid;
     }
   }
 
