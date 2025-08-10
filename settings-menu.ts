@@ -311,7 +311,7 @@ export class SettingsMenu extends LitElement {
       {
         storageKey: "gemini-api-key",
         validator: this._validateApiKey.bind(this),
-        eventName: "api-key-saved",
+        eventName: undefined, // No auto-close on blur
         required: true,
         preserveOnEmpty: true,
       },
