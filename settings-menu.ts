@@ -226,11 +226,19 @@ export class SettingsMenu extends LitElement {
 
   firstUpdated() {
     this.shadowRoot!.host.setAttribute("active", "true");
-    this._validateApiKey(this.apiKey);
-    this._validateLive2dUrl(
-      localStorage.getItem("live2d-model-url") ||
-        "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip",
-    );
+
+    // Validate API Key, but only if it has a value
+    if (this.apiKey) {
+      const isApiKeyValid = this._validateApiKey(this.apiKey);
+      this._setValidationState("apiKey", isApiKeyValid);
+    }
+
+    // Validate Model URL
+    const modelUrlInput = this.shadowRoot!.querySelector<HTMLInputElement>('#modelUrl');
+    if (modelUrlInput) {
+      const isModelUrlValid = this._validateLive2dUrl(modelUrlInput.value);
+      this._setValidationState("modelUrl", isModelUrlValid);
+    }
   }
 
   private _handleBackdropClick(e: Event) {
