@@ -55,3 +55,4 @@
   - [x] 10.1. Hide settings during active calls (disable or hide settings button while isCallActive).
   - [ ] 10.2. Standardize API key prompt copy across app (use the spec string in settings-triggered toasts).
   - [x] 10.3. Handle rate-limit UX during calls: surface a non-silent failure when reusing an overloaded session (banner/toast/transcript notice).
+    - Note: The banner display is currently broken, but the toast notification works.
