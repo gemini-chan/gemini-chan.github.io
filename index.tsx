@@ -652,14 +652,6 @@ export class GdmLiveAudio extends LitElement {
     this.updateStatus("Call ended");
   }
 
-  private reset() {
-    // Reset based on active mode to preserve separate contexts
-    if (this.activeMode === "texting") {
-      this._resetTextContext();
-    } else if (this.activeMode === "calling") {
-      this._resetCallContext();
-    }
-  }
 
   private _resetTextContext() {
     // Close existing text session using session manager
