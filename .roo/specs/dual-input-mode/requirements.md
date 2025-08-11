@@ -34,18 +34,18 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** the model responds during a call **THEN** the audio is played back and transcribed text appears in the call transcript window
 - **WHEN** I end the call **THEN** the call transcript window disappears and the chat window becomes visible again
 - **WHEN** a call is active AND a request is rate-limited **THEN** a toast appears explaining the rate limit and no new audio is queued
-- **WHEN** a call is active AND the API key is overloaded (rate-limited) and an existing session is reused **THEN** the UI must not silently fail: show a call-side warning (e.g., a banner or transcript entry) indicating responses may be delayed or unavailable
 
-### 2.3. Separate Context Management
+### 2.3. Context Management
 - **As a** user,
-- **I want** to maintain separate conversation contexts for texting and calling,
-- **so that** each mode preserves its own conversation history independently.
+- **I want** my text conversations to be preserved independently from voice calls,
+- **so that** I can switch between texting and fresh voice calls without losing my chat history.
 
 #### 2.3.1. Acceptance Criteria
 - **WHEN** I switch from texting to calling **THEN** the texting context is preserved but not shared with the calling session
-- **WHEN** I switch from calling to texting **THEN** the calling context is preserved but not shared with the texting session
-- **WHEN** I return to a previously used mode **THEN** the conversation history for that mode is restored
-- **WHEN** switching between modes **THEN** no confirmation dialog appears (contexts are preserved separately)
+- **WHEN** I end a call **THEN** the call's context is discarded and not preserved.
+- **WHEN** I start a new call **THEN** the call begins with a fresh, empty context, independent of any previous calls or text chats.
+- **WHEN** I return to the text messaging view after a call **THEN** the previous text conversation history is restored.
+- **WHEN** switching between modes **THEN** no confirmation dialog appears
 
 ### 2.4. Dynamic Transcript Windows
 - **As a** user,
@@ -75,9 +75,8 @@ This document outlines the requirements for a dual-input mode that simulates a r
 
 #### 2.6.1. Acceptance Criteria
 - **GIVEN** I am in the text messaging view **WHEN** I click the "Clear conversation" button in the header **THEN** the text transcript and its corresponding context are cleared.
-- **GIVEN** I am in the voice calling view **WHEN** I click the "Clear call history" button in the header **THEN** the call transcript and its corresponding context are cleared.
+- **GIVEN** I am in the voice calling view **WHEN** I click the "Clear call history" button in the header **THEN** the call transcript is cleared from the display.
 - **WHEN** I reset the text context **THEN** the call context remains unaffected.
-- **WHEN** I reset the call context **THEN** the text context remains unaffected.
 
 ### 2.7. Direct Main UI Landing with API Key Validation
 - **As a** user,
@@ -152,3 +151,24 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** a call is active **THEN** the Live2D model area remains unoccupied by transcript windows for better visibility
 - **WHEN** a call is active **THEN** the call transcript does not extend into the space under the Live2D model
 - **WHEN** switching between texting and calling modes **THEN** both transcript windows maintain consistent dimensions and positioning
+
+### 2.13. Tabbed Chat Interface
+- **As a** user,
+- **I want** the left-side panel to have tabs for "Chat" and "Call History",
+- **so that** I can easily switch between my ongoing text conversation and my past call summaries.
+
+#### 2.13.1. Acceptance Criteria
+- **GIVEN** the application has loaded, **THEN** the left-side panel displays two tabs: "Chat" and "Call History".
+- **GIVEN** the "Chat" tab is selected, **THEN** the main text messaging interface is displayed.
+- **GIVEN** the "Call History" tab is selected, **THEN** a list of past call summaries is displayed.
+- **WHEN** I switch between tabs, **THEN** the content of the panel updates instantly without a page reload.
+
+### 2.14. Call Summarization and History
+- **As a** user,
+- **I want** to see a summarized history of my past calls in a dedicated tab,
+- **so that** I can review them and start new conversations based on them.
+
+#### 2.14.1. Acceptance Criteria
+- **GIVEN** a call has ended, **WHEN** I hang up, **THEN** a background API call is made to a `gemini-flash-lite` model to summarize the call transcript.
+- **GIVEN** a call summary is generated, **THEN** it is added to the "Call History" tab.
+- **GIVEN** I am viewing the "Call History" tab, **WHEN** I click on a call summary, **THEN** the summary content is used to start a new TTS session in the "Chat" tab.

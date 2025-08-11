@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<best_practices>
+  <general_principles>
+    <principle priority="high">
+      <name>Use the Complete, Official SDK</name>
+      <description>
+        Always begin development by downloading the complete "Live2D Cubism SDK for Web" package from the official Live2D website. Do not clone the `CubismWebFramework` repository from GitHub directly.
+      </description>
+      <rationale>
+        The public GitHub repository for the Framework deliberately omits the proprietary `Cubism Core` engine (`.wasm` file). Attempting to use the framework alone will result in critical runtime errors (e.g., `Live2DCubismCore is not defined`). The official download package is the only source for the complete, functional SDK.
+      </rationale>
+      <example>
+        <scenario>Starting a new Live2D project.</scenario>
+        <good>Downloading the `.zip` package from `live2d.com` and copying the `Core` and `Framework` directories into the project.</good>
+        <bad>Running `git clone` on the `CubismWebFramework` repository and expecting it to work.</bad>
+      </example>
+    </principle>
+
+    <principle priority="high">
+      <name>Encapsulate the Rendering Pipeline</name>
+      <description>
+        Avoid using the official `LApp*` sample classes (e.g., `LAppDelegate`, `LAppModel`) directly in a production application. Instead, refactor the core logic into a single, self-contained, and reusable class.
+      </description>
+      <rationale>
+        The official sample classes are designed for demonstration and are tightly coupled with global state, making them difficult to integrate, maintain, and reuse in larger, component-based applications. A custom wrapper class (e.g., `Live2DApplication`) provides a clean API, manages its own state, and can be easily instantiated anywhere in an application.
+      </rationale>
+      <example>
+        <scenario>Integrating a Live2D model into a React or Vue component.</scenario>
+        <good>Creating a `Live2DManager` class that handles all SDK initialization, model loading, and the render loop. The UI component then simply instantiates this manager.</good>
+        <bad>Copying and pasting the `lappdelegate.ts`, `lappmodel.ts`, and other sample files and trying to adapt their global singletons.</bad>
+      </example>
+    </principle>
+
+    <principle priority="medium">
+      <name>Delineate Editor vs. Runtime Capabilities</name>
+      <description>
+        Clearly understand the distinction between features configured in the Cubism Editor (authoring-time) and the APIs available for control in the Web SDK (runtime).
+      </description>
+      <rationale>
+        Powerful editor features like Blend Shapes and Parameter Controllers (IK) do not have corresponding high-level APIs in the SDK (e.g., `model.setIkHandlePosition()`). At runtime, they are all exposed as standard parameters that are manipulated via `setParameterValueById()`. Understanding this prevents wasted time searching for non-existent APIs and directs development toward the correct, parameter-based approach.
+      </rationale>
+      <example>
+        <scenario>Programmatically controlling an arm that was rigged with an IK controller in the editor.</scenario>
+        <good>Identifying the underlying parameters (`ParamArmL`, `ParamElbowL`) and writing code to set their values to achieve the desired pose.</good>
+        <bad>Searching the SDK for a way to directly control the IK handle's screen position.</bad>
+      </example>
+    </principle>
+  </general_principles>
+
+  <code_conventions>
+    <convention category="configuration">
+      <rule>Use Path Aliases for SDK Imports</rule>
+      <description>
+        Configure both `tsconfig.json` and `vite.config.mts` to use a path alias (e.g., `@framework`) for importing SDK modules.
+      </description>
+      <template>
+// tsconfig.json
+"paths": {
+  "@framework/*": ["src/lib/live2d/framework/*"]
+}
+
+// vite.config.mts
+resolve: {
+  alias: [{ find: '@framework', replacement: path.resolve(__dirname, 'src/lib/live2d/framework') }]
+}
+      </template>
+    </convention>
+    
+    <convention category="structure">
+      <rule>Separate SDK Files from Application Code</rule>
+      <description>
+        Place the unmodified Live2D Framework source files in a dedicated library directory (e.g., `src/lib/live2d/framework`) to keep them isolated from your application's own logic.
+      </description>
+    </convention>
+  </code_conventions>
+
+  <common_pitfalls>
+    <pitfall>
+      <description>Incorrect `Cubism Core` Script Loading Order</description>
+      <why_problematic>The main application's JavaScript will execute before the `Live2DCubismCore` global object is defined, causing an immediate crash.</why_problematic>
+      <correct_approach>In `index.html`, ensure the `<script src="/live2d/Core/live2dcubismcore.min.js"></script>` tag is placed *before* the main application bundle script (`<script type="module" src="/src/main.ts"></script>`).</correct_approach>
+    </pitfall>
+    <pitfall>
+      <description>Rendering Artifacts (Black Halos)</description>
+      <why_problematic>Live2D textures are authored with premultiplied alpha. If the WebGL context is not configured correctly, it can result in dark or black edges around transparent parts of the model.</why_problematic>
+      <correct_approach>When creating the WebGL context, set the `premultipliedAlpha` attribute to `true`. Ensure the `CubismRenderer_WebGL` is also initialized to use premultiplied alpha.</correct_approach>
+    </pitfall>
+    <pitfall>
+      <description>Using Outdated Community Wrappers (e.g., `pixi-live2d-display`) with Cubism 5 Models</description>
+      <why_problematic>Most popular community wrappers were built for Cubism 2.1 or 4 and bundle older versions of the Core engine. They are incompatible with the `.moc3` format of models exported from the Cubism 5 Editor, leading to loading failures.</why_problematic>
+      <correct_approach>For any new project using Cubism 5 models, use the official `CubismWebFramework` directly. This is the only way to guarantee stability and access to all features.</correct_approach>
+    </pitfall>
+  </common_pitfalls>
+</best_practices>

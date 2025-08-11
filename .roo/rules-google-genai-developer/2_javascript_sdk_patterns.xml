@@ -1,0 +1,163 @@
+<![CDATA[
+<javascript_sdk_patterns>
+  <overview>
+    This document provides official guidelines and code patterns for using the Google Gen AI JavaScript/TypeScript SDK (`@google/genai`). For a comprehensive migration guide from the legacy SDK, see `.roo/docs/migrating-to-genai-sdk.md`.
+  </overview>
+
+  <initialization>
+    <title>Initialization and API Key</title>
+    <description>
+      The correct way to initialize the client is by instantiating the `GoogleGenAI` class.
+    </description>
+    <example name="correct_initialization">
+      <code language="javascript"><![CDATA[
+import { GoogleGenAI } from "@google/genai";
+
+// Pass the API key in a config object or use the GOOGLE_API_KEY environment variable
+const ai = new GoogleGenAI({ apiKey: "YOUR_API_KEY" });
+]]></code>
+    </example>
+    <anti_pattern name="legacy_initialization">
+      <description>Do not use the `@google/generative-ai` package.</description>
+      <code language="javascript"><![CDATA[
+// Incorrect
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const genAI = new GoogleGenerativeAI("YOUR_API_KEY");
+]]></code>
+    </anti_pattern>
+  </initialization>
+
+  <core_usage>
+    <pattern name="basic_text_generation">
+      <title>Basic Text Generation</title>
+      <description>Use the `ai.models.generateContent` method for single-turn text generation.</description>
+      <example>
+        <code language="javascript"><![CDATA[
+import { GoogleGenAI } from "@google/genai";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+async function run() {
+  const response = await ai.models.generateContent({
+    model: "gemini-1.5-flash",
+    contents: "Explain the importance of the open-source movement.",
+  });
+  console.log(response.text);
+}
+run();
+]]></code>
+      </example>
+    </pattern>
+
+    <pattern name="streaming">
+      <title>Streaming</title>
+      <description>Use `ai.models.generateContentStream` for streaming responses.</description>
+      <example>
+        <code language="javascript"><![CDATA[
+import { GoogleGenAI } from "@google/genai";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+async function runStreaming() {
+  const responseStream = await ai.models.generateContentStream({
+    model: 'gemini-1.5-flash',
+    contents: 'Write a short story about a robot who discovers music.',
+  });
+
+  for await (const chunk of responseStream) {
+    process.stdout.write(chunk.text);
+  }
+}
+runStreaming();
+]]></code>
+      </example>
+    </pattern>
+
+    <pattern name="chat">
+      <title>Chat (Multi-turn Conversations)</title>
+      <description>Use the `ai.chats.create` service for stateful conversations.</description>
+      <example>
+        <code language="javascript"><![CDATA[
+import { GoogleGenAI } from "@google/genai";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+async function runChat() {
+  const chatSession = ai.chats.create({
+    model: "gemini-1.5-flash",
+  });
+
+  let result = await chatSession.sendMessage("Hello! I have a cat.");
+  console.log(result.text);
+
+  result = await chatSession.sendMessage("What are some good names for a cat?");
+  console.log(result.text);
+}
+runChat();
+]]></code>
+      </example>
+    </pattern>
+  </core_usage>
+
+  <advanced_features>
+    <title>Advanced Features</title>
+    <pattern name="function_calling">
+      <title>Function Calling (Tools)</title>
+      <description>Provide the model with tools and control its calling behavior with `toolConfig`.</description>
+      <example>
+        <code language="javascript"><![CDATA[
+import { GoogleGenAI, FunctionCallingConfigMode } from "@google/genai";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const getWeatherDeclaration = { /* ... function schema ... */ };
+
+const response = await ai.models.generateContent({
+  model: 'gemini-1.5-flash',
+  contents: "What's the weather like in Boston?",
+  tools: [{ functionDeclarations: [getWeatherDeclaration] }],
+  config: {
+    toolConfig: {
+      functionCallingConfig: {
+        mode: FunctionCallingConfigMode.AUTO, // AUTO, ANY, or NONE
+      }
+    }
+  },
+});
+
+const functionCalls = response.functionCalls;
+// Handle function calls
+]]></code>
+      </example>
+    </pattern>
+
+    <pattern name="live_api">
+      <title>Live API (WebSockets)</title>
+      <description>Use `ai.live.connect` for ultra-low-latency, bidirectional communication. This is a new feature not present in the legacy SDK.</description>
+      <example>
+        <code language="javascript"><![CDATA[
+import { GoogleGenAI, Modality } from "@google/genai";
+const ai = new GoogleGenAI({apiKey: 'YOUR_API_KEY'});
+
+async function runLiveSession() {
+  const session = await ai.live.connect({
+    model: 'gemini-live-2.5-flash-preview',
+    config: {
+      responseModalities: [Modality.TEXT],
+    },
+  });
+
+  await session.sendClientContent({
+    turns: [{ role: "user", parts: [{ text: "Hello Gemini!" }] }],
+    turnComplete: true,
+  });
+
+  for await (const response of session.receive()) {
+    if (response.text) {
+      process.stdout.write(response.text);
+    }
+  }
+}
+runLiveSession();
+]]></code>
+      </example>
+    </pattern>
+  </advanced_features>
+</javascript_sdk_patterns>
+]]>
