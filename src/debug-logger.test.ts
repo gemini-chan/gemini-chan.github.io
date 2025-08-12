@@ -97,7 +97,7 @@ describe('DebugLogger with ConfigurationManager', () => {
       'component-d': true,
     });
   });
-});
+
   it('should prioritize localStorage configuration over defaults', () => {
     // Set localStorage configuration
     const localStorageConfig = {
