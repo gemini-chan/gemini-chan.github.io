@@ -77,25 +77,39 @@ export class TranscriptAutoScroll {
     oldLength: number,
     newLength: number,
   ) {
-    // Always scroll for the first message or if user is already at or near the bottom
+    // Always scroll for the first message
     const isFirstMessage = oldLength === 0 && newLength > 0;
-    const shouldScroll = isFirstMessage || this.shouldAutoScroll(element);
 
     console.log(
-      `[AutoScroll] Update: ${oldLength} -> ${newLength}, shouldScroll: ${shouldScroll}, isFirstMessage: ${isFirstMessage}`,
+      `[AutoScroll] Update: ${oldLength} -> ${newLength}, isFirstMessage: ${isFirstMessage}`,
     );
 
-    if (shouldScroll) {
-      // Detect rapid updates (multiple messages at once)
-      const isRapidUpdate = newLength - oldLength > 1;
-
-      console.log(`[AutoScroll] Scrolling with smooth: ${!isRapidUpdate}`);
-
+    if (isFirstMessage) {
+      console.log(`[AutoScroll] First message - scrolling immediately`);
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
-        this.scrollToBottom(element, !isRapidUpdate);
+        this.scrollToBottom(element, true);
       });
+      return;
     }
+
+    // For subsequent messages, use a double requestAnimationFrame to ensure DOM is fully updated
+    // This fixes the timing issue where scroll height changes before we can check position
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const shouldScroll = this.shouldAutoScroll(element);
+        console.log(
+          `[AutoScroll] After DOM update - shouldScroll: ${shouldScroll}`,
+        );
+
+        if (shouldScroll) {
+          // Detect rapid updates (multiple messages at once)
+          const isRapidUpdate = newLength - oldLength > 1;
+          console.log(`[AutoScroll] Scrolling with smooth: ${!isRapidUpdate}`);
+          this.scrollToBottom(element, !isRapidUpdate);
+        }
+      });
+    });
   }
 
   /**
