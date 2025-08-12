@@ -24,6 +24,13 @@
     0 0 0 1px rgba(255, 0, 229, 0.15), 0 0 12px rgba(255, 0, 229, 0.25);
   --cp-glow-purple:
     0 0 0 1px rgba(124, 77, 255, 0.15), 0 0 12px rgba(124, 77, 255, 0.25);
+  /* Default circuitry settings */
+  --circuit-enabled: 1;
+  --circuit-speed: 15s;
+  --circuit-nodes: 1;
+  --circuit-size: 60px;
+  --circuit-opacity: 1;
+  --circuit-display: block;
 }
 
 html,
@@ -168,16 +175,6 @@ live2d-gate::before {
       calc(30px + var(--circuit-size, 60px))
         calc(30px + var(--circuit-size, 60px));
   }
-}
-
-/* Default circuitry settings */
-:root {
-  --circuit-enabled: 1;
-  --circuit-speed: 15s;
-  --circuit-nodes: 1;
-  --circuit-size: 60px;
-  --circuit-opacity: 1;
-  --circuit-display: block;
 }
 
 /* Circuitry disabled */

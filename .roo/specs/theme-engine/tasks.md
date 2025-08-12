@@ -53,5 +53,7 @@ Add theme engine support with a toggle in Settings and persistence.
   - [x] 10.1. In `index.css`, add a new `html[data-theme='noir']` block with reddish color overrides.
   - [x] 10.2. In `settings-menu.ts`, add "Noir" to the theme selection dropdown.
   - [x] 10.3. **REVISION:** Update the Noir theme to have a darker, almost black background with neon red accents.
-- [ ] 11. Fix Cyberpunk Theme Regression
-  - [ ] 11.1. In `index.css`, correct the `l:root` selector to `:root`.
+- [x] 11. Fix Cyberpunk Theme Regression
+  - [x] 11.1. In `index.css`, correct the `l:root` selector to `:root`.
+- [ ] 12. Fix Cyberpunk Theme Regression Part 2
+    - [ ] 12.1. In `index.css`, merge the duplicate `:root` declarations to fix the theme.
