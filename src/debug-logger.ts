@@ -1,5 +1,8 @@
 // src/debug-logger.ts
 
+declare const __DEBUG__: boolean;
+declare const __DEBUG_COMPONENTS__: string[];
+
 /**
  * Configuration for the DebugLogger.
  */
@@ -71,9 +74,16 @@ class ConfigurationManager {
    * @returns The merged configuration.
    */
   loadConfig(): DebugLoggerConfig {
+    const components: Record<string, boolean> = {};
+    if (typeof __DEBUG_COMPONENTS__ !== 'undefined') {
+      for (const comp of __DEBUG_COMPONENTS__) {
+        components[comp] = true;
+      }
+    }
+
     const defaultConfig: DebugLoggerConfig = {
-      enabled: process.env.NODE_ENV !== 'production',
-      components: {},
+      enabled: typeof __DEBUG__ !== 'undefined' ? __DEBUG__ : process.env.NODE_ENV !== 'production',
+      components,
       logLevel: 'info',
       timestamp: true,
       prefix: true,
