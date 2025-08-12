@@ -29,7 +29,7 @@ Address UI inconsistencies and fix critical text messaging interface issues firs
 - [x] 2. Implement Dual-Context State Management: Create and manage separate states for TTS and STS conversation histories (textTranscript, callTranscript, activeMode preserved across switches).
   - Requirements: 2.3.1
 
-- [ ] 3. **CRITICAL ISSUE** - Implement TTS Session Management: Handle the lifecycle of the text-to-speech session, including lazy initialization and message processing via TextSessionManager; audio playback to isolated text output node; transcript updates.
+- [x] 3. **CRITICAL ISSUE** - Implement TTS Session Management: Handle the lifecycle of the text-to-speech session, including lazy initialization and message processing via TextSessionManager; audio playback to isolated text output node; transcript updates.
   - Requirements: 2.1.1
   - **BROKEN**: Chat input is non-functional (cannot click/interact with textarea or send button)
 
