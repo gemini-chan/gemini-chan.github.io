@@ -21,6 +21,7 @@ export interface ScrollToBottomState {
 
 export class TranscriptAutoScroll {
   private options: Required<AutoScrollOptions>;
+  private wasAtBottomBeforeUpdate = new WeakMap<Element, boolean>();
 
   constructor(options: AutoScrollOptions = {}) {
     this.options = {
@@ -89,27 +90,35 @@ export class TranscriptAutoScroll {
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
         this.scrollToBottom(element, true);
+        this.wasAtBottomBeforeUpdate.set(element, true);
       });
       return;
     }
 
-    // For subsequent messages, use a double requestAnimationFrame to ensure DOM is fully updated
-    // This fixes the timing issue where scroll height changes before we can check position
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const shouldScroll = this.shouldAutoScroll(element);
-        console.log(
-          `[AutoScroll] After DOM update - shouldScroll: ${shouldScroll}`,
-        );
+    // Check if user was at bottom before this update
+    const wasAtBottom =
+      this.wasAtBottomBeforeUpdate.get(element) ??
+      this.shouldAutoScroll(element);
 
-        if (shouldScroll) {
-          // Detect rapid updates (multiple messages at once)
-          const isRapidUpdate = newLength - oldLength > 1;
-          console.log(`[AutoScroll] Scrolling with smooth: ${!isRapidUpdate}`);
-          this.scrollToBottom(element, !isRapidUpdate);
-        }
+    // Store current bottom state for next update
+    this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element));
+
+    console.log(`[AutoScroll] Was at bottom before update: ${wasAtBottom}`);
+
+    // If user was at bottom before the update, continue scrolling
+    if (wasAtBottom) {
+      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      requestAnimationFrame(() => {
+        // Detect rapid updates (multiple messages at once)
+        const isRapidUpdate = newLength - oldLength > 1;
+        console.log(`[AutoScroll] Scrolling with smooth: ${!isRapidUpdate}`);
+        this.scrollToBottom(element, !isRapidUpdate);
+        // Update the state after scrolling
+        this.wasAtBottomBeforeUpdate.set(element, true);
       });
-    });
+    } else {
+      console.log(`[AutoScroll] User scrolled away - not auto-scrolling`);
+    }
   }
 
   /**
