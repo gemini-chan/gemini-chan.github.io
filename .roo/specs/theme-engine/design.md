@@ -2,9 +2,12 @@
 
 ## 1. Overview
 Add a simple, extensible theme engine to support multiple visual styles for the UI. The initial release provides three themes:
- - Cyberpunk (default): neon gradients, glass surfaces, glows
- - Dystopia: a darker variant of Cyberpunk
- - Noir: a dark theme with a reddish hue
+  - Cyberpunk (default): neon gradients, glass surfaces, glows
+  - Dystopia: a darker variant of Cyberpunk
+  - Tron: A dark, cyan-heavy theme.
+  - Synthwave: A vibrant, purple and pink theme.
+  - Matrix: A dark, green-heavy theme.
+  - Noir: a dark theme with a reddish hue
  
  Themes are applied via a data attribute on the root HTML element (`html[data-theme='<name>']`) and implemented through CSS custom properties (variables). Components consume variables only and avoid hardcoded colors, enabling runtime theme switching.
 
@@ -19,7 +22,8 @@ Add a simple, extensible theme engine to support multiple visual styles for the 
   - Selected theme stored in `localStorage` under key `theme`
   - Restored at startup by inline `onload` script in `index.html`
 - Switching:
-  - Settings menu exposes a Theme select
+  - Settings menu exposes a custom Theme select.
+  - The custom selector's dropdown must not overlay other settings elements. It should occupy its own space in the layout.
   - On change, update `document.documentElement.dataset.theme` (data-theme attr) and persist to `localStorage`
 
 ## 3. Styling Model

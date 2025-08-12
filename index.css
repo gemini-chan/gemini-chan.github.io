@@ -428,48 +428,58 @@ html[data-theme="noir"] body::after {
   --circuit-node-color: rgba(255, 0, 0, 0.25);
 }
 
-/* Solarpunk Theme */
-html[data-theme="solarpunk"] {
-  --cp-bg-1: #fdf6e3;
-  --cp-bg-2: #f5e7c0;
-  --cp-bg-3: #eee8d5;
-  --cp-text: #586e75;
-  --cp-muted: rgba(88, 110, 117, 0.75);
 
-  --cp-cyan: #2aa198;
-  --cp-magenta: #d33682;
-  --cp-purple: #6c71c4;
-  --cp-green: #859900;
-  --cp-red: #dc322f;
-  --cp-amber: #b58900;
-
-  --cp-surface: rgba(0, 43, 54, 0.05);
-  --cp-surface-strong: rgba(0, 43, 54, 0.1);
-  --cp-surface-border: rgba(133, 153, 0, 0.3);
-  --cp-surface-border-2: rgba(42, 161, 152, 0.25);
-
-  --cp-glow-cyan:
-    0 0 0 1px rgba(42, 161, 152, 0.2), 0 0 14px rgba(42, 161, 152, 0.3);
-  --cp-glow-magenta:
-    0 0 0 1px rgba(211, 54, 130, 0.2), 0 0 14px rgba(211, 54, 130, 0.3);
-  --cp-glow-purple:
-    0 0 0 1px rgba(108, 113, 196, 0.2), 0 0 14px rgba(108, 113, 196, 0.3);
+/* Custom Theme Selector */
+.theme-selector {
+  position: relative;
+  width: 100%;
 }
-html[data-theme="solarpunk"] body {
+
+.theme-selected-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5em 0.65em;
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-surface-border);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: var(--cp-glow-purple);
   color: var(--cp-text);
-  background:
-    radial-gradient(
-      1200px 900px at 10% 20%,
-      rgba(181, 137, 0, 0.1),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 900px at 70% 80%,
-      rgba(133, 153, 0, 0.12),
-      transparent 60%
-    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }
-html[data-theme="solarpunk"] body::after {
-  --circuit-color: rgba(133, 153, 0, 0.15);
-  --circuit-node-color: rgba(133, 153, 0, 0.25);
+
+.dropdown-arrow {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.theme-options {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--cp-surface-strong);
+  border: 1px solid var(--cp-surface-border);
+  border-radius: 0 0 8px 8px;
+  z-index: 10;
+  overflow: hidden;
+  box-shadow: var(--cp-glow-cyan);
+}
+
+.theme-options.show {
+  display: block;
+}
+
+.theme-option {
+  padding: 0.5em 0.65em;
+  cursor: pointer;
+  color: var(--cp-muted);
+}
+
+.theme-option:hover {
+  background: var(--cp-surface-border-2);
+  color: var(--cp-text);
 }

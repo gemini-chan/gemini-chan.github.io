@@ -58,8 +58,6 @@ Add theme engine support with a toggle in Settings and persistence.
 - [x] 12. Fix Cyberpunk Theme Regression Part 2
     - [x] 12.1. In `index.css`, merge the duplicate `:root` declarations to fix the theme.
 
-- [ ] 13. Implement Solarpunk Theme
-  - [x] 13.1. In `index.css`, add a new `html[data-theme='solarpunk']` block with solarized, nature-inspired color overrides.
-    - Ref: Requirement 2.2, Design section 6
-  - [ ] 13.2. In `settings-menu.ts`, add "Solarpunk" to the theme selection dropdown.
-    - Ref: Requirement 2.1.1, Design section 6
+  - [ ] 14. Fix theme selector styling
+    - [ ] 14.1. Design and implement a custom theme selector that is visually consistent with the application's themes.
+    - [ ] 14.2. Ensure the selector has appropriate contrast and is readable in all themes.
