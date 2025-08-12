@@ -77,13 +77,13 @@ export class ChatView extends LitElement {
     }
 
     .turn.user {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(100, 150, 255, 0.3);
       color: #fff;
       align-self: flex-end;
     }
 
     .turn.model {
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 200, 100, 0.3);
       color: #fff;
       align-self: flex-start;
     }
@@ -93,12 +93,11 @@ export class ChatView extends LitElement {
       align-items: center;
       justify-content: space-between;
       padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 150, 0, 0.2);
       border-radius: 10px;
       color: #fff;
       font: 14px/1.4 system-ui;
       font-weight: 500;
-      margin-bottom: 12px;
     }
 
     .header-title {
@@ -228,6 +227,24 @@ export class ChatView extends LitElement {
       flex: 1;
       display: flex;
       flex-direction: column;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: rgba(255, 255, 255, 0.6);
+      font: 16px/1.4 system-ui;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .chat-icon {
+      width: 48px;
+      height: 48px;
+      opacity: 0.5;
     }
   `;
 
@@ -369,11 +386,31 @@ export class ChatView extends LitElement {
       </div>
       <div class="transcript-container">
         <div class="transcript">
-          ${this.transcript.map(
-            (turn) => html`
-            <div class="turn ${turn.author}">${turn.text}</div>
-          `,
-          )}
+          ${
+            this.transcript.length === 0
+              ? html`
+                  <div class="empty-state">
+                    <svg
+                      class="chat-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      height="48px"
+                      viewBox="0 -960 960 960"
+                      width="48px"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"
+                      />
+                    </svg>
+                    <div>No messages yet</div>
+                  </div>
+                `
+              : this.transcript.map(
+                  (turn) => html`
+                    <div class="turn ${turn.author}">${turn.text}</div>
+                  `,
+                )
+          }
         </div>
       </div>
       <div class="input-area">
