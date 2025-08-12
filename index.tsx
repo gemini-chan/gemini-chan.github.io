@@ -912,15 +912,20 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleSystemPromptChanged() {
-    logger.info("System prompt changed, reinitializing sessions");
+    logger.info(
+      "System prompt changed. Disconnecting text session and clearing transcript.",
+    );
 
-    // Re-initialize sessions to pick up the new prompt
-    if (this.textSessionManager?.isActive) {
-      this.textSessionManager.initSession();
+    // Disconnect the active TextSessionManager
+    if (this.textSessionManager) {
+      this.textSessionManager.closeSession();
+      this.textSession = null;
     }
-    if (this.callSessionManager?.isActive) {
-      this.callSessionManager.initSession();
-    }
+
+    // Clear the text transcript
+    this.textTranscript = [];
+
+    // The session will be re-initialized on the next user message, not immediately.
 
     const toast = this.shadowRoot?.querySelector(
       "toast-notification",
@@ -1012,6 +1017,22 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener(
+      "system-prompt-changed",
+      this._handleSystemPromptChanged.bind(this),
+    );
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener(
+      "system-prompt-changed",
+      this._handleSystemPromptChanged.bind(this),
+    );
+  }
+
   render() {
     return html`
       <chat-view
@@ -1032,8 +1053,7 @@ export class GdmLiveAudio extends LitElement {
                 @api-key-saved=${this._handleApiKeySaved}
                 @api-key-changed=${this._handleApiKeyChanged}
                 @model-url-changed=${this._handleModelUrlChanged}
-                @model-url-error=${this._handleModelUrlError}
-                @system-prompt-changed=${this._handleSystemPromptChanged}></settings-menu>`
+                @model-url-error=${this._handleModelUrlError}></settings-menu>`
             : ""
         }
         <controls-panel

@@ -113,12 +113,13 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **so that** I can personalize the AI character to my preferences across both text and voice modes.
 
 #### 2.12.1. Acceptance Criteria
-- **WHEN** I open the settings menu **THEN** I see a "System Prompt" text area where I can edit Gemini-chan's personality
-- **WHEN** I modify the system prompt and save **THEN** both text and voice sessions use the updated prompt consistently
-- **WHEN** the application loads **THEN** it uses a default Gemini-chan personality prompt if none is saved
-- **WHEN** I save a custom system prompt **THEN** it persists in localStorage for future sessions
-- **WHEN** I start a new text or voice session **THEN** it uses the current system prompt from settings
-- **WHEN** I clear the system prompt field **THEN** it reverts to the default Gemini-chan personality
+- **GIVEN** I am in the settings menu, **WHEN** I modify the system prompt, **THEN** the changes are saved with a debounce mechanism and applied to any new text or voice session.
+- **GIVEN** a text session is active **WHEN** the system prompt is changed **THEN** the text session is disconnected.
+- **GIVEN** a text session has been disconnected due to a prompt change **WHEN** I send a new message **THEN** the session reconnects automatically.
+- **GIVEN** the system prompt is changed **THEN** the text chat transcript is cleared.
+- **GIVEN** I am in the settings menu, **WHEN** I click the "Reset to Default" button, **THEN** the system prompt reverts to the default Gemini-chan personality.
+- **GIVEN** the application loads, **WHEN** no custom prompt is saved, **THEN** the default Gemini-chan personality is used for all sessions.
+- **GIVEN** a custom system prompt is saved, **WHEN** the application loads, **THEN** the saved prompt is used for all sessions.
 
 ### 2.7. Call Transcript Layout Optimization
 - **As a** user,
@@ -152,3 +153,14 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **GIVEN** a call has ended, **WHEN** I hang up, **THEN** a background API call is made to a `gemini-flash-lite` model to summarize the call transcript.
 - **GIVEN** a call summary is generated, **THEN** it is added to the "Call History" tab.
 - **GIVEN** I am viewing the "Call History" tab, **WHEN** I click on a call summary, **THEN** the summary content is used to start a new TTS session in the "Chat" tab.
+
+### 2.13. Scrollable Text Chat
+- **As a** user,
+- **I want** the text chat to be a scrollable container with auto-scrolling,
+- **so that** I can view my entire conversation history without the UI breaking.
+
+#### 2.13.1. Acceptance Criteria
+- **GIVEN** the text chat has more messages than can be displayed at once, **WHEN** new messages are added, **THEN** the chat automatically scrolls to the bottom to show the latest message.
+- **GIVEN** I have scrolled up in the text chat, **WHEN** a new message arrives, **THEN** auto-scrolling is paused to avoid interrupting me.
+- **GIVEN** I have scrolled up in the text chat, **THEN** a "scroll-to-bottom" button appears.
+- **GIVEN** I click the "scroll-to-bottom" button, **THEN** the chat scrolls to the most recent message and the button disappears.
