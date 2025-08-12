@@ -1,4 +1,4 @@
-:root {
+l:root {
   /* Cyberpunk Neon Theme */
   --cp-bg-1: #080b1a;
   --cp-bg-2: #0d0221;
@@ -391,46 +391,42 @@ html[data-theme="matrix"] body {
 
 /* Noir Theme */
 html[data-theme="noir"] {
-  --cp-bg-1: #1a0000;
-  --cp-bg-2: #2a0808;
-  --cp-bg-3: #1f0000;
-  --cp-text: #ffdddd;
-  --cp-muted: rgba(255, 221, 221, 0.7);
+  --cp-bg-1: #0d0d0d;
+  --cp-bg-2: #050505;
+  --cp-bg-3: #1a1a1a;
+  --cp-text: #e0e0e0;
+  --cp-muted: rgba(224, 224, 224, 0.7);
 
-  --cp-cyan: #ff5555;
-  --cp-magenta: #ff4444;
-  --cp-purple: #ff6666;
-  --cp-green: #ff8888;
-  --cp-red: #ff3b3b;
-  --cp-amber: #ffaa00;
+  --cp-cyan: #ff1a1a;
+  --cp-magenta: #ff0000;
+  --cp-purple: #ff3333;
+  --cp-green: #ff4d4d;
+  --cp-red: #ff0000;
+  --cp-amber: #ff4500;
 
-  --cp-surface: rgba(255, 85, 85, 0.06);
-  --cp-surface-strong: rgba(255, 85, 85, 0.12);
-  --cp-surface-border: rgba(255, 59, 59, 0.25);
-  --cp-surface-border-2: rgba(255, 68, 68, 0.2);
+  --cp-surface: rgba(255, 0, 0, 0.08);
+  --cp-surface-strong: rgba(255, 0, 0, 0.16);
+  --cp-surface-border: rgba(255, 0, 0, 0.3);
+  --cp-surface-border-2: rgba(255, 0, 0, 0.2);
 
   --cp-glow-cyan:
-    0 0 0 1px rgba(255, 85, 85, 0.15), 0 0 12px rgba(255, 85, 85, 0.25);
+    0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
   --cp-glow-magenta:
-    0 0 0 1px rgba(255, 68, 68, 0.15), 0 0 12px rgba(255, 68, 68, 0.25);
+    0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
   --cp-glow-purple:
-    0 0 0 1px rgba(255, 102, 102, 0.15), 0 0 12px rgba(255, 102, 102, 0.25);
+    0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
 }
 html[data-theme="noir"] body {
   color: var(--cp-text);
   background:
     radial-gradient(
-      1200px 800px at 20% 10%,
-      rgba(255, 85, 85, 0.08),
-      transparent 60%
+      1400px 900px at 50% 10%,
+      rgba(255, 0, 0, 0.15),
+      transparent 70%
     ),
-    radial-gradient(
-      900px 900px at 80% 20%,
-      rgba(255, 68, 68, 0.08),
-      transparent 60%
-    ), linear-gradient(170deg, var(--cp-bg-1), var(--cp-bg-2));
+    linear-gradient(180deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 html[data-theme="noir"] body::after {
-  --circuit-color: rgba(255, 59, 59, 0.12);
-  --circuit-node-color: rgba(255, 59, 59, 0.2);
+  --circuit-color: rgba(255, 0, 0, 0.15);
+  --circuit-node-color: rgba(255, 0, 0, 0.25);
 }
