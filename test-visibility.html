@@ -61,9 +61,11 @@
     </div>
 
     <script type="module">
+        import { createComponentLogger } from './src/debug-logger.js';
         import './chat-view.js';
         import './call-transcript.js';
         
+        const logger = createComponentLogger('test-visibility');
         const chatView = document.getElementById('chatView');
         const callTranscript = document.getElementById('callTranscript');
         const currentModeSpan = document.getElementById('currentMode');
@@ -91,9 +93,9 @@
             chatView.visible = !isCallingMode;
             callTranscript.visible = isCallingMode;
             
-            console.log('Mode changed to:', mode);
-            console.log('Chat view visible:', chatView.visible);
-            console.log('Call transcript visible:', callTranscript.visible);
+            logger.info('Mode changed to:', mode);
+            logger.debug('Chat view visible:', chatView.visible);
+            logger.debug('Call transcript visible:', callTranscript.visible);
         };
     </script>
 </body>

@@ -1,6 +1,9 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { createComponentLogger } from '../src/debug-logger';
 import './live2d-visual';
+
+const log = createComponentLogger('live2d-gate');
 
 /**
  * Wrapper that chooses Live2D (if available) and falls back to the sphere 3D visual.
@@ -22,20 +25,20 @@ export class Live2DGate extends LitElement {
   `;
 
   private _onLoaded = () => {
-    console.log('[Live2D Gate] loaded');
+    log.debug('live2d loaded event received');
     // Live2D reported loaded, hide/remove fallback
     this._live2dReady = true;
   };
 
   private _onError = (e: CustomEvent<{ error: string }>) => {
-    console.warn('[Live2D Gate] error', e.detail);
+    log.warn('live2d error event received', e.detail);
     this._live2dError = e.detail?.error || 'Live2D failed';
     this._live2dReady = false;
   };
 
   protected async updated(changed?: Map<string, unknown>) {
     if (changed?.has('modelUrl')) {
-      console.log('[Live2D Gate] modelUrl changed', this.modelUrl);
+      log.debug('modelUrl changed', { url: this.modelUrl });
     }
     const showFallback = !this._live2dReady;
     if (showFallback && !this._fallbackLoaded) {
@@ -47,7 +50,7 @@ export class Live2DGate extends LitElement {
     try {
       await import('../visual-3d');
     } catch (e) {
-      console.warn('Failed to load fallback 3D visual module', e);
+      log.warn('Failed to load fallback 3D visual module', { error: e });
     } finally {
       this._fallbackLoaded = true;
     }

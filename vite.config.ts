@@ -7,7 +7,11 @@ export default defineConfig(({ mode }) => {
     return {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        '__DEBUG__': mode !== 'production',
+        '__DEBUG_COMPONENTS__': JSON.stringify(
+          mode === 'development' ? process.env.DEBUG_COMPONENTS?.split(',') || [] : []
+        )
       },
       resolve: {
         alias: {
