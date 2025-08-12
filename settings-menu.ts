@@ -69,8 +69,7 @@ export class SettingsMenu extends LitElement {
     | "tron"
     | "synthwave"
     | "matrix"
-    | "noir"
-    | "auto" = (localStorage.getItem("theme") as any) || "cyberpunk";
+    | "noir" = (localStorage.getItem("theme") as any) || "cyberpunk";
 
   @state()
   private _circuitryEnabled: boolean =
@@ -80,14 +79,6 @@ export class SettingsMenu extends LitElement {
   private _circuitrySpeed: number = parseInt(
     localStorage.getItem("circuitry-speed") || "15",
   );
-
-  // Auto theme listener state
-  private _prefersDarkMql: MediaQueryList | null = null;
-  private _handlePrefersChange = (_e: MediaQueryListEvent) => {
-    if (this._theme === "auto") {
-      this._applyTheme("auto");
-    }
-  };
 
   static styles = css`
     :host {
@@ -389,7 +380,6 @@ export class SettingsMenu extends LitElement {
           <label for="theme">Theme</label>
           <div class="theme-buttons">
             ${[
-              "auto",
               "cyberpunk",
               "dystopia",
               "tron",
@@ -517,15 +507,6 @@ export class SettingsMenu extends LitElement {
     }
     this._applyTheme(this._theme);
     this._applyCircuitrySettings();
-
-    // Setup prefers-color-scheme listener for auto mode
-    if (window.matchMedia) {
-      this._prefersDarkMql = window.matchMedia("(prefers-color-scheme: dark)");
-      this._prefersDarkMql.addEventListener(
-        "change",
-        this._handlePrefersChange,
-      );
-    }
 
     // Validate API Key, but only if it has a value
     if (this.apiKey) {
@@ -766,16 +747,6 @@ export class SettingsMenu extends LitElement {
     this._handlePaste("modelUrl");
   }
 
-  disconnectedCallback(): void {
-    super.disconnectedCallback?.();
-    if (this._prefersDarkMql) {
-      this._prefersDarkMql.removeEventListener(
-        "change",
-        this._handlePrefersChange,
-      );
-    }
-  }
-
   private _validateApiKey(key: string): boolean {
     if (!key) {
       this._error = "API key cannot be empty.";
@@ -868,37 +839,13 @@ export class SettingsMenu extends LitElement {
   }
 
   private _applyTheme(
-    theme:
-      | "cyberpunk"
-      | "dystopia"
-      | "tron"
-      | "synthwave"
-      | "matrix"
-      | "noir"
-      | "auto",
+    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
   ) {
-    if (theme === "auto") {
-      const prefersDark =
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches;
-      document.documentElement.setAttribute(
-        "data-theme",
-        prefersDark ? "dystopia" : "cyberpunk",
-      );
-      return;
-    }
     document.documentElement.setAttribute("data-theme", theme);
   }
 
   private _onThemeChange(
-    theme:
-      | "cyberpunk"
-      | "dystopia"
-      | "tron"
-      | "synthwave"
-      | "matrix"
-      | "noir"
-      | "auto",
+    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
   ) {
     this._theme = theme;
     localStorage.setItem("theme", theme);

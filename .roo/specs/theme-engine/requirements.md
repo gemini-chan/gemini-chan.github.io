@@ -16,6 +16,8 @@ This document captures the requirements for introducing a theme engine with a us
 - WHEN I change the theme THEN the choice is persisted to localStorage under key `theme`
 - WHEN I reopen the app THEN the previously selected theme is restored before UI renders
 - WHEN I select a theme button THEN it becomes visually distinguished as the active theme.
+- WHEN no theme is selected in `localStorage` THEN a random dark theme is applied if the system preference is dark.
+- WHEN no theme is selected in `localStorage` THEN a random light theme is applied if the system preference is light.
 
 ### 2.5. Configurable Circuitry Animation
 - As a user,

@@ -39,8 +39,10 @@ Add a simple, extensible theme engine to support multiple visual styles for the 
 Cyberpunk defines all variables with neon-focused values. Other themes override them to create different aesthetics.
 
 ## 4. Runtime Behavior
-- Default theme is Cyberpunk if no value is stored.
-- The theme is applied before custom elements render using body `onload` initialization.
+- If no theme is stored in `localStorage`, the application will check the user's system theme preference (`prefers-color-scheme`).
+- If the system theme is dark, a random theme from the available dark themes will be selected.
+- If the system theme is light, a random theme from the available light themes will be selected.
+- The theme is applied before custom elements render using an inline script in `index.html`.
 - Changing the theme is instant and requires no reload; components restyle based on CSS variables.
 
 ## 5. Accessibility & Performance

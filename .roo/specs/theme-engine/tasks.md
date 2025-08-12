@@ -68,3 +68,11 @@ Add theme engine support with a toggle in Settings and persistence.
     - [x] 15.2. Use theme variables (`--cp-surface`, `--cp-surface-strong`, etc.) to color the scrollbar track and thumb.
     - [x] 15.3. Ensure the scrollbar styling is applied across all themes.
     - [x] 15.4. **REVISION:** The scrollbar styles are not being applied. The selectors need to be more specific. Update the CSS to target `html` to ensure the styles are applied globally.
+    
+    - [ ] 16. Refactor Auto Theme Selection
+      - [ ] 16.1. Remove the "Auto" theme button from `settings-menu.ts`.
+      - [ ] 16.2. In `index.html`, update the theme initialization script to:
+        - Check for a theme in `localStorage`.
+        - If no theme is found, check the system's `prefers-color-scheme`.
+        - If the system theme is dark, randomly select one of the available dark themes.
+        - If the system theme is light, randomly select one of the available light themes.
