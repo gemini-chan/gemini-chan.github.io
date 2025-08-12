@@ -1,14 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Turn } from "../types";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const MODEL_NAME = "gemini-1.5-flash-latest";
 
 export class SummarizationService {
   private genAI: GoogleGenAI;
 
-  constructor() {
-    this.genAI = new GoogleGenAI(API_KEY);
+  constructor(client: GoogleGenAI) {
+    this.genAI = client;
   }
 
   async summarize(transcript: Turn[]): Promise<string> {
@@ -20,7 +19,7 @@ export class SummarizationService {
       const prompt = this.createPrompt(transcript);
       const result = await this.genAI.models.generateContent({
         model: MODEL_NAME,
-        contents: prompt,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
       return result.text;
     } catch (error) {

@@ -92,8 +92,8 @@ Implement the UI refactoring for scrollable views and the refined system prompt 
    - [x] 12.2. Create `call-history-view.ts` component
    - [x] 12.3. Update main component for tabbed interface
 
-- [ ] 13. Implement Call Summarization Service with Ephemeral Transcript Clearing
-  - Requirements: 2.11.1, 2.3.1
-  - [ ] 13.1. Create `SummarizationService` class
-  - [ ] 13.2. Integrate summarization into call lifecycle with transcript clearing
-  - [ ] 13.3. Implement call history persistence
+- [x] 13. Implement Call Summarization Service with Ephemeral Transcript Clearing
+   - Requirements: 2.11.1, 2.3.1
+   - [x] 13.1. Create `SummarizationService` class
+   - [x] 13.2. Integrate summarization into call lifecycle with transcript clearing
+   - [x] 13.3. Implement call history persistence

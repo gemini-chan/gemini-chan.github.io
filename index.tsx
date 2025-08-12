@@ -433,7 +433,6 @@ export class GdmLiveAudio extends LitElement {
   constructor() {
     super();
     this.initClient();
-    this.summarizationService = new SummarizationService();
   }
 
   private initSessionManagers() {
@@ -456,6 +455,7 @@ export class GdmLiveAudio extends LitElement {
         this._handleCallRateLimit.bind(this),
         this.updateCallTranscript.bind(this),
       );
+      this.summarizationService = new SummarizationService(this.client);
     }
   }
 
