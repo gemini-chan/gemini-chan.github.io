@@ -35,9 +35,17 @@ export class TranscriptAutoScroll {
    * Check if user is already at or near the bottom of the scroll container
    */
   shouldAutoScroll(element: Element): boolean {
-    const isNearBottom =
-      element.scrollTop + element.clientHeight >=
-      element.scrollHeight - this.options.threshold;
+    const scrollTop = element.scrollTop;
+    const clientHeight = element.clientHeight;
+    const scrollHeight = element.scrollHeight;
+    const threshold = this.options.threshold;
+
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+
+    console.log(
+      `[AutoScroll] Scroll check: scrollTop=${scrollTop}, clientHeight=${clientHeight}, scrollHeight=${scrollHeight}, threshold=${threshold}, isNearBottom=${isNearBottom}`,
+    );
+
     return isNearBottom;
   }
 
