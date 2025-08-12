@@ -135,15 +135,29 @@ graph TD
     - `transcript: Turn[]` - The current call's conversation history.
     - `visible: boolean`
 
-### 3.6. `gdm-live-audio` (Call Button)
+### 3.6. `controls-panel.ts` (Control Buttons)
 - **Responsibility:**
-    - Provide a "Call" button to start and end voice calls.
-    - Manage call state and emit `call-start` and `call-end` events.
+    - Provide unified control interface with settings, scroll-to-bottom, call start/end buttons.
+    - Manage button states and visual feedback.
+    - Emit control events to parent component.
 - **Properties:**
     - `isCallActive: boolean`
+    - `showScrollToBottom: boolean`
+    - `newMessageCount: number`
 - **Events:**
-    - `call-start`: Dispatched when a call begins.
-    - `call-end`: Dispatched when a call ends.
+    - `toggle-settings`: Opens/closes settings menu
+    - `scroll-to-bottom`: Scrolls call transcript to bottom
+    - `call-start`: Dispatched when a call begins
+    - `call-end`: Dispatched when a call ends
+
+### 3.7. Real-time Transcription System
+- **CallSessionManager:** Enhanced with bidirectional transcription support
+    - `outputAudioTranscription: {}` - Captures model speech transcription
+    - `inputAudioTranscription: {}` - Captures user speech transcription
+    - Real-time transcript updates via callback system
+- **TextSessionManager:** Handles text-to-speech with transcript capture
+    - Extracts text from model responses for chat transcript
+    - Manages persistent text conversation context
 
 ## 4. Session Lifecycle Management
 
@@ -219,6 +233,13 @@ class TranscriptAutoScroll {
   scrollToBottom(element: Element, smooth?: boolean): void;
   handleTranscriptUpdate(element: Element, oldLength: number, newLength: number): void;
   handleVisibilityChange(element: Element, isVisible: boolean, hasContent: boolean): void;
+  getScrollToBottomState(element: Element, currentMessageCount: number, lastSeenMessageCount: number): ScrollToBottomState;
+  handleScrollEvent(element: Element): boolean;
+}
+
+interface ScrollToBottomState {
+  showButton: boolean;
+  newMessageCount: number;
 }
 ```
 
@@ -227,11 +248,19 @@ class TranscriptAutoScroll {
 - **Performance Optimization:** Uses `requestAnimationFrame` for proper DOM timing
 - **Rapid Update Handling:** Detects multiple quick updates and uses instant scrolling to avoid excessive animation
 - **Smooth Scrolling:** Applies smooth scroll behavior for single message updates
+- **First Message Handling:** Always scrolls to show the first message in an empty transcript
 
 ### 7.2. Component Integration
 - **chat-view.ts:** Uses generic auto-scroll for text messaging transcript
 - **call-transcript.ts:** Uses generic auto-scroll for voice call transcript
 - **Visibility Handling:** Automatically scrolls to bottom when transcript components become visible
+- **Height Constraints:** Fixed height containers (`calc(100vh - 120px)`) ensure proper scrollable areas
+
+### 7.3. Scroll-to-Bottom Button System
+- **Smart Visibility:** Button appears when user scrolls away from bottom during calls
+- **Message Counter:** Shows count of new messages received while scrolled away
+- **Squircle Design:** Matches call button styling with consistent visual language
+- **Event Communication:** Uses custom events to communicate scroll state between components
 
 ## 8. Error Handling
 - **Session Initialization Errors:** If a TTS or STS model fails to connect, display a toast notification.

@@ -1,26 +1,27 @@
 # Implementation Plan: Dual-Input Mode
 
-## Current Status: ~40% Complete
+## Current Status: ~75% Complete
 
 ### ✅ Completed Core Features
 - **Dual-Context Architecture**: Fully implemented with separate TTS/STS session management
 - **API Key Management**: Complete validation, persistence, and user flow
 - **Session Management**: Proper isolation and lifecycle management
-- **Basic Testing**: Core dual-context system tests implemented
+- **Real-time Call Transcription**: Bidirectional transcription working (user + model speech)
+- **Auto-scroll System**: Generic utility with smart scrolling behavior
+- **Scroll-to-Bottom Button**: Squircle design matching call button aesthetics
+- **Controls Refactoring**: Modular controls-panel component eliminating circular imports
+- **Layout Fixes**: Proper viewport constraints preventing page scrolling
 
 ### 🚨 **CRITICAL ISSUES - Core Functionality Broken**
 - **Text Messaging Interface**: Chat input is non-functional (cannot click/interact)
-- **Call Transcript Display**: No transcript content appears during calls
-- **Call Summarization**: Blocked by non-functional call transcript
 
 ### ❌ Missing Features
-- **Real-time Call Transcription**: Model text not captured or displayed during calls
 - **Tabbed UI System**: Tab view and call history components not implemented
 - **Call Summarization**: Service and history functionality missing
 - **Complete Test Coverage**: Missing tests for unimplemented features
 
-### 🎯 **URGENT Priority**
-Fix critical functionality issues in tasks 3 and 11 before implementing advanced features.
+### 🎯 **Current Priority**
+Implement tabbed UI system and call summarization to complete the dual-input mode feature.
 
 - [x] 1. UI Scaffolding: Implement the basic UI structure for the dual-input mode, including the main layout, chat view, call transcript, and settings menu.
   - Status: Complete
@@ -85,16 +86,18 @@ Fix critical functionality issues in tasks 3 and 11 before implementing advanced
 
 - [x] 11. **CRITICAL ISSUE** - Implement Real-time Call Transcription
   - Requirements: 2.2.1, 2.4.1
-  - **BROKEN**: Call transcript displays no content during calls - model text not captured or displayed
   - [x] 11.1. Update `CallSessionManager` to capture and process model text responses during calls
-    - Extend the `onmessage` callback to extract text from model responses
-    - Add a callback parameter to update call transcript in real-time
+    - Added `outputAudioTranscription: {}` and `inputAudioTranscription: {}` to config
+    - Extended `onmessage` callback to extract text from both user and model transcription
+    - Added callback parameter to update call transcript in real-time with author information
   - [x] 11.2. Wire call transcript updates to the main component
-    - Add `updateCallTranscript` method similar to `updateTextTranscript`
-    - Connect the method to `CallSessionManager` during initialization
+    - Added `updateCallTranscript(text: string, author: "user" | "model")` method
+    - Connected the method to `CallSessionManager` during initialization
+    - Implemented proper Lit state management with new array/object references
   - [x] 11.3. Test real-time call transcription functionality
-    - Verify that model responses appear in call transcript during active calls
-    - Ensure transcript updates don't interfere with audio playback
+    - Verified bidirectional transcription (both user and model speech)
+    - Confirmed transcript updates work without interfering with audio playback
+    - Real-time turn-based conversation display working perfectly
 
 - [ ] 12. Implement Tabbed UI System
   - Requirements: 2.13.1
@@ -135,13 +138,71 @@ Fix critical functionality issues in tasks 3 and 11 before implementing advanced
   - Ensure that the `disconnect` method is called on the `CallSessionManager` when the call ends.
   - Verify that all related resources are released and the application returns to a clean state.
 
-- [ ] 15. Implement Auto-scroll for Call Transcript
-  - Requirements: 2.4.1 (real-time transcription display)
-  - [ ] 15.1. Add auto-scroll functionality to call-transcript component
-    - Automatically scroll to bottom when new transcript entries are added
-    - Ensure smooth scrolling behavior during real-time updates
-    - Handle both user and model turn additions
-  - [ ] 15.2. Optimize scroll performance for real-time updates
-    - Prevent excessive scrolling during rapid transcription chunks
-    - Only scroll if user is already at or near the bottom
-    - Maintain scroll position if user manually scrolls up to read history
+- [x] 15. Implement Auto-scroll for Call Transcript
+  - Requirements: 2.15.1 (auto-scroll transcript behavior)
+  - [x] 15.1. Create generic auto-scroll utility system
+    - Implemented `TranscriptAutoScroll` class with smart scrolling logic
+    - Added user-aware scrolling that only scrolls when user is near bottom
+    - Implemented performance optimizations with `requestAnimationFrame`
+    - Added support for rapid update detection and smooth scrolling
+  - [x] 15.2. Fix transcript container height constraints
+    - Resolved flexbox layout issues preventing scrollable areas
+    - Added `height: calc(100vh - 120px)` for fixed height containers
+    - Fixed `min-height: 0` flexbox constraint for proper overflow behavior
+  - [x] 15.3. Integrate auto-scroll into transcript components
+    - Updated both `call-transcript.ts` and `chat-view.ts` to use generic utility
+    - Added visibility change handling for proper scroll behavior
+    - Implemented consistent scrolling across all transcript components
+
+- [x] 16. Implement Scroll-to-Bottom Button System
+  - Requirements: 2.16.1 (scroll-to-bottom button)
+  - [x] 16.1. Create scroll-to-bottom button functionality
+    - Added smart visibility logic that appears when user scrolls away from bottom
+    - Implemented new message counter showing unread messages
+    - Added smooth scroll animation when button is clicked
+  - [x] 16.2. Design scroll-to-bottom button with squircle styling
+    - Matched call button design with consistent visual language
+    - Positioned in main controls area above call button
+    - Added hover effects and proper accessibility attributes
+  - [x] 16.3. Integrate scroll state management
+    - Added event communication between call-transcript and main component
+    - Implemented `scroll-state-changed` events for real-time button updates
+    - Connected scroll functionality to controls-panel component
+
+- [x] 17. Refactor Controls into Modular Component
+  - [x] 17.1. Create `controls-panel.ts` component
+    - Extracted all control buttons into dedicated component
+    - Implemented event-based communication with parent component
+    - Added consistent squircle styling for all buttons
+  - [x] 17.2. Eliminate circular import issues
+    - Moved controls logic out of main component
+    - Improved code organization and separation of concerns
+    - Made controls reusable and easier to maintain
+  - [x] 17.3. Update main component integration
+    - Replaced old controls HTML with new controls-panel component
+    - Connected all control events (settings, scroll, call start/end)
+    - Maintained all existing functionality with improved architecture
+
+- [ ] 18. **CODE REVIEW** - Refactor Session Manager Callbacks to Eliminate Duplication
+  - [ ] 18.1. Consolidate common callback logic in BaseSessionManager
+    - Move rate-limit detection logic to BaseSessionManager.getCallbacks()
+    - Consolidate onopen, onerror, and onclose handlers with common logic
+    - Ensure child classes can call super.getCallbacks() and only override onmessage
+  - [ ] 18.2. Update CallSessionManager to use consolidated callbacks
+    - Remove duplicated rate-limit detection code
+    - Call super.getCallbacks() and only override onmessage for transcription logic
+    - Maintain existing functionality while reducing code duplication
+  - [ ] 18.3. Update TextSessionManager to use consolidated callbacks
+    - Ensure TextSessionManager also benefits from consolidated callback logic
+    - Remove any duplicated error handling or rate-limit detection
+    - Verify all session managers follow DRY principle
+
+- [ ] 19. **CODE REVIEW** - Improve Layout Resilience and CSS Constraints
+  - [ ] 19.1. Review and improve call transcript layout constraints
+    - Ensure robust CSS constraints that work across different viewport sizes
+    - Fix any layout issues with the `height: calc(100vh - 120px)` approach
+    - Add fallback constraints for edge cases
+  - [ ] 19.2. Improve overall layout resilience
+    - Review flexbox constraints and ensure proper min-height/max-height handling
+    - Test layout behavior with different content sizes and viewport dimensions
+    - Ensure consistent behavior across different browsers

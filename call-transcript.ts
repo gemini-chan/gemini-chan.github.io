@@ -37,7 +37,10 @@ export class CallTranscript extends LitElement {
       flex-direction: column;
       height: 100vh;
       max-height: 100vh;
+      min-height: 400px; /* Fallback minimum height */
       width: 400px;
+      min-width: 300px; /* Fallback minimum width */
+      max-width: 500px; /* Maximum width constraint */
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;
@@ -121,13 +124,40 @@ export class CallTranscript extends LitElement {
     }
 
     .transcript {
-      height: calc(100vh - 120px); /* Fixed height: viewport minus header/padding */
+      /* Robust height calculation with fallbacks */
+      height: calc(100vh - 120px); /* Primary: viewport minus header/padding */
+      min-height: 200px; /* Fallback minimum height */
+      max-height: calc(100vh - 80px); /* Fallback maximum height */
+      
+      /* Flexbox constraints for proper overflow behavior */
+      flex: 1;
+      min-height: 0; /* Critical for flexbox overflow */
+      
       overflow-y: auto;
+      overflow-x: hidden; /* Prevent horizontal scroll */
       display: flex;
       flex-direction: column;
       gap: 12px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+      
+      /* Ensure proper scrolling on different browsers */
+      -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+    }
+    
+    /* Media query fallbacks for different viewport sizes */
+    @media (max-height: 600px) {
+      .transcript {
+        height: calc(100vh - 100px);
+        min-height: 150px;
+      }
+    }
+    
+    @media (max-height: 400px) {
+      .transcript {
+        height: calc(100vh - 80px);
+        min-height: 100px;
+      }
     }
 
     .turn {

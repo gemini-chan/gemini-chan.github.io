@@ -71,6 +71,19 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** multiple messages arrive rapidly **THEN** scrolling is optimized to avoid excessive animation
 - **WHEN** single messages arrive **THEN** smooth scrolling is used for better visual experience
 
+### 2.16. Scroll-to-Bottom Button
+- **As a** user,
+- **I want** a scroll-to-bottom button that appears when I scroll away from the latest messages,
+- **so that** I can quickly return to the current conversation.
+
+#### 2.16.1. Acceptance Criteria
+- **WHEN** I scroll up from the bottom of a transcript **THEN** a scroll-to-bottom button appears in the controls area
+- **WHEN** I am at or near the bottom of a transcript **THEN** the scroll-to-bottom button is hidden or dimmed
+- **WHEN** new messages arrive while I'm scrolled away from the bottom **THEN** the button shows a count of new messages
+- **WHEN** I click the scroll-to-bottom button **THEN** the transcript smoothly scrolls to the bottom and the button disappears
+- **WHEN** I am in a voice call **THEN** the scroll-to-bottom button uses the same squircle design as other control buttons
+- **WHEN** I am not in a call **THEN** the scroll-to-bottom button is not visible
+
 ### 2.5. Model Animation
 - **As a** user,
 - **I want** the model to animate in response to both text and voice interactions,

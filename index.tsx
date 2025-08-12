@@ -94,6 +94,12 @@ abstract class BaseSessionManager {
         this.updateError(`${this.getSessionName()} error: ${e.message}`);
       },
       onclose: (e: CloseEvent) => {
+        // Check for rate-limit in close reason
+        const msg = e.reason || "";
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
         this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
         this.session = null;
       },
@@ -186,10 +192,9 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getCallbacks() {
+    const base = super.getCallbacks();
     return {
-      onopen: () => {
-        this.updateStatus(`${this.getSessionName()} opened`);
-      },
+      ...base,
       onmessage: async (message: LiveServerMessage) => {
         // Handle text response for transcript
         const modelTurn = message.serverContent?.modelTurn;
@@ -211,24 +216,6 @@ class TextSessionManager extends BaseSessionManager {
         if (interrupted) {
           this.handleInterruption();
         }
-      },
-      onerror: (e: ErrorEvent) => {
-        // Surface rate-limit hints in error messages
-        const msg = e.message || "";
-        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
-        if (isRateLimited) {
-          this.onRateLimit(msg);
-        }
-        this.updateError(`${this.getSessionName()} error: ${e.message}`);
-      },
-      onclose: (e: CloseEvent) => {
-        const msg = e.reason || "";
-        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
-        if (isRateLimited) {
-          this.onRateLimit(msg);
-        }
-        this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
-        this.session = null;
       },
     };
   }
@@ -293,10 +280,9 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getCallbacks() {
+    const base = super.getCallbacks();
     return {
-      onopen: () => {
-        this.updateStatus(`${this.getSessionName()} opened`);
-      },
+      ...base,
       onmessage: async (message: LiveServerMessage) => {
         // Handle audio transcription for call transcript (model responses)
         if (message.serverContent?.outputTranscription?.text) {
@@ -324,24 +310,6 @@ class CallSessionManager extends BaseSessionManager {
         if (interrupted) {
           this.handleInterruption();
         }
-      },
-      onerror: (e: ErrorEvent) => {
-        // Surface rate-limit hints in error messages
-        const msg = e.message || "";
-        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
-        if (isRateLimited) {
-          this.onRateLimit(msg);
-        }
-        this.updateError(`${this.getSessionName()} error: ${e.message}`);
-      },
-      onclose: (e: CloseEvent) => {
-        const msg = e.reason || "";
-        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
-        if (isRateLimited) {
-          this.onRateLimit(msg);
-        }
-        this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
-        this.session = null;
       },
     };
   }
