@@ -349,6 +349,9 @@ export class GdmLiveAudio extends LitElement {
   // Track pending user action for API key validation flow
   private pendingAction: (() => void) | null = null;
 
+  // Track current API key for smart change detection
+  private currentApiKey: string = "";
+
   // Dual-context state management
   @state() activeMode: ActiveMode = null;
   @state() textTranscript: Turn[] = [];
@@ -472,6 +475,7 @@ export class GdmLiveAudio extends LitElement {
       // Don't show settings menu on startup - just clear any error/status
       this.error = "";
       this.status = "";
+      this.currentApiKey = ""; // Track empty API key
       // Main UI will be shown by default, API key check will happen when user tries to interact
       return;
     }
@@ -481,6 +485,9 @@ export class GdmLiveAudio extends LitElement {
       apiKey,
       httpOptions: { apiVersion: "v1alpha" },
     });
+
+    // Track the current API key for smart change detection
+    this.currentApiKey = apiKey;
 
     // Initialize session managers after client is ready
     this.initSessionManagers();
@@ -717,7 +724,7 @@ export class GdmLiveAudio extends LitElement {
     logger.debug("Call ended. callSession preserved:", this.callSession);
   }
 
-private _resetTextContext() {
+  private _resetTextContext() {
     // Close existing text session using session manager
     if (this.textSessionManager) {
       this.textSessionManager.closeSession();
@@ -802,6 +809,35 @@ private _resetTextContext() {
         action();
       }, 100);
     }
+  }
+
+  private _handleApiKeyChanged() {
+    // Get the new API key from localStorage
+    const newApiKey = localStorage.getItem("gemini-api-key") || "";
+
+    // Smart change detection - avoid unnecessary reinitialization
+    if (newApiKey === this.currentApiKey) {
+      logger.debug(
+        "API key unchanged, skipping reinitialization:",
+        newApiKey ? "***" + newApiKey.slice(-4) : "empty",
+      );
+      return; // Silently skip - no toast needed
+    }
+
+    // Show toast notification for API key change
+    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    if (toast) {
+      if (newApiKey) {
+        toast.show("API key updated successfully! ✨", "success", 3000);
+      } else {
+        toast.show("API key cleared", "info", 3000);
+      }
+    }
+
+    logger.info("API key changed, reinitializing client");
+
+    // Reinitialize the client with the new API key
+    this.initClient();
   }
 
   private _handleModelUrlChanged() {
@@ -963,6 +999,7 @@ private _resetTextContext() {
                   this.showSettings = false;
                 }}
                 @api-key-saved=${this._handleApiKeySaved}
+                @api-key-changed=${this._handleApiKeyChanged}
                 @model-url-changed=${this._handleModelUrlChanged}
                 @model-url-error=${this._handleModelUrlError}></settings-menu>`
             : ""

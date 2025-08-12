@@ -18,4 +18,16 @@ Implement the settings menu and API key management functionality.
     - [x] 4.2. Test the on-demand settings menu and toast notifications.
     - [x] 4.3. Test that the settings menu is hidden during active calls.
 
-- [ ] 5. DEFERRED: Add dedicated tests for API key validation and on-demand settings/toast functionality.
+- [x] 5. Implement Dynamic API Key Management: Add real-time validation, auto-save, and client reinitialization for API key changes.
+  - Add `api-key-changed` event emission for runtime client updates
+  - Update main application to handle `api-key-changed` events with client reinitialization
+  - Add toast notifications for successful API key updates and validation errors
+  - Implement smart change detection to avoid unnecessary reinitializations
+  - Requirements: 2.6.1, 2.7.1
+
+- [x] 6. Fix API Key Clearing Behavior: Ensure clearing the API key field shows validation error and preserves existing key in storage.
+  - Update validation logic to show error for empty API key input
+  - Ensure auto-save skips empty values and preserves existing key in localStorage
+  - Requirements: 2.6.1, 2.7.1
+
+- [ ] 7. DEFERRED: Add dedicated tests for dynamic API key management and real-time validation functionality.

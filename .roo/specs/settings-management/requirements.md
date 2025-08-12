@@ -66,3 +66,29 @@ This document outlines the requirements for the application's settings managemen
 - **WHEN** I click the "Paste" button **THEN** the system reads text from clipboard and populates the input field
 - **WHEN** the settings menu is open **THEN** a "Get API Key" button or link is displayed
 - **WHEN** I click the "Get API Key" button **THEN** the URL "https://aistudio.google.com/apikey" opens in a new browser tab
+
+### 2.6. Dynamic API Key Management
+- **As a** user,
+- **I want** the application to immediately apply API key changes without requiring a page refresh,
+- **so that** I can test different API keys or update my key seamlessly during runtime.
+
+#### 2.6.1. Acceptance Criteria
+- **WHEN** I enter a valid API key in the settings menu **THEN** the system immediately reinitializes the AI client with the new key
+- **WHEN** the API key is successfully changed **THEN** a toast notification displays "API key updated successfully! ✨"
+- **WHEN** the API key change fails validation **THEN** a toast notification displays the specific error message
+- **WHEN** the API key is updated **THEN** the main application receives an event notification about the change
+- **WHEN** I enter the same API key that's already saved **THEN** no unnecessary reinitialization occurs and no toast is shown
+- **WHEN** I clear the API key field **THEN** a validation error appears and the existing API key remains in local storage
+
+### 2.7. Real-time API Key Validation
+- **As a** user,
+- **I want** immediate feedback when typing my API key,
+- **so that** I know if my key is valid before trying to use it.
+
+#### 2.7.1. Acceptance Criteria
+- **WHEN** I type in the API key field **THEN** validation occurs automatically after a brief delay (500ms)
+- **WHEN** the API key format is valid during typing **THEN** a green checkmark appears immediately
+- **WHEN** the API key format is invalid during typing **THEN** a red X appears with the error message
+- **WHEN** I start typing a new API key **THEN** previous validation indicators are cleared immediately
+- **WHEN** the API key field loses focus **THEN** final validation and auto-save occurs if the key is valid
+- **WHEN** I paste an API key **THEN** validation and auto-save occurs immediately after pasting
