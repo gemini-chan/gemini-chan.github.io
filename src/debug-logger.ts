@@ -192,10 +192,29 @@ export class DebugLogger {
       priority: 1,
       load: () => {
         const config: Partial<DebugLoggerConfig> = {};
-        const debugEnabled = process.env.DEBUG_ENABLED;
-        if (debugEnabled) {
-          config.enabled = debugEnabled === 'true';
+        const debug = process.env.DEBUG;
+        const debugComponents = process.env.DEBUG_COMPONENTS;
+        const debugLevel = process.env.DEBUG_LEVEL;
+
+        if (debug) {
+          config.enabled = ['true', '1', 'on', 'yes'].includes(debug.toLowerCase());
         }
+
+        if (debugComponents) {
+          config.components = {};
+          if (debugComponents === '*') {
+            config.components['*'] = true;
+          } else {
+            debugComponents.split(',').forEach(comp => {
+              if(config.components) config.components[comp.trim()] = true;
+            });
+          }
+        }
+
+        if (debugLevel && ['debug', 'info', 'warn', 'error'].includes(debugLevel)) {
+          config.logLevel = debugLevel as 'debug' | 'info' | 'warn' | 'error';
+        }
+        
         return config;
       }
     });
