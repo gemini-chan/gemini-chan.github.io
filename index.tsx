@@ -825,7 +825,7 @@ export class GdmLiveAudio extends LitElement {
     }
 
     // Show toast notification for API key change
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    const toast = this.shadowRoot?.querySelector("toast-notification") as ToastNotification;
     if (toast) {
       if (newApiKey) {
         toast.show("API key updated successfully! ✨", "success", 3000);
