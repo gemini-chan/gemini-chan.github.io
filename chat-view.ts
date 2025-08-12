@@ -325,10 +325,24 @@ export class ChatView extends LitElement {
         showButton: state.showButton,
         newMessageCount: state.newMessageCount,
       });
+
+      // Dispatch event to notify parent component of scroll state changes
+      const detail = {
+        showButton: state.showButton,
+        newMessageCount: state.newMessageCount,
+      };
+      log.debug("Scroll state changed", detail);
+      this.dispatchEvent(
+        new CustomEvent("scroll-state-changed", {
+          detail,
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }
   }
 
-  private _scrollToBottom() {
+  _scrollToBottom() {
     log.debug("Scrolling to bottom");
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
@@ -361,22 +375,6 @@ export class ChatView extends LitElement {
           `,
           )}
         </div>
-        
-        <button 
-          class="scroll-to-bottom ${this.showScrollToBottom ? "visible" : ""}"
-          @click=${this._scrollToBottom}
-          title="Scroll to bottom">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-            <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/>
-          </svg>
-          ${
-            this.newMessageCount > 0
-              ? html`
-            <div class="badge">${this.newMessageCount}</div>
-          `
-              : ""
-          }
-        </button>
       </div>
       <div class="input-area">
         <textarea .value=${this.inputValue} @input=${this._handleInput} @keydown=${(

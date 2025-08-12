@@ -378,6 +378,10 @@ export class GdmLiveAudio extends LitElement {
   @state() private showCallScrollToBottom = false;
   @state() private callNewMessageCount = 0;
 
+  // Scroll-to-bottom state for chat view
+  @state() private showChatScrollToBottom = false;
+  @state() private chatNewMessageCount = 0;
+
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
   private callOutputNode = this.outputAudioContext.createGain();
@@ -960,11 +964,26 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleScrollStateChanged(e: CustomEvent) {
+  private _scrollChatToBottom() {
+    const chatView = this.shadowRoot?.querySelector("chat-view") as any;
+    if (chatView && chatView._scrollToBottom) {
+      chatView._scrollToBottom();
+      this.showChatScrollToBottom = false;
+      this.chatNewMessageCount = 0;
+    }
+  }
+
+  private _handleCallScrollStateChanged(e: CustomEvent) {
     // Update the main component's scroll state based on call transcript scroll state
     const { showButton, newMessageCount } = e.detail;
     this.showCallScrollToBottom = showButton;
     this.callNewMessageCount = newMessageCount;
+  }
+
+  private _handleChatScrollStateChanged(e: CustomEvent) {
+    const { showButton, newMessageCount } = e.detail;
+    this.showChatScrollToBottom = showButton;
+    this.chatNewMessageCount = newMessageCount;
   }
 
   private async _handleSendMessage(e: CustomEvent) {
@@ -1039,7 +1058,8 @@ export class GdmLiveAudio extends LitElement {
         .transcript=${this.textTranscript}
         .visible=${this.activeMode !== "calling"}
         @send-message=${this._handleSendMessage}
-        @reset-text=${this._resetTextContext}>
+        @reset-text=${this._resetTextContext}
+        @scroll-state-changed=${this._handleChatScrollStateChanged}>
       </chat-view>
       
       <div>
@@ -1058,10 +1078,13 @@ export class GdmLiveAudio extends LitElement {
         }
         <controls-panel
           .isCallActive=${this.isCallActive}
-          .showScrollToBottom=${this.showCallScrollToBottom}
-          .newMessageCount=${this.callNewMessageCount}
+          .showCallScrollToBottom=${this.showCallScrollToBottom}
+          .callNewMessageCount=${this.callNewMessageCount}
+          .showChatScrollToBottom=${this.showChatScrollToBottom}
+          .chatNewMessageCount=${this.chatNewMessageCount}
           @toggle-settings=${this._toggleSettings}
-          @scroll-to-bottom=${this._scrollCallTranscriptToBottom}
+          @scroll-call-to-bottom=${this._scrollCallTranscriptToBottom}
+          @scroll-chat-to-bottom=${this._scrollChatToBottom}
           @call-start=${this._handleCallStart}
           @call-end=${this._handleCallEnd}>
         </controls-panel>
@@ -1087,7 +1110,7 @@ export class GdmLiveAudio extends LitElement {
         .transcript=${this.callTranscript}
         .visible=${this.activeMode === "calling"}
         @reset-call=${this._resetCallContext}
-        @scroll-state-changed=${this._handleScrollStateChanged}>
+        @scroll-state-changed=${this._handleCallScrollStateChanged}>
       </call-transcript>
     `;
   }

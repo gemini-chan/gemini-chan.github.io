@@ -50,11 +50,11 @@ Implement the UI refactoring for scrollable views and the refined system prompt 
 
 - [x] 19. **CODE REVIEW** - Improve Layout Resilience and CSS Constraints.
 
-- [ ] 20. **Refine Configurable System Prompt Logic**
+- [x] 20. **Refine Configurable System Prompt Logic**
   - Requirements: 2.12.1
-  - [ ] 20.1. In [`src/system-prompt-manager.ts`](src/system-prompt-manager.ts), add debouncing to the `setSystemPrompt` method to prevent excessive writes to `localStorage`.
+  - [x] 20.1. In [`src/system-prompt-manager.ts`](src/system-prompt-manager.ts), add debouncing to the `setSystemPrompt` method to prevent excessive writes to `localStorage`.
     - Ref: Design 3.8
-  - [ ] 20.2. In [`index.tsx`](index.tsx), update the `system-prompt-changed` event handler to:
+  - [x] 20.2. In [`index.tsx`](index.tsx), update the `system-prompt-changed` event handler to:
     - Disconnect the active `TextSessionManager`.
     - Clear the `textTranscript` state.
     - Ensure the session is only re-initialized on the next user message, not immediately.
