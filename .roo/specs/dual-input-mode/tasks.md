@@ -134,3 +134,14 @@ Fix critical functionality issues in tasks 3 and 11 before implementing advanced
   - Add logging or assertions to explicitly check that no context is carried over between separate call sessions.
   - Ensure that the `disconnect` method is called on the `CallSessionManager` when the call ends.
   - Verify that all related resources are released and the application returns to a clean state.
+
+- [ ] 15. Implement Auto-scroll for Call Transcript
+  - Requirements: 2.4.1 (real-time transcription display)
+  - [ ] 15.1. Add auto-scroll functionality to call-transcript component
+    - Automatically scroll to bottom when new transcript entries are added
+    - Ensure smooth scrolling behavior during real-time updates
+    - Handle both user and model turn additions
+  - [ ] 15.2. Optimize scroll performance for real-time updates
+    - Prevent excessive scrolling during rapid transcription chunks
+    - Only scroll if user is already at or near the bottom
+    - Maintain scroll position if user manually scrolls up to read history

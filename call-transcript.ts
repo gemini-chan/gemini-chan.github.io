@@ -166,6 +166,26 @@ export class CallTranscript extends LitElement {
     }
   `;
 
+  private _shouldAutoScroll(transcriptEl: Element): boolean {
+    // Check if user is already at or near the bottom (within 50px)
+    const threshold = 50;
+    const isNearBottom =
+      transcriptEl.scrollTop + transcriptEl.clientHeight >=
+      transcriptEl.scrollHeight - threshold;
+    return isNearBottom;
+  }
+
+  private _scrollToBottom(transcriptEl: Element, smooth: boolean = true) {
+    if (smooth) {
+      transcriptEl.scrollTo({
+        top: transcriptEl.scrollHeight,
+        behavior: "smooth",
+      });
+    } else {
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+  }
+
   updated(changedProperties: Map<string | number | symbol, unknown>) {
     if (changedProperties.has("rateLimited")) {
       if (this.rateLimited) {
@@ -174,11 +194,25 @@ export class CallTranscript extends LitElement {
         this.removeAttribute("ratelimited");
       }
     }
+
     if (changedProperties.has("transcript")) {
-      // Auto-scroll to bottom when new transcript entries are added
+      // Enhanced auto-scroll with user-friendly behavior
       const transcriptEl = this.shadowRoot?.querySelector(".transcript");
       if (transcriptEl) {
-        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+        // Only auto-scroll if user is already at or near the bottom
+        // This prevents interrupting users who are reading older messages
+        if (this._shouldAutoScroll(transcriptEl)) {
+          // Use smooth scrolling for better UX, but avoid it during rapid updates
+          const oldTranscript =
+            (changedProperties.get("transcript") as Turn[]) || [];
+          const isRapidUpdate =
+            this.transcript.length - oldTranscript.length > 1;
+
+          // Use requestAnimationFrame to ensure DOM is updated before scrolling
+          requestAnimationFrame(() => {
+            this._scrollToBottom(transcriptEl, !isRapidUpdate);
+          });
+        }
       }
     }
 
@@ -186,6 +220,15 @@ export class CallTranscript extends LitElement {
       // Update the visible attribute for CSS styling
       if (this.visible) {
         this.setAttribute("visible", "");
+
+        // When transcript becomes visible, scroll to bottom after a brief delay
+        // to ensure the component is fully rendered
+        setTimeout(() => {
+          const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+          if (transcriptEl && this.transcript.length > 0) {
+            this._scrollToBottom(transcriptEl, false);
+          }
+        }, 100);
       } else {
         this.removeAttribute("visible");
       }
