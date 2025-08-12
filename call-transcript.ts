@@ -37,7 +37,10 @@ export class CallTranscript extends LitElement {
       flex-direction: column;
       height: 100vh;
       max-height: 100vh;
+      min-height: 400px; /* Fallback minimum height */
       width: 400px;
+      min-width: 300px; /* Fallback minimum width */
+      max-width: 500px; /* Maximum width constraint */
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;
@@ -121,13 +124,20 @@ export class CallTranscript extends LitElement {
     }
 
     .transcript {
-      height: calc(100vh - 120px); /* Fixed height: viewport minus header/padding */
+      /* Use flexbox for proper height calculation */
+      flex: 1;
+      min-height: 0; /* Critical for flexbox overflow */
+      
       overflow-y: auto;
+      overflow-x: hidden; /* Prevent horizontal scroll */
       display: flex;
       flex-direction: column;
       gap: 12px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+      
+      /* Ensure proper scrolling on different browsers */
+      -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
     }
 
     .turn {
@@ -207,6 +217,9 @@ export class CallTranscript extends LitElement {
       if (transcriptEl) {
         const oldTranscript =
           (changedProperties.get("transcript") as Turn[]) || [];
+        console.log(
+          `[CallTranscript] Transcript updated: ${oldTranscript.length} -> ${this.transcript.length}`,
+        );
         defaultAutoScroll.handleTranscriptUpdate(
           transcriptEl,
           oldTranscript.length,

@@ -21,6 +21,7 @@ export interface ScrollToBottomState {
 
 export class TranscriptAutoScroll {
   private options: Required<AutoScrollOptions>;
+  private wasAtBottomBeforeUpdate = new WeakMap<Element, boolean>();
 
   constructor(options: AutoScrollOptions = {}) {
     this.options = {
@@ -35,9 +36,17 @@ export class TranscriptAutoScroll {
    * Check if user is already at or near the bottom of the scroll container
    */
   shouldAutoScroll(element: Element): boolean {
-    const isNearBottom =
-      element.scrollTop + element.clientHeight >=
-      element.scrollHeight - this.options.threshold;
+    const scrollTop = element.scrollTop;
+    const clientHeight = element.clientHeight;
+    const scrollHeight = element.scrollHeight;
+    const threshold = this.options.threshold;
+
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+
+    console.log(
+      `[AutoScroll] Scroll check: scrollTop=${scrollTop}, clientHeight=${clientHeight}, scrollHeight=${scrollHeight}, threshold=${threshold}, isNearBottom=${isNearBottom}`,
+    );
+
     return isNearBottom;
   }
 
@@ -69,18 +78,52 @@ export class TranscriptAutoScroll {
     oldLength: number,
     newLength: number,
   ) {
-    // Always scroll for the first message or if user is already at or near the bottom
+    // Always scroll for the first message to show initial content
     const isFirstMessage = oldLength === 0 && newLength > 0;
-    const shouldScroll = isFirstMessage || this.shouldAutoScroll(element);
 
-    if (shouldScroll) {
-      // Detect rapid updates (multiple messages at once)
-      const isRapidUpdate = newLength - oldLength > 1;
+    console.log(
+      `[AutoScroll] Update: ${oldLength} -> ${newLength}, isFirstMessage: ${isFirstMessage}`,
+    );
 
+    if (isFirstMessage) {
+      console.log(
+        `[AutoScroll] First message - scrolling to show initial content`,
+      );
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
-        this.scrollToBottom(element, !isRapidUpdate);
+        this.scrollToBottom(element, true);
+        this.wasAtBottomBeforeUpdate.set(element, true);
       });
+      return;
+    }
+
+    // Check if user was at bottom before this update
+    const wasAtBottom =
+      this.wasAtBottomBeforeUpdate.get(element) ??
+      this.shouldAutoScroll(element);
+
+    console.log(`[AutoScroll] Was at bottom before update: ${wasAtBottom}`);
+
+    // If user was at bottom before the update, continue auto-scrolling
+    // If user scrolled up to read past content, don't interrupt them
+    if (wasAtBottom) {
+      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      requestAnimationFrame(() => {
+        // Detect rapid updates (multiple messages at once)
+        const isRapidUpdate = newLength - oldLength > 1;
+        console.log(
+          `[AutoScroll] Auto-scrolling with smooth: ${!isRapidUpdate}`,
+        );
+        this.scrollToBottom(element, !isRapidUpdate);
+        // Update the state after scrolling
+        this.wasAtBottomBeforeUpdate.set(element, true);
+      });
+    } else {
+      console.log(
+        `[AutoScroll] User scrolled up to read past content - not interrupting`,
+      );
+      // Just update the tracking state for button visibility
+      this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element));
     }
   }
 
@@ -128,12 +171,22 @@ export class TranscriptAutoScroll {
   }
 
   /**
-   * Handle scroll events to update button visibility
+   * Handle scroll events to update button visibility and tracking state
    * @param element - The scrollable transcript container
    * @returns Whether user is currently at or near bottom
    */
   handleScrollEvent(element: Element): boolean {
-    return this.shouldAutoScroll(element);
+    const isAtBottom = this.shouldAutoScroll(element);
+
+    // Update our tracking state when user manually scrolls
+    // This ensures we respect their current scroll position for future auto-scroll decisions
+    this.wasAtBottomBeforeUpdate.set(element, isAtBottom);
+
+    console.log(
+      `[AutoScroll] User scroll event - now at bottom: ${isAtBottom}`,
+    );
+
+    return isAtBottom;
   }
 }
 

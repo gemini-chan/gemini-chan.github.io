@@ -58,18 +58,31 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** a call ends **THEN** the call transcript window is hidden and the chat window reappears
 - **WHEN** the call transcript window is visible **THEN** it displays real-time transcription of the voice conversation
 
-### 2.15. Auto-scroll Transcript Behavior
+### 2.15. Smart Auto-scroll Transcript Behavior
 - **As a** user,
-- **I want** transcript windows to automatically scroll to show new messages,
-- **so that** I can follow conversations in real-time without manual scrolling.
+- **I want** transcript windows to automatically scroll when I'm following the conversation, but not interrupt me when I'm reading past content,
+- **so that** I can stay caught up with new messages while maintaining the ability to review past conversation.
 
 #### 2.15.1. Acceptance Criteria
-- **WHEN** new messages appear in either chat or call transcript **THEN** the transcript automatically scrolls to show the latest message if I'm already at or near the bottom
-- **WHEN** I manually scroll up to read older messages **THEN** auto-scroll is disabled to avoid interrupting my reading
-- **WHEN** I scroll back to the bottom **THEN** auto-scroll resumes for new messages
-- **WHEN** a transcript window becomes visible **THEN** it automatically scrolls to the bottom to show the most recent content
+- **WHEN** the first message appears in a transcript **THEN** the transcript automatically scrolls to show the initial content
+- **WHEN** I am at or near the bottom of the transcript and new messages arrive **THEN** the transcript automatically scrolls to show the latest messages
+- **WHEN** I manually scroll up to read older messages **THEN** automatic scrolling is disabled to avoid interrupting my reading
+- **WHEN** I scroll back to the bottom (or use the scroll-to-bottom button) **THEN** automatic scrolling resumes for new messages
+- **WHEN** a transcript window becomes visible with existing content **THEN** it automatically scrolls to the bottom to show the most recent content
 - **WHEN** multiple messages arrive rapidly **THEN** scrolling is optimized to avoid excessive animation
-- **WHEN** single messages arrive **THEN** smooth scrolling is used for better visual experience
+
+### 2.16. Scroll-to-Bottom Button
+- **As a** user,
+- **I want** a scroll-to-bottom button that appears when I scroll away from the latest messages,
+- **so that** I can quickly return to the current conversation.
+
+#### 2.16.1. Acceptance Criteria
+- **WHEN** I scroll up from the bottom of a transcript **THEN** a scroll-to-bottom button appears in the controls area
+- **WHEN** I am at or near the bottom of a transcript **THEN** the scroll-to-bottom button is hidden or dimmed
+- **WHEN** new messages arrive while I'm scrolled away from the bottom **THEN** the button shows a count of new messages
+- **WHEN** I click the scroll-to-bottom button **THEN** the transcript smoothly scrolls to the bottom and the button disappears
+- **WHEN** I am in a voice call **THEN** the scroll-to-bottom button uses the same squircle design as other control buttons
+- **WHEN** I am not in a call **THEN** the scroll-to-bottom button is not visible
 
 ### 2.5. Model Animation
 - **As a** user,
