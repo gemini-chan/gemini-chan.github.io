@@ -10,6 +10,37 @@ interface FieldConfig {
   preserveOnEmpty?: boolean;
 }
 
+/**
+ * Applies circuitry animation settings from localStorage to the root element.
+ * This function is called on module load to ensure settings are restored when
+ * the application starts.
+ */
+function applyCircuitrySettingsOnLoad() {
+  const root = document.documentElement;
+
+  // Restore circuitry visibility
+  const circuitryEnabled = localStorage.getItem("circuitry-enabled") !== "false";
+  root.style.setProperty(
+    "--circuit-display",
+    circuitryEnabled ? "block" : "none",
+  );
+  root.setAttribute("data-circuit-enabled", circuitryEnabled.toString());
+
+  // Restore animation speed
+  const circuitrySpeed = localStorage.getItem("circuitry-speed") || "15";
+  root.style.setProperty("--circuit-speed", `${circuitrySpeed}s`);
+
+  // Restore pulsing nodes visibility
+  const circuitryNodes = localStorage.getItem("circuitry-nodes") !== "false";
+  root.style.setProperty(
+    "--circuit-nodes-display",
+    circuitryNodes ? "block" : "none",
+  );
+}
+
+// Restore settings on page load
+applyCircuitrySettingsOnLoad();
+
 @customElement("settings-menu")
 export class SettingsMenu extends LitElement {
   @property({ type: String })
