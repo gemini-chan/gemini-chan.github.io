@@ -1,11 +1,14 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { createComponentLogger } from "./src/debug-logger";
 import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 interface Turn {
   text: string;
   author: "user" | "model";
 }
+
+const log = createComponentLogger("ChatView");
 
 @customElement("chat-view")
 export class ChatView extends LitElement {
@@ -231,10 +234,13 @@ export class ChatView extends LitElement {
   private _handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     this.inputValue = target.value;
+    log.debug("Input value changed");
   }
 
   private _sendMessage() {
     if (!this.inputValue.trim()) return;
+
+    log.debug("Sending message", { message: this.inputValue });
     this.dispatchEvent(
       new CustomEvent("send-message", { detail: this.inputValue }),
     );
@@ -242,12 +248,14 @@ export class ChatView extends LitElement {
   }
 
   private _resetText() {
+    log.debug("Resetting conversation");
     this.dispatchEvent(
       new CustomEvent("reset-text", { bubbles: true, composed: true }),
     );
   }
 
   firstUpdated() {
+    log.debug("Component first updated");
     // Add scroll event listener to update scroll-to-bottom button visibility
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
@@ -268,8 +276,8 @@ export class ChatView extends LitElement {
       if (transcriptEl) {
         const oldTranscript =
           (changedProperties.get("transcript") as Turn[]) || [];
-        console.log(
-          `[ChatView] Transcript updated: ${oldTranscript.length} -> ${this.transcript.length}`,
+        log.debug(
+          `Transcript updated: ${oldTranscript.length} -> ${this.transcript.length}`,
         );
         defaultAutoScroll.handleTranscriptUpdate(
           transcriptEl,
@@ -283,6 +291,7 @@ export class ChatView extends LitElement {
     }
 
     if (changedProperties.has("visible")) {
+      log.debug(`Visibility changed to ${this.visible}`);
       if (this.visible) {
         this.removeAttribute("hidden");
 
@@ -311,10 +320,15 @@ export class ChatView extends LitElement {
       );
       this.showScrollToBottom = state.showButton;
       this.newMessageCount = state.newMessageCount;
+      log.debug("Scroll to bottom state updated", {
+        showButton: state.showButton,
+        newMessageCount: state.newMessageCount,
+      });
     }
   }
 
   private _scrollToBottom() {
+    log.debug("Scrolling to bottom");
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
       defaultAutoScroll.scrollToBottom(transcriptEl, true);
