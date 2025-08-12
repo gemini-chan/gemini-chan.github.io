@@ -17,11 +17,11 @@
 
 ### ❌ Missing Features
 - **Tabbed UI System**: Tab view and call history components not implemented
-- **Call Summarization**: Service and history functionality missing
+- **Call Summarization**: Service and history functionality missing (marked as non-functional)
 - **Complete Test Coverage**: Missing tests for unimplemented features
 
 ### 🎯 **Current Priority**
-Implement tabbed UI system and call summarization to complete the dual-input mode feature.
+Address UI inconsistencies and fix critical text messaging interface issues first, then implement tabbed UI system.
 
 - [x] 1. UI Scaffolding: Implement the basic UI structure for the dual-input mode, including the main layout, chat view, call transcript, and settings menu.
   - Status: Complete
@@ -29,7 +29,7 @@ Implement tabbed UI system and call summarization to complete the dual-input mod
 - [x] 2. Implement Dual-Context State Management: Create and manage separate states for TTS and STS conversation histories (textTranscript, callTranscript, activeMode preserved across switches).
   - Requirements: 2.3.1
 
-- [ ] 3. **CRITICAL ISSUE** - Implement TTS Session Management: Handle the lifecycle of the text-to-speech session, including lazy initialization and message processing via TextSessionManager; audio playback to isolated text output node; transcript updates.
+- [x] 3. **CRITICAL ISSUE** - Implement TTS Session Management: Handle the lifecycle of the text-to-speech session, including lazy initialization and message processing via TextSessionManager; audio playback to isolated text output node; transcript updates.
   - Requirements: 2.1.1
   - **BROKEN**: Chat input is non-functional (cannot click/interact with textarea or send button)
 
@@ -116,20 +116,23 @@ Implement tabbed UI system and call summarization to complete the dual-input mod
     - Implement `_startTtsFromSummary` method
     - Update render method to use `tab-view` instead of direct `chat-view`
 
-- [ ] 13. Implement Call Summarization Service
-  - Requirements: 2.11.1
+- [ ] 13. Implement Call Summarization Service with Ephemeral Transcript Clearing
+  - Requirements: 2.11.1, 2.3.1
   - [ ] 13.1. Create `SummarizationService` class
     - Implement stateless service using `gemini-1.5-flash-latest` model
     - Add `summarize(transcript: Turn[]): Promise<string>` method
     - Handle errors gracefully with fallback messages
-  - [ ] 13.2. Integrate summarization into call lifecycle
-    - Modify `_handleCallEnd` to invoke summarization service
+  - [ ] 13.2. Integrate summarization into call lifecycle with transcript clearing
+    - Modify `_handleCallEnd` to immediately clear call transcript for ephemeral experience
+    - Capture call transcript before clearing and send to summarization service
     - Implement `_handleSummarizationComplete` to update call history
     - Generate unique IDs and timestamps for call summaries
+    - Ensure transcript remains cleared regardless of summarization success/failure
   - [ ] 13.3. Implement call history persistence
     - Store call history in component state
     - Ensure summaries persist during app session
     - Display summaries in `call-history-view`
+    - Verify that only summaries are retained, not full transcripts in the UI
 
 - [x] 14. Verify Ephemeral Call Session Implementation
   - Investigate the current `CallSessionManager` and related code in `index.tsx` to confirm that the session is fully destroyed on call end.

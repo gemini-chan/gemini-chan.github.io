@@ -43,7 +43,10 @@ This document outlines the requirements for a dual-input mode that simulates a r
 #### 2.3.1. Acceptance Criteria
 - **WHEN** I switch from texting to calling **THEN** the texting context is preserved but not shared with the calling session
 - **WHEN** I end a call **THEN** the call's context is discarded and not preserved.
-- **WHEN** I start a new call **THEN** the call begins with a fresh, empty context, independent of any previous calls or text chats.
+- **WHEN** I hang up a call **THEN** the call transcript is immediately cleared from the display for an ephemeral experience.
+- **WHEN** a call is successfully summarized **THEN** the call transcript is cleared from the display and only the summary is retained in call history.
+- **WHEN** I start a new call **THEN** the call begins with a fresh, empty context and completely empty transcript display, independent of any previous calls or text chats.
+- **WHEN** I click the "Call" button to start a new call **THEN** the call transcript UI shows no previous messages and starts completely blank.
 - **WHEN** I return to the text messaging view after a call **THEN** the previous text conversation history is restored.
 - **WHEN** switching between modes **THEN** no confirmation dialog appears
 
