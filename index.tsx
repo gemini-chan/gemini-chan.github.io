@@ -20,6 +20,7 @@ import "./chat-view";
 import "./call-transcript";
 import "./toast-notification";
 import "./controls-panel";
+import type { ToastNotification } from "./toast-notification";
 
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
@@ -597,7 +598,9 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleTextRateLimit(msg?: string) {
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
     toast?.show("Rate limit reached. Please wait a moment.", "warning", 3000);
   }
 
@@ -784,7 +787,9 @@ export class GdmLiveAudio extends LitElement {
 
   private _handleApiKeySaved() {
     // Show success toast for API key saved
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
     if (toast) {
       toast.show("API key saved successfully! ✨", "success", 3000);
     }
@@ -825,7 +830,9 @@ export class GdmLiveAudio extends LitElement {
     }
 
     // Show toast notification for API key change
-    const toast = this.shadowRoot?.querySelector("toast-notification") as ToastNotification;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
     if (toast) {
       if (newApiKey) {
         toast.show("API key updated successfully! ✨", "success", 3000);
@@ -857,7 +864,9 @@ export class GdmLiveAudio extends LitElement {
     this.live2dModelUrl = newModelUrl;
 
     // Show toast notification to indicate model is changing
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
     if (toast) {
       toast.show("Loading new Live2D model...", "info", 3000);
     }
@@ -869,7 +878,9 @@ export class GdmLiveAudio extends LitElement {
     logger.info("Live2D Success] Model loaded successfully");
 
     // Show success toast notification
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
     if (toast) {
       toast.show("Live2D model loaded successfully! ✨", "success", 3000);
     }
@@ -880,7 +891,9 @@ export class GdmLiveAudio extends LitElement {
     logger.error("[Model URL Error]", errorMessage);
 
     // Show error toast notification
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
     if (toast) {
       toast.show(errorMessage, "error", 4000);
     }
@@ -891,7 +904,9 @@ export class GdmLiveAudio extends LitElement {
     logger.error("[Live2D Error]", errorMessage);
 
     // Show error toast notification
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
     if (toast) {
       toast.show(`Live2D model failed to load: ${errorMessage}`, "error", 5000);
     }
