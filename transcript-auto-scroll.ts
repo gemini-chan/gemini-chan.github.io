@@ -171,12 +171,22 @@ export class TranscriptAutoScroll {
   }
 
   /**
-   * Handle scroll events to update button visibility
+   * Handle scroll events to update button visibility and tracking state
    * @param element - The scrollable transcript container
    * @returns Whether user is currently at or near bottom
    */
   handleScrollEvent(element: Element): boolean {
-    return this.shouldAutoScroll(element);
+    const isAtBottom = this.shouldAutoScroll(element);
+
+    // Update our tracking state when user manually scrolls
+    // This ensures we respect their current scroll position for future auto-scroll decisions
+    this.wasAtBottomBeforeUpdate.set(element, isAtBottom);
+
+    console.log(
+      `[AutoScroll] User scroll event - now at bottom: ${isAtBottom}`,
+    );
+
+    return isAtBottom;
   }
 }
 
