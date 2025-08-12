@@ -80,6 +80,8 @@ export class SettingsMenu extends LitElement {
     localStorage.getItem("circuitry-speed") || "15",
   );
 
+  private systemPromptRef: HTMLTextAreaElement | null = null;
+
   static styles = css`
     :host {
       position: absolute;
@@ -113,7 +115,8 @@ export class SettingsMenu extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 1em;
-      width: 420px;
+      width: 480px;
+      max-width: 90vw;
       max-height: 90vh;
       overflow-y: auto;
       border: 1px solid var(--cp-surface-border);
@@ -173,8 +176,32 @@ export class SettingsMenu extends LitElement {
       box-shadow: var(--cp-glow-purple);
     }
     textarea {
-      min-height: 120px;
-      resize: vertical;
+      min-height: 60px;
+      max-height: 40vh;
+      height: auto;
+      overflow-y: auto;
+      resize: none;
+      transition: height 0.1s ease;
+      scrollbar-width: thin;
+      scrollbar-color: var(--cp-surface-strong) transparent;
+      line-height: 1.5;
+    }
+    
+    textarea::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    textarea::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    textarea::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 3px;
+    }
+    
+    textarea::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
     }
     input {
       padding-right: 5.5em;
@@ -369,6 +396,36 @@ export class SettingsMenu extends LitElement {
     .theme-button.active:hover {
       background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
     }
+    
+    .prompt-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      border-top: 1px solid var(--cp-surface-border);
+      padding-top: 1em;
+      margin-top: 0.5em;
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5em;
+    }
+    
+    .section-title {
+      font-weight: 500;
+      color: var(--cp-text);
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    
+    .prompt-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.8;
+    }
   `;
 
   render() {
@@ -482,17 +539,24 @@ export class SettingsMenu extends LitElement {
             <button @click=${this._getApiKeyUrl}>Get API Key</button>
           </div>
 
-          <label for="systemPrompt">System Prompt</label>
-          <textarea
-            id="systemPrompt"
-            .value=${SystemPromptManager.getSystemPrompt()}
-            @input=${this._onSystemPromptInput}
-            placeholder="Enter Gemini-chan's personality..."
-          ></textarea>
-          <div class="buttons">
-            <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
+          <div class="prompt-section">
+            <div class="section-header">
+              <label for="systemPrompt" class="section-title">
+                <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
+                  <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
+                </svg>
+                System Prompt
+              </label>
+              <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
+            </div>
+            <textarea
+              id="systemPrompt"
+              .value=${SystemPromptManager.getSystemPrompt()}
+              @input=${this._onSystemPromptInput}
+              placeholder="Enter Gemini-chan's personality..."
+              rows="3"
+            ></textarea>
           </div>
-        </div>
       </div>
     `;
   }
@@ -520,6 +584,13 @@ export class SettingsMenu extends LitElement {
     if (modelUrlInput) {
       const isModelUrlValid = this._validateLive2dUrl(modelUrlInput.value);
       this._setValidationState("modelUrl", isModelUrlValid);
+    }
+
+    // Store reference to system prompt textarea and set initial height
+    this.systemPromptRef =
+      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
+    if (this.systemPromptRef) {
+      this._resizeTextarea(this.systemPromptRef);
     }
   }
 
@@ -897,7 +968,23 @@ export class SettingsMenu extends LitElement {
   private _onSystemPromptInput(e: Event) {
     const textarea = e.target as HTMLTextAreaElement;
     SystemPromptManager.setSystemPrompt(textarea.value);
+    this._resizeTextarea(textarea);
     this.dispatchEvent(new CustomEvent("system-prompt-changed"));
+  }
+
+  private _resizeTextarea(textarea: HTMLTextAreaElement) {
+    // Reset height to recalculate
+    textarea.style.height = "auto";
+
+    // Calculate new height based on scroll height
+    const scrollHeight = textarea.scrollHeight;
+    const minHeight = 60;
+    // Use 40vh (40% of viewport height) as max to ensure it stays visible
+    const maxHeight = window.innerHeight * 0.4;
+
+    // Clamp the height between min and max
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    textarea.style.height = `${newHeight}px`;
   }
 
   private _onResetSystemPrompt() {
@@ -906,6 +993,7 @@ export class SettingsMenu extends LitElement {
       this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
     if (textarea) {
       textarea.value = SystemPromptManager.getDefaultSystemPrompt();
+      this._resizeTextarea(textarea);
     }
     this.dispatchEvent(new CustomEvent("system-prompt-changed"));
   }
