@@ -550,7 +550,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private updateCallTranscript(text: string, author: "user" | "model") {
-    logger.debug(`[Call Transcript] Received ${author} text:`, text);
+    logger.debug(`Received ${author} text:`, text);
 
     // For audio transcription, we get incremental chunks that should be appended
     const lastTurn = this.callTranscript[this.callTranscript.length - 1];
