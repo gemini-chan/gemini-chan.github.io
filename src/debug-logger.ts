@@ -289,13 +289,14 @@ export class DebugLogger {
    */
   isComponentEnabled(component: string): boolean {
     if (this.config.components['*']) return true;
-    
-    const specificComponents = Object.keys(this.config.components).filter(c => c !== '*' && this.config.components[c]);
-    if (specificComponents.length > 0) {
-        return !!this.config.components[component];
+
+    const specificComponentKeys = Object.keys(this.config.components).filter(c => c !== '*');
+
+    if (specificComponentKeys.length > 0) {
+      return !!this.config.components[component];
     }
-    
-    return true; 
+
+    return true;
   }
 
   /**
