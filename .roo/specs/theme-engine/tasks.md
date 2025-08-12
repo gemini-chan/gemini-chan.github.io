@@ -55,5 +55,11 @@ Add theme engine support with a toggle in Settings and persistence.
   - [x] 10.3. **REVISION:** Update the Noir theme to have a darker, almost black background with neon red accents.
 - [x] 11. Fix Cyberpunk Theme Regression
   - [x] 11.1. In `index.css`, correct the `l:root` selector to `:root`.
-- [ ] 12. Fix Cyberpunk Theme Regression Part 2
-    - [ ] 12.1. In `index.css`, merge the duplicate `:root` declarations to fix the theme.
+- [x] 12. Fix Cyberpunk Theme Regression Part 2
+    - [x] 12.1. In `index.css`, merge the duplicate `:root` declarations to fix the theme.
+
+- [ ] 13. Implement Solarpunk Theme
+  - [x] 13.1. In `index.css`, add a new `html[data-theme='solarpunk']` block with solarized, nature-inspired color overrides.
+    - Ref: Requirement 2.2, Design section 6
+  - [ ] 13.2. In `settings-menu.ts`, add "Solarpunk" to the theme selection dropdown.
+    - Ref: Requirement 2.1.1, Design section 6
