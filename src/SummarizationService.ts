@@ -1,7 +1,7 @@
-import { GoogleGenAI } from "@google/genai";
+import type { GoogleGenAI } from "@google/genai";
 import type { Turn } from "../types";
 
-const MODEL_NAME = "gemini-1.5-flash-latest";
+const MODEL_NAME = "gemini-2.5-flash-lite";
 
 export class SummarizationService {
   private genAI: GoogleGenAI;

@@ -35,12 +35,13 @@ export class ChatView extends LitElement {
       flex-direction: column;
       height: 100vh;
       max-height: 100vh;
-      min-height: 400px; /* Fallback minimum height */
+      min-height: 400px;
       width: 100%;
-      min-width: 300px; /* Fallback minimum width */
+      min-width: 300px;
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;
+      color: var(--cp-text);
       opacity: 1;
       visibility: visible;
       transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -52,20 +53,16 @@ export class ChatView extends LitElement {
     }
 
     .transcript {
-      /* Robust height calculation with fallbacks */
       flex: 1;
-      min-height: 0; /* Critical for flexbox overflow */
-      
+      min-height: 0;
       overflow-y: auto;
-      overflow-x: hidden; /* Prevent horizontal scroll */
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       gap: 12px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-      
-      /* Ensure proper scrolling on different browsers */
-      -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+      -webkit-overflow-scrolling: touch;
     }
 
     .turn {
@@ -74,17 +71,23 @@ export class ChatView extends LitElement {
       max-width: 80%;
       font: 16px/1.4 system-ui;
       white-space: pre-wrap;
+      border: 1px solid var(--cp-surface-border);
+      background: var(--cp-surface);
     }
 
     .turn.user {
-      background: rgba(100, 150, 255, 0.3);
-      color: #fff;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(124, 77, 255, 0.18));
+      border-color: rgba(0, 229, 255, 0.35);
+      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
       align-self: flex-end;
     }
 
     .turn.model {
-      background: rgba(0, 200, 100, 0.3);
-      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 0, 229, 0.16), rgba(124, 77, 255, 0.16));
+      border-color: rgba(255, 0, 229, 0.3);
+      box-shadow: var(--cp-glow-magenta);
+      color: var(--cp-text);
       align-self: flex-start;
     }
 
@@ -93,9 +96,11 @@ export class ChatView extends LitElement {
       align-items: center;
       justify-content: space-between;
       padding: 8px 12px;
-      background: rgba(0, 150, 0, 0.2);
+      background: var(--cp-surface);
       border-radius: 10px;
-      color: #fff;
+      border: 1px solid var(--cp-surface-border);
+      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
       font: 14px/1.4 system-ui;
       font-weight: 500;
     }
@@ -113,22 +118,21 @@ export class ChatView extends LitElement {
 
     .reset-button {
       outline: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--cp-surface);
       width: 32px;
       height: 32px;
       cursor: pointer;
       font-size: 16px;
       padding: 0;
       margin: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(4px);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
+    }
+    .reset-button:hover {
+      background: var(--cp-surface-strong);
     }
 
     .input-area {
@@ -140,34 +144,37 @@ export class ChatView extends LitElement {
       flex: 1;
       padding: 8px 12px;
       border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(0, 0, 0, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      background: var(--cp-surface);
+      color: var(--cp-text);
       font: 16px/1.4 system-ui;
       resize: none;
       outline: none;
       height: 56px;
       box-sizing: border-box;
+      box-shadow: var(--cp-glow-purple);
     }
 
     button {
       outline: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
       width: 56px;
       height: 56px;
       cursor: pointer;
       font-size: 24px;
       padding: 0;
       margin: 0;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(4px);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
+    button:hover {
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+      transform: translateY(-1px);
     }
 
     .scroll-to-bottom {
@@ -177,7 +184,7 @@ export class ChatView extends LitElement {
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: rgba(100, 150, 255, 0.9);
+      background: linear-gradient(135deg, rgba(0,229,255,0.9), rgba(124,77,255,0.9));
       border: 2px solid rgba(255, 255, 255, 0.3);
       color: white;
       cursor: pointer;
@@ -201,8 +208,7 @@ export class ChatView extends LitElement {
     }
 
     .scroll-to-bottom:hover {
-      background: rgba(100, 150, 255, 1);
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
 
     .scroll-to-bottom .badge {
@@ -235,7 +241,7 @@ export class ChatView extends LitElement {
       align-items: center;
       justify-content: center;
       flex: 1;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--cp-muted);
       font: 16px/1.4 system-ui;
       text-align: center;
       gap: 8px;

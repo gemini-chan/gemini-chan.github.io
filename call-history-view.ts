@@ -13,12 +13,15 @@ export class CallHistoryView extends LitElement {
       margin: 0;
     }
     .history-item {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--cp-surface-border);
       cursor: pointer;
+      color: var(--cp-text);
+      background: var(--cp-surface);
+      transition: background 0.15s ease;
     }
     .history-item:hover {
-      background-color: #f9f9f9;
+      background: var(--cp-surface-strong);
     }
   `;
 

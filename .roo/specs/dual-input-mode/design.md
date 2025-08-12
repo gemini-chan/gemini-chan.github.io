@@ -181,7 +181,7 @@ graph TD
 - **TTS Session**: Persists and is lazily initialized on the first text message.
 - **STS Session**: Ephemeral. It is created when a call starts and destroyed when it ends.
 - **Call Transcript Clearing**: The call transcript is immediately cleared from the display when a call ends (on hangup) to provide an ephemeral experience.
-- **Summarization**: On `call-end`, the `currentCallTranscript` is sent to a `SummarizationService` before being cleared. This service makes a one-off call to the `gemini-1.5-flash-latest` model. The resulting summary is added to the `callHistory`.
+- **Summarization**: On `call-end`, the `currentCallTranscript` is sent to a `SummarizationService` before being cleared. This service makes a one-off call to the `gemini-2.5-flash-lite` model. The resulting summary is added to the `callHistory`.
 - **Post-Summarization**: After successful summarization, the call transcript remains cleared, with only the summary retained in call history.
 
 ### 4.2. State Management

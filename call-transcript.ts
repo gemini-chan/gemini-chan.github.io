@@ -40,13 +40,14 @@ export class CallTranscript extends LitElement {
       flex-direction: column;
       height: 100vh;
       max-height: 100vh;
-      min-height: 400px; /* Fallback minimum height */
+      min-height: 400px;
       width: 400px;
-      min-width: 300px; /* Fallback minimum width */
-      max-width: 500px; /* Maximum width constraint */
+      min-width: 300px;
+      max-width: 500px;
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;
+      color: var(--cp-text);
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -62,9 +63,11 @@ export class CallTranscript extends LitElement {
       align-items: center;
       justify-content: space-between;
       padding: 8px 12px;
-      background: rgba(0, 150, 0, 0.2);
+      background: var(--cp-surface);
       border-radius: 10px;
-      color: #fff;
+      border: 1px solid var(--cp-surface-border);
+      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
       font: 14px/1.4 system-ui;
       font-weight: 500;
     }
@@ -83,9 +86,10 @@ export class CallTranscript extends LitElement {
       padding: 6px 10px;
       border-radius: 8px;
       font: 13px/1.3 system-ui;
-      color: #fff;
-      background: rgba(255, 152, 0, 0.2);
-      border: 1px solid rgba(255, 152, 0, 0.4);
+      color: var(--cp-text);
+      background: linear-gradient(135deg, rgba(255, 179, 0, 0.15), rgba(255, 0, 0, 0.12));
+      border: 1px solid rgba(255, 179, 0, 0.35);
+      box-shadow: 0 0 0 1px rgba(255, 179, 0, 0.2), 0 0 12px rgba(255, 179, 0, 0.2);
     }
 
     :host([ratelimited]) .banner {
@@ -94,29 +98,29 @@ export class CallTranscript extends LitElement {
 
     .reset-button {
       outline: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--cp-surface);
       width: 32px;
       height: 32px;
       cursor: pointer;
       font-size: 16px;
       padding: 0;
       margin: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(4px);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
+    }
+    .reset-button:hover {
+      background: var(--cp-surface-strong);
     }
 
     .call-indicator {
       width: 8px;
       height: 8px;
-      background: #00ff00;
+      background: var(--cp-green);
       border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0, 255, 178, 0.8);
       animation: pulse 2s infinite;
     }
 
@@ -127,20 +131,16 @@ export class CallTranscript extends LitElement {
     }
 
     .transcript {
-      /* Use flexbox for proper height calculation */
       flex: 1;
-      min-height: 0; /* Critical for flexbox overflow */
-      
+      min-height: 0;
       overflow-y: auto;
-      overflow-x: hidden; /* Prevent horizontal scroll */
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       gap: 12px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-      
-      /* Ensure proper scrolling on different browsers */
-      -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+      -webkit-overflow-scrolling: touch;
     }
 
     .turn {
@@ -150,17 +150,23 @@ export class CallTranscript extends LitElement {
       font: 16px/1.4 system-ui;
       white-space: pre-wrap;
       position: relative;
+      border: 1px solid var(--cp-surface-border);
+      background: var(--cp-surface);
     }
 
     .turn.user {
-      background: rgba(100, 150, 255, 0.3);
-      color: #fff;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(124, 77, 255, 0.18));
+      border-color: rgba(0, 229, 255, 0.35);
+      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
       align-self: flex-end;
     }
 
     .turn.model {
-      background: rgba(0, 200, 100, 0.3);
-      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 0, 229, 0.16), rgba(124, 77, 255, 0.16));
+      border-color: rgba(255, 0, 229, 0.3);
+      box-shadow: var(--cp-glow-magenta);
+      color: var(--cp-text);
       align-self: flex-start;
     }
 
@@ -176,7 +182,7 @@ export class CallTranscript extends LitElement {
       align-items: center;
       justify-content: center;
       flex: 1;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--cp-muted);
       font: 16px/1.4 system-ui;
       text-align: center;
       gap: 8px;

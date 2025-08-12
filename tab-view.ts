@@ -8,18 +8,35 @@ export class TabView extends LitElement {
   static styles = css`
     .tabs {
       display: flex;
-      border-bottom: 1px solid #ccc;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--cp-surface-border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+      position: sticky;
+      top: 0;
+      z-index: 5;
     }
     .tab {
-      padding: 10px 20px;
+      padding: 10px 16px;
       cursor: pointer;
-      border: 1px solid transparent;
+      border: 1px solid var(--cp-surface-border);
       border-bottom: none;
+      color: var(--cp-text);
+      background: var(--cp-surface);
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      box-shadow: var(--cp-glow-purple);
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+    .tab:hover {
+      background: var(--cp-surface-strong);
+      transform: translateY(-1px);
     }
     .tab.active {
-      border-color: #ccc;
-      border-bottom: 1px solid white;
-      background-color: white;
+      background: linear-gradient(135deg, rgba(0,229,255,0.18), rgba(124,77,255,0.18));
+      box-shadow: var(--cp-glow-cyan);
+      border-color: var(--cp-surface-border);
+      color: var(--cp-text);
     }
   `;
 

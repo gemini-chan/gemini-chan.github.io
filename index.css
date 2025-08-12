@@ -1,3 +1,31 @@
+:root {
+  /* Cyberpunk Neon Theme */
+  --cp-bg-1: #080b1a;
+  --cp-bg-2: #0d0221;
+  --cp-bg-3: #00111f;
+  --cp-text: #e6f1ff;
+  --cp-muted: rgba(230, 241, 255, 0.7);
+
+  --cp-cyan: #00e5ff;
+  --cp-magenta: #ff00e5;
+  --cp-purple: #7c4dff;
+  --cp-green: #00ffb2;
+  --cp-red: #ff3b6e;
+  --cp-amber: #ffb300;
+
+  --cp-surface: rgba(255, 255, 255, 0.06);
+  --cp-surface-strong: rgba(255, 255, 255, 0.12);
+  --cp-surface-border: rgba(0, 229, 255, 0.25);
+  --cp-surface-border-2: rgba(255, 0, 229, 0.2);
+
+  --cp-glow-cyan:
+    0 0 0 1px rgba(0, 229, 255, 0.15), 0 0 12px rgba(0, 229, 255, 0.25);
+  --cp-glow-magenta:
+    0 0 0 1px rgba(255, 0, 229, 0.15), 0 0 12px rgba(255, 0, 229, 0.25);
+  --cp-glow-purple:
+    0 0 0 1px rgba(124, 77, 255, 0.15), 0 0 12px rgba(124, 77, 255, 0.25);
+}
+
 html,
 body {
   margin: 0;
@@ -8,17 +36,385 @@ body {
 
 body {
   position: relative;
-  background: #000; /* ensure contrast behind transparent canvas */
-  color: #fff; /* Ensure all text is white by default */
+  color: var(--cp-text);
+  background:
+    radial-gradient(1200px 800px at 20% 10%, var(--cp-bg-3), transparent 60%),
+    radial-gradient(
+      900px 900px at 80% 20%,
+      rgba(255, 0, 229, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 1000px at 20% 80%,
+      rgba(0, 229, 255, 0.1),
+      transparent 55%
+    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+  /* Scanline effect */
+  background-attachment: fixed;
 }
 
+/* Subtle animated grid overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.035) 0px,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px,
+      transparent 20px
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 20px
+    );
+  pointer-events: none;
+  z-index: -3; /* behind circuitry and live2d */
+}
+
+/* Live2D should sit behind the UI but above the grid */
 live2d-gate,
 live2d-visual,
 live2d-canvas {
-  position: relative; /* Changed from absolute to relative */
+  position: relative;
   width: 100%;
   height: 100%;
   display: block;
-  pointer-events: none; /* Allow clicks to pass through to UI elements below */
-  z-index: -1; /* Ensure Live2D stays behind interactive UI elements */
+  pointer-events: none;
+  z-index: -2; /* behind circuitry overlay */
+}
+
+/* Animated circuitry overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0 47%,
+      var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
+      transparent 53% 100%
+    ),
+    linear-gradient(
+      0deg,
+      transparent 0 47%,
+      var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
+      transparent 53% 100%
+    );
+  background-size:
+    var(--circuit-size, 60px) var(--circuit-size, 60px),
+    var(--circuit-size, 60px) var(--circuit-size, 60px);
+  background-position:
+    0 0,
+    0 0;
+  animation: circuit-move var(--circuit-speed, 15s) linear infinite;
+  opacity: var(--circuit-opacity, 1);
+  display: var(--circuit-display, block);
+}
+
+/* Circuitry nodes overlay (when enabled) */
+body[data-circuit-nodes="true"]::after {
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0 47%,
+      var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
+      transparent 53% 100%
+    ),
+    linear-gradient(
+      0deg,
+      transparent 0 47%,
+      var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
+      transparent 53% 100%
+    ),
+    radial-gradient(
+      circle at 20px 20px,
+      var(--circuit-node-color, rgba(0, 229, 255, 0.4)) 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 60px 60px,
+      var(--circuit-node-color, rgba(0, 229, 255, 0.3)) 1.5px,
+      transparent 2.5px
+    );
+  background-size:
+    var(--circuit-size, 60px) var(--circuit-size, 60px),
+    var(--circuit-size, 60px) var(--circuit-size, 60px),
+    var(--circuit-size, 60px) var(--circuit-size, 60px),
+    var(--circuit-size, 60px) var(--circuit-size, 60px);
+  background-position:
+    0 0,
+    0 0,
+    0 0,
+    30px 30px;
+}
+
+@keyframes circuit-move {
+  0% {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      30px 30px;
+  }
+  100% {
+    background-position:
+      var(--circuit-size, 60px) var(--circuit-size, 60px),
+      var(--circuit-size, 60px) var(--circuit-size, 60px),
+      var(--circuit-size, 60px) var(--circuit-size, 60px),
+      calc(30px + var(--circuit-size, 60px))
+      calc(30px + var(--circuit-size, 60px));
+  }
+}
+
+/* Default circuitry settings */
+:root {
+  --circuit-enabled: 1;
+  --circuit-speed: 15s;
+  --circuit-nodes: 1;
+  --circuit-size: 60px;
+  --circuit-opacity: 1;
+  --circuit-display: block;
+}
+
+/* Circuitry disabled */
+:root[data-circuit-enabled="false"] {
+  --circuit-display: none;
+}
+
+/* Theme-specific circuitry colors */
+html[data-theme="cyberpunk"] body::after {
+  --circuit-color: rgba(0, 229, 255, 0.25);
+  --circuit-node-color: rgba(0, 229, 255, 0.4);
+}
+html[data-theme="utopia"] body::after {
+  --circuit-color: rgba(106, 76, 255, 0.25);
+  --circuit-node-color: rgba(106, 76, 255, 0.4);
+}
+html[data-theme="tron"] body::after {
+  --circuit-color: rgba(0, 240, 255, 0.3);
+  --circuit-node-color: rgba(0, 240, 255, 0.5);
+}
+html[data-theme="synthwave"] body::after {
+  --circuit-color: rgba(255, 0, 168, 0.28);
+  --circuit-node-color: rgba(255, 0, 168, 0.45);
+}
+html[data-theme="matrix"] body::after {
+  --circuit-color: rgba(57, 255, 20, 0.3);
+  --circuit-node-color: rgba(57, 255, 20, 0.5);
+}
+
+/* Theme overrides */
+html[data-theme="cyberpunk"] body {
+  color: var(--cp-text);
+  background:
+    radial-gradient(1200px 800px at 20% 10%, var(--cp-bg-3), transparent 60%),
+    radial-gradient(
+      900px 900px at 80% 20%,
+      rgba(255, 0, 229, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 1000px at 20% 80%,
+      rgba(0, 229, 255, 0.1),
+      transparent 55%
+    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+}
+
+/* Classic theme removed; replaced by Utopia. */
+html[data-theme="classic"] {
+  --cp-bg-1: #000000;
+  --cp-bg-2: #000000;
+  --cp-bg-3: #000000;
+  --cp-text: #ffffff;
+  --cp-muted: rgba(255, 255, 255, 0.65);
+
+  --cp-cyan: #66ccff;
+  --cp-magenta: #ff66cc;
+  --cp-purple: #b399ff;
+  --cp-green: #66ffcc;
+  --cp-red: #ff6688;
+  --cp-amber: #ffcc66;
+
+  --cp-surface: rgba(255, 255, 255, 0.08);
+  --cp-surface-strong: rgba(255, 255, 255, 0.15);
+  --cp-surface-border: rgba(255, 255, 255, 0.2);
+  --cp-surface-border-2: rgba(255, 255, 255, 0.15);
+
+  --cp-glow-cyan: none;
+  --cp-glow-magenta: none;
+  --cp-glow-purple: none;
+}
+
+/* Utopia (Dark Cyberpunk) Theme */
+html[data-theme="utopia"] {
+  --cp-bg-1: #05070d;
+  --cp-bg-2: #0a0e1a;
+  --cp-bg-3: #0b1020;
+  --cp-text: #e6f1ff;
+  --cp-muted: rgba(230, 241, 255, 0.7);
+
+  --cp-cyan: #23d5ff;
+  --cp-magenta: #b400ff;
+  --cp-purple: #6a4cff;
+  --cp-green: #00ffb2;
+  --cp-red: #ff3b6e;
+  --cp-amber: #ffb300;
+
+  --cp-surface: rgba(255, 255, 255, 0.06);
+  --cp-surface-strong: rgba(255, 255, 255, 0.12);
+  --cp-surface-border: rgba(35, 213, 255, 0.28);
+  --cp-surface-border-2: rgba(106, 76, 255, 0.22);
+
+  --cp-glow-cyan:
+    0 0 0 1px rgba(35, 213, 255, 0.18), 0 0 14px rgba(35, 213, 255, 0.28);
+  --cp-glow-magenta:
+    0 0 0 1px rgba(180, 0, 255, 0.16), 0 0 14px rgba(180, 0, 255, 0.26);
+  --cp-glow-purple:
+    0 0 0 1px rgba(106, 76, 255, 0.16), 0 0 14px rgba(106, 76, 255, 0.26);
+}
+html[data-theme="utopia"] body {
+  color: var(--cp-text);
+  background:
+    radial-gradient(
+      1200px 800px at 20% 10%,
+      rgba(35, 213, 255, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 900px at 80% 20%,
+      rgba(106, 76, 255, 0.08),
+      transparent 60%
+    ), linear-gradient(170deg, var(--cp-bg-1), var(--cp-bg-2));
+}
+
+/* Tron Theme */
+html[data-theme="tron"] {
+  --cp-bg-1: #000510;
+  --cp-bg-2: #001a33;
+  --cp-bg-3: #00111f;
+  --cp-text: #e8fbff;
+  --cp-muted: rgba(232, 251, 255, 0.7);
+
+  --cp-cyan: #00f0ff;
+  --cp-magenta: #00e0ff;
+  --cp-purple: #00bfff;
+  --cp-green: #33ffd6;
+  --cp-red: #ff5577;
+  --cp-amber: #ffd166;
+
+  --cp-surface: rgba(0, 255, 255, 0.06);
+  --cp-surface-strong: rgba(0, 255, 255, 0.12);
+  --cp-surface-border: rgba(0, 240, 255, 0.3);
+  --cp-surface-border-2: rgba(0, 240, 255, 0.2);
+
+  --cp-glow-cyan:
+    0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
+  --cp-glow-magenta:
+    0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
+  --cp-glow-purple:
+    0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
+}
+html[data-theme="tron"] body {
+  background:
+    radial-gradient(
+      1100px 800px at 25% 15%,
+      rgba(0, 240, 255, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      1000px 1000px at 70% 30%,
+      rgba(0, 191, 255, 0.1),
+      transparent 60%
+    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+}
+
+/* Synthwave Theme */
+html[data-theme="synthwave"] {
+  --cp-bg-1: #1b003b;
+  --cp-bg-2: #42006c;
+  --cp-bg-3: #0b0018;
+  --cp-text: #ffeef9;
+  --cp-muted: rgba(255, 238, 249, 0.75);
+
+  --cp-cyan: #00f5ff;
+  --cp-magenta: #ff00a8;
+  --cp-purple: #a96dff;
+  --cp-green: #47ffbf;
+  --cp-red: #ff4f81;
+  --cp-amber: #ffc600;
+
+  --cp-surface: rgba(255, 255, 255, 0.08);
+  --cp-surface-strong: rgba(255, 255, 255, 0.16);
+  --cp-surface-border: rgba(255, 0, 168, 0.28);
+  --cp-surface-border-2: rgba(169, 109, 255, 0.22);
+
+  --cp-glow-cyan:
+    0 0 0 1px rgba(0, 245, 255, 0.15), 0 0 14px rgba(0, 245, 255, 0.28);
+  --cp-glow-magenta:
+    0 0 0 1px rgba(255, 0, 168, 0.15), 0 0 14px rgba(255, 0, 168, 0.28);
+  --cp-glow-purple:
+    0 0 0 1px rgba(169, 109, 255, 0.15), 0 0 14px rgba(169, 109, 255, 0.28);
+}
+html[data-theme="synthwave"] body {
+  background:
+    radial-gradient(
+      1000px 900px at 15% 80%,
+      rgba(255, 0, 168, 0.14),
+      transparent 60%
+    ),
+    radial-gradient(
+      1100px 700px at 85% 20%,
+      rgba(169, 109, 255, 0.12),
+      transparent 60%
+    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+}
+
+/* Matrix Theme */
+html[data-theme="matrix"] {
+  --cp-bg-1: #000a00;
+  --cp-bg-2: #001a00;
+  --cp-bg-3: #000800;
+  --cp-text: #eaffea;
+  --cp-muted: rgba(234, 255, 234, 0.75);
+
+  --cp-cyan: #00ffa6;
+  --cp-magenta: #00ff99;
+  --cp-purple: #00ff66;
+  --cp-green: #39ff14;
+  --cp-red: #ff5577;
+  --cp-amber: #aaff00;
+
+  --cp-surface: rgba(0, 255, 102, 0.06);
+  --cp-surface-strong: rgba(0, 255, 102, 0.12);
+  --cp-surface-border: rgba(57, 255, 20, 0.35);
+  --cp-surface-border-2: rgba(57, 255, 20, 0.22);
+
+  --cp-glow-cyan:
+    0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
+  --cp-glow-magenta:
+    0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
+  --cp-glow-purple:
+    0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
+}
+html[data-theme="matrix"] body {
+  background:
+    radial-gradient(
+      1200px 900px at 10% 20%,
+      rgba(57, 255, 20, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 900px at 70% 80%,
+      rgba(0, 255, 102, 0.1),
+      transparent 60%
+    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }

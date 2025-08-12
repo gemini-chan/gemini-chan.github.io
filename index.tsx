@@ -398,6 +398,7 @@ export class GdmLiveAudio extends LitElement {
       grid-template-columns: 400px 1fr 400px;
       height: 100vh;
       overflow: hidden;
+      color: var(--cp-text);
     }
 
     .main-container {
@@ -416,15 +417,17 @@ export class GdmLiveAudio extends LitElement {
     }
     #status .toast {
       display: inline-block;
-      background: rgba(0,0,0,0.7);
-      color: #fff;
+      background: var(--cp-surface);
+      color: var(--cp-text);
       padding: 8px 12px;
       border-radius: 10px;
+      border: 1px solid var(--cp-surface-border);
       font: 17px/1.2 system-ui;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      box-shadow: var(--cp-glow-cyan);
       opacity: 1;
       transform: translateY(0);
       transition: opacity 300ms ease, transform 300ms ease;
+      backdrop-filter: blur(6px);
     }
     #status .toast.hide {
       opacity: 0;

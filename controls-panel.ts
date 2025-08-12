@@ -27,9 +27,9 @@ export class ControlsPanel extends LitElement {
       right: 0;
       display: flex;
       align-items: center;
-      justify-content: space-between; /* Align items to left and right */
+      justify-content: space-between;
       padding: 0 24px;
-      pointer-events: none; /* Allow clicks to pass through */
+      pointer-events: none;
     }
 
     .left-controls,
@@ -37,28 +37,29 @@ export class ControlsPanel extends LitElement {
       display: flex;
       align-items: center;
       gap: 12px;
-      pointer-events: auto; /* Enable pointer events on controls */
+      pointer-events: auto;
     }
 
     button {
       outline: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
       width: 56px;
       height: 56px;
       cursor: pointer;
       font-size: 24px;
       padding: 0;
       margin: 0;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(4px);
-      transition: all 0.2s ease;
+      transition: transform 0.15s ease, background 0.15s ease, opacity 0.2s ease;
     }
 
     button:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+      transform: translateY(-1px);
     }
 
     button[disabled] {

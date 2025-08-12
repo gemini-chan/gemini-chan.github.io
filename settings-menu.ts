@@ -30,6 +30,36 @@ export class SettingsMenu extends LitElement {
   @state()
   private _modelUrlInvalid = false;
 
+  @state()
+  private _theme:
+    | "cyberpunk"
+    | "utopia"
+    | "tron"
+    | "synthwave"
+    | "matrix"
+    | "auto" = (localStorage.getItem("theme") as any) || "cyberpunk";
+
+  @state()
+  private _circuitryEnabled: boolean =
+    localStorage.getItem("circuitry-enabled") !== "false";
+
+  @state()
+  private _circuitrySpeed: number = parseInt(
+    localStorage.getItem("circuitry-speed") || "15",
+  );
+
+  @state()
+  private _circuitryNodes: boolean =
+    localStorage.getItem("circuitry-nodes") !== "false";
+
+  // Auto theme listener state
+  private _prefersDarkMql: MediaQueryList | null = null;
+  private _handlePrefersChange = (_e: MediaQueryListEvent) => {
+    if (this._theme === "auto") {
+      this._applyTheme("auto");
+    }
+  };
+
   static styles = css`
     :host {
       position: absolute;
@@ -46,31 +76,33 @@ export class SettingsMenu extends LitElement {
     }
     .backdrop {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
+      inset: 0;
+      background: radial-gradient(800px 600px at 20% 20%, rgba(0,229,255,0.08), transparent 60%),
+                  radial-gradient(800px 600px at 80% 80%, rgba(255,0,229,0.08), transparent 60%),
+                  rgba(0, 0, 0, 0.55);
       display: flex;
       align-items: center;
       justify-content: center;
+      backdrop-filter: blur(2px);
     }
     .container {
-      background: #222;
-      color: #eee;
-      padding: 2em;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      padding: 1.5em;
       border-radius: 12px;
       display: flex;
       flex-direction: column;
       gap: 1em;
-      width: 400px;
+      width: 420px;
+      border: 1px solid var(--cp-surface-border);
+      box-shadow: var(--cp-glow-purple);
     }
     h2 {
-      color: #fff;
+      color: var(--cp-text);
       margin: 0 0 0.5em 0;
     }
     label {
-      color: #ccc;
+      color: var(--cp-muted);
       font-size: 0.9em;
     }
     .input-group {
@@ -79,17 +111,19 @@ export class SettingsMenu extends LitElement {
       align-items: center;
     }
     input::placeholder {
-      color: #aaa;
+      color: var(--cp-muted);
     }
     input,
-    textarea {
-      background: #333;
-      border: 1px solid #555;
-      color: white;
-      padding: 0.5em;
-      border-radius: 6px;
+    textarea,
+    select {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      padding: 0.5em 0.65em;
+      border-radius: 8px;
       flex: 1;
       font-family: system-ui;
+      box-shadow: var(--cp-glow-purple);
     }
     textarea {
       min-height: 120px;
@@ -98,23 +132,77 @@ export class SettingsMenu extends LitElement {
     input {
       padding-right: 5.5em;
     }
+    select {
+      cursor: pointer;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+    }
+    .range-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type="range"] {
+      flex: 1;
+      cursor: pointer;
+      height: 6px;
+      background: var(--cp-surface);
+      border-radius: 3px;
+      outline: none;
+      appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0,229,255,0.8), rgba(124,77,255,0.8));
+      border: 2px solid var(--cp-surface-border);
+      cursor: pointer;
+      box-shadow: var(--cp-glow-cyan);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0,229,255,0.8), rgba(124,77,255,0.8));
+      border: 2px solid var(--cp-surface-border);
+      cursor: pointer;
+      box-shadow: var(--cp-glow-cyan);
+    }
+    .range-value {
+      min-width: 40px;
+      text-align: center;
+      font-size: 0.9em;
+      color: var(--cp-muted);
+    }
     .paste-button {
       position: absolute;
       right: 0.5em;
-      background: transparent;
-      border: none;
-      color: #ccc;
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-muted);
       cursor: pointer;
       padding: 0.25em;
-      border-radius: 4px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: color 0.2s ease-in-out;
+      transition: background 0.15s ease, color 0.15s ease;
+      box-shadow: var(--cp-glow-cyan);
     }
     .paste-button:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.1);
+      color: var(--cp-text);
+      background: var(--cp-surface-strong);
     }
     .paste-icon {
       width: 16px;
@@ -145,10 +233,10 @@ export class SettingsMenu extends LitElement {
       height: 16px;
     }
     .tick-icon {
-      color: #4caf50;
+      color: var(--cp-green);
     }
     .cross-icon {
-      color: #ff8a80;
+      color: var(--cp-red);
     }
     .buttons {
       display: flex;
@@ -156,20 +244,22 @@ export class SettingsMenu extends LitElement {
       justify-content: flex-end;
     }
     button {
-        outline: none;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 0.5em 1em;
-        cursor: pointer;
-        transition: background-color 0.2s ease-in-out;
+      outline: none;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      padding: 0.5em 1em;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      box-shadow: var(--cp-glow-cyan);
     }
     button:hover {
-        background: rgba(255, 255, 255, 0.2);
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+      transform: translateY(-1px);
     }
     .error {
-      color: #ff8a80;
+      color: var(--cp-red);
       font-size: 0.9em;
     }
   `;
@@ -179,6 +269,57 @@ export class SettingsMenu extends LitElement {
       <div class="backdrop" @click=${this._handleBackdropClick}>
         <div class="container" @click=${this._stopPropagation}>
           <h2>Settings</h2>
+
+          <label for="theme">Theme</label>
+          <div class="input-group">
+            <select id="theme" @change=${(e: Event) => this._onThemeChange(e)}>
+              <option value="auto">Auto (prefers-color-scheme)</option>
+              <option value="cyberpunk">Cyberpunk</option>
+              <option value="utopia">Utopia (Dark Cyberpunk)</option>
+              <option value="tron">Tron</option>
+              <option value="synthwave">Synthwave</option>
+              <option value="matrix">Matrix</option>
+            </select>
+          </div>
+
+          <label for="circuitryEnabled">Circuitry Animation</label>
+          <div class="checkbox-group">
+            <input
+              id="circuitryEnabled"
+              type="checkbox"
+              .checked=${this._circuitryEnabled}
+              @change=${this._onCircuitryEnabledChange}
+            />
+            <label for="circuitryEnabled">Enable animated circuitry background</label>
+          </div>
+
+          <label for="circuitrySpeed">Animation Speed (seconds)</label>
+          <div class="range-group">
+            <input
+              id="circuitrySpeed"
+              type="range"
+              min="5"
+              max="30"
+              step="1"
+              .value=${this._circuitrySpeed.toString()}
+              @input=${this._onCircuitrySpeedChange}
+              ?disabled=${!this._circuitryEnabled}
+            />
+            <span class="range-value">${this._circuitrySpeed}s</span>
+          </div>
+
+          <label for="circuitryNodes">Pulsing Nodes</label>
+          <div class="checkbox-group">
+            <input
+              id="circuitryNodes"
+              type="checkbox"
+              .checked=${this._circuitryNodes}
+              @change=${this._onCircuitryNodesChange}
+              ?disabled=${!this._circuitryEnabled}
+            />
+            <label for="circuitryNodes">Show pulsing nodes at intersections</label>
+          </div>
+
           <label for="modelUrl">Live2D Model URL</label>
           <div class="input-group">
             <input
@@ -251,6 +392,23 @@ export class SettingsMenu extends LitElement {
 
   firstUpdated() {
     this.shadowRoot!.host.setAttribute("active", "true");
+
+    // Initialize theme select and apply current theme
+    const select = this.shadowRoot!.querySelector<HTMLSelectElement>("#theme");
+    if (select) {
+      select.value = this._theme;
+    }
+    this._applyTheme(this._theme);
+    this._applyCircuitrySettings();
+
+    // Setup prefers-color-scheme listener for auto mode
+    if (window.matchMedia) {
+      this._prefersDarkMql = window.matchMedia("(prefers-color-scheme: dark)");
+      this._prefersDarkMql.addEventListener(
+        "change",
+        this._handlePrefersChange,
+      );
+    }
 
     // Validate API Key, but only if it has a value
     if (this.apiKey) {
@@ -491,6 +649,16 @@ export class SettingsMenu extends LitElement {
     this._handlePaste("modelUrl");
   }
 
+  disconnectedCallback(): void {
+    super.disconnectedCallback?.();
+    if (this._prefersDarkMql) {
+      this._prefersDarkMql.removeEventListener(
+        "change",
+        this._handlePrefersChange,
+      );
+    }
+  }
+
   private _validateApiKey(key: string): boolean {
     if (!key) {
       this._error = "API key cannot be empty.";
@@ -580,6 +748,81 @@ export class SettingsMenu extends LitElement {
 
   private _getApiKeyUrl() {
     window.open("https://aistudio.google.com/apikey", "_blank");
+  }
+
+  private _applyTheme(
+    theme: "cyberpunk" | "utopia" | "tron" | "synthwave" | "matrix" | "auto",
+  ) {
+    if (theme === "auto") {
+      const prefersDark =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute(
+        "data-theme",
+        prefersDark ? "classic" : "cyberpunk",
+      );
+      return;
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+
+  private _onThemeChange(e: Event) {
+    const select = e.target as HTMLSelectElement;
+    const theme =
+      (select.value as
+        | "cyberpunk"
+        | "utopia"
+        | "tron"
+        | "synthwave"
+        | "matrix"
+        | "auto") || "cyberpunk";
+    this._theme = theme;
+    localStorage.setItem("theme", theme);
+    this._applyTheme(theme);
+  }
+
+  private _applyCircuitrySettings() {
+    const root = document.documentElement;
+    root.setAttribute(
+      "data-circuit-enabled",
+      this._circuitryEnabled.toString(),
+    );
+    root.style.setProperty("--circuit-speed", `${this._circuitrySpeed}s`);
+
+    // Handle nodes by modifying the background-image layers
+    if (this._circuitryNodes) {
+      root.style.setProperty("--circuit-display", "block");
+    } else {
+      // We need to update the CSS to conditionally show/hide nodes
+      root.style.setProperty(
+        "--circuit-nodes-display",
+        this._circuitryNodes ? "block" : "none",
+      );
+    }
+  }
+
+  private _onCircuitryEnabledChange(e: Event) {
+    const checkbox = e.target as HTMLInputElement;
+    this._circuitryEnabled = checkbox.checked;
+    localStorage.setItem(
+      "circuitry-enabled",
+      this._circuitryEnabled.toString(),
+    );
+    this._applyCircuitrySettings();
+  }
+
+  private _onCircuitrySpeedChange(e: Event) {
+    const range = e.target as HTMLInputElement;
+    this._circuitrySpeed = parseInt(range.value);
+    localStorage.setItem("circuitry-speed", this._circuitrySpeed.toString());
+    this._applyCircuitrySettings();
+  }
+
+  private _onCircuitryNodesChange(e: Event) {
+    const checkbox = e.target as HTMLInputElement;
+    this._circuitryNodes = checkbox.checked;
+    localStorage.setItem("circuitry-nodes", this._circuitryNodes.toString());
+    this._applyCircuitrySettings();
   }
 
   private _onSystemPromptInput(e: Event) {
