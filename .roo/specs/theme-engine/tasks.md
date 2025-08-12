@@ -22,7 +22,7 @@ Add theme engine support with a toggle in Settings and persistence.
   - Check contrast in both themes and tweak variables if needed
 
 - [ ] 5. Implement Configurable Circuitry Animation
-  - [ ] 5.1. Add UI controls to `settings-menu.ts` for enabling/disabling circuitry, adjusting speed, and toggling nodes.
+  - [x] 5.1. Add UI controls to `settings-menu.ts` for enabling/disabling circuitry, adjusting speed, and toggling nodes.
   - [ ] 5.2. Update `index.css` to use CSS variables for circuitry display, speed, and nodes.
   - [ ] 5.3. Implement logic in `settings-menu.ts` to update CSS variables and persist the settings to `localStorage`.
   - [ ] 5.4. Ensure settings are restored on page load.

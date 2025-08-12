@@ -121,21 +121,16 @@ body::after {
 }
 
 /* Circuitry nodes overlay (when enabled) */
-body[data-circuit-nodes="true"]::after {
-  background-image:
-    linear-gradient(
-      90deg,
-      transparent 0 47%,
-      var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
-      transparent 53% 100%
-    ),
-    linear-gradient(
-      0deg,
-      transparent 0 47%,
-      var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
-      transparent 53% 100%
-    ),
-    radial-gradient(
+/* Circuitry nodes are now a separate pseudo-element controlled by --circuit-nodes-display */
+live2d-gate::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1; /* Same as circuitry grid */
+  display: var(--circuit-nodes-display, block);
+
+  background-image: radial-gradient(
       circle at 20px 20px,
       var(--circuit-node-color, rgba(0, 229, 255, 0.4)) 2px,
       transparent 3px
@@ -145,33 +140,33 @@ body[data-circuit-nodes="true"]::after {
       var(--circuit-node-color, rgba(0, 229, 255, 0.3)) 1.5px,
       transparent 2.5px
     );
-  background-size:
-    var(--circuit-size, 60px) var(--circuit-size, 60px),
-    var(--circuit-size, 60px) var(--circuit-size, 60px),
-    var(--circuit-size, 60px) var(--circuit-size, 60px),
+  background-size: var(--circuit-size, 60px) var(--circuit-size, 60px),
     var(--circuit-size, 60px) var(--circuit-size, 60px);
-  background-position:
-    0 0,
-    0 0,
-    0 0,
-    30px 30px;
+  background-position: 0 0, 30px 30px;
+  animation: circuit-move-nodes var(--circuit-speed, 15s) linear infinite;
 }
 
 @keyframes circuit-move {
   0% {
     background-position:
       0 0,
-      0 0,
-      0 0,
-      30px 30px;
+      0 0;
   }
   100% {
     background-position:
       var(--circuit-size, 60px) var(--circuit-size, 60px),
-      var(--circuit-size, 60px) var(--circuit-size, 60px),
-      var(--circuit-size, 60px) var(--circuit-size, 60px),
+      var(--circuit-size, 60px) var(--circuit-size, 60px);
+  }
+}
+
+@keyframes circuit-move-nodes {
+  from {
+    background-position: 0 0, 30px 30px;
+  }
+  to {
+    background-position: var(--circuit-size, 60px) var(--circuit-size, 60px),
       calc(30px + var(--circuit-size, 60px))
-      calc(30px + var(--circuit-size, 60px));
+        calc(30px + var(--circuit-size, 60px));
   }
 }
 
@@ -183,11 +178,13 @@ body[data-circuit-nodes="true"]::after {
   --circuit-size: 60px;
   --circuit-opacity: 1;
   --circuit-display: block;
+  --circuit-nodes-display: block;
 }
 
 /* Circuitry disabled */
 :root[data-circuit-enabled="false"] {
   --circuit-display: none;
+  --circuit-nodes-display: none;
 }
 
 /* Theme-specific circuitry colors */
