@@ -1,7 +1,10 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { createComponentLogger } from '../src/debug-logger';
 import './live2d-canvas';
 import './live2d-model';
+
+const log = createComponentLogger('live2d-visual');
 
 @customElement('live2d-visual')
 export class Live2DVisual extends LitElement {
@@ -29,7 +32,7 @@ export class Live2DVisual extends LitElement {
   render() {
     return html`
       ${this._status !== 'idle' ? html`<div class="status">${this._status}${this._error ? `: ${this._error}` : ''}</div>` : ''}
-      <live2d-canvas @pixi-ready=${(e: CustomEvent) => { console.log('[Live2D] PIXI ready', e.detail); this._onPixiReady(); this._app = (e.detail as any).app; (this as any)._containerWidth = (e.detail as any).width; (this as any)._containerHeight = (e.detail as any).height; }}>
+      <live2d-canvas @pixi-ready=${(e: CustomEvent) => { log.debug('pixi-ready', e.detail); this._onPixiReady(); this._app = (e.detail as any).app; (this as any)._containerWidth = (e.detail as any).width; (this as any)._containerHeight = (e.detail as any).height; }}>
         <live2d-model
           .url=${this.modelUrl}
           .inputNode=${this.inputNode}

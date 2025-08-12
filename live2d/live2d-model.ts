@@ -1,10 +1,13 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { createComponentLogger } from "../src/debug-logger";
 import type {
   Live2DModelConfig,
   Live2DModelLike,
   PixiApplicationLike,
 } from "./types";
+
+const log = createComponentLogger("live2d-model");
 
 @customElement("live2d-model")
 export class Live2DModelComponent extends LitElement {
@@ -55,7 +58,7 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private _onPixiReady = (ev: CustomEvent<{ app: PixiApplicationLike }>) => {
-    console.log("[Live2D] on pixi-ready");
+    log.debug("pixi-ready event received");
     ev.stopPropagation();
     this._app = ev.detail.app;
     this._maybeLoad();
@@ -63,7 +66,7 @@ export class Live2DModelComponent extends LitElement {
 
   protected updated(changed: Map<string, unknown>) {
     if (changed.has("app") && this.app && !this._app) {
-      console.log("[Live2D] app provided via prop");
+      log.debug("app provided via prop");
       this._app = this.app;
       this._maybeLoad();
     }
@@ -87,11 +90,11 @@ export class Live2DModelComponent extends LitElement {
         (this.parentElement as any) ?? (this.getRootNode() as any)?.host;
       const app = parentAny?.app;
       if (app) {
-        console.log("[Live2D] got app from parent");
+        log.debug("got app from parent");
         this._app = app;
         this._maybeLoad();
       } else {
-        console.warn("[Live2D] parent app not found at firstUpdated");
+        log.warn("parent app not found at firstUpdated");
       }
     }
   }
@@ -107,7 +110,7 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private async _loadModel(url: string) {
-    console.log("[Live2D] loadModel start", url);
+    log.debug("loadModel start", { url });
     if (!this._app) return;
 
     this._loading = true;
@@ -147,7 +150,7 @@ export class Live2DModelComponent extends LitElement {
       };
 
       const model: Live2DModelLike = await attemptLoad(0);
-      console.log("[Live2D] model loaded", model);
+      log.debug("model loaded", { model });
 
       // basic transform
       try {
@@ -163,12 +166,12 @@ export class Live2DModelComponent extends LitElement {
       // add to stage
       this._app.stage.addChild(model as any);
       this._model = model;
-      console.log("[Live2D] added to stage");
+      log.debug("added to stage");
       this.dispatchEvent(
         new CustomEvent("live2d-loaded", { bubbles: true, composed: true }),
       );
     } catch (e: any) {
-      console.error("[Live2D] Failed to load Live2D model", e);
+      log.error("Failed to load Live2D model", { error: e });
       this._error = "Failed to load Live2D model";
       this.dispatchEvent(
         new CustomEvent("live2d-error", {
@@ -282,7 +285,7 @@ export class Live2DModelComponent extends LitElement {
         }
       } catch (err) {
         // Log and halt the animation loop to avoid spamming if model internals error
-        console.error("[Live2D] animation update error", err);
+        log.error("animation update error", { error: err });
         this._stopLoop();
         // Schedule a guarded restart to recover from transient errors
         if (!this._loopRestartTimer) {
@@ -292,7 +295,7 @@ export class Live2DModelComponent extends LitElement {
               try {
                 this._startLoop();
               } catch (e) {
-                console.warn("[Live2D] loop restart failed", e);
+                log.warn("loop restart failed", { error: e });
               }
             }
           }, this._loopRestartDelay);

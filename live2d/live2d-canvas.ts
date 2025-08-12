@@ -1,6 +1,9 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { createComponentLogger } from '../src/debug-logger';
 import type { PixiApplicationLike } from './types';
+
+const log = createComponentLogger('live2d-canvas');
 
 @customElement('live2d-canvas')
 export class Live2DCanvas extends LitElement {
@@ -82,7 +85,7 @@ export class Live2DCanvas extends LitElement {
       this._app = app;
       this._dispatchAppReady(app);
     } catch (e: any) {
-      console.error('Failed to init PIXI', e);
+      log.error('Failed to init PIXI', { error: e });
       this._error = 'Failed to initialize graphics';
     }
   }
