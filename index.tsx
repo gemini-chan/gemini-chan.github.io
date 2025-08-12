@@ -253,6 +253,25 @@ class TextSessionManager extends BaseSessionManager {
 }
 
 class CallSessionManager extends BaseSessionManager {
+  constructor(
+    outputAudioContext: AudioContext,
+    outputNode: GainNode,
+    client: GoogleGenAI,
+    updateStatus: (msg: string) => void,
+    updateError: (msg: string) => void,
+    onRateLimit: (msg: string) => void = () => {},
+    private updateCallTranscript: (text: string) => void,
+  ) {
+    super(
+      outputAudioContext,
+      outputNode,
+      client,
+      updateStatus,
+      updateError,
+      onRateLimit,
+    );
+  }
+
   protected getModel(): string {
     return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
   }
@@ -261,6 +280,7 @@ class CallSessionManager extends BaseSessionManager {
     return {
       responseModalities: [Modality.AUDIO],
       enableAffectiveDialog: true,
+      outputAudioTranscription: {}, // Enable transcription of model's audio output
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -268,17 +288,46 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getCallbacks() {
-    const base = super.getCallbacks();
-    // Extend callbacks to detect rate-limit while in-call and surface a non-silent failure
     return {
-      ...base,
+      onopen: () => {
+        this.updateStatus(`${this.getSessionName()} opened`);
+      },
+      onmessage: async (message: LiveServerMessage) => {
+        // Handle audio transcription for call transcript
+        if (message.serverContent?.outputTranscription?.text) {
+          this.updateCallTranscript(
+            message.serverContent.outputTranscription.text,
+          );
+        }
+
+        // Handle audio response
+        const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData;
+        if (audio) {
+          await this.handleAudioMessage(audio);
+        }
+
+        const interrupted = message.serverContent?.interrupted;
+        if (interrupted) {
+          this.handleInterruption();
+        }
+      },
       onerror: (e: ErrorEvent) => {
+        // Surface rate-limit hints in error messages
         const msg = e.message || "";
         const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
         if (isRateLimited) {
           this.onRateLimit(msg);
         }
-        base.onerror?.(e);
+        this.updateError(`${this.getSessionName()} error: ${e.message}`);
+      },
+      onclose: (e: CloseEvent) => {
+        const msg = e.reason || "";
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
+        this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
+        this.session = null;
       },
     };
   }
@@ -441,6 +490,8 @@ export class GdmLiveAudio extends LitElement {
         this.client,
         this.updateStatus.bind(this),
         this.updateError.bind(this),
+        this._handleCallRateLimit.bind(this),
+        this.updateCallTranscript.bind(this),
       );
     }
   }
@@ -543,6 +594,27 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  private updateCallTranscript(text: string) {
+    console.log("[Call Transcript] Received text:", text);
+
+    // For audio transcription, we get incremental chunks that should be appended
+    const lastTurn = this.callTranscript[this.callTranscript.length - 1];
+
+    if (lastTurn?.author === "model") {
+      // Append to the existing model turn by creating a new array
+      // This ensures Lit detects the change
+      const updatedTranscript = [...this.callTranscript];
+      updatedTranscript[updatedTranscript.length - 1] = {
+        ...lastTurn,
+        text: lastTurn.text + text,
+      };
+      this.callTranscript = updatedTranscript;
+    } else {
+      // Create a new model turn
+      this.callTranscript = [...this.callTranscript, { text, author: "model" }];
+    }
+  }
+
   private _appendCallNotice(text: string) {
     // Append a system-style notice to the call transcript to avoid silent failures
     const notice = { text, author: "model" as const, timestamp: new Date() };
@@ -565,7 +637,9 @@ export class GdmLiveAudio extends LitElement {
     );
 
     // Also surface the banner in the call transcript
-    const callT = this.shadowRoot?.querySelector('call-transcript') as HTMLElement & { rateLimited?: boolean };
+    const callT = this.shadowRoot?.querySelector(
+      "call-transcript",
+    ) as HTMLElement & { rateLimited?: boolean };
     if (callT) {
       callT.rateLimited = true;
     }
@@ -724,7 +798,9 @@ export class GdmLiveAudio extends LitElement {
     // Clear call transcript and reset rate-limit states
     this.callTranscript = [];
     this._callRateLimitNotified = false;
-    const callT = this.shadowRoot?.querySelector('call-transcript') as HTMLElement & { rateLimited?: boolean };
+    const callT = this.shadowRoot?.querySelector(
+      "call-transcript",
+    ) as HTMLElement & { rateLimited?: boolean };
     if (callT) {
       callT.rateLimited = false;
     }

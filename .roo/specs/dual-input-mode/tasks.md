@@ -83,16 +83,16 @@ Fix critical functionality issues in tasks 3 and 11 before implementing advanced
   - [x] 10.3. Handle rate-limit UX during calls: surface a non-silent failure when reusing an overloaded session (banner/toast/transcript notice).
     - Note: The banner display is currently broken, but the toast notification works.
 
-- [ ] 11. **CRITICAL ISSUE** - Implement Real-time Call Transcription
+- [x] 11. **CRITICAL ISSUE** - Implement Real-time Call Transcription
   - Requirements: 2.2.1, 2.4.1
   - **BROKEN**: Call transcript displays no content during calls - model text not captured or displayed
-  - [ ] 11.1. Update `CallSessionManager` to capture and process model text responses during calls
+  - [x] 11.1. Update `CallSessionManager` to capture and process model text responses during calls
     - Extend the `onmessage` callback to extract text from model responses
     - Add a callback parameter to update call transcript in real-time
-  - [ ] 11.2. Wire call transcript updates to the main component
+  - [x] 11.2. Wire call transcript updates to the main component
     - Add `updateCallTranscript` method similar to `updateTextTranscript`
     - Connect the method to `CallSessionManager` during initialization
-  - [ ] 11.3. Test real-time call transcription functionality
+  - [x] 11.3. Test real-time call transcription functionality
     - Verify that model responses appear in call transcript during active calls
     - Ensure transcript updates don't interfere with audio playback
 
