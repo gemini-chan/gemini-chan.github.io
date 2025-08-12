@@ -400,6 +400,10 @@ export class GdmLiveAudio extends LitElement {
       overflow: hidden;
     }
 
+    .main-container {
+      z-index: 1;
+    }
+
     #status {
       position: absolute;
       left: 0;

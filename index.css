@@ -9,6 +9,7 @@ body {
 body {
   position: relative;
   background: #000; /* ensure contrast behind transparent canvas */
+  color: #fff; /* Ensure all text is white by default */
 }
 
 live2d-gate,
