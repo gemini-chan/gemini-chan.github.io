@@ -11,6 +11,7 @@ import {
 } from "@google/genai";
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { createComponentLogger } from "./src/debug-logger";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
@@ -122,7 +123,7 @@ abstract class BaseSessionManager {
       });
       return true;
     } catch (e: any) {
-      console.error(`Error initializing ${this.getSessionName()}:`, e);
+      logger.error(`Error initializing ${this.getSessionName()}:`, e);
       const msg = String(e?.message || e || "");
       this.updateError(`Failed to initialize ${this.getSessionName()}: ${msg}`);
       return false;
@@ -134,7 +135,7 @@ abstract class BaseSessionManager {
       try {
         this.session.close();
       } catch (e) {
-        console.warn(`Error closing ${this.getSessionName()}:`, e);
+        logger.warn(`Error closing ${this.getSessionName()}:`, e);
       }
       this.session = null;
     }
@@ -149,7 +150,7 @@ abstract class BaseSessionManager {
       try {
         this.session.sendClientContent(content);
       } catch (error) {
-        console.error(
+        logger.error(
           `Error sending message to ${this.getSessionName()}:`,
           error,
         );
@@ -325,6 +326,8 @@ interface Turn {
 }
 
 type ActiveMode = "texting" | "calling" | null;
+
+const logger = createComponentLogger("GdmLiveAudio");
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -503,7 +506,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async _initCallSession() {
-    console.log("[Debug] Initializing new call session.");
+    logger.debug("Initializing new call session.");
     const ok = await this.callSessionManager.initSession();
     this.callSession = this.callSessionManager.sessionInstance;
     return ok;
@@ -547,7 +550,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private updateCallTranscript(text: string, author: "user" | "model") {
-    console.log(`[Call Transcript] Received ${author} text:`, text);
+    logger.debug(`[Call Transcript] Received ${author} text:`, text);
 
     // For audio transcription, we get incremental chunks that should be appended
     const lastTurn = this.callTranscript[this.callTranscript.length - 1];
@@ -600,7 +603,7 @@ export class GdmLiveAudio extends LitElement {
       return;
     }
 
-    console.log("[Debug] Call start. Existing callSession:", this.callSession);
+    logger.debug("Call start. Existing callSession:", this.callSession);
     // Switch to calling mode
     this.activeMode = "calling";
     this._updateActiveOutputNode();
@@ -710,11 +713,11 @@ export class GdmLiveAudio extends LitElement {
       }),
     );
 
-    this.updateStatus("Call ended");
-    console.log("[Debug] Call ended. callSession preserved:", this.callSession);
-  }
+  this.updateStatus("Call ended");
+  logger.debug("Call ended. callSession preserved:", this.callSession);
+}
 
-  private _resetTextContext() {
+private _resetTextContext() {
     // Close existing text session using session manager
     if (this.textSessionManager) {
       this.textSessionManager.closeSession();
@@ -729,7 +732,7 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _resetCallContext() {
-    console.log("[Debug] Resetting call context. Closing session.");
+    logger.debug("Resetting call context. Closing session.");
     // Close existing call session using session manager
     if (this.callSessionManager) {
       this.callSessionManager.closeSession();
@@ -779,7 +782,7 @@ export class GdmLiveAudio extends LitElement {
       toast.show("API key saved successfully! ✨", "success", 3000);
     }
 
-    console.log("[API Key] API key saved, reinitializing client");
+    logger.info("API key saved, reinitializing client");
 
     // Reinitialize the client with the new API key
     this.initClient();
@@ -808,8 +811,8 @@ export class GdmLiveAudio extends LitElement {
 
     // Check if the URL actually changed
     if (newModelUrl === currentModelUrl) {
-      console.log(
-        "[Runtime Model Swap] URL unchanged, skipping reload:",
+      logger.debug(
+        "Runtime Model Swap] URL unchanged, skipping reload:",
         newModelUrl,
       );
       return; // Silently skip reload - no toast needed
@@ -823,11 +826,11 @@ export class GdmLiveAudio extends LitElement {
       toast.show("Loading new Live2D model...", "info", 3000);
     }
 
-    console.log("[Runtime Model Swap] Model URL changed to:", newModelUrl);
+    logger.info("Runtime Model Swap] Model URL changed to:", newModelUrl);
   }
 
   private _handleLive2dLoaded() {
-    console.log("[Live2D Success] Model loaded successfully");
+    logger.info("Live2D Success] Model loaded successfully");
 
     // Show success toast notification
     const toast = this.shadowRoot?.querySelector("toast-notification") as any;
@@ -838,7 +841,7 @@ export class GdmLiveAudio extends LitElement {
 
   private _handleModelUrlError(e: CustomEvent) {
     const errorMessage = e.detail?.error || "Live2D URL validation failed";
-    console.error("[Model URL Error]", errorMessage);
+    logger.error("[Model URL Error]", errorMessage);
 
     // Show error toast notification
     const toast = this.shadowRoot?.querySelector("toast-notification") as any;
@@ -849,7 +852,7 @@ export class GdmLiveAudio extends LitElement {
 
   private _handleLive2dError(e: CustomEvent) {
     const errorMessage = e.detail?.error || "Failed to load Live2D model";
-    console.error("[Live2D Error]", errorMessage);
+    logger.error("[Live2D Error]", errorMessage);
 
     // Show error toast notification
     const toast = this.shadowRoot?.querySelector("toast-notification") as any;
@@ -927,7 +930,7 @@ export class GdmLiveAudio extends LitElement {
           turns: [{ parts: [{ text: message }] }],
         });
       } catch (error: any) {
-        console.error("Error sending message to text session:", error);
+        logger.error("Error sending message to text session:", error);
         const msg = String(error?.message || error || "");
         this.updateError(`Failed to send message: ${msg}`);
 
