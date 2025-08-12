@@ -60,15 +60,15 @@ Implement the UI refactoring for scrollable views and the refined system prompt 
     - Ensure the session is only re-initialized on the next user message, not immediately.
     - Ref: Design 3.8, Requirement 2.12.1
 
-- [ ] 21. **Implement Scrollability in Chat View by Reusing Existing Logic**
+- [x] 21. **Implement Scrollability in Chat View by Reusing Existing Logic**
   - Requirements: 2.13.1, 2.8.1, 2.9.1
-  - [ ] 21.1. Copy the stable auto-scroll and scroll-to-bottom logic from `call-transcript.ts` directly into `chat-view.ts`.
+  - [x] 21.1. Copy the stable auto-scroll and scroll-to-bottom logic from `call-transcript.ts` directly into `chat-view.ts`.
     - This includes the `TranscriptAutoScroll` integration, scroll container setup, and event handling for `scroll-state-changed`.
     - The goal is to duplicate the known stable implementation.
     - Ref: Design 3.4, 7.1, 7.2
-  - [ ] 21.2. Adapt the copied logic in `chat-view.ts` to work with the text transcript and its lifecycle.
+  - [x] 21.2. Adapt the copied logic in `chat-view.ts` to work with the text transcript and its lifecycle.
     - Ref: Requirement 2.13.1
-  - [ ] 21.3. Implement the mirrored scroll-to-bottom button for the chat view.
+  - [x] 21.3. Implement the mirrored scroll-to-bottom button for the chat view.
     - In `index.tsx`, manage the state for the chat view's scroll-to-bottom button.
     - In `index.css`, add styles to position the chat's scroll-to-bottom button on the left side of the controls panel.
     - Ref: Design 7.3

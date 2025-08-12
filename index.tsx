@@ -21,7 +21,10 @@ import "./chat-view";
 import "./call-transcript";
 import "./toast-notification";
 import "./controls-panel";
+import "./tab-view";
+import "./call-history-view";
 import type { ToastNotification } from "./toast-notification";
+import type { CallSummary } from "./types";
 
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
@@ -356,6 +359,8 @@ export class GdmLiveAudio extends LitElement {
   @state() callTranscript: Turn[] = [];
   @state() textSession: Session | null = null;
   @state() callSession: Session | null = null;
+  @state() activeTab: "chat" | "call-history" = "chat";
+  @state() callHistory: CallSummary[] = [];
 
   // Session managers
   private textSessionManager: TextSessionManager;
@@ -939,6 +944,21 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  private _handleTabSwitch(e: CustomEvent) {
+    this.activeTab = e.detail.tab;
+  }
+
+  private _startTtsFromSummary(e: CustomEvent) {
+    const summary = e.detail.summary as CallSummary;
+    // This is a placeholder for the actual TTS implementation
+    console.log("Starting TTS for summary:", summary);
+    this.textSessionManager.sendMessage(
+      `Tell me more about my call regarding "${summary.summary}"`,
+    );
+    this.activeTab = "chat";
+  }
+
+
   private _showCuteToast() {
     // Show the cute API key request message
     this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
@@ -1054,14 +1074,33 @@ export class GdmLiveAudio extends LitElement {
 
   render() {
     return html`
-      <chat-view
-        .transcript=${this.textTranscript}
-        .visible=${this.activeMode !== "calling"}
-        @send-message=${this._handleSendMessage}
-        @reset-text=${this._resetTextContext}
-        @scroll-state-changed=${this._handleChatScrollStateChanged}>
-      </chat-view>
-      
+      <div class="main-container">
+        <tab-view
+          .activeTab=${this.activeTab}
+          @tab-switch=${this._handleTabSwitch}
+        ></tab-view>
+        ${
+          this.activeTab === "chat"
+            ? html`
+                <chat-view
+                  .transcript=${this.textTranscript}
+                  .visible=${this.activeMode !== "calling"}
+                  @send-message=${this._handleSendMessage}
+                  @reset-text=${this._resetTextContext}
+                  @scroll-state-changed=${this._handleChatScrollStateChanged}
+                >
+                </chat-view>
+              `
+            : html`
+                <call-history-view
+                  .callHistory=${this.callHistory}
+                  @start-tts-from-summary=${this._startTtsFromSummary}
+                >
+                </call-history-view>
+              `
+        }
+      </div>
+
       <div>
         ${
           this.showSettings
@@ -1073,7 +1112,8 @@ export class GdmLiveAudio extends LitElement {
                 @api-key-saved=${this._handleApiKeySaved}
                 @api-key-changed=${this._handleApiKeyChanged}
                 @model-url-changed=${this._handleModelUrlChanged}
-                @model-url-error=${this._handleModelUrlError}></settings-menu>`
+                @model-url-error=${this._handleModelUrlError}
+              ></settings-menu>`
             : ""
         }
         <controls-panel
@@ -1086,17 +1126,29 @@ export class GdmLiveAudio extends LitElement {
           @scroll-call-to-bottom=${this._scrollCallTranscriptToBottom}
           @scroll-chat-to-bottom=${this._scrollChatToBottom}
           @call-start=${this._handleCallStart}
-          @call-end=${this._handleCallEnd}>
+          @call-end=${this._handleCallEnd}
+        >
         </controls-panel>
 
-        <div id="status"> ${this.error || this.status ? html`<div class="toast ${this._toastVisible ? "" : "hide"}">${this.error || this.status}</div>` : ""} </div>
-        
+        <div id="status">
+          ${
+            this.error || this.status
+              ? html`<div
+                  class="toast ${this._toastVisible ? "" : "hide"}"
+                >
+                  ${this.error || this.status}
+                </div>`
+              : ""
+          }
+        </div>
+
         <toast-notification
           .visible=${this.showToast}
           .message=${this.toastMessage}
-          type="info">
+          type="info"
+        >
         </toast-notification>
-        
+
         <live2d-gate
           .modelUrl=${this.live2dModelUrl || ""}
           .inputNode=${this.inputNode}
@@ -1105,12 +1157,13 @@ export class GdmLiveAudio extends LitElement {
           @live2d-error=${this._handleLive2dError}
         ></live2d-gate>
       </div>
-      
+
       <call-transcript
         .transcript=${this.callTranscript}
         .visible=${this.activeMode === "calling"}
         @reset-call=${this._resetCallContext}
-        @scroll-state-changed=${this._handleCallScrollStateChanged}>
+        @scroll-state-changed=${this._handleCallScrollStateChanged}
+      >
       </call-transcript>
     `;
   }
