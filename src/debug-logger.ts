@@ -33,6 +33,8 @@ export interface ComponentLogger {
   info(message: string, data?: any): void;
   warn(message: string, data?: any): void;
   error(message: string, data?: any): void;
+  trace(methodName: string, ...args: any[]): void;
+  time(label: string): () => void;
 }
 
 const LOG_LEVELS: Record<string, number> = {
@@ -313,9 +315,26 @@ export class DebugLogger {
       info: (message: string, data?: any) => this.info(component, message, data),
       warn: (message: string, data?: any) => this.warn(component, message, data),
       error: (message: string, data?: any) => this.error(component, message, data),
+      trace: (methodName: string, ...args: any[]) => this.debug(component, `Entering ${methodName}`, { args }),
+      time: (label: string) => {
+        const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        return () => {
+          const endTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          const duration = endTime - startTime;
+          this.debug(component, `${label} took ${duration.toFixed(2)}ms`);
+        };
+      },
     };
   }
 }
 
 // Global instance
 export const debugLogger = new DebugLogger();
+/**
+ * Creates a simplified logger instance for a specific component.
+ * @param component - The name of the component.
+ * @returns A component-specific logger.
+ */
+export function createComponentLogger(component: string): ComponentLogger {
+  return debugLogger.createComponentLogger(component);
+}
