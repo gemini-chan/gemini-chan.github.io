@@ -31,7 +31,7 @@ function applyCircuitrySettingsOnLoad() {
   root.style.setProperty("--circuit-speed", `${circuitrySpeed}s`);
 
   // Restore pulsing nodes visibility
-  const circuitryNodes = localStorage.getItem("circuitry-nodes") !== "false";
+  const circuitryNodes = localStorage.getItem("circuitry-enabled") !== "false";
   root.style.setProperty(
     "--circuit-nodes-display",
     circuitryNodes ? "block" : "none",
@@ -78,10 +78,6 @@ export class SettingsMenu extends LitElement {
   private _circuitrySpeed: number = parseInt(
     localStorage.getItem("circuitry-speed") || "15",
   );
-
-  @state()
-  private _circuitryNodes: boolean =
-    localStorage.getItem("circuitry-nodes") !== "false";
 
   // Auto theme listener state
   private _prefersDarkMql: MediaQueryList | null = null;
@@ -337,18 +333,6 @@ export class SettingsMenu extends LitElement {
               ?disabled=${!this._circuitryEnabled}
             />
             <span class="range-value">${this._circuitrySpeed}s</span>
-          </div>
-
-          <label for="circuitryNodes">Pulsing Nodes</label>
-          <div class="checkbox-group">
-            <input
-              id="circuitryNodes"
-              type="checkbox"
-              .checked=${this._circuitryNodes}
-              @change=${this._onCircuitryNodesChange}
-              ?disabled=${!this._circuitryEnabled}
-            />
-            <label for="circuitryNodes">Show pulsing nodes at intersections</label>
           </div>
 
           <label for="modelUrl">Live2D Model URL</label>
@@ -827,7 +811,7 @@ export class SettingsMenu extends LitElement {
     // Controls visibility of intersection nodes.
     root.style.setProperty(
       "--circuit-nodes-display",
-      this._circuitryNodes ? "block" : "none",
+      this._circuitryEnabled ? "block" : "none",
     );
 
     // This data attribute can be used for more complex CSS selectors if needed.
@@ -851,13 +835,6 @@ export class SettingsMenu extends LitElement {
     const range = e.target as HTMLInputElement;
     this._circuitrySpeed = parseInt(range.value);
     localStorage.setItem("circuitry-speed", this._circuitrySpeed.toString());
-    this._applyCircuitrySettings();
-  }
-
-  private _onCircuitryNodesChange(e: Event) {
-    const checkbox = e.target as HTMLInputElement;
-    this._circuitryNodes = checkbox.checked;
-    localStorage.setItem("circuitry-nodes", this._circuitryNodes.toString());
     this._applyCircuitrySettings();
   }
 
