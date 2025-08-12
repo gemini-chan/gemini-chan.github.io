@@ -11,7 +11,7 @@ This document captures the requirements for introducing a theme engine with a us
 - so that the app matches my aesthetic preference.
 
 #### 2.1.1. Acceptance Criteria
-- WHEN the settings menu opens THEN a "Theme" select appears with available theme options
+- WHEN the settings menu opens THEN a "Theme" select appears with available theme options ("Cyberpunk", "Utopia", "Noir")
 - WHEN I change the theme THEN the UI updates immediately without reload
 - WHEN I change the theme THEN the choice is persisted to localStorage under key `theme`
 - WHEN I reopen the app THEN the previously selected theme is restored before UI renders
@@ -57,6 +57,7 @@ This document captures the requirements for introducing a theme engine with a us
 #### 2.3.1. Acceptance Criteria
 - Default theme is "Cyberpunk"
 - If `localStorage.theme` is missing or invalid, fall back to "Cyberpunk"
+- Changing to "Noir" shows a dark theme with a reddish hue.
 
 ### 2.4. Accessibility
 - As a user,

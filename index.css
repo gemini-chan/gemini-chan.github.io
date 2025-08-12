@@ -190,7 +190,7 @@ html[data-theme="cyberpunk"] body::after {
   --circuit-color: rgba(0, 229, 255, 0.12);
   --circuit-node-color: rgba(0, 229, 255, 0.2);
 }
-html[data-theme="utopia"] body::after {
+html[data-theme="dystopia"] body::after {
   --circuit-color: rgba(106, 76, 255, 0.12);
   --circuit-node-color: rgba(106, 76, 255, 0.2);
 }
@@ -224,8 +224,8 @@ html[data-theme="cyberpunk"] body {
     ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 
-/* Utopia Theme */
-html[data-theme="utopia"] {
+/* Dystopia Theme */
+html[data-theme="dystopia"] {
   --cp-bg-1: #05070d;
   --cp-bg-2: #0a0e1a;
   --cp-bg-3: #0b1020;
@@ -251,7 +251,7 @@ html[data-theme="utopia"] {
   --cp-glow-purple:
     0 0 0 1px rgba(106, 76, 255, 0.16), 0 0 14px rgba(106, 76, 255, 0.26);
 }
-html[data-theme="utopia"] body {
+html[data-theme="dystopia"] body {
   color: var(--cp-text);
   background:
     radial-gradient(
@@ -387,4 +387,50 @@ html[data-theme="matrix"] body {
       rgba(0, 255, 102, 0.1),
       transparent 60%
     ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+}
+
+/* Noir Theme */
+html[data-theme="noir"] {
+  --cp-bg-1: #1a0000;
+  --cp-bg-2: #2a0808;
+  --cp-bg-3: #1f0000;
+  --cp-text: #ffdddd;
+  --cp-muted: rgba(255, 221, 221, 0.7);
+
+  --cp-cyan: #ff5555;
+  --cp-magenta: #ff4444;
+  --cp-purple: #ff6666;
+  --cp-green: #ff8888;
+  --cp-red: #ff3b3b;
+  --cp-amber: #ffaa00;
+
+  --cp-surface: rgba(255, 85, 85, 0.06);
+  --cp-surface-strong: rgba(255, 85, 85, 0.12);
+  --cp-surface-border: rgba(255, 59, 59, 0.25);
+  --cp-surface-border-2: rgba(255, 68, 68, 0.2);
+
+  --cp-glow-cyan:
+    0 0 0 1px rgba(255, 85, 85, 0.15), 0 0 12px rgba(255, 85, 85, 0.25);
+  --cp-glow-magenta:
+    0 0 0 1px rgba(255, 68, 68, 0.15), 0 0 12px rgba(255, 68, 68, 0.25);
+  --cp-glow-purple:
+    0 0 0 1px rgba(255, 102, 102, 0.15), 0 0 12px rgba(255, 102, 102, 0.25);
+}
+html[data-theme="noir"] body {
+  color: var(--cp-text);
+  background:
+    radial-gradient(
+      1200px 800px at 20% 10%,
+      rgba(255, 85, 85, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 900px at 80% 20%,
+      rgba(255, 68, 68, 0.08),
+      transparent 60%
+    ), linear-gradient(170deg, var(--cp-bg-1), var(--cp-bg-2));
+}
+html[data-theme="noir"] body::after {
+  --circuit-color: rgba(255, 59, 59, 0.12);
+  --circuit-node-color: rgba(255, 59, 59, 0.2);
 }

@@ -64,7 +64,7 @@ export class SettingsMenu extends LitElement {
   @state()
   private _theme:
     | "cyberpunk"
-    | "utopia"
+    | "dystopia"
     | "tron"
     | "synthwave"
     | "matrix"
@@ -326,7 +326,7 @@ export class SettingsMenu extends LitElement {
             <select id="theme" @change=${(e: Event) => this._onThemeChange(e)}>
               <option value="auto">Auto (prefers-color-scheme)</option>
               <option value="cyberpunk">Cyberpunk</option>
-              <option value="utopia">Utopia</option>
+              <option value="dystopia">Dystopia</option>
               <option value="tron">Tron</option>
               <option value="synthwave">Synthwave</option>
               <option value="matrix">Matrix</option>
@@ -793,7 +793,7 @@ export class SettingsMenu extends LitElement {
   }
 
   private _applyTheme(
-    theme: "cyberpunk" | "utopia" | "tron" | "synthwave" | "matrix" | "auto",
+    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "auto",
   ) {
     if (theme === "auto") {
       const prefersDark =
@@ -801,7 +801,7 @@ export class SettingsMenu extends LitElement {
         window.matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.setAttribute(
         "data-theme",
-        prefersDark ? "utopia" : "cyberpunk",
+        prefersDark ? "dystopia" : "cyberpunk",
       );
       return;
     }
@@ -813,7 +813,7 @@ export class SettingsMenu extends LitElement {
     const theme =
       (select.value as
         | "cyberpunk"
-        | "utopia"
+        | "dystopia"
         | "tron"
         | "synthwave"
         | "matrix"

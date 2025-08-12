@@ -1,10 +1,12 @@
 # Technical Design: Theme Engine
 
 ## 1. Overview
-Add a simple, extensible theme engine to support multiple visual styles for the UI. The initial release provides two themes:
-- Cyberpunk (default): neon gradients, glass surfaces, glows
-
-Themes are applied via a data attribute on the root HTML element (`html[data-theme='<name>']`) and implemented through CSS custom properties (variables). Components consume variables only and avoid hardcoded colors, enabling runtime theme switching.
+Add a simple, extensible theme engine to support multiple visual styles for the UI. The initial release provides three themes:
+ - Cyberpunk (default): neon gradients, glass surfaces, glows
+ - Dystopia: a darker variant of Cyberpunk
+ - Noir: a dark theme with a reddish hue
+ 
+ Themes are applied via a data attribute on the root HTML element (`html[data-theme='<name>']`) and implemented through CSS custom properties (variables). Components consume variables only and avoid hardcoded colors, enabling runtime theme switching.
 
 ## 2. Architecture
 - Theme Scope: Global
@@ -43,7 +45,7 @@ Cyberpunk defines all variables with neon-focused values. Other themes override 
 
 ## 6. Extensibility
 - To add a new theme:
-  1. Define overrides using `html[data-theme='<name>'] { /* variables */ }` and `html[data-theme='<name>'] body { /* background */ }`.
+  1. Define overrides using `html[data-theme='<name>'] { /* variables */ }` and `html[data-theme='<name>'] body { /* background */ }`. For the "Noir" theme, this will involve using reddish colors for accents and glows.
   2. Add the option to the Settings menu `<select>`.
   3. Persist and apply in the same way as existing themes.
 
