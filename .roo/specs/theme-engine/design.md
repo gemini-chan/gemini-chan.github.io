@@ -69,3 +69,11 @@ The animated circuitry effect is controlled by several CSS variables that can be
 
 These variables are updated dynamically from `settings-menu.ts` based on user input and persisted in `localStorage`.
 
+## 10. Themed Scrollbars
+To enhance the visual consistency of the themes, the browser's default scrollbar will be styled using CSS.
+
+- **Styling**: The scrollbar styles will be defined globally in `index.css`.
+- **Implementation**: We will use the `::-webkit-scrollbar` pseudo-element selectors to style the scrollbar's track and thumb.
+- **Theming**: The scrollbar colors will be tied to the theme's CSS variables (`--cp-surface`, `--cp-surface-strong`, `--cp-cyan`, etc.) so that they update automatically when the theme changes.
+- **Design**: The scrollbars will be slender and have a low-profile design to avoid being distracting. The thumb will have a subtle glow or highlight on hover.
+

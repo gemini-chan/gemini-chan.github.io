@@ -69,3 +69,13 @@ This document captures the requirements for introducing a theme engine with a us
 - Text contrast against surfaces and backgrounds meets reasonable readability guidelines
 - Focus/hover states remain visible in all themes
 
+### 2.7. Themed Scrollbars
+- As a user,
+- I want the browser scrollbars to match the current theme,
+- so that the application has a more immersive and consistent look.
+
+#### 2.7.1. Acceptance Criteria
+- WHEN a theme is active THEN the main scrollbar's track and thumb colors match the theme's color scheme.
+- Scrollbar styles should be applied globally.
+- The scrollbar design should be subtle and not distract from the content.
+

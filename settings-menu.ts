@@ -19,7 +19,8 @@ function applyCircuitrySettingsOnLoad() {
   const root = document.documentElement;
 
   // Restore circuitry visibility
-  const circuitryEnabled = localStorage.getItem("circuitry-enabled") !== "false";
+  const circuitryEnabled =
+    localStorage.getItem("circuitry-enabled") !== "false";
   root.style.setProperty(
     "--circuit-display",
     circuitryEnabled ? "block" : "none",
@@ -122,8 +123,35 @@ export class SettingsMenu extends LitElement {
       flex-direction: column;
       gap: 1em;
       width: 420px;
+      max-height: 90vh;
+      overflow-y: auto;
       border: 1px solid var(--cp-surface-border);
       box-shadow: var(--cp-glow-purple);
+      scrollbar-width: thin;
+      scrollbar-color: var(--cp-surface-strong) var(--cp-surface);
+    }
+
+    /* Custom scrollbar styles for Webkit browsers */
+    .container::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .container::-webkit-scrollbar-track {
+      background-color: var(--cp-surface);
+      border-radius: 4px;
+    }
+
+    .container::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background-clip: content-box;
+    }
+
+    .container::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
     }
     h2 {
       color: var(--cp-text);
@@ -314,6 +342,42 @@ export class SettingsMenu extends LitElement {
     details label {
       margin-left: 1em;
     }
+
+    .theme-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .theme-button {
+      outline: none;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      border-radius: 8px;
+      background: var(--cp-surface);
+      padding: 0.4em 0.8em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: none;
+      font-size: 0.9em;
+    }
+
+    .theme-button:hover {
+      background: var(--cp-surface-strong);
+      transform: translateY(-1px);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .theme-button.active {
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      border-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .theme-button.active:hover {
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+    }
   `;
 
   render() {
@@ -324,7 +388,15 @@ export class SettingsMenu extends LitElement {
 
           <label for="theme">Theme</label>
           <div class="theme-buttons">
-            ${["auto", "cyberpunk", "dystopia", "tron", "synthwave", "matrix", "noir"].map(
+            ${[
+              "auto",
+              "cyberpunk",
+              "dystopia",
+              "tron",
+              "synthwave",
+              "matrix",
+              "noir",
+            ].map(
               (theme) => html`
                 <button
                   class="theme-button ${this._theme === theme ? "active" : ""}"

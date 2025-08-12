@@ -61,8 +61,31 @@ export class ChatView extends LitElement {
       flex-direction: column;
       gap: 12px;
       scrollbar-width: thin;
-      scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+      scrollbar-color: var(--cp-surface-strong) var(--cp-surface);
       -webkit-overflow-scrolling: touch;
+    }
+
+    /* Custom scrollbar styles for Webkit browsers */
+    .transcript::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .transcript::-webkit-scrollbar-track {
+      background-color: var(--cp-surface);
+      border-radius: 4px;
+    }
+
+    .transcript::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background-clip: content-box;
+    }
+
+    .transcript::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
     }
 
     .turn {

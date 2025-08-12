@@ -58,7 +58,13 @@ Add theme engine support with a toggle in Settings and persistence.
 - [x] 12. Fix Cyberpunk Theme Regression Part 2
     - [x] 12.1. In `index.css`, merge the duplicate `:root` declarations to fix the theme.
 
-  - [ ] 14. Fix theme selector styling
-    - [ ] 14.1. **REVISION:** Replace the theme dropdown with a set of buttons, one for each theme.
-    - [ ] 14.2. Ensure the active theme button is visually highlighted.
-    - [ ] 14.3. Ensure the buttons are styled consistently with the application's themes and have proper contrast.
+  - [x] 14. Fix theme selector styling
+    - [x] 14.1. **REVISION:** Replace the theme dropdown with a set of buttons, one for each theme.
+    - [x] 14.2. Ensure the active theme button is visually highlighted.
+    - [x] 14.3. Ensure the buttons are styled consistently with the application's themes and have proper contrast.
+  
+  - [x] 15. Implement Themed Scrollbars
+    - [x] 15.1. Add global styles for `::-webkit-scrollbar` in `index.css`.
+    - [x] 15.2. Use theme variables (`--cp-surface`, `--cp-surface-strong`, etc.) to color the scrollbar track and thumb.
+    - [x] 15.3. Ensure the scrollbar styling is applied across all themes.
+    - [x] 15.4. **REVISION:** The scrollbar styles are not being applied. The selectors need to be more specific. Update the CSS to target `html` to ensure the styles are applied globally.
