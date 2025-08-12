@@ -24,7 +24,7 @@ export class CallTranscript extends LitElement {
 
   @property({ type: String })
   rateLimitMessage: string =
-    "E-eh? I'm getting a bit sleepy... I can't talk right now... (ρω-)";
+    "E-eh? I'm getting so... sleepy all of a sudden.... S-sorry.. Maybe let's call later?... *dozing off*..... (ρω-)";
 
   @state()
   private showScrollToBottom = false;
