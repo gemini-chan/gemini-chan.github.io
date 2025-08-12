@@ -2,6 +2,9 @@
  * Generic auto-scroll utility for transcript components
  * Provides smart scrolling behavior that respects user interaction
  */
+import { createComponentLogger } from './src/debug-logger';
+
+const logger = createComponentLogger('transcript-auto-scroll');
 
 export interface AutoScrollOptions {
   /** Threshold in pixels to determine if user is "near bottom" */
@@ -43,9 +46,13 @@ export class TranscriptAutoScroll {
 
     const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
 
-    console.log(
-      `[AutoScroll] Scroll check: scrollTop=${scrollTop}, clientHeight=${clientHeight}, scrollHeight=${scrollHeight}, threshold=${threshold}, isNearBottom=${isNearBottom}`,
-    );
+    logger.debug('Scroll check', {
+      scrollTop,
+      clientHeight,
+      scrollHeight,
+      threshold,
+      isNearBottom,
+    });
 
     return isNearBottom;
   }
@@ -81,14 +88,14 @@ export class TranscriptAutoScroll {
     // Always scroll for the first message to show initial content
     const isFirstMessage = oldLength === 0 && newLength > 0;
 
-    console.log(
-      `[AutoScroll] Update: ${oldLength} -> ${newLength}, isFirstMessage: ${isFirstMessage}`,
-    );
+    logger.debug('Update', {
+      oldLength,
+      newLength,
+      isFirstMessage,
+    });
 
     if (isFirstMessage) {
-      console.log(
-        `[AutoScroll] First message - scrolling to show initial content`,
-      );
+      logger.debug('First message - scrolling to show initial content');
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
         this.scrollToBottom(element, true);
@@ -102,7 +109,7 @@ export class TranscriptAutoScroll {
       this.wasAtBottomBeforeUpdate.get(element) ??
       this.shouldAutoScroll(element);
 
-    console.log(`[AutoScroll] Was at bottom before update: ${wasAtBottom}`);
+    logger.debug('Update scroll state', { wasAtBottom });
 
     // If user was at bottom before the update, continue auto-scrolling
     // If user scrolled up to read past content, don't interrupt them
@@ -111,16 +118,14 @@ export class TranscriptAutoScroll {
       requestAnimationFrame(() => {
         // Detect rapid updates (multiple messages at once)
         const isRapidUpdate = newLength - oldLength > 1;
-        console.log(
-          `[AutoScroll] Auto-scrolling with smooth: ${!isRapidUpdate}`,
-        );
+        logger.debug('Auto-scrolling', { smooth: !isRapidUpdate });
         this.scrollToBottom(element, !isRapidUpdate);
         // Update the state after scrolling
         this.wasAtBottomBeforeUpdate.set(element, true);
       });
     } else {
-      console.log(
-        `[AutoScroll] User scrolled up to read past content - not interrupting`,
+      logger.debug(
+        'User scrolled up to read past content - not interrupting',
       );
       // Just update the tracking state for button visibility
       this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element));
@@ -182,9 +187,7 @@ export class TranscriptAutoScroll {
     // This ensures we respect their current scroll position for future auto-scroll decisions
     this.wasAtBottomBeforeUpdate.set(element, isAtBottom);
 
-    console.log(
-      `[AutoScroll] User scroll event - now at bottom: ${isAtBottom}`,
-    );
+    logger.debug('User scroll event', { isAtBottom });
 
     return isAtBottom;
   }
