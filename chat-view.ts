@@ -28,6 +28,7 @@ export class ChatView extends LitElement {
   private newMessageCount = 0;
 
   private lastSeenMessageCount = 0;
+  private textareaRef: HTMLTextAreaElement | null = null;
 
   static styles = css`
     :host {
@@ -172,9 +173,32 @@ export class ChatView extends LitElement {
       font: 16px/1.4 system-ui;
       resize: none;
       outline: none;
-      height: 56px;
+      min-height: 56px;
+      max-height: 200px;
+      height: auto;
+      overflow-y: auto;
       box-sizing: border-box;
       box-shadow: var(--cp-glow-purple);
+      transition: height 0.1s ease;
+      scrollbar-width: thin;
+      scrollbar-color: var(--cp-surface-strong) transparent;
+    }
+
+    textarea::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    textarea::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    textarea::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 3px;
+    }
+
+    textarea::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
     }
 
     button {
@@ -279,7 +303,25 @@ export class ChatView extends LitElement {
   private _handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     this.inputValue = target.value;
+
+    // Auto-resize textarea
+    this._resizeTextarea(target);
+
     log.debug("Input value changed");
+  }
+
+  private _resizeTextarea(textarea: HTMLTextAreaElement) {
+    // Reset height to recalculate
+    textarea.style.height = "auto";
+
+    // Calculate new height based on scroll height
+    const scrollHeight = textarea.scrollHeight;
+    const minHeight = 56;
+    const maxHeight = 200;
+
+    // Clamp the height between min and max
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    textarea.style.height = `${newHeight}px`;
   }
 
   private _sendMessage() {
@@ -290,6 +332,11 @@ export class ChatView extends LitElement {
       new CustomEvent("send-message", { detail: this.inputValue }),
     );
     this.inputValue = "";
+
+    // Reset textarea height after sending
+    if (this.textareaRef) {
+      this.textareaRef.style.height = "56px";
+    }
   }
 
   private _resetText() {
@@ -312,6 +359,11 @@ export class ChatView extends LitElement {
         this._updateScrollToBottomState();
       });
     }
+
+    // Store reference to textarea for height management
+    this.textareaRef = this.shadowRoot?.querySelector(
+      "textarea",
+    ) as HTMLTextAreaElement;
   }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
@@ -442,14 +494,18 @@ export class ChatView extends LitElement {
         </div>
       </div>
       <div class="input-area">
-        <textarea .value=${this.inputValue} @input=${this._handleInput} @keydown=${(
-          e: KeyboardEvent,
-        ) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            this._sendMessage();
-          }
-        }} placeholder="Type a message..."></textarea>
+        <textarea 
+          .value=${this.inputValue} 
+          @input=${this._handleInput} 
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              this._sendMessage();
+            }
+          }} 
+          placeholder="Type a message..."
+          rows="1"
+        ></textarea>
         <button @click=${this._sendMessage}>
             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z"/></svg>
         </button>
