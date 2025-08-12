@@ -401,6 +401,10 @@ export class GdmLiveAudio extends LitElement {
   // Rate-limit UX state for calls
   private _callRateLimitNotified = false;
 
+  // Scroll-to-bottom state for call transcript
+  @state() private showCallScrollToBottom = false;
+  @state() private callNewMessageCount = 0;
+
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
   private callOutputNode = this.outputAudioContext.createGain();
@@ -932,6 +936,26 @@ export class GdmLiveAudio extends LitElement {
     }, 6000);
   }
 
+  private _scrollCallTranscriptToBottom() {
+    // Find the call transcript component and scroll it to bottom
+    const callTranscript = this.shadowRoot?.querySelector(
+      "call-transcript",
+    ) as any;
+    if (callTranscript && callTranscript._scrollToBottom) {
+      callTranscript._scrollToBottom();
+      // Reset the scroll state
+      this.showCallScrollToBottom = false;
+      this.callNewMessageCount = 0;
+    }
+  }
+
+  private _handleScrollStateChanged(e: CustomEvent) {
+    // Update the main component's scroll state based on call transcript scroll state
+    const { showButton, newMessageCount } = e.detail;
+    this.showCallScrollToBottom = showButton;
+    this.callNewMessageCount = newMessageCount;
+  }
+
   private async _handleSendMessage(e: CustomEvent) {
     const message = e.detail;
     if (!message || !message.trim()) {
@@ -1021,7 +1045,30 @@ export class GdmLiveAudio extends LitElement {
             </svg>
           </button>
 
-
+          <button
+            id="scrollToBottomButton"
+            @click=${this._scrollCallTranscriptToBottom}
+            ?disabled=${!this.isCallActive || !this.showCallScrollToBottom}
+            style="position: relative; ${this.showCallScrollToBottom ? "opacity: 1;" : "opacity: 0.3;"}"
+            title="Scroll to bottom">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="24px"
+              viewBox="0 -960 960 960"
+              width="24px"
+              fill="#00c800">
+              <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/>
+            </svg>
+            ${
+              this.callNewMessageCount > 0
+                ? html`
+              <div style="position: absolute; top: -8px; right: -8px; background: rgba(255, 100, 100, 0.9); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid rgba(255, 255, 255, 0.8);">
+                ${this.callNewMessageCount}
+              </div>
+            `
+                : ""
+            }
+          </button>
 
           <button
             id="callButton"
@@ -1071,7 +1118,8 @@ export class GdmLiveAudio extends LitElement {
       <call-transcript
         .transcript=${this.callTranscript}
         .visible=${this.activeMode === "calling"}
-        @reset-call=${this._resetCallContext}>
+        @reset-call=${this._resetCallContext}
+        @scroll-state-changed=${this._handleScrollStateChanged}>
       </call-transcript>
     `;
   }
