@@ -16,6 +16,21 @@ This document captures the requirements for introducing a theme engine with a us
 - WHEN I change the theme THEN the choice is persisted to localStorage under key `theme`
 - WHEN I reopen the app THEN the previously selected theme is restored before UI renders
 
+### 2.5. Configurable Circuitry Animation
+- As a user,
+- I want to customize the background circuitry animation,
+- so that I can adjust the visual effects to my liking.
+
+#### 2.5.1. Acceptance Criteria
+- WHEN I open the settings menu THEN I see options to control the circuitry animation.
+- The options include:
+  - A checkbox to enable or disable the animation entirely.
+  - A range slider to control the animation speed.
+  - A checkbox to show or hide pulsing nodes at line intersections.
+- WHEN I change these settings THEN the animation updates instantly.
+- WHEN I change these settings THEN my choices are persisted to `localStorage`.
+- WHEN I reopen the app THEN my circuitry animation settings are restored.
+
 ### 2.2. Theming via CSS Variables
 - As a developer,
 - I want components to rely on CSS variables for colors and surfaces,

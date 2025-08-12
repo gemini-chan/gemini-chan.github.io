@@ -51,9 +51,18 @@ Cyberpunk defines all variables with neon-focused values; Classic overrides them
 
 ## 7. Components Affected
 - Global `index.css` (variables and backgrounds)
-- `chat-view.ts`, `call-transcript.ts`, `controls-panel.ts`, `tab-view.ts`, `settings-menu.ts`, `call-history-view.ts`, `toast-notification.ts`, `index.tsx` status toast
+- `chat-view.ts`, `call-transcript.ts`, `controls-panel.ts`, `tab-view.ts`, `settings-menu.ts` (new controls), `call-history-view.ts`, `toast-notification.ts`, `index.tsx` status toast
 
 ## 8. Risks
 - Legacy hardcoded colors may remain in less-used components.
 - Some canvases (visualizers) may not yet consume variables; can be themed later.
+
+## 9. Circuitry Animation
+The animated circuitry effect is controlled by several CSS variables that can be manipulated via the settings menu.
+
+- `--circuit-display`: Controls visibility (`block` or `none`).
+- `--circuit-speed`: Controls animation duration (e.g., `15s`).
+- `--circuit-nodes-display`: Controls visibility of intersection nodes (`block` or `none`).
+
+These variables are updated dynamically from `settings-menu.ts` based on user input and persisted in `localStorage`.
 

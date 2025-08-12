@@ -783,22 +783,27 @@ export class SettingsMenu extends LitElement {
 
   private _applyCircuitrySettings() {
     const root = document.documentElement;
+
+    // Controls visibility of the entire circuitry effect.
+    root.style.setProperty(
+      "--circuit-display",
+      this._circuitryEnabled ? "block" : "none",
+    );
+
+    // Controls animation duration.
+    root.style.setProperty("--circuit-speed", `${this._circuitrySpeed}s`);
+
+    // Controls visibility of intersection nodes.
+    root.style.setProperty(
+      "--circuit-nodes-display",
+      this._circuitryNodes ? "block" : "none",
+    );
+
+    // This data attribute can be used for more complex CSS selectors if needed.
     root.setAttribute(
       "data-circuit-enabled",
       this._circuitryEnabled.toString(),
     );
-    root.style.setProperty("--circuit-speed", `${this._circuitrySpeed}s`);
-
-    // Handle nodes by modifying the background-image layers
-    if (this._circuitryNodes) {
-      root.style.setProperty("--circuit-display", "block");
-    } else {
-      // We need to update the CSS to conditionally show/hide nodes
-      root.style.setProperty(
-        "--circuit-nodes-display",
-        this._circuitryNodes ? "block" : "none",
-      );
-    }
   }
 
   private _onCircuitryEnabledChange(e: Event) {
