@@ -1,4 +1,4 @@
-o/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -12,8 +12,8 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
-import { SystemPromptManager } from "./src/system-prompt-manager";
 import { SummarizationService } from "./src/SummarizationService";
+import { SystemPromptManager } from "./src/system-prompt-manager";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
@@ -322,7 +322,6 @@ class CallSessionManager extends BaseSessionManager {
   }
 }
 
-
 type ActiveMode = "texting" | "calling" | null;
 
 const logger = createComponentLogger("GdmLiveAudio");
@@ -558,7 +557,10 @@ export class GdmLiveAudio extends LitElement {
       lastTurn.text += text;
       this.requestUpdate("textTranscript");
     } else {
-      this.textTranscript = [...this.textTranscript, { text, speaker: "model" }];
+      this.textTranscript = [
+        ...this.textTranscript,
+        { text, speaker: "model" },
+      ];
     }
   }
 
@@ -725,7 +727,7 @@ export class GdmLiveAudio extends LitElement {
       transcriptToSummarize,
     );
     if (summary) {
-      this._handleSummarizationComplete(summary);
+      this._handleSummarizationComplete(summary, transcriptToSummarize);
     }
 
     // Text session will be lazily initialized when user sends first message
@@ -957,12 +959,12 @@ export class GdmLiveAudio extends LitElement {
     this.activeTab = e.detail.tab;
   }
 
-  private _handleSummarizationComplete(summary: string) {
+  private _handleSummarizationComplete(summary: string, transcript: Turn[]) {
     const newSummary: CallSummary = {
       id: Date.now().toString(),
       timestamp: Date.now(),
       summary,
-      transcript: this.callTranscript,
+      transcript: transcript,
     };
     this.callHistory = [newSummary, ...this.callHistory];
   }
@@ -976,7 +978,6 @@ export class GdmLiveAudio extends LitElement {
     );
     this.activeTab = "chat";
   }
-
 
   private _showCuteToast() {
     // Show the cute API key request message

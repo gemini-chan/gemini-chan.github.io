@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 /**
  * Analyser class for live audio visualisation.
  */
@@ -20,7 +20,9 @@ export class Analyser {
 
   update() {
     // TS 6 uses a stricter generic for TypedArrays; cast to expected signature
-    this.analyser.getByteFrequencyData(this.dataArray as unknown as Uint8Array<ArrayBuffer>);
+    this.analyser.getByteFrequencyData(
+      this.dataArray as unknown as Uint8Array<ArrayBuffer>,
+    );
   }
 
   get data() {

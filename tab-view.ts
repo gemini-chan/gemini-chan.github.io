@@ -1,9 +1,9 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
-@customElement('tab-view')
+@customElement("tab-view")
 export class TabView extends LitElement {
-  @property({ type: String }) activeTab: 'chat' | 'call-history' = 'chat';
+  @property({ type: String }) activeTab: "chat" | "call-history" = "chat";
 
   static styles = css`
     .tabs {
@@ -23,9 +23,13 @@ export class TabView extends LitElement {
     }
   `;
 
-  _switchTab(tab: 'chat' | 'call-history') {
+  _switchTab(tab: "chat" | "call-history") {
     this.dispatchEvent(
-      new CustomEvent('tab-switch', { detail: { tab }, bubbles: true, composed: true })
+      new CustomEvent("tab-switch", {
+        detail: { tab },
+        bubbles: true,
+        composed: true,
+      }),
     );
   }
 
@@ -33,14 +37,14 @@ export class TabView extends LitElement {
     return html`
       <div class="tabs">
         <div
-          class="tab ${this.activeTab === 'chat' ? 'active' : ''}"
-          @click=${() => this._switchTab('chat')}
+          class="tab ${this.activeTab === "chat" ? "active" : ""}"
+          @click=${() => this._switchTab("chat")}
         >
           Chat
         </div>
         <div
-          class="tab ${this.activeTab === 'call-history' ? 'active' : ''}"
-          @click=${() => this._switchTab('call-history')}
+          class="tab ${this.activeTab === "call-history" ? "active" : ""}"
+          @click=${() => this._switchTab("call-history")}
         >
           Call History
         </div>

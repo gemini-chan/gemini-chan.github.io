@@ -1,7 +1,7 @@
 // src/debug-logger.test.ts
 
-import { expect } from 'chai';
-import { DebugLogger } from './debug-logger.js';
+import { expect } from "chai";
+import { DebugLogger } from "./debug-logger.js";
 
 // Define globals for the test environment
 declare global {
@@ -9,7 +9,7 @@ declare global {
   var __DEBUG_COMPONENTS__: string[];
 }
 
-describe('DebugLogger with ConfigurationManager', () => {
+describe("DebugLogger with ConfigurationManager", () => {
   const originalLocation = window.location;
   const originalLocalStorage = window.localStorage;
   const originalProcessEnv = process.env;
@@ -17,17 +17,17 @@ describe('DebugLogger with ConfigurationManager', () => {
   beforeEach(() => {
     // Set default globals
     globalThis.__DEBUG__ = true;
-    globalThis.__DEBUG_COMPONENTS__ = ['component-a', 'component-b'];
-    
+    globalThis.__DEBUG_COMPONENTS__ = ["component-a", "component-b"];
+
     // Mock window.location
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       writable: true,
-      value: { ...originalLocation, search: '' },
+      value: { ...originalLocation, search: "" },
     });
 
     // Mock localStorage
     const mockStorage: Record<string, string> = {};
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(window, "localStorage", {
       writable: true,
       value: {
         getItem: (key: string) => mockStorage[key] || null,
@@ -55,11 +55,11 @@ describe('DebugLogger with ConfigurationManager', () => {
 
   afterEach(() => {
     // Restore original objects
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       writable: true,
       value: originalLocation,
     });
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(window, "localStorage", {
       writable: true,
       value: originalLocalStorage,
     });
@@ -70,58 +70,61 @@ describe('DebugLogger with ConfigurationManager', () => {
     delete globalThis.__DEBUG_COMPONENTS__;
   });
 
-  it('should load default configuration correctly', () => {
+  it("should load default configuration correctly", () => {
     const logger = new DebugLogger();
     const config = (logger as any).config;
 
     expect(config.enabled).to.be.true;
-    expect(config.logLevel).to.equal('info');
+    expect(config.logLevel).to.equal("info");
     expect(config.components).to.deep.equal({
-      'component-a': true,
-      'component-b': true,
+      "component-a": true,
+      "component-b": true,
     });
   });
 
-  it('should prioritize URL configuration over defaults', () => {
+  it("should prioritize URL configuration over defaults", () => {
     // Set URL search parameter
-    window.location.search = '?debug=component-c,component-d';
-    
+    window.location.search = "?debug=component-c,component-d";
+
     const logger = new DebugLogger();
     const config = (logger as any).config;
-    
+
     expect(config.enabled).to.be.true;
     expect(config.components).to.deep.equal({
-      'component-a': true,
-      'component-b': true,
-      'component-c': true,
-      'component-d': true,
+      "component-a": true,
+      "component-b": true,
+      "component-c": true,
+      "component-d": true,
     });
   });
 
-  it('should prioritize localStorage configuration over defaults', () => {
+  it("should prioritize localStorage configuration over defaults", () => {
     // Set localStorage configuration
     const localStorageConfig = {
       enabled: true,
-      logLevel: 'debug',
-      components: { 'component-e': true },
+      logLevel: "debug",
+      components: { "component-e": true },
     };
-    window.localStorage.setItem('debugLoggerConfig', JSON.stringify(localStorageConfig));
+    window.localStorage.setItem(
+      "debugLoggerConfig",
+      JSON.stringify(localStorageConfig),
+    );
 
     const logger = new DebugLogger();
     const config = (logger as any).config;
 
     expect(config.enabled).to.be.true;
-    expect(config.logLevel).to.equal('debug');
+    expect(config.logLevel).to.equal("debug");
     expect(config.components).to.deep.equal({
-      'component-a': true,
-      'component-b': true,
-      'component-e': true,
+      "component-a": true,
+      "component-b": true,
+      "component-e": true,
     });
   });
 
-  it('should prioritize environment variable configuration over defaults', () => {
+  it("should prioritize environment variable configuration over defaults", () => {
     // Set environment variable
-    process.env.DEBUG_ENABLED = 'false';
+    process.env.DEBUG_ENABLED = "false";
 
     const logger = new DebugLogger();
     const config = (logger as any).config;
@@ -130,7 +133,7 @@ describe('DebugLogger with ConfigurationManager', () => {
   });
 });
 
-describe('DebugLogger', () => {
+describe("DebugLogger", () => {
   let logger: DebugLogger;
   const originalConsole = { ...console };
 
@@ -140,11 +143,11 @@ describe('DebugLogger', () => {
     console.info = () => {};
     console.warn = () => {};
     console.error = () => {};
-    
+
     logger = new DebugLogger({
       enabled: true,
-      logLevel: 'info',
-      components: { 'test-component': true },
+      logLevel: "info",
+      components: { "test-component": true },
     });
   });
 
@@ -153,58 +156,68 @@ describe('DebugLogger', () => {
     Object.assign(console, originalConsole);
   });
 
-  it('should initialize with custom configuration', () => {
+  it("should initialize with custom configuration", () => {
     const config = (logger as any).config;
-    expect(config.logLevel).to.equal('info');
-    expect(config.components).to.have.property('test-component', true);
+    expect(config.logLevel).to.equal("info");
+    expect(config.components).to.have.property("test-component", true);
   });
 
-  it('should not log messages below the configured log level', () => {
+  it("should not log messages below the configured log level", () => {
     let logCalled = false;
-    console.log = () => { logCalled = true; };
-    
-    logger.debug('test-component', 'this should not be logged');
-    
+    console.log = () => {
+      logCalled = true;
+    };
+
+    logger.debug("test-component", "this should not be logged");
+
     expect(logCalled).to.be.false;
   });
 
-  it('should log messages at or above the configured log level', () => {
+  it("should log messages at or above the configured log level", () => {
     let infoCalled = false;
-    console.info = () => { infoCalled = true; };
+    console.info = () => {
+      infoCalled = true;
+    };
 
-    logger.info('test-component', 'this should be logged');
-    
+    logger.info("test-component", "this should be logged");
+
     expect(infoCalled).to.be.true;
   });
-  it('should not log messages for disabled components', () => {
+  it("should not log messages for disabled components", () => {
     let infoCalled = false;
-    console.info = () => { infoCalled = true; };
+    console.info = () => {
+      infoCalled = true;
+    };
 
-    logger.updateConfig({ components: { 'test-component': false } });
-    logger.info('test-component', 'this should not be logged');
+    logger.updateConfig({ components: { "test-component": false } });
+    logger.info("test-component", "this should not be logged");
 
     expect(infoCalled).to.be.false;
   });
 
-  it('should log messages for enabled components', () => {
+  it("should log messages for enabled components", () => {
     let infoCalled = false;
-    console.info = () => { infoCalled = true; };
+    console.info = () => {
+      infoCalled = true;
+    };
 
-    logger.updateConfig({ components: { 'test-component': true } });
-    logger.info('test-component', 'this should be logged');
+    logger.updateConfig({ components: { "test-component": true } });
+    logger.info("test-component", "this should be logged");
 
     expect(infoCalled).to.be.true;
   });
 
-  it('should format log messages correctly', () => {
-    let logMessage = '';
-    console.info = (message: string) => { logMessage = message; };
+  it("should format log messages correctly", () => {
+    let logMessage = "";
+    console.info = (message: string) => {
+      logMessage = message;
+    };
 
     logger.updateConfig({ timestamp: true, prefix: true });
-    logger.info('test-component', 'formatted message');
+    logger.info("test-component", "formatted message");
 
-    expect(logMessage).to.include('[test-component]');
-    expect(logMessage).to.include('INFO:');
-    expect(logMessage).to.include('formatted message');
+    expect(logMessage).to.include("[test-component]");
+    expect(logMessage).to.include("INFO:");
+    expect(logMessage).to.include("formatted message");
   });
 });

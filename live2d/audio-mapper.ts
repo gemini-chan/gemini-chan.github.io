@@ -1,7 +1,7 @@
 /**
  * Converts audio analyser data into smooth animation parameters.
  */
-import { Analyser } from '../analyser';
+import { Analyser } from "../analyser";
 
 export class AudioToAnimationMapper {
   private inputAnalyser?: Analyser;
@@ -17,7 +17,14 @@ export class AudioToAnimationMapper {
   private threshold: number;
   private scale: number;
 
-  constructor(opts: { inputNode?: AudioNode; outputNode?: AudioNode; attack?: number; release?: number; threshold?: number; scale?: number }) {
+  constructor(opts: {
+    inputNode?: AudioNode;
+    outputNode?: AudioNode;
+    attack?: number;
+    release?: number;
+    threshold?: number;
+    scale?: number;
+  }) {
     if (opts.inputNode) this.inputAnalyser = new Analyser(opts.inputNode);
     if (opts.outputNode) this.outputAnalyser = new Analyser(opts.outputNode);
     this.attack = opts.attack ?? 0.5;
@@ -55,7 +62,10 @@ export class AudioToAnimationMapper {
     const rms = Math.sqrt(sum / data.length);
 
     // Map and clamp with threshold/scale
-    const mapped = Math.max(0, Math.min(1, ((rms - this.threshold) / 0.5) * this.scale));
+    const mapped = Math.max(
+      0,
+      Math.min(1, ((rms - this.threshold) / 0.5) * this.scale),
+    );
     return mapped;
   }
 

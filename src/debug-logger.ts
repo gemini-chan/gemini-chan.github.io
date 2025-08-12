@@ -9,7 +9,7 @@ declare const __DEBUG_COMPONENTS__: string[];
 export interface DebugLoggerConfig {
   enabled: boolean;
   components: Record<string, boolean>;
-  logLevel: 'debug' | 'info' | 'warn' | 'error';
+  logLevel: "debug" | "info" | "warn" | "error";
   timestamp: boolean;
   prefix: boolean;
 }
@@ -19,7 +19,7 @@ export interface DebugLoggerConfig {
  */
 export interface LogEntry {
   component: string;
-  level: 'debug' | 'info' | 'warn' | 'error';
+  level: "debug" | "info" | "warn" | "error";
   message: string;
   data?: any;
   timestamp: Date;
@@ -77,23 +77,30 @@ class ConfigurationManager {
    */
   loadConfig(): DebugLoggerConfig {
     const components: Record<string, boolean> = {};
-    if (typeof __DEBUG_COMPONENTS__ !== 'undefined') {
+    if (typeof __DEBUG_COMPONENTS__ !== "undefined") {
       for (const comp of __DEBUG_COMPONENTS__) {
         components[comp] = true;
       }
     }
 
     const defaultConfig: DebugLoggerConfig = {
-      enabled: typeof __DEBUG__ !== 'undefined' ? __DEBUG__ : process.env.NODE_ENV !== 'production',
+      enabled:
+        typeof __DEBUG__ !== "undefined"
+          ? __DEBUG__
+          : process.env.NODE_ENV !== "production",
       components,
-      logLevel: 'info',
+      logLevel: "info",
       timestamp: true,
       prefix: true,
     };
 
     return this.sources.reduce((acc, source) => {
       const config = source.load();
-      return { ...acc, ...config, components: { ...acc.components, ...config.components } };
+      return {
+        ...acc,
+        ...config,
+        components: { ...acc.components, ...config.components },
+      };
     }, defaultConfig);
   }
 
@@ -102,7 +109,7 @@ class ConfigurationManager {
    * @param config - The partial configuration to save.
    */
   saveConfig(config: Partial<DebugLoggerConfig>): void {
-    this.sources.forEach(source => {
+    this.sources.forEach((source) => {
       if (source.save) {
         source.save(config);
       }
@@ -126,9 +133,9 @@ export class DebugLogger {
     this.config = this.configManager.loadConfig();
     this.updateConfig(config);
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', (event) => {
-        if (event.key === 'debugLoggerConfig') {
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", (event) => {
+        if (event.key === "debugLoggerConfig") {
           this.config = this.configManager.loadConfig();
         }
       });
@@ -138,57 +145,68 @@ export class DebugLogger {
   private initializeSources(): void {
     // URL Source (Priority 3)
     this.configManager.addSource({
-      name: 'URL',
+      name: "URL",
       priority: 3,
       load: () => {
         const config: Partial<DebugLoggerConfig> = {};
-        if (typeof URLSearchParams === 'undefined' || typeof window === 'undefined') return config;
-        
+        if (
+          typeof URLSearchParams === "undefined" ||
+          typeof window === "undefined"
+        )
+          return config;
+
         const params = new URLSearchParams(window.location.search);
-        const debugParam = params.get('debug');
+        const debugParam = params.get("debug");
 
         if (debugParam !== null) {
           config.enabled = true;
           config.components = {};
-          if (debugParam === '*') {
-            config.components['*'] = true;
+          if (debugParam === "*") {
+            config.components["*"] = true;
           } else if (debugParam) {
-            debugParam.split(',').forEach(comp => {
-              if(config.components) config.components[comp] = true;
+            debugParam.split(",").forEach((comp) => {
+              if (config.components) config.components[comp] = true;
             });
           }
         }
         return config;
-      }
+      },
     });
 
     // LocalStorage Source (Priority 2)
     this.configManager.addSource({
-      name: 'localStorage',
+      name: "localStorage",
       priority: 2,
       load: () => {
-        if (typeof localStorage === 'undefined') return {};
-        const storedConfig = localStorage.getItem('debugLoggerConfig');
+        if (typeof localStorage === "undefined") return {};
+        const storedConfig = localStorage.getItem("debugLoggerConfig");
         if (storedConfig) {
           try {
             return JSON.parse(storedConfig);
           } catch (e) {
-            console.error('Failed to parse debug logger config from localStorage', e);
+            console.error(
+              "Failed to parse debug logger config from localStorage",
+              e,
+            );
           }
         }
         return {};
       },
       save: (config) => {
-        if (typeof localStorage === 'undefined') return;
+        if (typeof localStorage === "undefined") return;
         const currentConfig = this.configManager.loadConfig();
-        const newConfig = { ...currentConfig, ...config, components: { ...currentConfig.components, ...config.components } };
-        localStorage.setItem('debugLoggerConfig', JSON.stringify(newConfig));
-      }
+        const newConfig = {
+          ...currentConfig,
+          ...config,
+          components: { ...currentConfig.components, ...config.components },
+        };
+        localStorage.setItem("debugLoggerConfig", JSON.stringify(newConfig));
+      },
     });
 
     // Environment Source (Priority 1)
     this.configManager.addSource({
-      name: 'Environment',
+      name: "Environment",
       priority: 1,
       load: () => {
         const config: Partial<DebugLoggerConfig> = {};
@@ -197,30 +215,40 @@ export class DebugLogger {
         const debugLevel = process.env.DEBUG_LEVEL;
 
         if (debug) {
-          config.enabled = ['true', '1', 'on', 'yes'].includes(debug.toLowerCase());
+          config.enabled = ["true", "1", "on", "yes"].includes(
+            debug.toLowerCase(),
+          );
         }
 
         if (debugComponents) {
           config.components = {};
-          if (debugComponents === '*') {
-            config.components['*'] = true;
+          if (debugComponents === "*") {
+            config.components["*"] = true;
           } else {
-            debugComponents.split(',').forEach(comp => {
-              if(config.components) config.components[comp.trim()] = true;
+            debugComponents.split(",").forEach((comp) => {
+              if (config.components) config.components[comp.trim()] = true;
             });
           }
         }
 
-        if (debugLevel && ['debug', 'info', 'warn', 'error'].includes(debugLevel)) {
-          config.logLevel = debugLevel as 'debug' | 'info' | 'warn' | 'error';
+        if (
+          debugLevel &&
+          ["debug", "info", "warn", "error"].includes(debugLevel)
+        ) {
+          config.logLevel = debugLevel as "debug" | "info" | "warn" | "error";
         }
-        
+
         return config;
-      }
+      },
     });
   }
 
-  private log(level: 'debug' | 'info' | 'warn' | 'error', component: string, message: string, data?: any): void {
+  private log(
+    level: "debug" | "info" | "warn" | "error",
+    component: string,
+    message: string,
+    data?: any,
+  ): void {
     if (!this.config.enabled || !this.isComponentEnabled(component)) {
       return;
     }
@@ -250,14 +278,14 @@ export class DebugLogger {
     if (this.config.prefix) {
       parts.push(`[${component}]`);
     }
-    parts.push(level.toUpperCase() + ':', message);
+    parts.push(level.toUpperCase() + ":", message);
 
     const logMethod = console[level] || console.log;
-    
+
     if (data !== undefined) {
-      logMethod(parts.join(' '), data);
+      logMethod(parts.join(" "), data);
     } else {
-      logMethod(parts.join(' '));
+      logMethod(parts.join(" "));
     }
   }
 
@@ -265,28 +293,28 @@ export class DebugLogger {
    * Logs a debug message for a specific component.
    */
   debug(component: string, message: string, data?: any): void {
-    this.log('debug', component, message, data);
+    this.log("debug", component, message, data);
   }
 
   /**
    * Logs an info message for a specific component.
    */
   info(component: string, message: string, data?: any): void {
-    this.log('info', component, message, data);
+    this.log("info", component, message, data);
   }
 
   /**
    * Logs a warning message for a specific component.
    */
   warn(component: string, message: string, data?: any): void {
-    this.log('warn', component, message, data);
+    this.log("warn", component, message, data);
   }
 
   /**
    * Logs an error message for a specific component.
    */
   error(component: string, message: string, data?: any): void {
-    this.log('error', component, message, data);
+    this.log("error", component, message, data);
   }
 
   /**
@@ -307,9 +335,11 @@ export class DebugLogger {
    * Checks if logging is enabled for a specific component.
    */
   isComponentEnabled(component: string): boolean {
-    if (this.config.components['*']) return true;
+    if (this.config.components["*"]) return true;
 
-    const specificComponentKeys = Object.keys(this.config.components).filter(c => c !== '*');
+    const specificComponentKeys = Object.keys(this.config.components).filter(
+      (c) => c !== "*",
+    );
 
     if (specificComponentKeys.length > 0) {
       return !!this.config.components[component];
@@ -322,7 +352,11 @@ export class DebugLogger {
    * Updates the logger's configuration.
    */
   updateConfig(config: Partial<DebugLoggerConfig>): void {
-    this.config = { ...this.config, ...config, components: { ...this.config.components, ...config.components } };
+    this.config = {
+      ...this.config,
+      ...config,
+      components: { ...this.config.components, ...config.components },
+    };
     this.configManager.saveConfig(this.config);
   }
 
@@ -331,15 +365,22 @@ export class DebugLogger {
    */
   createComponentLogger(component: string): ComponentLogger {
     return {
-      debug: (message: string, data?: any) => this.debug(component, message, data),
-      info: (message: string, data?: any) => this.info(component, message, data),
-      warn: (message: string, data?: any) => this.warn(component, message, data),
-      error: (message: string, data?: any) => this.error(component, message, data),
-      trace: (methodName: string, ...args: any[]) => this.debug(component, `Entering ${methodName}`, { args }),
+      debug: (message: string, data?: any) =>
+        this.debug(component, message, data),
+      info: (message: string, data?: any) =>
+        this.info(component, message, data),
+      warn: (message: string, data?: any) =>
+        this.warn(component, message, data),
+      error: (message: string, data?: any) =>
+        this.error(component, message, data),
+      trace: (methodName: string, ...args: any[]) =>
+        this.debug(component, `Entering ${methodName}`, { args }),
       time: (label: string) => {
-        const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const startTime =
+          typeof performance !== "undefined" ? performance.now() : Date.now();
         return () => {
-          const endTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+          const endTime =
+            typeof performance !== "undefined" ? performance.now() : Date.now();
           const duration = endTime - startTime;
           this.debug(component, `${label} took ${duration.toFixed(2)}ms`);
         };

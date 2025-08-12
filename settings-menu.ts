@@ -590,7 +590,8 @@ export class SettingsMenu extends LitElement {
 
   private _onResetSystemPrompt() {
     SystemPromptManager.resetToDefault();
-    const textarea = this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
+    const textarea =
+      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
     if (textarea) {
       textarea.value = SystemPromptManager.getDefaultSystemPrompt();
     }

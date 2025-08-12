@@ -1,24 +1,32 @@
-import { LitElement, css, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import { createComponentLogger } from '../src/debug-logger';
-import type { PixiApplicationLike } from './types';
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { createComponentLogger } from "../src/debug-logger";
+import type { PixiApplicationLike } from "./types";
 
-const log = createComponentLogger('live2d-canvas');
+const log = createComponentLogger("live2d-canvas");
 
-@customElement('live2d-canvas')
+@customElement("live2d-canvas")
 export class Live2DCanvas extends LitElement {
   private _container?: HTMLDivElement;
   private _canvas?: HTMLCanvasElement;
   private _app?: PixiApplicationLike;
 
-  @state() private _error: string = '';
+  @state() private _error: string = "";
 
   // Expose app via event for child components to hook into
-  get app() { return this._app; }
+  get app() {
+    return this._app;
+  }
 
   private _dispatchAppReady(app: PixiApplicationLike) {
     const rect = this._container?.getBoundingClientRect();
-    this.dispatchEvent(new CustomEvent('pixi-ready', { detail: { app, width: rect?.width ?? 0, height: rect?.height ?? 0 }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("pixi-ready", {
+        detail: { app, width: rect?.width ?? 0, height: rect?.height ?? 0 },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   static styles = css`
@@ -44,8 +52,8 @@ export class Live2DCanvas extends LitElement {
     try {
       // Dynamically import to avoid bundling if not used
       const [pixi, live2d] = await Promise.all([
-        import('pixi.js') as any,
-        import('pixi-live2d-display/cubism4') as any,
+        import("pixi.js") as any,
+        import("pixi-live2d-display/cubism4") as any,
       ]);
       const { Application, Ticker } = pixi as any;
       const { Live2DModel } = live2d as any;
@@ -54,10 +62,14 @@ export class Live2DCanvas extends LitElement {
       Live2DModel?.registerTicker?.(Ticker);
 
       // create canvas and container
-      this._container = this.shadowRoot!.querySelector('.root') as HTMLDivElement;
+      this._container = this.shadowRoot!.querySelector(
+        ".root",
+      ) as HTMLDivElement;
       if (!this._container) {
         await this.updateComplete;
-        this._container = this.shadowRoot!.querySelector('.root') as HTMLDivElement;
+        this._container = this.shadowRoot!.querySelector(
+          ".root",
+        ) as HTMLDivElement;
       }
 
       // Create application (Pixi v6 requires manual view append)
@@ -75,18 +87,21 @@ export class Live2DCanvas extends LitElement {
       }
       // Style canvas to fill container
       if (view) {
-        view.style.width = '100%';
-        view.style.height = '100%';
-        view.style.display = 'block';
-        (app as any).renderer?.resize?.(this._container.clientWidth, this._container.clientHeight);
+        view.style.width = "100%";
+        view.style.height = "100%";
+        view.style.display = "block";
+        (app as any).renderer?.resize?.(
+          this._container.clientWidth,
+          this._container.clientHeight,
+        );
       }
 
       this._canvas = view;
       this._app = app;
       this._dispatchAppReady(app);
     } catch (e: any) {
-      log.error('Failed to init PIXI', { error: e });
-      this._error = 'Failed to initialize graphics';
+      log.error("Failed to init PIXI", { error: e });
+      this._error = "Failed to initialize graphics";
     }
   }
 
@@ -113,14 +128,14 @@ export class Live2DCanvas extends LitElement {
   firstUpdated(): void {
     // Attach observer for resize for better high-DPI handling
     const ro = new ResizeObserver(this._onResize);
-    const el = this.shadowRoot!.querySelector('.root') as HTMLElement;
+    const el = this.shadowRoot!.querySelector(".root") as HTMLElement;
     if (el) ro.observe(el);
   }
 
   render() {
     return html`
       <div class="root">
-        ${this._error ? html`<div class="error">${this._error}</div>` : ''}
+        ${this._error ? html`<div class="error">${this._error}</div>` : ""}
         <!-- PIXI manages the canvas element internally -->
         <slot></slot>
       </div>
@@ -130,6 +145,6 @@ export class Live2DCanvas extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'live2d-canvas': Live2DCanvas;
+    "live2d-canvas": Live2DCanvas;
   }
 }

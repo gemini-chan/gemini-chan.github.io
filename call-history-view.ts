@@ -1,8 +1,8 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { CallSummary } from './types'; // Assuming types are defined in types.ts
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import type { CallSummary } from "./types"; // Assuming types are defined in types.ts
 
-@customElement('call-history-view')
+@customElement("call-history-view")
 export class CallHistoryView extends LitElement {
   @property({ type: Array }) callHistory: CallSummary[] = [];
 
@@ -24,11 +24,11 @@ export class CallHistoryView extends LitElement {
 
   _startTts(summary: CallSummary) {
     this.dispatchEvent(
-      new CustomEvent('start-tts-from-summary', {
+      new CustomEvent("start-tts-from-summary", {
         detail: { summary },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 
@@ -41,7 +41,7 @@ export class CallHistoryView extends LitElement {
               <div>${new Date(call.timestamp).toLocaleString()}</div>
               <div>${call.summary}</div>
             </li>
-          `
+          `,
         )}
       </ul>
     `;

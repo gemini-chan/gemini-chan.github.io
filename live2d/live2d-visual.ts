@@ -1,17 +1,17 @@
-import { LitElement, css, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import { createComponentLogger } from '../src/debug-logger';
-import './live2d-canvas';
-import './live2d-model';
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { createComponentLogger } from "../src/debug-logger";
+import "./live2d-canvas";
+import "./live2d-model";
 
-const log = createComponentLogger('live2d-visual');
+const log = createComponentLogger("live2d-visual");
 
-@customElement('live2d-visual')
+@customElement("live2d-visual")
 export class Live2DVisual extends LitElement {
-  @state() private _status: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
-  @state() private _error = '';
+  @state() private _status: "idle" | "loading" | "ready" | "error" = "idle";
+  @state() private _error = "";
   @state() private _app: any = undefined;
-  @property({ type: String }) modelUrl = '';
+  @property({ type: String }) modelUrl = "";
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
 
@@ -21,18 +21,31 @@ export class Live2DVisual extends LitElement {
   `;
 
   private _onLoaded = () => {
-    this._status = 'ready';
-    this._error = '';
+    this._status = "ready";
+    this._error = "";
     // Auto-hide the status chip after 1s when ready
-    setTimeout(() => { if (this._status === 'ready') this._status = 'idle'; }, 1000);
+    setTimeout(() => {
+      if (this._status === "ready") this._status = "idle";
+    }, 1000);
   };
-  private _onError = (e: CustomEvent<{ error: string }>) => { this._status = 'error'; this._error = e.detail?.error || 'Load error'; };
-  private _onPixiReady = () => { if (this._status === 'idle') this._status = 'loading'; };
+  private _onError = (e: CustomEvent<{ error: string }>) => {
+    this._status = "error";
+    this._error = e.detail?.error || "Load error";
+  };
+  private _onPixiReady = () => {
+    if (this._status === "idle") this._status = "loading";
+  };
 
   render() {
     return html`
-      ${this._status !== 'idle' ? html`<div class="status">${this._status}${this._error ? `: ${this._error}` : ''}</div>` : ''}
-      <live2d-canvas @pixi-ready=${(e: CustomEvent) => { log.debug('pixi-ready', e.detail); this._onPixiReady(); this._app = (e.detail as any).app; (this as any)._containerWidth = (e.detail as any).width; (this as any)._containerHeight = (e.detail as any).height; }}>
+      ${this._status !== "idle" ? html`<div class="status">${this._status}${this._error ? `: ${this._error}` : ""}</div>` : ""}
+      <live2d-canvas @pixi-ready=${(e: CustomEvent) => {
+        log.debug("pixi-ready", e.detail);
+        this._onPixiReady();
+        this._app = (e.detail as any).app;
+        (this as any)._containerWidth = (e.detail as any).width;
+        (this as any)._containerHeight = (e.detail as any).height;
+      }}>
         <live2d-model
           .url=${this.modelUrl}
           .inputNode=${this.inputNode}
@@ -50,6 +63,6 @@ export class Live2DVisual extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'live2d-visual': Live2DVisual;
+    "live2d-visual": Live2DVisual;
   }
 }
