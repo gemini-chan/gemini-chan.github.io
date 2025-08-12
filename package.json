@@ -18,23 +18,23 @@
   "dependencies": {
     "@google/genai": "^1.13.0",
     "@lit/context": "^1.1.6",
-    "lit": "^3.3.1",
     "jszip": "^3.10.1",
+    "lit": "^3.3.1",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^6.5.10",
     "three": "^0.179.1"
   },
   "devDependencies": {
-    "@proj-airi/unplugin-live2d-sdk": "^0.1.5",
     "@biomejs/biome": "^2.1.4",
-    "husky": "^9.1.6",
-    "lint-staged": "^15.2.10",
     "@open-wc/testing": "^4.0.0",
+    "@proj-airi/unplugin-live2d-sdk": "^0.1.5",
     "@types/chai": "^4.3.18",
     "@types/mocha": "^10.0.7",
     "@types/node": "^24.2.0",
     "@web/test-runner": "^0.18.2",
     "chai": "^5.1.1",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
     "typescript": "^6.0.0-dev.20250808",
     "vite": "^7.1.1"
   },

@@ -1,4 +1,4 @@
-/**
+o/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -13,6 +13,7 @@ import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
 import { SystemPromptManager } from "./src/system-prompt-manager";
+import { SummarizationService } from "./src/SummarizationService";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
@@ -24,7 +25,7 @@ import "./controls-panel";
 import "./tab-view";
 import "./call-history-view";
 import type { ToastNotification } from "./toast-notification";
-import type { CallSummary } from "./types";
+import type { CallSummary, Turn } from "./types";
 
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
@@ -321,10 +322,6 @@ class CallSessionManager extends BaseSessionManager {
   }
 }
 
-interface Turn {
-  text: string;
-  author: "user" | "model";
-}
 
 type ActiveMode = "texting" | "calling" | null;
 
@@ -365,6 +362,7 @@ export class GdmLiveAudio extends LitElement {
   // Session managers
   private textSessionManager: TextSessionManager;
   private callSessionManager: CallSessionManager;
+  private summarizationService: SummarizationService;
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
@@ -436,6 +434,7 @@ export class GdmLiveAudio extends LitElement {
   constructor() {
     super();
     this.initClient();
+    this.summarizationService = new SummarizationService();
   }
 
   private initSessionManagers() {
@@ -555,21 +554,21 @@ export class GdmLiveAudio extends LitElement {
 
   private updateTextTranscript(text: string) {
     const lastTurn = this.textTranscript[this.textTranscript.length - 1];
-    if (lastTurn?.author === "model") {
+    if (lastTurn?.speaker === "model") {
       lastTurn.text += text;
       this.requestUpdate("textTranscript");
     } else {
-      this.textTranscript = [...this.textTranscript, { text, author: "model" }];
+      this.textTranscript = [...this.textTranscript, { text, speaker: "model" }];
     }
   }
 
-  private updateCallTranscript(text: string, author: "user" | "model") {
-    logger.debug(`Received ${author} text:`, text);
+  private updateCallTranscript(text: string, speaker: "user" | "model") {
+    logger.debug(`Received ${speaker} text:`, text);
 
     // For audio transcription, we get incremental chunks that should be appended
     const lastTurn = this.callTranscript[this.callTranscript.length - 1];
 
-    if (lastTurn?.author === author) {
+    if (lastTurn?.speaker === speaker) {
       // Append to the existing turn by creating a new array
       // This ensures Lit detects the change
       const updatedTranscript = [...this.callTranscript];
@@ -580,13 +579,13 @@ export class GdmLiveAudio extends LitElement {
       this.callTranscript = updatedTranscript;
     } else {
       // Create a new turn for this author
-      this.callTranscript = [...this.callTranscript, { text, author }];
+      this.callTranscript = [...this.callTranscript, { text, speaker }];
     }
   }
 
   private _appendCallNotice(text: string) {
     // Append a system-style notice to the call transcript to avoid silent failures
-    const notice = { text, author: "model" as const, timestamp: new Date() };
+    const notice = { text, speaker: "model" as const, timestamp: new Date() };
     this.callTranscript = [...this.callTranscript, notice];
   }
 
@@ -694,7 +693,7 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleCallEnd() {
+  private async _handleCallEnd() {
     if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
       return;
 
@@ -718,6 +717,16 @@ export class GdmLiveAudio extends LitElement {
     // Switch back to texting mode
     this.activeMode = "texting";
     this._updateActiveOutputNode();
+
+    // Summarize the call
+    const transcriptToSummarize = [...this.callTranscript];
+    this.callTranscript = [];
+    const summary = await this.summarizationService.summarize(
+      transcriptToSummarize,
+    );
+    if (summary) {
+      this._handleSummarizationComplete(summary);
+    }
 
     // Text session will be lazily initialized when user sends first message
 
@@ -948,6 +957,16 @@ export class GdmLiveAudio extends LitElement {
     this.activeTab = e.detail.tab;
   }
 
+  private _handleSummarizationComplete(summary: string) {
+    const newSummary: CallSummary = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      summary,
+      transcript: this.callTranscript,
+    };
+    this.callHistory = [newSummary, ...this.callHistory];
+  }
+
   private _startTtsFromSummary(e: CustomEvent) {
     const summary = e.detail.summary as CallSummary;
     // This is a placeholder for the actual TTS implementation
@@ -1021,7 +1040,7 @@ export class GdmLiveAudio extends LitElement {
     // Add message to text transcript
     this.textTranscript = [
       ...this.textTranscript,
-      { text: message, author: "user" },
+      { text: message, speaker: "user" },
     ];
 
     // Ensure we have an active text session

@@ -86,11 +86,11 @@ Implement the UI refactoring for scrollable views and the refined system prompt 
     - [ ] 9.9. Add unit tests for `SystemPromptManager` including debounce logic.
     - [ ] 9.10. Add unit tests for `BaseTranscriptView` and the scroll interaction.
 
-- [ ] 12. Implement Tabbed UI System
-  - Requirements: 2.10.1
-  - [ ] 12.1. Create `tab-view.ts` component
-  - [ ] 12.2. Create `call-history-view.ts` component
-  - [ ] 12.3. Update main component for tabbed interface
+- [x] 12. Implement Tabbed UI System
+   - Requirements: 2.10.1
+   - [x] 12.1. Create `tab-view.ts` component
+   - [x] 12.2. Create `call-history-view.ts` component
+   - [x] 12.3. Update main component for tabbed interface
 
 - [ ] 13. Implement Call Summarization Service with Ephemeral Transcript Clearing
   - Requirements: 2.11.1, 2.3.1
