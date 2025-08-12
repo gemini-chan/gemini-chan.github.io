@@ -49,6 +49,9 @@ Add theme engine support with a toggle in Settings and persistence.
 - [x] 9. Refactor Advanced Settings into a Dropdown
   - [x] 9.1. In `settings-menu.ts`, wrap the circuitry animation controls in a `<details>` element with the summary "Advanced Settings".
 
-- [ ] 10. Implement Noir Theme
-  - [ ] 10.1. In `index.css`, add a new `html[data-theme='noir']` block with reddish color overrides.
-  - [ ] 10.2. In `settings-menu.ts`, add "Noir" to the theme selection dropdown.
+- [x] 10. Implement Noir Theme
+  - [x] 10.1. In `index.css`, add a new `html[data-theme='noir']` block with reddish color overrides.
+  - [x] 10.2. In `settings-menu.ts`, add "Noir" to the theme selection dropdown.
+  - [x] 10.3. **REVISION:** Update the Noir theme to have a darker, almost black background with neon red accents.
+- [ ] 11. Fix Cyberpunk Theme Regression
+  - [ ] 11.1. In `index.css`, correct the `l:root` selector to `:root`.
