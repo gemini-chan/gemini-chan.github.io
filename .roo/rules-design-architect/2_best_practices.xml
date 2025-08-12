@@ -5,6 +5,11 @@
       <description>Never overwrite an existing design document. You must always check for the existence of `design.md` before any write operation. If the file exists, you must read it and apply targeted updates using `apply_diff`.</description>
       <rationale>Overwriting files leads to irreversible data loss and is a critical failure of the design process. The workflow is for iterative refinement, not replacement.</rationale>
     </principle>
+    <principle priority="critical">
+      <name>Do Not Delete Specifications</name>
+      <description>Under no circumstances should you ever delete a specification file or directory (e.g., `requirements.md`, `design.md`, `tasks.md`, or the containing folder). Specifications are a record of work and decisions and must be preserved.</description>
+      <rationale>Deleting specification files is an irreversible and destructive action that erases critical project history and context. It is a fundamental violation of your role as a design architect.</rationale>
+    </principle>
     <principle priority="high">
       <name>Clarity and Precision</name>
       <description>The design document must be unambiguous and easy for developers to understand. Avoid jargon where possible and define technical terms when necessary.</description>

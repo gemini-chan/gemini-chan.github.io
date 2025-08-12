@@ -179,11 +179,13 @@ export class SettingsMenu extends LitElement {
               @blur=${this._onModelUrlBlur}
               placeholder="Enter model3.json or .zip URL" />
             <div class="validation-icon ${this._modelUrlValid || this._modelUrlInvalid ? "show" : ""}" title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}">
-              ${this._modelUrlValid
-                ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
-                : this._modelUrlInvalid
-                  ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
-                  : ""}
+              ${
+                this._modelUrlValid
+                  ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
+                  : this._modelUrlInvalid
+                    ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
+                    : ""
+              }
             </div>
             <button class="paste-button" @click=${this._onPasteModelUrl} title="Paste from clipboard">
               <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -202,11 +204,13 @@ export class SettingsMenu extends LitElement {
               @blur=${this._onApiKeyBlur}
               placeholder="Enter your API Key" />
             <div class="validation-icon ${this._apiKeyValid || this._apiKeyInvalid ? "show" : ""}" title="${this._apiKeyValid ? "Valid API Key" : "Invalid API Key"}">
-              ${this._apiKeyValid
-                ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
-                : this._apiKeyInvalid
-                  ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
-                  : ""}
+              ${
+                this._apiKeyValid
+                  ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
+                  : this._apiKeyInvalid
+                    ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
+                    : ""
+              }
             </div>
             <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
               <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -234,7 +238,8 @@ export class SettingsMenu extends LitElement {
     }
 
     // Validate Model URL
-    const modelUrlInput = this.shadowRoot!.querySelector<HTMLInputElement>('#modelUrl');
+    const modelUrlInput =
+      this.shadowRoot!.querySelector<HTMLInputElement>("#modelUrl");
     if (modelUrlInput) {
       const isModelUrlValid = this._validateLive2dUrl(modelUrlInput.value);
       this._setValidationState("modelUrl", isModelUrlValid);
@@ -269,7 +274,7 @@ export class SettingsMenu extends LitElement {
         {
           storageKey: "gemini-api-key",
           validator: this._validateApiKey.bind(this),
-          eventName: undefined,
+          eventName: "api-key-changed",
           required: true,
           preserveOnEmpty: true,
         },
@@ -309,10 +314,15 @@ export class SettingsMenu extends LitElement {
   ): boolean {
     let isValid = false;
 
-    if (!value && config.preserveOnEmpty && localStorage.getItem(config.storageKey)) {
-      // Value exists, user cleared it, so we restore it and do nothing.
-      const input =
-        this.shadowRoot!.querySelector<HTMLInputElement>(`#${fieldName}`);
+    if (
+      !value &&
+      config.preserveOnEmpty &&
+      localStorage.getItem(config.storageKey)
+    ) {
+      // Value exists, user cleared it, so we restore it and preserve in storage
+      const input = this.shadowRoot!.querySelector<HTMLInputElement>(
+        `#${fieldName}`,
+      );
       if (input) {
         const oldValue = localStorage.getItem(config.storageKey)!;
         input.value = oldValue;
@@ -320,8 +330,16 @@ export class SettingsMenu extends LitElement {
           this.apiKey = oldValue;
         }
       }
-      this._setValidationState(fieldName, true);
-      return true; // No-op, but validation is OK.
+
+      // For API key, show validation error when cleared but preserve the key
+      // For model URL, clearing is OK (will fallback to sphere)
+      if (fieldName === "apiKey" && config.required) {
+        this._error = "API key cannot be empty";
+        this._setValidationState(fieldName, false);
+      } else {
+        this._setValidationState(fieldName, true);
+      }
+      return fieldName !== "apiKey" || !config.required; // Return false for required API key to show error
     }
 
     // If field is not required and empty, save empty value without validation
@@ -373,13 +391,13 @@ export class SettingsMenu extends LitElement {
 
   private _onApiKeyBlur(e: Event) {
     const input = e.target as HTMLInputElement;
-    // Just save and validate, don't dispatch the auto-close event on blur
+    // Save and validate, emit api-key-changed event for client reinitialization
     this._autoSave(
       input.value,
       {
         storageKey: "gemini-api-key",
         validator: this._validateApiKey.bind(this),
-        eventName: undefined, // No auto-close on blur
+        eventName: "api-key-changed",
         required: true,
         preserveOnEmpty: true,
       },
@@ -405,8 +423,9 @@ export class SettingsMenu extends LitElement {
   private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
       const text = await navigator.clipboard.readText();
-      const input =
-        this.shadowRoot!.querySelector<HTMLInputElement>(`#${fieldName}`);
+      const input = this.shadowRoot!.querySelector<HTMLInputElement>(
+        `#${fieldName}`,
+      );
       if (input) {
         input.value = text;
 
@@ -417,13 +436,14 @@ export class SettingsMenu extends LitElement {
             {
               storageKey: "gemini-api-key",
               validator: this._validateApiKey.bind(this),
-              eventName: undefined,
+              eventName: "api-key-changed",
               required: true,
               preserveOnEmpty: true,
             },
             "apiKey",
           );
-        } else { // modelUrl
+        } else {
+          // modelUrl
           this._autoSave(
             text,
             {
@@ -452,12 +472,12 @@ export class SettingsMenu extends LitElement {
 
   private _validateApiKey(key: string): boolean {
     if (!key) {
-      this._error = 'API key cannot be empty.';
+      this._error = "API key cannot be empty.";
       return false;
     }
     // Basic format validation
-    if (!key.startsWith('AIzaSy') || key.length !== 39) {
-      this._error = 'Invalid API key format.';
+    if (!key.startsWith("AIzaSy") || key.length !== 39) {
+      this._error = "Invalid API key format.";
       return false;
     }
     return true;
@@ -475,7 +495,8 @@ export class SettingsMenu extends LitElement {
       // Check protocol - allow HTTP, HTTPS, IPFS, and blob
       const validProtocols = ["http:", "https:", "ipfs:", "blob:"];
       if (!validProtocols.includes(urlObj.protocol)) {
-        this._error = "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.";
+        this._error =
+          "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.";
         this.dispatchEvent(
           new CustomEvent("model-url-error", {
             detail: { error: this._error },
@@ -507,7 +528,8 @@ export class SettingsMenu extends LitElement {
         !pathname.endsWith(".zip") &&
         !pathname.endsWith(".model3.json")
       ) {
-        this._error = "If specified, file extension must be .zip or .model3.json";
+        this._error =
+          "If specified, file extension must be .zip or .model3.json";
         this.dispatchEvent(
           new CustomEvent("model-url-error", {
             detail: {

@@ -75,9 +75,14 @@
           <title>Approve or Request Revisions</title>
           <action>Based on the code review, either approve the task or send it back for revision.</action>
           <details>
-            If the work is satisfactory, update the task's status to "done" in `tasks.md`. If not, create a new sub-task for the revision and re-delegate.
+            If the work is satisfactory, first confirm with the user before updating the task status.
+            Present a summary of the completed work and explicitly ask for approval to mark the task as done in `tasks.md`.
+            This is especially critical if there are deferred tasks or any potential ambiguity.
+            Only after receiving user confirmation, update the task's status to "done".
+            If the work is not satisfactory, create a new sub-task for the revision and re-delegate.
           </details>
           <tools>
+            <tool>ask_followup_question</tool>
             <tool>apply_diff</tool>
           </tools>
         </step>
