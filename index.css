@@ -187,24 +187,24 @@ live2d-gate::before {
 
 /* Theme-specific circuitry colors */
 html[data-theme="cyberpunk"] body::after {
-  --circuit-color: rgba(0, 229, 255, 0.25);
-  --circuit-node-color: rgba(0, 229, 255, 0.4);
+  --circuit-color: rgba(0, 229, 255, 0.12);
+  --circuit-node-color: rgba(0, 229, 255, 0.2);
 }
 html[data-theme="utopia"] body::after {
-  --circuit-color: rgba(106, 76, 255, 0.25);
-  --circuit-node-color: rgba(106, 76, 255, 0.4);
+  --circuit-color: rgba(106, 76, 255, 0.12);
+  --circuit-node-color: rgba(106, 76, 255, 0.2);
 }
 html[data-theme="tron"] body::after {
-  --circuit-color: rgba(0, 240, 255, 0.3);
-  --circuit-node-color: rgba(0, 240, 255, 0.5);
+  --circuit-color: rgba(0, 240, 255, 0.15);
+  --circuit-node-color: rgba(0, 240, 255, 0.25);
 }
 html[data-theme="synthwave"] body::after {
-  --circuit-color: rgba(255, 0, 168, 0.28);
-  --circuit-node-color: rgba(255, 0, 168, 0.45);
+  --circuit-color: rgba(255, 0, 168, 0.14);
+  --circuit-node-color: rgba(255, 0, 168, 0.22);
 }
 html[data-theme="matrix"] body::after {
-  --circuit-color: rgba(57, 255, 20, 0.3);
-  --circuit-node-color: rgba(57, 255, 20, 0.5);
+  --circuit-color: rgba(57, 255, 20, 0.15);
+  --circuit-node-color: rgba(57, 255, 20, 0.25);
 }
 
 /* Theme overrides */
