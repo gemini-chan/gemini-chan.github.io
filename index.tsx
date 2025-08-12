@@ -713,9 +713,9 @@ export class GdmLiveAudio extends LitElement {
       }),
     );
 
-  this.updateStatus("Call ended");
-  logger.debug("Call ended. callSession preserved:", this.callSession);
-}
+    this.updateStatus("Call ended");
+    logger.debug("Call ended. callSession preserved:", this.callSession);
+  }
 
 private _resetTextContext() {
     // Close existing text session using session manager
