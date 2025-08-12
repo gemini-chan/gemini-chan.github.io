@@ -1,6 +1,9 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { createComponentLogger } from "./src/debug-logger";
 import { defaultAutoScroll } from "./transcript-auto-scroll";
+
+const logger = createComponentLogger("call-transcript");
 
 interface Turn {
   text: string;
@@ -217,9 +220,10 @@ export class CallTranscript extends LitElement {
       if (transcriptEl) {
         const oldTranscript =
           (changedProperties.get("transcript") as Turn[]) || [];
-        console.log(
-          `[CallTranscript] Transcript updated: ${oldTranscript.length} -> ${this.transcript.length}`,
-        );
+        logger.debug("Transcript updated", {
+          oldLength: oldTranscript.length,
+          newLength: this.transcript.length,
+        });
         defaultAutoScroll.handleTranscriptUpdate(
           transcriptEl,
           oldTranscript.length,
@@ -263,12 +267,14 @@ export class CallTranscript extends LitElement {
       this.newMessageCount = state.newMessageCount;
 
       // Dispatch event to notify parent component of scroll state changes
+      const detail = {
+        showButton: state.showButton,
+        newMessageCount: state.newMessageCount,
+      };
+      logger.debug("Scroll state changed", detail);
       this.dispatchEvent(
         new CustomEvent("scroll-state-changed", {
-          detail: {
-            showButton: state.showButton,
-            newMessageCount: state.newMessageCount,
-          },
+          detail,
           bubbles: true,
           composed: true,
         }),
