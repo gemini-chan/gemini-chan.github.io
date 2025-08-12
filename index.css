@@ -429,3 +429,25 @@ html[data-theme="noir"] body::after {
 }
 
 
+
+/* Themed Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--cp-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--cp-surface-strong);
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--cp-cyan);
+  box-shadow: var(--cp-glow-cyan);
+}
