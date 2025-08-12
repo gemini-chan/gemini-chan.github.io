@@ -243,12 +243,13 @@ interface ScrollToBottomState {
 }
 ```
 
-### 7.1. Conservative Scrolling Logic
-- **First Message Auto-scroll:** Only automatically scrolls for the very first message to show initial content
-- **User-Controlled Scrolling:** All subsequent scrolling is controlled by the user via scroll-to-bottom button
+### 7.1. Smart Auto-scroll Logic
+- **User-Aware Scrolling:** Only auto-scrolls when user is at or near the bottom (within 50px threshold)
 - **Performance Optimization:** Uses `requestAnimationFrame` for proper DOM timing when scrolling occurs
-- **Smooth Scrolling:** Applies smooth scroll behavior for button-triggered scrolling
-- **State Tracking:** Uses WeakMap to track scroll state for proper button visibility management
+- **Rapid Update Handling:** Detects multiple quick updates and uses instant scrolling to avoid excessive animation
+- **Smooth Scrolling:** Applies smooth scroll behavior for single message updates
+- **First Message Handling:** Always scrolls to show the first message in an empty transcript
+- **State Tracking:** Uses WeakMap to track scroll state before DOM updates to eliminate timing issues
 
 ### 7.2. Component Integration
 - **chat-view.ts:** Uses generic auto-scroll for text messaging transcript

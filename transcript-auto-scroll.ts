@@ -68,7 +68,7 @@ export class TranscriptAutoScroll {
   }
 
   /**
-   * Handle transcript updates with conservative auto-scroll behavior
+   * Handle transcript updates with smart auto-scroll behavior
    * @param element - The scrollable transcript container
    * @param oldLength - Previous transcript length (for rapid update detection)
    * @param newLength - Current transcript length
@@ -78,7 +78,7 @@ export class TranscriptAutoScroll {
     oldLength: number,
     newLength: number,
   ) {
-    // Only auto-scroll for the very first message to show initial content
+    // Always scroll for the first message to show initial content
     const isFirstMessage = oldLength === 0 && newLength > 0;
 
     console.log(
@@ -97,14 +97,34 @@ export class TranscriptAutoScroll {
       return;
     }
 
-    // For all subsequent messages, do NOT auto-scroll
-    // Let the user control scrolling via the scroll-to-bottom button
-    console.log(
-      `[AutoScroll] Subsequent message - no auto-scroll, user controls via button`,
-    );
+    // Check if user was at bottom before this update
+    const wasAtBottom =
+      this.wasAtBottomBeforeUpdate.get(element) ??
+      this.shouldAutoScroll(element);
 
-    // Just update the tracking state for button visibility
-    this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element));
+    console.log(`[AutoScroll] Was at bottom before update: ${wasAtBottom}`);
+
+    // If user was at bottom before the update, continue auto-scrolling
+    // If user scrolled up to read past content, don't interrupt them
+    if (wasAtBottom) {
+      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      requestAnimationFrame(() => {
+        // Detect rapid updates (multiple messages at once)
+        const isRapidUpdate = newLength - oldLength > 1;
+        console.log(
+          `[AutoScroll] Auto-scrolling with smooth: ${!isRapidUpdate}`,
+        );
+        this.scrollToBottom(element, !isRapidUpdate);
+        // Update the state after scrolling
+        this.wasAtBottomBeforeUpdate.set(element, true);
+      });
+    } else {
+      console.log(
+        `[AutoScroll] User scrolled up to read past content - not interrupting`,
+      );
+      // Just update the tracking state for button visibility
+      this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element));
+    }
   }
 
   /**

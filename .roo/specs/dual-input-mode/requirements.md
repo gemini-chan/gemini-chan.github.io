@@ -58,17 +58,18 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** a call ends **THEN** the call transcript window is hidden and the chat window reappears
 - **WHEN** the call transcript window is visible **THEN** it displays real-time transcription of the voice conversation
 
-### 2.15. Conservative Auto-scroll Transcript Behavior
+### 2.15. Smart Auto-scroll Transcript Behavior
 - **As a** user,
-- **I want** transcript windows to show initial content but let me control scrolling for subsequent messages,
-- **so that** I can read at my own pace without unexpected automatic scrolling interruptions.
+- **I want** transcript windows to automatically scroll when I'm following the conversation, but not interrupt me when I'm reading past content,
+- **so that** I can stay caught up with new messages while maintaining the ability to review past conversation.
 
 #### 2.15.1. Acceptance Criteria
 - **WHEN** the first message appears in a transcript **THEN** the transcript automatically scrolls to show the initial content
-- **WHEN** subsequent messages arrive **THEN** the transcript does NOT automatically scroll, allowing me to read at my own pace
-- **WHEN** I manually scroll up to read older messages **THEN** no automatic scrolling occurs to interrupt my reading
+- **WHEN** I am at or near the bottom of the transcript and new messages arrive **THEN** the transcript automatically scrolls to show the latest messages
+- **WHEN** I manually scroll up to read older messages **THEN** automatic scrolling is disabled to avoid interrupting my reading
+- **WHEN** I scroll back to the bottom (or use the scroll-to-bottom button) **THEN** automatic scrolling resumes for new messages
 - **WHEN** a transcript window becomes visible with existing content **THEN** it automatically scrolls to the bottom to show the most recent content
-- **WHEN** I want to see new messages **THEN** I can use the scroll-to-bottom button to manually scroll to the latest content
+- **WHEN** multiple messages arrive rapidly **THEN** scrolling is optimized to avoid excessive animation
 
 ### 2.16. Scroll-to-Bottom Button
 - **As a** user,
