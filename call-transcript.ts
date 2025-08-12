@@ -128,6 +128,7 @@ export class CallTranscript extends LitElement {
       gap: 12px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+      min-height: 0; /* Critical: allows flex item to shrink below content size */
     }
 
     .turn {
