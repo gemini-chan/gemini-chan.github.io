@@ -810,6 +810,8 @@ export class GdmLiveAudio extends LitElement {
       this.pendingAction = null; // Clear the pending action
 
       // Execute the action after a brief delay to ensure client is initialized
+      // The 100ms delay allows the client initialization to complete before
+      // attempting to use the new API key for the pending action
       setTimeout(() => {
         action();
       }, 100);
