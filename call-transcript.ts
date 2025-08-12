@@ -27,7 +27,8 @@ export class CallTranscript extends LitElement {
     :host {
       display: flex;
       flex-direction: column;
-      height: 100%;
+      height: 100vh;
+      max-height: 100vh;
       width: 400px;
       box-sizing: border-box;
       padding: 12px;

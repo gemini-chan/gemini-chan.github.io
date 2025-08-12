@@ -62,8 +62,11 @@ export class TranscriptAutoScroll {
     oldLength: number,
     newLength: number,
   ) {
-    // Only auto-scroll if user is already at or near the bottom
-    if (this.shouldAutoScroll(element)) {
+    // Always scroll for the first message or if user is already at or near the bottom
+    const isFirstMessage = oldLength === 0 && newLength > 0;
+    const shouldScroll = isFirstMessage || this.shouldAutoScroll(element);
+
+    if (shouldScroll) {
       // Detect rapid updates (multiple messages at once)
       const isRapidUpdate = newLength - oldLength > 1;
 
