@@ -4,7 +4,7 @@
 
 ### ✅ Completed Core Features
 - **Dual-Context Architecture**: Fully implemented with separate TTS/STS session management
-- **API Key Management**: Complete validation, persistence, and user flow
+- **API Key Management**: Complete validation, persistence, and user flow (implemented via settings-management spec)
 - **Session Management**: Proper isolation and lifecycle management
 - **Real-time Call Transcription**: Bidirectional transcription working (user + model speech)
 - **Auto-scroll System**: Generic utility with smart scrolling behavior
@@ -46,7 +46,7 @@ Implement tabbed UI system and call summarization to complete the dual-input mod
   - [ ] 5.3. Call transcript receives model text during calls (moved to task 11).
 
 - [x] 6. Implement API Key Management: Add API key validation, on-demand prompts, and persistence using localStorage.
-  - Requirements: 2.8.1, 2.10.1, 2.11.1
+  - Status: Complete (implemented via settings-management spec)
   - [x] 6.1. Validate API key format (starts with "AIzaSy" and 39 chars).
   - [x] 6.2. On-demand settings menu open and toast prompt when key missing on first action.
   - [x] 6.3. Persist to localStorage; provide Paste and Get API Key controls.
@@ -100,7 +100,7 @@ Implement tabbed UI system and call summarization to complete the dual-input mod
     - Real-time turn-based conversation display working perfectly
 
 - [ ] 12. Implement Tabbed UI System
-  - Requirements: 2.13.1
+  - Requirements: 2.10.1
   - [ ] 12.1. Create `tab-view.ts` component
     - Implement tab switching between "Chat" and "Call History"
     - Emit `tab-switch` events when tabs are clicked
@@ -117,7 +117,7 @@ Implement tabbed UI system and call summarization to complete the dual-input mod
     - Update render method to use `tab-view` instead of direct `chat-view`
 
 - [ ] 13. Implement Call Summarization Service
-  - Requirements: 2.14.1
+  - Requirements: 2.11.1
   - [ ] 13.1. Create `SummarizationService` class
     - Implement stateless service using `gemini-1.5-flash-latest` model
     - Add `summarize(transcript: Turn[]): Promise<string>` method

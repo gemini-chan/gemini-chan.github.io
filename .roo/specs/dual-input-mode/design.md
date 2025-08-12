@@ -26,8 +26,7 @@ graph TD
         C[call-transcript - Ephemeral Call Interface]
         D[gdm-live-audio - Call Button]
         F[live2d-visual]
-        N[settings-menu - API Key Management]
-        O[toast-notification - User Prompts]
+
     end
 
     subgraph "Context Management"
@@ -53,8 +52,7 @@ graph TD
     A -- "Manages visibility" --> C
     A -- "Manages" --> D
     A -- "Manages" --> F
-    A -- "Controls visibility" --> N
-    A -- "Shows/hides" --> O
+
 
     B -- "send-message event" --> A
     D -- "call-start/call-end events" --> A
