@@ -107,6 +107,19 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **GIVEN** I am in the voice calling view **WHEN** I click the "Clear call history" button in the header **THEN** the call transcript is cleared from the display.
 - **WHEN** I reset the text context **THEN** the call context remains unaffected.
 
+### 2.12. Configurable System Prompt
+- **As a** user,
+- **I want** to customize Gemini-chan's personality and behavior through a configurable system prompt,
+- **so that** I can personalize the AI character to my preferences across both text and voice modes.
+
+#### 2.12.1. Acceptance Criteria
+- **WHEN** I open the settings menu **THEN** I see a "System Prompt" text area where I can edit Gemini-chan's personality
+- **WHEN** I modify the system prompt and save **THEN** both text and voice sessions use the updated prompt consistently
+- **WHEN** the application loads **THEN** it uses a default Gemini-chan personality prompt if none is saved
+- **WHEN** I save a custom system prompt **THEN** it persists in localStorage for future sessions
+- **WHEN** I start a new text or voice session **THEN** it uses the current system prompt from settings
+- **WHEN** I clear the system prompt field **THEN** it reverts to the default Gemini-chan personality
+
 ### 2.7. Call Transcript Layout Optimization
 - **As a** user,
 - **I want** the call transcript to have the same dimensions as the chat transcript and be positioned on the right side,

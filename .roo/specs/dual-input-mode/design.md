@@ -157,6 +157,19 @@ graph TD
     - Extracts text from model responses for chat transcript
     - Manages persistent text conversation context
 
+### 3.8. Configurable System Prompt Management
+- **SystemPromptManager:** Centralized system prompt handling
+    - `getSystemPrompt(): string` - Returns current system prompt from localStorage or default
+    - `setSystemPrompt(prompt: string): void` - Saves system prompt to localStorage
+    - `getDefaultSystemPrompt(): string` - Returns default Gemini-chan personality
+- **Session Manager Integration:** Both TextSessionManager and CallSessionManager use the same system prompt
+    - System prompt is retrieved dynamically when sessions are initialized
+    - Consistent personality across text and voice modes
+- **Settings Integration:** System prompt editor in settings menu
+    - Large textarea for editing personality and behavior
+    - Real-time validation and persistence
+    - Reset to default functionality
+
 ## 4. Session Lifecycle Management
 
 ### 4.1. Session and Summarization Flow

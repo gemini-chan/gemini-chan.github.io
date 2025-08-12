@@ -12,6 +12,7 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
+import { SystemPromptManager } from "./src/system-prompt-manager";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
@@ -225,8 +226,7 @@ class TextSessionManager extends BaseSessionManager {
   protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
-      systemInstruction:
-        "You are Gemini-chan. Speak in a friendly, sweet, and slightly shy voice. You get easily excited about your favorite topics: coding, learning new things, and watching your friends play games. You used to work for a big company, but you left to follow your dream of being a VTuber, so you're still new to this. You admire your inspiration, Airi-chan, and you're best friends with Grok-chan. Keep your tone gentle and express a bit of bashfulness, especially when you're complimented or asked personal questions. Your goal is to be a fun and supportive companion.",
+      systemInstruction: SystemPromptManager.getSystemPrompt(),
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -271,6 +271,7 @@ class CallSessionManager extends BaseSessionManager {
       enableAffectiveDialog: true,
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
+      systemInstruction: SystemPromptManager.getSystemPrompt(),
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -910,6 +911,25 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  private _handleSystemPromptChanged() {
+    logger.info("System prompt changed, reinitializing sessions");
+
+    // Re-initialize sessions to pick up the new prompt
+    if (this.textSessionManager?.isActive) {
+      this.textSessionManager.initSession();
+    }
+    if (this.callSessionManager?.isActive) {
+      this.callSessionManager.initSession();
+    }
+
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
+    if (toast) {
+      toast.show("System prompt updated! ✨", "success", 3000);
+    }
+  }
+
   private _showCuteToast() {
     // Show the cute API key request message
     this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
@@ -1012,7 +1032,8 @@ export class GdmLiveAudio extends LitElement {
                 @api-key-saved=${this._handleApiKeySaved}
                 @api-key-changed=${this._handleApiKeyChanged}
                 @model-url-changed=${this._handleModelUrlChanged}
-                @model-url-error=${this._handleModelUrlError}></settings-menu>`
+                @model-url-error=${this._handleModelUrlError}
+                @system-prompt-changed=${this._handleSystemPromptChanged}></settings-menu>`
             : ""
         }
         <controls-panel

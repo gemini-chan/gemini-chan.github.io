@@ -1,5 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { SystemPromptManager } from "./src/system-prompt-manager";
 
 interface FieldConfig {
   storageKey: string;
@@ -80,13 +81,22 @@ export class SettingsMenu extends LitElement {
     input::placeholder {
       color: #aaa;
     }
-    input {
+    input,
+    textarea {
       background: #333;
       border: 1px solid #555;
       color: white;
-      padding: 0.5em 5.5em 0.5em 0.5em;
+      padding: 0.5em;
       border-radius: 6px;
       flex: 1;
+      font-family: system-ui;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    input {
+      padding-right: 5.5em;
     }
     .paste-button {
       position: absolute;
@@ -222,6 +232,17 @@ export class SettingsMenu extends LitElement {
 
           <div class="buttons">
             <button @click=${this._getApiKeyUrl}>Get API Key</button>
+          </div>
+
+          <label for="systemPrompt">System Prompt</label>
+          <textarea
+            id="systemPrompt"
+            .value=${SystemPromptManager.getSystemPrompt()}
+            @input=${this._onSystemPromptInput}
+            placeholder="Enter Gemini-chan's personality..."
+          ></textarea>
+          <div class="buttons">
+            <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
           </div>
         </div>
       </div>
@@ -559,5 +580,20 @@ export class SettingsMenu extends LitElement {
 
   private _getApiKeyUrl() {
     window.open("https://aistudio.google.com/apikey", "_blank");
+  }
+
+  private _onSystemPromptInput(e: Event) {
+    const textarea = e.target as HTMLTextAreaElement;
+    SystemPromptManager.setSystemPrompt(textarea.value);
+    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
+  }
+
+  private _onResetSystemPrompt() {
+    SystemPromptManager.resetToDefault();
+    const textarea = this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
+    if (textarea) {
+      textarea.value = SystemPromptManager.getDefaultSystemPrompt();
+    }
+    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
   }
 }
