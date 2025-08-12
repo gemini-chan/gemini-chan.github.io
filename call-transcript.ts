@@ -1,5 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 interface Turn {
   text: string;
@@ -166,26 +167,6 @@ export class CallTranscript extends LitElement {
     }
   `;
 
-  private _shouldAutoScroll(transcriptEl: Element): boolean {
-    // Check if user is already at or near the bottom (within 50px)
-    const threshold = 50;
-    const isNearBottom =
-      transcriptEl.scrollTop + transcriptEl.clientHeight >=
-      transcriptEl.scrollHeight - threshold;
-    return isNearBottom;
-  }
-
-  private _scrollToBottom(transcriptEl: Element, smooth: boolean = true) {
-    if (smooth) {
-      transcriptEl.scrollTo({
-        top: transcriptEl.scrollHeight,
-        behavior: "smooth",
-      });
-    } else {
-      transcriptEl.scrollTop = transcriptEl.scrollHeight;
-    }
-  }
-
   updated(changedProperties: Map<string | number | symbol, unknown>) {
     if (changedProperties.has("rateLimited")) {
       if (this.rateLimited) {
@@ -196,23 +177,16 @@ export class CallTranscript extends LitElement {
     }
 
     if (changedProperties.has("transcript")) {
-      // Enhanced auto-scroll with user-friendly behavior
+      // Use generic auto-scroll utility
       const transcriptEl = this.shadowRoot?.querySelector(".transcript");
       if (transcriptEl) {
-        // Only auto-scroll if user is already at or near the bottom
-        // This prevents interrupting users who are reading older messages
-        if (this._shouldAutoScroll(transcriptEl)) {
-          // Use smooth scrolling for better UX, but avoid it during rapid updates
-          const oldTranscript =
-            (changedProperties.get("transcript") as Turn[]) || [];
-          const isRapidUpdate =
-            this.transcript.length - oldTranscript.length > 1;
-
-          // Use requestAnimationFrame to ensure DOM is updated before scrolling
-          requestAnimationFrame(() => {
-            this._scrollToBottom(transcriptEl, !isRapidUpdate);
-          });
-        }
+        const oldTranscript =
+          (changedProperties.get("transcript") as Turn[]) || [];
+        defaultAutoScroll.handleTranscriptUpdate(
+          transcriptEl,
+          oldTranscript.length,
+          this.transcript.length,
+        );
       }
     }
 
@@ -221,14 +195,15 @@ export class CallTranscript extends LitElement {
       if (this.visible) {
         this.setAttribute("visible", "");
 
-        // When transcript becomes visible, scroll to bottom after a brief delay
-        // to ensure the component is fully rendered
-        setTimeout(() => {
-          const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-          if (transcriptEl && this.transcript.length > 0) {
-            this._scrollToBottom(transcriptEl, false);
-          }
-        }, 100);
+        // Use generic auto-scroll utility for visibility changes
+        const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+        if (transcriptEl) {
+          defaultAutoScroll.handleVisibilityChange(
+            transcriptEl,
+            this.visible,
+            this.transcript.length > 0,
+          );
+        }
       } else {
         this.removeAttribute("visible");
       }

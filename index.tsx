@@ -413,7 +413,8 @@ export class GdmLiveAudio extends LitElement {
     :host {
       display: grid;
       grid-template-columns: 400px 1fr 400px;
-      height: 100%;
+      height: 100vh;
+      overflow: hidden;
     }
 
     #status {

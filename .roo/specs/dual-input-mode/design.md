@@ -210,10 +210,34 @@ class SummarizationService {
 }
 ```
 
-## 7. Error Handling
+## 7. Auto-scroll Transcript System
+A generic auto-scroll utility provides consistent scrolling behavior across all transcript components.
+
+```typescript
+class TranscriptAutoScroll {
+  shouldAutoScroll(element: Element): boolean;
+  scrollToBottom(element: Element, smooth?: boolean): void;
+  handleTranscriptUpdate(element: Element, oldLength: number, newLength: number): void;
+  handleVisibilityChange(element: Element, isVisible: boolean, hasContent: boolean): void;
+}
+```
+
+### 7.1. Smart Scrolling Logic
+- **User-Aware Scrolling:** Only auto-scrolls when user is at or near the bottom (within 50px threshold)
+- **Performance Optimization:** Uses `requestAnimationFrame` for proper DOM timing
+- **Rapid Update Handling:** Detects multiple quick updates and uses instant scrolling to avoid excessive animation
+- **Smooth Scrolling:** Applies smooth scroll behavior for single message updates
+
+### 7.2. Component Integration
+- **chat-view.ts:** Uses generic auto-scroll for text messaging transcript
+- **call-transcript.ts:** Uses generic auto-scroll for voice call transcript
+- **Visibility Handling:** Automatically scrolls to bottom when transcript components become visible
+
+## 8. Error Handling
 - **Session Initialization Errors:** If a TTS or STS model fails to connect, display a toast notification.
 - **Summarization Errors:** If the summarization service fails, a "Summary unavailable" message will be stored in the call history.
 - **UI State Recovery:** Ensure the UI correctly returns to the tabbed chat view after a call ends, even if summarization fails.
+- **Layout Constraints:** Main container uses `overflow: hidden` to prevent page scrolling and maintain proper component boundaries.
 
 ## 8. Testing Strategy
 - **Unit Tests:**

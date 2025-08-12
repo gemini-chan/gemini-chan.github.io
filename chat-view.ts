@@ -1,5 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 interface Turn {
   text: string;
@@ -171,15 +172,32 @@ export class ChatView extends LitElement {
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
     if (changedProperties.has("transcript")) {
+      // Use generic auto-scroll utility
       const transcriptEl = this.shadowRoot?.querySelector(".transcript");
       if (transcriptEl) {
-        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+        const oldTranscript =
+          (changedProperties.get("transcript") as Turn[]) || [];
+        defaultAutoScroll.handleTranscriptUpdate(
+          transcriptEl,
+          oldTranscript.length,
+          this.transcript.length,
+        );
       }
     }
 
     if (changedProperties.has("visible")) {
       if (this.visible) {
         this.removeAttribute("hidden");
+
+        // Use generic auto-scroll utility for visibility changes
+        const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+        if (transcriptEl) {
+          defaultAutoScroll.handleVisibilityChange(
+            transcriptEl,
+            this.visible,
+            this.transcript.length > 0,
+          );
+        }
       } else {
         this.setAttribute("hidden", "");
       }
