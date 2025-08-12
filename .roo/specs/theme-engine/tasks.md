@@ -59,5 +59,6 @@ Add theme engine support with a toggle in Settings and persistence.
     - [x] 12.1. In `index.css`, merge the duplicate `:root` declarations to fix the theme.
 
   - [ ] 14. Fix theme selector styling
-    - [ ] 14.1. Design and implement a custom theme selector that is visually consistent with the application's themes.
-    - [ ] 14.2. Ensure the selector has appropriate contrast and is readable in all themes.
+    - [ ] 14.1. **REVISION:** Replace the theme dropdown with a set of buttons, one for each theme.
+    - [ ] 14.2. Ensure the active theme button is visually highlighted.
+    - [ ] 14.3. Ensure the buttons are styled consistently with the application's themes and have proper contrast.

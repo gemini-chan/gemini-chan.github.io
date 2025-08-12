@@ -323,23 +323,17 @@ export class SettingsMenu extends LitElement {
           <h2>Settings</h2>
 
           <label for="theme">Theme</label>
-          <div class="theme-selector">
-            <div class="theme-selected-option" @click=${this._toggleThemeDropdown}>
-              <span>${this._theme.charAt(0).toUpperCase() + this._theme.slice(1)}</span>
-              <svg class="dropdown-arrow" viewBox="0 0 24 24"><path d="M7,10l5,5,5-5H7z"></path></svg>
-            </div>
-            <div class="theme-options">
-              ${["auto", "cyberpunk", "dystopia", "tron", "synthwave", "matrix", "noir"].map(
-                (theme) => html`
-                  <div
-                    class="theme-option"
-                    @click=${() => this._onThemeChange(theme as any)}
-                  >
-                    ${theme.charAt(0).toUpperCase() + theme.slice(1)}
-                  </div>
-                `,
-              )}
-            </div>
+          <div class="theme-buttons">
+            ${["auto", "cyberpunk", "dystopia", "tron", "synthwave", "matrix", "noir"].map(
+              (theme) => html`
+                <button
+                  class="theme-button ${this._theme === theme ? "active" : ""}"
+                  @click=${() => this._onThemeChange(theme as any)}
+                >
+                  ${theme.charAt(0).toUpperCase() + theme.slice(1)}
+                </button>
+              `,
+            )}
           </div>
 
           <details>
@@ -837,11 +831,6 @@ export class SettingsMenu extends LitElement {
     this._theme = theme;
     localStorage.setItem("theme", theme);
     this._applyTheme(theme);
-    this.shadowRoot!.querySelector(".theme-options")!.classList.remove("show");
-  }
-
-  private _toggleThemeDropdown() {
-    this.shadowRoot!.querySelector(".theme-options")!.classList.toggle("show");
   }
 
   private _applyCircuitrySettings() {

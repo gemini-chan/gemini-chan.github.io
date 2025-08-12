@@ -11,11 +11,11 @@ This document captures the requirements for introducing a theme engine with a us
 - so that the app matches my aesthetic preference.
 
 #### 2.1.1. Acceptance Criteria
-- WHEN the settings menu opens THEN a "Theme" select appears with available theme options ("Cyberpunk", "Dystopia", "Tron", "Synthwave", "Matrix", "Noir")
+- WHEN the settings menu opens THEN a set of "Theme" buttons appears with available theme options ("Cyberpunk", "Dystopia", "Tron", "Synthwave", "Matrix", "Noir")
 - WHEN I change the theme THEN the UI updates immediately without reload
 - WHEN I change the theme THEN the choice is persisted to localStorage under key `theme`
 - WHEN I reopen the app THEN the previously selected theme is restored before UI renders
-- WHEN I open the theme selector dropdown THEN it does not visually obscure other settings controls.
+- WHEN I select a theme button THEN it becomes visually distinguished as the active theme.
 
 ### 2.5. Configurable Circuitry Animation
 - As a user,

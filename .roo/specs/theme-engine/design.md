@@ -22,8 +22,8 @@ Add a simple, extensible theme engine to support multiple visual styles for the 
   - Selected theme stored in `localStorage` under key `theme`
   - Restored at startup by inline `onload` script in `index.html`
 - Switching:
-  - Settings menu exposes a custom Theme select.
-  - The custom selector's dropdown must not overlay other settings elements. It should occupy its own space in the layout.
+  - Settings menu exposes a set of buttons for theme selection.
+  - The active theme's button will have a distinct visual style to indicate it is selected.
   - On change, update `document.documentElement.dataset.theme` (data-theme attr) and persist to `localStorage`
 
 ## 3. Styling Model
