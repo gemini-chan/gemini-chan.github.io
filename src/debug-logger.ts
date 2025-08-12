@@ -40,68 +40,153 @@ const LOG_LEVELS: Record<string, number> = {
 };
 
 /**
+ * Defines the contract for a configuration source.
+ */
+interface ConfigSource {
+  name: string;
+  priority: number;
+  load(): Partial<DebugLoggerConfig>;
+  save?(config: Partial<DebugLoggerConfig>): void;
+}
+
+/**
+ * Manages configuration from multiple sources, merging them based on priority.
+ */
+class ConfigurationManager {
+  private sources: ConfigSource[] = [];
+
+  constructor() {}
+
+  /**
+   * Adds a new configuration source.
+   * @param source - The configuration source to add.
+   */
+  addSource(source: ConfigSource): void {
+    this.sources.push(source);
+    this.sources.sort((a, b) => b.priority - a.priority);
+  }
+
+  /**
+   * Loads the final, merged configuration from all sources.
+   * @returns The merged configuration.
+   */
+  loadConfig(): DebugLoggerConfig {
+    const defaultConfig: DebugLoggerConfig = {
+      enabled: process.env.NODE_ENV !== 'production',
+      components: {},
+      logLevel: 'info',
+      timestamp: true,
+      prefix: true,
+    };
+
+    return this.sources.reduce((acc, source) => {
+      const config = source.load();
+      return { ...acc, ...config, components: { ...acc.components, ...config.components } };
+    }, defaultConfig);
+  }
+
+  /**
+   * Saves a partial configuration to all saveable sources.
+   * @param config - The partial configuration to save.
+   */
+  saveConfig(config: Partial<DebugLoggerConfig>): void {
+    this.sources.forEach(source => {
+      if (source.save) {
+        source.save(config);
+      }
+    });
+  }
+}
+/**
  * A comprehensive logger for debugging with component-specific controls.
  */
 export class DebugLogger {
   private config: DebugLoggerConfig;
-
-  private static readonly defaultConfig: DebugLoggerConfig = {
-    enabled: process.env.NODE_ENV !== 'production',
-    components: {},
-    logLevel: 'info',
-    timestamp: true,
-    prefix: true,
-  };
+  private configManager: ConfigurationManager;
 
   /**
    * Initializes a new instance of the DebugLogger.
    * @param config - Partial configuration to override defaults.
    */
   constructor(config: Partial<DebugLoggerConfig> = {}) {
-    this.config = { ...DebugLogger.defaultConfig };
-    this.loadConfigFromEnv();
-    this.loadConfigFromLocalStorage();
-    this.loadConfigFromUrl();
+    this.configManager = new ConfigurationManager();
+    this.initializeSources();
+    this.config = this.configManager.loadConfig();
     this.updateConfig(config);
-  }
 
-  private loadConfigFromEnv(): void {
-    // In a real browser environment, you might use import.meta.env
-    // For this example, we'll simulate it.
-    const debugEnabled = process.env.DEBUG_ENABLED;
-    if (debugEnabled) {
-      this.config.enabled = debugEnabled === 'true';
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (event) => {
+        if (event.key === 'debugLoggerConfig') {
+          this.config = this.configManager.loadConfig();
+        }
+      });
     }
   }
 
-  private loadConfigFromLocalStorage(): void {
-    if (typeof localStorage === 'undefined') return;
+  private initializeSources(): void {
+    // URL Source (Priority 3)
+    this.configManager.addSource({
+      name: 'URL',
+      priority: 3,
+      load: () => {
+        const config: Partial<DebugLoggerConfig> = {};
+        if (typeof URLSearchParams === 'undefined' || typeof window === 'undefined') return config;
+        
+        const params = new URLSearchParams(window.location.search);
+        const debugParam = params.get('debug');
 
-    const storedConfig = localStorage.getItem('debugLoggerConfig');
-    if (storedConfig) {
-      try {
-        const parsedConfig = JSON.parse(storedConfig);
-        this.updateConfig(parsedConfig);
-      } catch (e) {
-        console.error('Failed to parse debug logger config from localStorage', e);
+        if (debugParam !== null) {
+          config.enabled = true;
+          config.components = {};
+          if (debugParam === '*') {
+            config.components['*'] = true;
+          } else if (debugParam) {
+            debugParam.split(',').forEach(comp => {
+              if(config.components) config.components[comp] = true;
+            });
+          }
+        }
+        return config;
       }
-    }
-  }
+    });
 
-  private loadConfigFromUrl(): void {
-    if (typeof URLSearchParams === 'undefined' || typeof window === 'undefined') return;
-    
-    const params = new URLSearchParams(window.location.search);
-    const debugParam = params.get('debug');
-
-    if (debugParam !== null) {
-      this.config.enabled = true;
-      if (debugParam === '*') {
-        this.config.components['*'] = true;
-      } else if (debugParam) {
-        debugParam.split(',').forEach(comp => this.enableComponent(comp));
+    // LocalStorage Source (Priority 2)
+    this.configManager.addSource({
+      name: 'localStorage',
+      priority: 2,
+      load: () => {
+        if (typeof localStorage === 'undefined') return {};
+        const storedConfig = localStorage.getItem('debugLoggerConfig');
+        if (storedConfig) {
+          try {
+            return JSON.parse(storedConfig);
+          } catch (e) {
+            console.error('Failed to parse debug logger config from localStorage', e);
+          }
+        }
+        return {};
+      },
+      save: (config) => {
+        if (typeof localStorage === 'undefined') return;
+        const currentConfig = this.configManager.loadConfig();
+        const newConfig = { ...currentConfig, ...config, components: { ...currentConfig.components, ...config.components } };
+        localStorage.setItem('debugLoggerConfig', JSON.stringify(newConfig));
       }
-    }
+    });
+
+    // Environment Source (Priority 1)
+    this.configManager.addSource({
+      name: 'Environment',
+      priority: 1,
+      load: () => {
+        const config: Partial<DebugLoggerConfig> = {};
+        const debugEnabled = process.env.DEBUG_ENABLED;
+        if (debugEnabled) {
+          config.enabled = debugEnabled === 'true';
+        }
+        return config;
+      }
+    });
   }
 
   private log(level: 'debug' | 'info' | 'warn' | 'error', component: string, message: string, data?: any): void {
@@ -205,7 +290,8 @@ export class DebugLogger {
    * Updates the logger's configuration.
    */
   updateConfig(config: Partial<DebugLoggerConfig>): void {
-    this.config = { ...this.config, ...config, components: {...this.config.components, ...config.components} };
+    this.config = { ...this.config, ...config, components: { ...this.config.components, ...config.components } };
+    this.configManager.saveConfig(this.config);
   }
 
   /**
