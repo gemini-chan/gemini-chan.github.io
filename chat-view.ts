@@ -18,6 +18,14 @@ export class ChatView extends LitElement {
   @state()
   private inputValue = "";
 
+  @state()
+  private showScrollToBottom = false;
+
+  @state()
+  private newMessageCount = 0;
+
+  private lastSeenMessageCount = 0;
+
   static styles = css`
     :host {
       display: flex;
@@ -150,6 +158,65 @@ export class ChatView extends LitElement {
         background: rgba(255, 255, 255, 0.2);
       }
     }
+
+    .scroll-to-bottom {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(100, 150, 255, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+      z-index: 10;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+
+    .scroll-to-bottom.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .scroll-to-bottom:hover {
+      background: rgba(100, 150, 255, 1);
+      transform: scale(1.1);
+    }
+
+    .scroll-to-bottom .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: rgba(255, 100, 100, 0.9);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .transcript-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
   `;
 
   private _handleInput(e: Event) {
@@ -171,6 +238,20 @@ export class ChatView extends LitElement {
     );
   }
 
+  firstUpdated() {
+    // Add scroll event listener to update scroll-to-bottom button visibility
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      transcriptEl.addEventListener("scroll", () => {
+        const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
+        if (isAtBottom) {
+          this.lastSeenMessageCount = this.transcript.length;
+        }
+        this._updateScrollToBottomState();
+      });
+    }
+  }
+
   updated(changedProperties: Map<string | number | symbol, unknown>) {
     if (changedProperties.has("transcript")) {
       // Use generic auto-scroll utility
@@ -183,6 +264,9 @@ export class ChatView extends LitElement {
           oldTranscript.length,
           this.transcript.length,
         );
+
+        // Update scroll-to-bottom button state
+        this._updateScrollToBottomState();
       }
     }
 
@@ -205,6 +289,28 @@ export class ChatView extends LitElement {
     }
   }
 
+  private _updateScrollToBottomState() {
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      const state = defaultAutoScroll.getScrollToBottomState(
+        transcriptEl,
+        this.transcript.length,
+        this.lastSeenMessageCount,
+      );
+      this.showScrollToBottom = state.showButton;
+      this.newMessageCount = state.newMessageCount;
+    }
+  }
+
+  private _scrollToBottom() {
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      defaultAutoScroll.scrollToBottom(transcriptEl, true);
+      this.lastSeenMessageCount = this.transcript.length;
+      this._updateScrollToBottomState();
+    }
+  }
+
   render() {
     return html`
       <div class="header">
@@ -220,12 +326,30 @@ export class ChatView extends LitElement {
           </svg>
         </button>
       </div>
-      <div class="transcript">
-        ${this.transcript.map(
-          (turn) => html`
-          <div class="turn ${turn.author}">${turn.text}</div>
-        `,
-        )}
+      <div class="transcript-container">
+        <div class="transcript">
+          ${this.transcript.map(
+            (turn) => html`
+            <div class="turn ${turn.author}">${turn.text}</div>
+          `,
+          )}
+        </div>
+        
+        <button 
+          class="scroll-to-bottom ${this.showScrollToBottom ? "visible" : ""}"
+          @click=${this._scrollToBottom}
+          title="Scroll to bottom">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+            <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/>
+          </svg>
+          ${
+            this.newMessageCount > 0
+              ? html`
+            <div class="badge">${this.newMessageCount}</div>
+          `
+              : ""
+          }
+        </button>
       </div>
       <div class="input-area">
         <textarea .value=${this.inputValue} @input=${this._handleInput} @keydown=${(

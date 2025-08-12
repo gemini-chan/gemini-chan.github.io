@@ -1,5 +1,5 @@
 import { css, html, LitElement } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 interface Turn {
@@ -22,6 +22,14 @@ export class CallTranscript extends LitElement {
   @property({ type: String })
   rateLimitMessage: string =
     "E-eh? I'm getting a bit sleepy... I can't talk right now... (ρω-)";
+
+  @state()
+  private showScrollToBottom = false;
+
+  @state()
+  private newMessageCount = 0;
+
+  private lastSeenMessageCount = 0;
 
   static styles = css`
     :host {
@@ -166,7 +174,80 @@ export class CallTranscript extends LitElement {
       height: 48px;
       opacity: 0.5;
     }
+
+    .scroll-to-bottom {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(0, 150, 0, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+      z-index: 10;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+
+    .scroll-to-bottom.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .scroll-to-bottom:hover {
+      background: rgba(0, 150, 0, 1);
+      transform: scale(1.1);
+    }
+
+    .scroll-to-bottom .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: rgba(255, 100, 100, 0.9);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .transcript-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
   `;
+
+  firstUpdated() {
+    // Add scroll event listener to update scroll-to-bottom button visibility
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      transcriptEl.addEventListener("scroll", () => {
+        const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
+        if (isAtBottom) {
+          this.lastSeenMessageCount = this.transcript.length;
+        }
+        this._updateScrollToBottomState();
+      });
+    }
+  }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
     if (changedProperties.has("rateLimited")) {
@@ -188,6 +269,9 @@ export class CallTranscript extends LitElement {
           oldTranscript.length,
           this.transcript.length,
         );
+
+        // Update scroll-to-bottom button state
+        this._updateScrollToBottomState();
       }
     }
 
@@ -208,6 +292,28 @@ export class CallTranscript extends LitElement {
       } else {
         this.removeAttribute("visible");
       }
+    }
+  }
+
+  private _updateScrollToBottomState() {
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      const state = defaultAutoScroll.getScrollToBottomState(
+        transcriptEl,
+        this.transcript.length,
+        this.lastSeenMessageCount,
+      );
+      this.showScrollToBottom = state.showButton;
+      this.newMessageCount = state.newMessageCount;
+    }
+  }
+
+  private _scrollToBottom() {
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      defaultAutoScroll.scrollToBottom(transcriptEl, true);
+      this.lastSeenMessageCount = this.transcript.length;
+      this._updateScrollToBottomState();
     }
   }
 
@@ -246,32 +352,50 @@ export class CallTranscript extends LitElement {
         <span>${this.rateLimitMessage}</span>
       </div>
       
-      <div class="transcript">
-        ${
-          this.transcript.length === 0
-            ? html`
-          <div class="empty-state">
-            <svg class="call-icon" xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="currentColor">
-              <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12Z"/>
-            </svg>
-            <div>Call transcript will appear here</div>
-          </div>
-        `
-            : this.transcript.map(
-                (turn) => html`
-          <div class="turn ${turn.author}">
-            ${turn.text}
-            ${
-              turn.timestamp
-                ? html`
-              <div class="timestamp">${this._formatTimestamp(turn.timestamp)}</div>
-            `
-                : ""
-            }
-          </div>
-        `,
-              )
-        }
+      <div class="transcript-container">
+        <div class="transcript">
+          ${
+            this.transcript.length === 0
+              ? html`
+            <div class="empty-state">
+              <svg class="call-icon" xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="currentColor">
+                <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12Z"/>
+              </svg>
+              <div>Call transcript will appear here</div>
+            </div>
+          `
+              : this.transcript.map(
+                  (turn) => html`
+            <div class="turn ${turn.author}">
+              ${turn.text}
+              ${
+                turn.timestamp
+                  ? html`
+                <div class="timestamp">${this._formatTimestamp(turn.timestamp)}</div>
+              `
+                  : ""
+              }
+            </div>
+          `,
+                )
+          }
+        </div>
+        
+        <button 
+          class="scroll-to-bottom ${this.showScrollToBottom ? "visible" : ""}"
+          @click=${this._scrollToBottom}
+          title="Scroll to bottom">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+            <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/>
+          </svg>
+          ${
+            this.newMessageCount > 0
+              ? html`
+            <div class="badge">${this.newMessageCount}</div>
+          `
+              : ""
+          }
+        </button>
       </div>
     `;
   }

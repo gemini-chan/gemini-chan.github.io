@@ -12,6 +12,13 @@ export interface AutoScrollOptions {
   visibilityDelay?: number;
 }
 
+export interface ScrollToBottomState {
+  /** Whether the scroll-to-bottom button should be visible */
+  showButton: boolean;
+  /** Number of new messages since user scrolled away from bottom */
+  newMessageCount: number;
+}
+
 export class TranscriptAutoScroll {
   private options: Required<AutoScrollOptions>;
 
@@ -94,6 +101,39 @@ export class TranscriptAutoScroll {
         this.scrollToBottom(element, false);
       }, this.options.visibilityDelay);
     }
+  }
+
+  /**
+   * Calculate scroll-to-bottom button state
+   * @param element - The scrollable transcript container
+   * @param currentMessageCount - Current number of messages
+   * @param lastSeenMessageCount - Number of messages when user was last at bottom
+   * @returns State object for scroll-to-bottom button
+   */
+  getScrollToBottomState(
+    element: Element,
+    currentMessageCount: number,
+    lastSeenMessageCount: number,
+  ): ScrollToBottomState {
+    const isAtBottom = this.shouldAutoScroll(element);
+    const newMessageCount = Math.max(
+      0,
+      currentMessageCount - lastSeenMessageCount,
+    );
+
+    return {
+      showButton: !isAtBottom && currentMessageCount > 0,
+      newMessageCount: isAtBottom ? 0 : newMessageCount,
+    };
+  }
+
+  /**
+   * Handle scroll events to update button visibility
+   * @param element - The scrollable transcript container
+   * @returns Whether user is currently at or near bottom
+   */
+  handleScrollEvent(element: Element): boolean {
+    return this.shouldAutoScroll(element);
   }
 }
 
