@@ -302,7 +302,7 @@ export class SettingsMenu extends LitElement {
             <select id="theme" @change=${(e: Event) => this._onThemeChange(e)}>
               <option value="auto">Auto (prefers-color-scheme)</option>
               <option value="cyberpunk">Cyberpunk</option>
-              <option value="utopia">Utopia (Dark Cyberpunk)</option>
+              <option value="utopia">Utopia</option>
               <option value="tron">Tron</option>
               <option value="synthwave">Synthwave</option>
               <option value="matrix">Matrix</option>
@@ -774,7 +774,7 @@ export class SettingsMenu extends LitElement {
         window.matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.setAttribute(
         "data-theme",
-        prefersDark ? "classic" : "cyberpunk",
+        prefersDark ? "utopia" : "cyberpunk",
       );
       return;
     }
