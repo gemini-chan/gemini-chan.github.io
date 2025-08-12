@@ -20,7 +20,7 @@ export class CallTranscript extends LitElement {
 
   @property({ type: String })
   rateLimitMessage: string =
-    "E-eh? I'm getting a bit sleepy... I can't talk right now... (ρω-).oO";
+    "E-eh? I'm getting a bit sleepy... I can't talk right now... (ρω-)";
 
   static styles = css`
     :host {

@@ -260,7 +260,10 @@ class CallSessionManager extends BaseSessionManager {
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
     onRateLimit: (msg: string) => void = () => {},
-    private updateCallTranscript: (text: string) => void,
+    private updateCallTranscript: (
+      text: string,
+      author: "user" | "model",
+    ) => void,
   ) {
     super(
       outputAudioContext,
@@ -281,6 +284,7 @@ class CallSessionManager extends BaseSessionManager {
       responseModalities: [Modality.AUDIO],
       enableAffectiveDialog: true,
       outputAudioTranscription: {}, // Enable transcription of model's audio output
+      inputAudioTranscription: {}, // Enable transcription of user's audio input
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -293,10 +297,19 @@ class CallSessionManager extends BaseSessionManager {
         this.updateStatus(`${this.getSessionName()} opened`);
       },
       onmessage: async (message: LiveServerMessage) => {
-        // Handle audio transcription for call transcript
+        // Handle audio transcription for call transcript (model responses)
         if (message.serverContent?.outputTranscription?.text) {
           this.updateCallTranscript(
             message.serverContent.outputTranscription.text,
+            "model",
+          );
+        }
+
+        // Handle input transcription for call transcript (user speech)
+        if (message.serverContent?.inputTranscription?.text) {
+          this.updateCallTranscript(
+            message.serverContent.inputTranscription.text,
+            "user",
           );
         }
 
@@ -594,14 +607,14 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private updateCallTranscript(text: string) {
-    console.log("[Call Transcript] Received text:", text);
+  private updateCallTranscript(text: string, author: "user" | "model") {
+    console.log(`[Call Transcript] Received ${author} text:`, text);
 
     // For audio transcription, we get incremental chunks that should be appended
     const lastTurn = this.callTranscript[this.callTranscript.length - 1];
 
-    if (lastTurn?.author === "model") {
-      // Append to the existing model turn by creating a new array
+    if (lastTurn?.author === author) {
+      // Append to the existing turn by creating a new array
       // This ensures Lit detects the change
       const updatedTranscript = [...this.callTranscript];
       updatedTranscript[updatedTranscript.length - 1] = {
@@ -610,8 +623,8 @@ export class GdmLiveAudio extends LitElement {
       };
       this.callTranscript = updatedTranscript;
     } else {
-      // Create a new model turn
-      this.callTranscript = [...this.callTranscript, { text, author: "model" }];
+      // Create a new turn for this author
+      this.callTranscript = [...this.callTranscript, { text, author }];
     }
   }
 
@@ -624,17 +637,6 @@ export class GdmLiveAudio extends LitElement {
   private _handleCallRateLimit(msg?: string) {
     if (this._callRateLimitNotified) return;
     this._callRateLimitNotified = true;
-
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
-    toast?.show(
-      "Rate limit reached: responses may be delayed or unavailable",
-      "warning",
-      4000,
-    );
-
-    this._appendCallNotice(
-      "[Rate limited] Responses may be delayed or unavailable.",
-    );
 
     // Also surface the banner in the call transcript
     const callT = this.shadowRoot?.querySelector(
