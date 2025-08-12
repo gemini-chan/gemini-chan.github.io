@@ -73,9 +73,15 @@ export class TranscriptAutoScroll {
     const isFirstMessage = oldLength === 0 && newLength > 0;
     const shouldScroll = isFirstMessage || this.shouldAutoScroll(element);
 
+    console.log(
+      `[AutoScroll] Update: ${oldLength} -> ${newLength}, shouldScroll: ${shouldScroll}, isFirstMessage: ${isFirstMessage}`,
+    );
+
     if (shouldScroll) {
       // Detect rapid updates (multiple messages at once)
       const isRapidUpdate = newLength - oldLength > 1;
+
+      console.log(`[AutoScroll] Scrolling with smooth: ${!isRapidUpdate}`);
 
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {

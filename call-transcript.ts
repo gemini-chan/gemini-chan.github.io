@@ -237,6 +237,9 @@ export class CallTranscript extends LitElement {
       if (transcriptEl) {
         const oldTranscript =
           (changedProperties.get("transcript") as Turn[]) || [];
+        console.log(
+          `[CallTranscript] Transcript updated: ${oldTranscript.length} -> ${this.transcript.length}`,
+        );
         defaultAutoScroll.handleTranscriptUpdate(
           transcriptEl,
           oldTranscript.length,

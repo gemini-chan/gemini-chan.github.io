@@ -183,26 +183,26 @@ Implement tabbed UI system and call summarization to complete the dual-input mod
     - Connected all control events (settings, scroll, call start/end)
     - Maintained all existing functionality with improved architecture
 
-- [ ] 18. **CODE REVIEW** - Refactor Session Manager Callbacks to Eliminate Duplication
-  - [ ] 18.1. Consolidate common callback logic in BaseSessionManager
+- [x] 18. **CODE REVIEW** - Refactor Session Manager Callbacks to Eliminate Duplication
+  - [x] 18.1. Consolidate common callback logic in BaseSessionManager
     - Move rate-limit detection logic to BaseSessionManager.getCallbacks()
     - Consolidate onopen, onerror, and onclose handlers with common logic
     - Ensure child classes can call super.getCallbacks() and only override onmessage
-  - [ ] 18.2. Update CallSessionManager to use consolidated callbacks
+  - [x] 18.2. Update CallSessionManager to use consolidated callbacks
     - Remove duplicated rate-limit detection code
     - Call super.getCallbacks() and only override onmessage for transcription logic
     - Maintain existing functionality while reducing code duplication
-  - [ ] 18.3. Update TextSessionManager to use consolidated callbacks
+  - [x] 18.3. Update TextSessionManager to use consolidated callbacks
     - Ensure TextSessionManager also benefits from consolidated callback logic
     - Remove any duplicated error handling or rate-limit detection
     - Verify all session managers follow DRY principle
 
-- [ ] 19. **CODE REVIEW** - Improve Layout Resilience and CSS Constraints
-  - [ ] 19.1. Review and improve call transcript layout constraints
+- [x] 19. **CODE REVIEW** - Improve Layout Resilience and CSS Constraints
+  - [x] 19.1. Review and improve call transcript layout constraints
     - Ensure robust CSS constraints that work across different viewport sizes
     - Fix any layout issues with the `height: calc(100vh - 120px)` approach
     - Add fallback constraints for edge cases
-  - [ ] 19.2. Improve overall layout resilience
+  - [x] 19.2. Improve overall layout resilience
     - Review flexbox constraints and ensure proper min-height/max-height handling
     - Test layout behavior with different content sizes and viewport dimensions
     - Ensure consistent behavior across different browsers

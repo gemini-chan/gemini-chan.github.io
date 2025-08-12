@@ -268,6 +268,9 @@ export class ChatView extends LitElement {
       if (transcriptEl) {
         const oldTranscript =
           (changedProperties.get("transcript") as Turn[]) || [];
+        console.log(
+          `[ChatView] Transcript updated: ${oldTranscript.length} -> ${this.transcript.length}`,
+        );
         defaultAutoScroll.handleTranscriptUpdate(
           transcriptEl,
           oldTranscript.length,
