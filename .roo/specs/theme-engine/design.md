@@ -60,9 +60,8 @@ Cyberpunk defines all variables with neon-focused values; Classic overrides them
 ## 9. Circuitry Animation
 The animated circuitry effect is controlled by several CSS variables that can be manipulated via the settings menu.
 
-- `--circuit-display`: Controls visibility (`block` or `none`).
+- `--circuit-display`: Controls visibility (`block` or `none`) of both the grid and the pulsing nodes.
 - `--circuit-speed`: Controls animation duration (e.g., `15s`).
-- `--circuit-nodes-display`: Controls visibility of intersection nodes (`block` or `none`).
 
 These variables are updated dynamically from `settings-menu.ts` based on user input and persisted in `localStorage`.
 

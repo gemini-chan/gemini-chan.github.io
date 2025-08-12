@@ -21,13 +21,19 @@ Add theme engine support with a toggle in Settings and persistence.
   - Audit for hardcoded colors that should use variables
   - Check contrast in both themes and tweak variables if needed
 
-- [ ] 5. Implement Configurable Circuitry Animation
+- [x] 5. Implement Configurable Circuitry Animation
   - [x] 5.1. Add UI controls to `settings-menu.ts` for enabling/disabling circuitry, adjusting speed, and toggling nodes.
   - [x] 5.2. Update `index.css` to use CSS variables for circuitry display, speed, and nodes.
-  - [ ] 5.3. Implement logic in `settings-menu.ts` to update CSS variables and persist the settings to `localStorage`.
-  - [ ] 5.4. Ensure settings are restored on page load.
+  - [x] 5.3. Implement logic in `settings-menu.ts` to update CSS variables and persist the settings to `localStorage`.
+  - [x] 5.4. Ensure settings are restored on page load.
 - [ ] 6. Future Enhancements (Optional)
   - Add more themes (e.g., Tron, Synthwave, Matrix)
   - Expose a quick theme toggle in Controls panel
   - Animate grid overlay subtly based on audio/reactivity (post-config implementation)
   - Add prefers-color-scheme auto-selection
+
+
+## 6. Fix Pulsing Nodes Animation
+- [x] 6.1. Remove the separate "show pulsing nodes" checkbox from the `settings-menu.ts` component.
+- [x] 6.2. In `settings-menu.ts`, remove the logic that handles the separate pulsing nodes switch from the `_applyCircuitrySettings`, `_onCircuitryNodesChange`, and `applyCircuitrySettingsOnLoad` functions.
+- [ ] 6.3. In `index.css`, modify the `live2d-gate::before` styles to ensure the pulsing nodes animation is visible and correctly timed when the main circuitry animation is enabled.

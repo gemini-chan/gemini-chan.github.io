@@ -121,14 +121,14 @@ body::after {
 }
 
 /* Circuitry nodes overlay (when enabled) */
-/* Circuitry nodes are now a separate pseudo-element controlled by --circuit-nodes-display */
+/* The ::before pseudo-element is for the pulsing nodes. */
 live2d-gate::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: -1; /* Same as circuitry grid */
-  display: var(--circuit-nodes-display, block);
+  display: var(--circuit-display, block);
 
   background-image: radial-gradient(
       circle at 20px 20px,
@@ -178,13 +178,11 @@ live2d-gate::before {
   --circuit-size: 60px;
   --circuit-opacity: 1;
   --circuit-display: block;
-  --circuit-nodes-display: block;
 }
 
 /* Circuitry disabled */
 :root[data-circuit-enabled="false"] {
   --circuit-display: none;
-  --circuit-nodes-display: none;
 }
 
 /* Theme-specific circuitry colors */

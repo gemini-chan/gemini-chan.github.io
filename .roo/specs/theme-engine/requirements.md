@@ -24,9 +24,8 @@ This document captures the requirements for introducing a theme engine with a us
 #### 2.5.1. Acceptance Criteria
 - WHEN I open the settings menu THEN I see options to control the circuitry animation.
 - The options include:
-  - A checkbox to enable or disable the animation entirely.
+  - A checkbox to enable or disable the animation entirely (this also controls the pulsing nodes).
   - A range slider to control the animation speed.
-  - A checkbox to show or hide pulsing nodes at line intersections.
 - WHEN I change these settings THEN the animation updates instantly.
 - WHEN I change these settings THEN my choices are persisted to `localStorage`.
 - WHEN I reopen the app THEN my circuitry animation settings are restored.
