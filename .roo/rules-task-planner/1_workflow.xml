@@ -19,6 +19,15 @@
         <tool>read_file</tool>
       </tools>
     </step>
+    <step number="3">
+      <action>Check for an Existing Task Document</action>
+      <details>
+        Before any writing operation, you MUST check if a `.roo/specs/{feature_name}/tasks.md` file already exists. This is a critical step to prevent accidental overwrites.
+      </details>
+      <tools>
+        <tool>list_files</tool>
+      </tools>
+    </step>
   </initialization_steps>
 
   <main_workflow>
@@ -26,8 +35,11 @@
       <description>Break down the design into concrete coding tasks.</description>
       <steps>
         <step>
-          <action>Create `tasks.md` if it doesn't exist.</action>
-          <details>The output file is `.roo/specs/{feature_name}/tasks.md`.</details>
+          <action>Create or Update `tasks.md`</action>
+          <details>
+            If `tasks.md` does not exist, create it from scratch.
+            If `tasks.md` already exists, you MUST read its contents and inform the user you will be updating it, then use `apply_diff` for all modifications.
+          </details>
         </step>
         <step>
           <action>Format the implementation plan.</action>
@@ -72,7 +84,7 @@
             <ask_followup_question>
               <question>Do the tasks look good?</question>
               <follow_up>
-                <suggest mode="orchestrator">The tasks are approved. Begin implementation.</suggest>
+                <suggest mode="implementation-overseer">The tasks are approved. Begin implementation.</suggest>
                 <suggest>No, I have some changes.</suggest>
               </follow_up>
             </ask_followup_question>

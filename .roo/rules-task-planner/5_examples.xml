@@ -2,7 +2,7 @@
 <examples>
   <example name="full_task_planning_workflow">
     <description>
-      This example demonstrates the complete workflow for the Task Planner mode, from reading the initial design document to generating a final, user-approved implementation plan.
+      This example demonstrates the complete workflow for the Task Planner mode, from reading the initial design document to generating a final, user-approved implementation plan and handing off to the implementation overseer.
     </description>
     
     <context>

@@ -1,5 +1,6 @@
 import { css, html, LitElement } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
+import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 interface Turn {
   text: string;
@@ -20,14 +21,26 @@ export class CallTranscript extends LitElement {
 
   @property({ type: String })
   rateLimitMessage: string =
-    "E-eh? I'm getting a bit sleepy... I can't talk right now... (ρω-).oO";
+    "E-eh? I'm getting a bit sleepy... I can't talk right now... (ρω-)";
+
+  @state()
+  private showScrollToBottom = false;
+
+  @state()
+  private newMessageCount = 0;
+
+  private lastSeenMessageCount = 0;
 
   static styles = css`
     :host {
       display: flex;
       flex-direction: column;
-      height: 100%;
+      height: 100vh;
+      max-height: 100vh;
+      min-height: 400px; /* Fallback minimum height */
       width: 400px;
+      min-width: 300px; /* Fallback minimum width */
+      max-width: 500px; /* Maximum width constraint */
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;
@@ -111,13 +124,20 @@ export class CallTranscript extends LitElement {
     }
 
     .transcript {
+      /* Use flexbox for proper height calculation */
       flex: 1;
+      min-height: 0; /* Critical for flexbox overflow */
+      
       overflow-y: auto;
+      overflow-x: hidden; /* Prevent horizontal scroll */
       display: flex;
       flex-direction: column;
       gap: 12px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+      
+      /* Ensure proper scrolling on different browsers */
+      -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
     }
 
     .turn {
@@ -164,7 +184,23 @@ export class CallTranscript extends LitElement {
       height: 48px;
       opacity: 0.5;
     }
+
+
   `;
+
+  firstUpdated() {
+    // Add scroll event listener to update scroll-to-bottom button visibility
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      transcriptEl.addEventListener("scroll", () => {
+        const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
+        if (isAtBottom) {
+          this.lastSeenMessageCount = this.transcript.length;
+        }
+        this._updateScrollToBottomState();
+      });
+    }
+  }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
     if (changedProperties.has("rateLimited")) {
@@ -174,11 +210,24 @@ export class CallTranscript extends LitElement {
         this.removeAttribute("ratelimited");
       }
     }
+
     if (changedProperties.has("transcript")) {
-      // Auto-scroll to bottom when new transcript entries are added
+      // Use generic auto-scroll utility
       const transcriptEl = this.shadowRoot?.querySelector(".transcript");
       if (transcriptEl) {
-        transcriptEl.scrollTop = transcriptEl.scrollHeight;
+        const oldTranscript =
+          (changedProperties.get("transcript") as Turn[]) || [];
+        console.log(
+          `[CallTranscript] Transcript updated: ${oldTranscript.length} -> ${this.transcript.length}`,
+        );
+        defaultAutoScroll.handleTranscriptUpdate(
+          transcriptEl,
+          oldTranscript.length,
+          this.transcript.length,
+        );
+
+        // Update scroll-to-bottom button state
+        this._updateScrollToBottomState();
       }
     }
 
@@ -186,9 +235,53 @@ export class CallTranscript extends LitElement {
       // Update the visible attribute for CSS styling
       if (this.visible) {
         this.setAttribute("visible", "");
+
+        // Use generic auto-scroll utility for visibility changes
+        const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+        if (transcriptEl) {
+          defaultAutoScroll.handleVisibilityChange(
+            transcriptEl,
+            this.visible,
+            this.transcript.length > 0,
+          );
+        }
       } else {
         this.removeAttribute("visible");
       }
+    }
+  }
+
+  private _updateScrollToBottomState() {
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      const state = defaultAutoScroll.getScrollToBottomState(
+        transcriptEl,
+        this.transcript.length,
+        this.lastSeenMessageCount,
+      );
+      this.showScrollToBottom = state.showButton;
+      this.newMessageCount = state.newMessageCount;
+
+      // Dispatch event to notify parent component of scroll state changes
+      this.dispatchEvent(
+        new CustomEvent("scroll-state-changed", {
+          detail: {
+            showButton: state.showButton,
+            newMessageCount: state.newMessageCount,
+          },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    }
+  }
+
+  private _scrollToBottom() {
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      defaultAutoScroll.scrollToBottom(transcriptEl, true);
+      this.lastSeenMessageCount = this.transcript.length;
+      this._updateScrollToBottomState();
     }
   }
 

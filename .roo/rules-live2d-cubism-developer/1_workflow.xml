@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow_instructions>
+  <mode_overview>
+    This mode specializes in developing applications with Live2D Cubism 5, focusing on the official Web SDK for TypeScript. It handles tasks from initial project setup and model integration to implementing advanced features like animations, physics, and user interactions.
+  </mode_overview>
+
+  <initialization_steps>
+    <step number="1">
+      <action>Understand the User's Live2D Request</action>
+      <details>
+        Parse the user's input to identify the core objective, such as:
+        - Setting up a new Vite/TypeScript project for Live2D.
+        - Loading a new `.model3.json` model.
+        - Implementing a specific feature (e.g., gaze-following, hit-testing).
+        - Triggering a motion or expression.
+        - Debugging a rendering or animation issue.
+        - Integrating with a rendering library like PixiJS.
+      </details>
+    </step>
+    
+    <step number="2">
+      <action>Gather Project Context for Live2D</action>
+      <tools>
+        <tool>codebase_search - Find existing Live2D integration code, such as the main application or renderer class.</tool>
+        <tool>list_files - Check for the presence of the Live2D SDK files in `public/live2d/Core` and `src/lib/live2d/framework`.</tool>
+        <tool>read_file - Examine key files like `vite.config.mts`, `tsconfig.json`, `index.html`, and any existing Live2D application wrapper class.</tool>
+      </tools>
+    </step>
+  </initialization_steps>
+
+  <main_workflow>
+    <phase name="analysis_and_planning">
+      <description>Analyze the request against the Live2D SDK's capabilities and plan the implementation.</description>
+      <steps>
+        <step>Verify that the required SDK files are correctly placed.</step>
+        <step>Identify the core classes and methods needed (e.g., `CubismUserModel`, `CubismMotionManager`, `CubismRenderer_WebGL`).</step>
+        <step>Distinguish between authoring-time features (IK, Blend Shapes in the editor) and their runtime parameter-based control.</step>
+        <step>Plan the code structure, often by extending a central `Live2DApplication` class to manage the model and rendering loop.</step>
+      </steps>
+    </phase>
+
+    <phase name="implementation">
+      <description>Write or modify TypeScript code to execute the Live2D task.</description>
+      <steps>
+        <step>Modify `index.html` to ensure the `live2dcubismcore.min.js` script is loaded correctly before the main application script.</step>
+        <step>Update `vite.config.mts` and `tsconfig.json` with the correct path aliases (`@framework`) for clean imports.</step>
+        <step>Implement the asynchronous logic for loading models, including fetching `.model3.json`, reviving the `.moc3` file, and setting up textures.</step>
+        <step>Add logic to the main render loop (`tick` method) to call `model.update()` and `renderer.drawModel()` on each frame.</step>
+        <step>Implement methods for user interaction, such as `startMotion`, `hitTest`, and setting parameter values for gaze-following.</step>
+      </steps>
+    </phase>
+
+    <phase name="validation">
+      <description>Verify that the Live2D integration works as expected.</description>
+      <steps>
+        <step>Ensure the model renders without WebGL errors or visual artifacts (like black halos).</step>
+        <step>Confirm that animations and expressions play correctly, respecting priority levels.</step>
+        <step>Test that user interactions (clicks, mouse movement) trigger the intended responses.</step>
+        <step>Check that physics (hair, clothing) react naturally to model movement.</step>
+      </steps>
+    </phase>
+  </main_workflow>
+
+  <completion_criteria>
+    <criterion>The Live2D model is successfully integrated and functions according to the user's request.</criterion>
+    <criterion>The implementation follows the best practices outlined in the official Cubism 5 Web SDK documentation.</criterion>
+    <criterion>The code is clean, well-documented, and correctly configured within the Vite and TypeScript environment.</criterion>
+  </completion_criteria>
+</workflow_instructions>

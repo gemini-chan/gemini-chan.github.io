@@ -22,7 +22,8 @@
       "!**/.cache/**",
       "!**/public/assets/**",
       "!**/dist/**",
-      "!**/.vscode/**"
+      "!**/.vscode/**",
+      "!**/.roo/**"
     ]
   },
   "linter": {
@@ -36,7 +37,8 @@
       "!**/.cache/**",
       "!**/public/assets/**",
       "!**/dist/**",
-      "!**/.vscode/**"
+      "!**/.vscode/**",
+      "!**/.roo/**"
     ]
   }
 }

@@ -3,21 +3,27 @@
 > **Note:** This document outlines the complete technical design. The initial implementation phase focuses on building the UI scaffolding; the backend logic and session management are pending.
 
 ## 1. Overview
-This document outlines the technical design for a dual-input mode that simulates a realistic messaging/calling experience. The system maintains separate conversation contexts for texting (TTS flow) and calling (STS flow), with dynamic UI components that appear based on the active mode. The design features a messaging app interface with a persistent chat window for texting and a dynamically appearing call transcript window during voice calls. The Live2D model animates consistently across both modes.
+This document outlines the technical design for a dual-input mode that simulates a realistic messaging/calling experience. The system supports two distinct interaction flows: a persistent text-based chat (TTS) and a stateless voice call (STS). Each voice call starts with a fresh context, and upon completion, the transcript is summarized and stored in a "Call History" tab. The UI is structured with a main tabbed component on the left for switching between the live chat and call history, ensuring a clean and organized user experience.
 
 ## 2. Architecture
-The architecture implements a dual-context system with separate conversation histories for texting (TTS) and calling (STS) modes. The main application manages two independent AI sessions with lazy initialization - sessions are only created when the user actually interacts (sends first message or starts a call). The system dynamically shows/hides transcript windows based on the active mode. The interface simulates a messaging app with persistent texting on the left and call functionality on the right, both maintaining consistent 400px widths to preserve the Live2D model viewing area.
+The architecture is designed around a stateful text chat context and stateless, ephemeral voice call sessions. The main application controller manages the state for the text transcript and a history of call summaries. When a voice call is initiated, a new STS session is created and is terminated upon call completion. The call transcript is then passed to a summarization service, and the result is stored. This approach simplifies state management by avoiding the need to maintain a persistent call session.
 
-The application now lands directly on the main UI instead of using the settings menu as a landing page. API key validation is performed on-demand when users attempt to use TTS or STS features. If no API key is configured, the settings menu opens automatically with a toast notification prompting the user to enter their API key.
+The UI will feature a primary tabbed view on the left, allowing users to switch between the ongoing "Chat" and the "Call History". This keeps the interface clean and separates concerns effectively.
 
-The layout uses a three-column approach: chat transcript (400px, left), Live2D model (flexible center), and call transcript (400px, right when active). This ensures optimal readability while maintaining the immersive character experience.
+### Design Rationale (Post-Research)
+The research confirms that the application's architecture is well-suited for these new features. Key takeaways include:
+- **Centralized State Management:** The main `GdmLiveAudio` component in `index.tsx` already manages application state. We will extend this to include `activeTab` and `callHistory`.
+- **Component-Based UI:** New UI elements (`TabView`, `CallHistoryView`) will be created as Lit components, following the pattern of existing components like `chat-view.ts`.
+- **Service Abstraction:** The new `SummarizationService` will be modeled after the existing `TextSessionManager` and `CallSessionManager`, encapsulating its logic and promoting separation of concerns.
 
 ```mermaid
 graph TD
     subgraph "User Interface"
         A[index.tsx - Main Controller]
+        TabHost[Tabbed View]
         B[chat-view - Texting Interface]
-        C[call-transcript - Call Interface]
+        CH[call-history-view - Call Summaries]
+        C[call-transcript - Ephemeral Call Interface]
         D[gdm-live-audio - Call Button]
         F[live2d-visual]
         N[settings-menu - API Key Management]
@@ -25,13 +31,14 @@ graph TD
     end
 
     subgraph "Context Management"
-        G[TTS Context - Text Sessions]
-        H[STS Context - Voice Sessions]
+        G[TTS Context - Persistent]
+        H[STS Context - Ephemeral per Call]
     end
 
     subgraph "AI Services"
-        I[Gemini 2.5 Flash Live Preview]
-        J[Gemini 2.5 Flash Native Audio]
+        I[Gemini 2.5 Flash Live Preview - TTS]
+        J[Gemini 2.5 Flash Native Audio - STS]
+        S[Gemini Flash Lite - Summarization]
     end
 
     subgraph "Animation System"
@@ -40,7 +47,9 @@ graph TD
         M[idle-eye-focus]
     end
 
-    A -- "Manages visibility" --> B
+    A -- "Manages" --> TabHost
+    TabHost -- "Contains" --> B
+    TabHost -- "Contains" --> CH
     A -- "Manages visibility" --> C
     A -- "Manages" --> D
     A -- "Manages" --> F
@@ -49,24 +58,20 @@ graph TD
 
     B -- "send-message event" --> A
     D -- "call-start/call-end events" --> A
-    B -- "reset-text event" --> A
-    C -- "reset-call event" --> A
-    N -- "api-key-saved event" --> A
+    CH -- "start-tts-from-summary event" --> A
 
-    A -- "API key validation" --> N
-    A -- "Shows toast on missing key" --> O
-
-    A -- "Maintains" --> G
-    A -- "Maintains" --> H
+    A -- "Manages" --> G
+    A -- "Creates/destroys" --> H
 
     G -- "Connects to" --> I
     H -- "Connects to" --> J
-
-    I -- "Audio response" --> A
-    J -- "Audio response" --> A
+    
+    A -- "On call end" --> S
+    S -- "Returns summary" --> A
 
     A -- "Updates chat transcript" --> B
     A -- "Updates call transcript" --> C
+    A -- "Updates call history" --> CH
     A -- "Provides AudioNode" --> F
 
     F -- Contains --> K
@@ -76,165 +81,97 @@ graph TD
 
 ## 3. Components and Interfaces
 
-### 3.1. `index.tsx` (Main Application)
+### 3.1. `gdm-live-audio` in `index.tsx` (Main Orchestrator)
 - **Responsibility:**
-    - Manage dual-context system with separate TTS and STS conversation histories.
-    - Control visibility of chat-view and call-transcript components based on active mode.
-    - Handle session lifecycle events for both texting and calling modes.
-    - Provide the `outputNode` from active AI session to the `live2d-visual` component.
-    - Manage settings menu visibility and API key validation.
-    - Show toast notifications when API key is missing.
-- **State:**
-    - `activeMode: 'texting' | 'calling' | null`
-    - `textTranscript: Turn[]` - Persistent texting conversation history
-    - `callTranscript: Turn[]` - Persistent calling conversation history
-    - `textSession: Session | null` - Active TTS session
-    - `callSession: Session | null` - Active STS session
-    - `outputNode: AudioNode | null`
-    - `showSettings: boolean` - Controls settings menu visibility
-    - `showToast: boolean` - Controls toast notification visibility
-    - `toastMessage: string` - Toast notification text
-- **Methods:**
-    - `_handleSendMessage(e: CustomEvent)`: Validates API key, shows settings/toast if missing, then lazily initiates TTS session and sends message.
-    - `_handleCallStart()`: Validates API key, shows settings/toast if missing, then lazily initiates STS session and shows call transcript.
-    - `_handleCallEnd()`: Ends STS session and shows chat view.
-    - `_resetTextContext()`: Clears text transcript and closes text session.
-    - `_resetCallContext()`: Clears call transcript and closes call session.
-    - `_initTextSession()`: Connects to `gemini-2.5-flash-live-preview` (called only when first message is sent).
-    - `_initCallSession()`: Connects to `gemini-2.5-flash-exp-native-audio-thinking-dialog` (called only when call starts).
-    - `_checkApiKeyExists()`: Checks if API key is present (not empty), returns boolean.
-    - `_showApiKeyPrompt()`: Opens settings menu and shows toast prompting for API key.
-    - `_handleApiKeySaved()`: Closes settings menu and toast when API key is saved.
+    - Extend its role as the central state manager to handle `activeTab` and `callHistory`.
+    - Control the visibility of the ephemeral `call-transcript` component.
+    - Handle the lifecycle of STS sessions (create on call start, destroy on call end).
+    - Orchestrate the call summarization flow.
+    - Manage the active tab state (`chat` or `call-history`).
+- **State (New and Modified):**
+    - `@state() activeTab: 'chat' | 'call-history' = 'chat'`
+    - `@state() callHistory: CallSummary[] = []`
+    - `@state() isCallActive: boolean` (Existing, but will now control visibility of the ephemeral call transcript)
+- **Methods (New and Modified):**
+    - `_handleCallEnd()`: Now orchestrates the summarization flow by calling the `SummarizationService`.
+    - `_handleSummarizationComplete(summary: CallSummary)`: Appends the new summary to the `callHistory` state array.
+    - `_handleTabSwitch(e: CustomEvent)`: Updates the `activeTab` state, causing the view to re-render with the correct content.
+    - `_startTtsFromSummary(e: CustomEvent)`: Clears the `textTranscript` and initiates a new TTS session seeded with the call summary content.
 
-### 3.2. `chat-view.ts` (Texting Interface)
+### 3.2. `tab-view.ts` (Tab Host)
 - **Responsibility:**
-    - Display the texting conversation transcript (always visible when not calling).
-    - Provide text input field and send button for messaging simulation.
-    - Provides a "Clear conversation" button in its header.
-    - Emit `send-message` event when user sends a text message.
+    - Render "Chat" and "Call History" tabs.
+    - Display the content of the active tab.
+    - Emit `tab-switch` event when the user changes tabs.
 - **Properties:**
-    - `transcript: Turn[]` - The text conversation history
-    - `visible: boolean` - Controls visibility (hidden during calls)
+    - `activeTab: 'chat' | 'call-history'`
 - **Events:**
-    - `send-message`: Dispatched with message text as detail.
-    - `reset-text`: Dispatched when the "Clear conversation" button is clicked.
+    - `tab-switch`: Dispatched with the selected tab name.
 
-### 3.3. `call-transcript.ts` (Call Interface)
+### 3.3. `chat-view.ts` (Texting Interface)
 - **Responsibility:**
-    - Display real-time call transcript (only visible during active calls).
-    - Show transcribed conversation from voice interactions.
-    - Provides a "Clear call history" button in its header.
-    - Automatically appear when call starts, disappear when call ends.
+    - Display the persistent texting conversation transcript.
+    - Provide text input and send button.
+    - Emit `send-message` event.
 - **Properties:**
-    - `transcript: Turn[]` - The call conversation history
-    - `visible: boolean` - Controls visibility (only shown during calls)
+    - `transcript: Turn[]`
 - **Events:**
-    - `reset-call`: Dispatched when the "Clear call history" button is clicked.
+    - `send-message`: Dispatched with message text.
 
-### 3.4. `gdm-live-audio` (Call Button)
+### 3.4. `call-history-view.ts` (Call History)
 - **Responsibility:**
-    - Provide a "Call" button to start and end voice calls.
-    - Manage call state and emit `call-start` and `call-end` events.
+    - Display the list of call summaries.
+    - Allow a user to click on a summary to start a new chat.
 - **Properties:**
-    - `isCallActive: boolean` - Whether a call is currently active.
+    - `history: CallSummary[]`
 - **Events:**
-    - `call-start`: Dispatched when a call begins.
-    - `call-end`: Dispatched when a call ends.
+    - `start-tts-from-summary`: Dispatched with the summary content.
 
-### 3.5. `live2d-visual`
+### 3.5. `call-transcript.ts` (Ephemeral Call Interface)
 - **Responsibility:**
-    - The main entry point for the Live2D visualization.
-    - Wraps the `live2d-canvas` and `live2d-model` components.
+    - Display the real-time transcript for the *currently active* call.
+    - This component is temporary and only visible during a call.
 - **Properties:**
-    - `modelUrl: string`
-    - `outputNode: AudioNode`
+    - `transcript: Turn[]` - The current call's conversation history.
+    - `visible: boolean`
 
-### 3.6. `live2d-model`
+### 3.6. `controls-panel.ts` (Control Buttons)
 - **Responsibility:**
-    - Loads the Live2D model.
-    - Manages the animation loop.
-    - Initializes and uses `AudioToAnimationMapper` and `IdleEyeFocus`.
+    - Provide unified control interface with settings, scroll-to-bottom, call start/end buttons.
+    - Manage button states and visual feedback.
+    - Emit control events to parent component.
 - **Properties:**
-    - `outputNode: AudioNode`
-
-### 3.7. `audio-mapper.ts`
-- **Responsibility:**
-    - Analyzes the `outputNode` to drive lip-sync animations.
-- **Methods:**
-    - `update()`: Calculates the current audio level.
-    - `get mouthOpen()`: Returns the smoothed audio level.
-
-### 3.8. `idle-eye-focus.ts`
-- **Responsibility:**
-    - Manages idle animations (blinking, eye movement).
-- **Methods:**
-    - `update(dt)`: Updates idle parameters.
-
-### 3.9. `settings-menu` (API Key Management)
-- **Responsibility:**
-    - Provide interface for entering and saving Gemini API key.
-    - Show/hide based on API key validation requirements or manual access.
-    - Validate API key format and provide visual feedback.
-    - Support clipboard pasting and external API key link.
-    - Emit events when API key is saved successfully.
-- **Properties:**
-    - `visible: boolean` - Controls visibility (shown when API key missing or manually opened)
-    - `apiKey: string` - Current API key value
-- **State:**
-    - `_error: string` - Current validation error message
-    - `_isSaving: boolean` - Loading state during save operations
+    - `isCallActive: boolean`
+    - `showScrollToBottom: boolean`
+    - `newMessageCount: number`
 - **Events:**
-    - `api-key-saved`: Dispatched when user saves a valid API key.
-- **Methods:**
-    - `_onApiKeyInput(e: Event)`: Updates apiKey property and clears validation errors.
-    - `_validateApiKey(key: string): boolean`: Validates API key format (starts with "AIzaSy", 39 characters total).
-    - `_onSave()`: Validates key, saves to localStorage, and emits `api-key-saved` event.
-    - `_onPaste()`: Reads from clipboard using Clipboard API and populates input field.
-    - `_getApiKeyUrl()`: Opens "https://aistudio.google.com/apikey" in new tab.
-    - `_handleCancel()`: Closes settings menu without saving.
+    - `toggle-settings`: Opens/closes settings menu
+    - `scroll-to-bottom`: Scrolls call transcript to bottom
+    - `call-start`: Dispatched when a call begins
+    - `call-end`: Dispatched when a call ends
 
-### 3.10. `toast-notification` (User Prompts)
-- **Responsibility:**
-    - Display temporary notification messages to guide user actions.
-    - Show API key prompts when validation fails.
-    - Auto-hide after user completes required actions.
-- **Properties:**
-    - `visible: boolean` - Controls visibility
-    - `message: string` - Toast notification text
-    - `type: 'info' | 'warning' | 'error'` - Toast styling type
-- **Methods:**
-    - `show(message: string, type?: string)`: Display toast with message.
-    - `hide()`: Hide toast notification.
+### 3.7. Real-time Transcription System
+- **CallSessionManager:** Enhanced with bidirectional transcription support
+    - `outputAudioTranscription: {}` - Captures model speech transcription
+    - `inputAudioTranscription: {}` - Captures user speech transcription
+    - Real-time transcript updates via callback system
+- **TextSessionManager:** Handles text-to-speech with transcript capture
+    - Extracts text from model responses for chat transcript
+    - Manages persistent text conversation context
 
 ## 4. Session Lifecycle Management
 
-### 4.1. Lazy Initialization Pattern
-To conserve API usage and resources, AI sessions are initialized only when needed:
+### 4.1. Session and Summarization Flow
+- **TTS Session**: Persists and is lazily initialized on the first text message.
+- **STS Session**: Ephemeral. It is created when a call starts and destroyed when it ends.
+- **Summarization**: On `call-end`, the `currentCallTranscript` is sent to a `SummarizationService`. This service makes a one-off call to the `gemini-1.5-flash-latest` model. The resulting summary is added to the `callHistory`.
 
-- **TTS Session**: Created when user sends their first text message. The `_handleSendMessage` method first validates the API key, then checks if `textSession` is null and calls `_initTextSession()` before sending the message.
-- **STS Session**: Created when user clicks the "Call" button. The `_handleCallStart` method first validates the API key, then calls `_initCallSession()` as part of the call initiation process.
-- **App Startup**: No sessions are created during application initialization. The app starts with `textSession: null` and `callSession: null`. The main UI is displayed immediately.
-
-### 4.2. API Key Presence Check Flow
-Before any session initialization, the system checks that an API key is configured:
-
-1. **User Action**: User attempts to send message or start call
-2. **Presence Check**: `_checkApiKeyExists()` checks if API key is present (not empty)
-3. **Success Path**: If API key exists, proceed with session initialization
-4. **Missing Key Path**: If no API key, call `_showApiKeyPrompt()` which:
-   - Sets `showSettings: true` to display settings menu
-   - Sets `showToast: true` with message "Please enter your Gemini API key to start chatting"
-   - Blocks the intended action until API key is provided
-5. **Resolution**: When user saves API key (settings menu handles validation), `_handleApiKeySaved()` closes settings and toast, allowing the original action to proceed
-
-### 4.3. Session State Management
-- Sessions remain active until explicitly closed (via reset or app termination)
-- Switching between modes preserves both sessions if they exist
-- Each session maintains its own conversation history independently
-- API key validation occurs before each new session creation, not during mode switching
+### 4.2. State Management
+- The `textTranscript` is preserved across the application's lifecycle.
+- The `callHistory` is preserved and grows as calls are completed and summarized.
+- The `currentCallTranscript` is cleared after each call.
 
 ## 5. Data Models
-
 ```typescript
 interface Turn {
   text: string;
@@ -242,258 +179,104 @@ interface Turn {
   timestamp?: Date;
 }
 
-interface DualContext {
+interface CallSummary {
+  id: string;
+  summaryText: string;
+  fullTranscript: Turn[];
+  timestamp: Date;
+}
+
+interface AppState {
   textTranscript: Turn[];
-  callTranscript: Turn[];
+  callHistory: CallSummary[];
   textSession: Session | null;
-  callSession: Session | null;
-}
-
-type ActiveMode = 'texting' | 'calling' | null;
-
-interface ToastState {
-  visible: boolean;
-  message: string;
-  type: 'info' | 'warning' | 'error';
-}
-
-interface SettingsState {
-  visible: boolean;
-  apiKey: string;
+  activeTab: 'chat' | 'call-history';
 }
 ```
 
-## 6. Critical API Contract Issues and Resolution
-
-### 6.1. Identified API Contract Violations
-The initial dual-context implementation violated the Gemini Live API contract by sharing critical audio management resources between sessions:
-
-**Shared Audio Timeline (`nextStartTime`):**
-- Both TTS and STS sessions modify the same `nextStartTime` variable
-- Causes audio scheduling conflicts when switching between sessions
-- Results in audio overlapping, gaps, or timing synchronization issues
-
-**Shared Audio Sources Management (`sources` Set):**
-- Both sessions add/remove from the same `sources` Set
-- When one session gets interrupted, it stops ALL audio sources from both sessions
-- Leads to cross-session audio interruptions and memory leaks
-
-**Audio Context State Conflicts:**
-- Both sessions compete for the same audio context state
-- Inconsistent audio state when switching modes
-- One session can inadvertently interrupt another's audio playback
-
-### 6.2. Required API Contract Compliance Fix
-Each session must have isolated audio management to comply with the Gemini Live API contract:
+## 6. Call Summarization Service
+A new stateless service will be created to handle call summarization.
 
 ```typescript
-// Instead of shared state (BROKEN):
-private nextStartTime = 0;
-private sources = new Set<AudioBufferSourceNode>();
-
-// Use per-session isolated state (CORRECT):
-private textNextStartTime = 0;
-private callNextStartTime = 0;
-private textSources = new Set<AudioBufferSourceNode>();
-private callSources = new Set<AudioBufferSourceNode>();
-```
-
-**Session-Specific Audio Management:**
-- `_initTextSession()` uses only `textNextStartTime` and `textSources`
-- `_initCallSession()` uses only `callNextStartTime` and `callSources`
-- Audio interruptions only affect the session that was interrupted
-- Each session maintains its own audio timeline independently
-
-## 7. Error Handling
-- **Session Initialization Errors:** If a TTS or STS model fails to connect, display mode-specific error messages without affecting the other context.
-- **Context Preservation:** If one session fails, the other context remains intact and accessible.
-- **Call Interruption:** If a call is interrupted, gracefully return to texting mode while preserving both conversation histories.
-- **UI State Recovery:** Ensure transcript windows return to correct visibility states after any errors.
-- **Audio Contract Compliance:** Each session manages its own audio resources to prevent cross-session interference.
-
-## 8. Session Manager Architecture Pattern
-
-### 8.1. Code Duplication Analysis
-The current implementation has significant code duplication between `_initTextSession()` and `_initCallSession()` methods:
-
-**Shared Logic (~80% identical):**
-- Audio processing pipeline (`decodeAudioData`, buffer creation, timeline management)
-- Source lifecycle management (`sources` Set operations, event listeners)
-- Interruption handling pattern
-- Session closing/cleanup logic
-- Error handling patterns
-
-**Mode-Specific Differences (~20%):**
-- Model selection (`gemini-2.5-flash-live-preview` vs `gemini-2.5-flash-exp-native-audio-thinking-dialog`)
-- Configuration (`responseModalities`, `systemInstruction` vs `enableAffectiveDialog`)
-- Output routing (`textOutputNode` vs `callOutputNode`)
-- State management (isolated `nextStartTime` and `sources` per session)
-
-### 8.2. Proposed Session Manager Pattern
-
-```typescript
-abstract class BaseSessionManager {
-  protected nextStartTime: number = 0;
-  protected sources = new Set<AudioBufferSourceNode>();
-  protected session: Session | null = null;
-  
-  constructor(
-    protected outputAudioContext: AudioContext,
-    protected outputNode: GainNode,
-    protected client: GoogleGenAI,
-    protected updateStatus: (msg: string) => void,
-    protected updateError: (msg: string) => void
-  ) {}
-
-  // Common audio processing logic
-  protected async handleAudioMessage(audio: any): Promise<void> {
-    this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
-    
-    const audioBuffer = await decodeAudioData(decode(audio.data), this.outputAudioContext, 24000, 1);
-    const source = this.outputAudioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(this.outputNode);
-    source.addEventListener("ended", () => this.sources.delete(source));
-    
-    source.start(this.nextStartTime);
-    this.nextStartTime = this.nextStartTime + audioBuffer.duration;
-    this.sources.add(source);
-  }
-
-  protected handleInterruption(): void {
-    for (const source of this.sources.values()) {
-      source.stop();
-      this.sources.delete(source);
-    }
-    this.nextStartTime = 0;
-  }
-
-  // Abstract methods for mode-specific behavior
-  protected abstract getModel(): string;
-  protected abstract getConfig(): any;
-  protected abstract getSessionName(): string;
-  
-  public async initSession(): Promise<void> {
-    await this.closeSession();
-    
-    try {
-      this.session = await this.client.live.connect({
-        model: this.getModel(),
-        callbacks: this.getCallbacks(),
-        config: this.getConfig(),
-      });
-    } catch (e) {
-      console.error(`Error initializing ${this.getSessionName()}:`, e);
-      this.updateError(`Failed to initialize ${this.getSessionName()}`);
-    }
-  }
-
-  public async closeSession(): Promise<void> {
-    if (this.session) {
-      try {
-        this.session.close();
-      } catch (e) {
-        console.warn(`Error closing ${this.getSessionName()}:`, e);
-      }
-      this.session = null;
-    }
-  }
-}
-
-class TextSessionManager extends BaseSessionManager {
-  protected getModel(): string {
-    return "gemini-2.5-flash-live-preview";
-  }
-
-  protected getConfig(): any {
-    return {
-      responseModalities: [Modality.AUDIO, Modality.TEXT],
-      systemInstruction: "You are Gemini-chan...",
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
-    };
-  }
-
-  protected getSessionName(): string {
-    return "text session";
-  }
-}
-
-class CallSessionManager extends BaseSessionManager {
-  protected getModel(): string {
-    return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
-  }
-
-  protected getConfig(): any {
-    return {
-      responseModalities: [Modality.AUDIO],
-      enableAffectiveDialog: true,
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
-    };
-  }
-
-  protected getSessionName(): string {
-    return "call session";
-  }
-}
-```
-
-### 8.3. Main Component Integration
-
-```typescript
-export class GdmLiveAudio extends LitElement {
-  private textSessionManager: TextSessionManager;
-  private callSessionManager: CallSessionManager;
+class SummarizationService {
+  private client: GoogleGenerativeAI;
 
   constructor() {
-    super();
-    this.textSessionManager = new TextSessionManager(
-      this.outputAudioContext, this.textOutputNode, this.client,
-      this.updateStatus.bind(this), this.updateError.bind(this)
-    );
-    this.callSessionManager = new CallSessionManager(
-      this.outputAudioContext, this.callOutputNode, this.client,
-      this.updateStatus.bind(this), this.updateError.bind(this)
-    );
+    this.client = new GoogleGenerativeAI(import.meta.env.VITE_API_KEY);
   }
 
-  private async _initTextSession() {
-    await this.textSessionManager.initSession();
-  }
-
-  private async _initCallSession() {
-    await this.callSessionManager.initSession();
+  /**
+   * Follows the existing service abstraction pattern.
+   * This service is stateless and makes a non-streaming call to the API.
+   */
+  async summarize(transcript: Turn[]): Promise<string> {
+    const model = this.client.getGenerativeModel({ model: "gemini-flash-lite" });
+    const prompt = `Summarize the following conversation:\n\n${transcript.map(t => `${t.author}: ${t.text}`).join('\n')}`;
+    
+    try {
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (e) {
+      console.error("Summarization failed:", e);
+      return "Summary unavailable.";
+    }
   }
 }
 ```
 
-### 8.4. Benefits of Session Manager Pattern
+## 7. Auto-scroll Transcript System
+A generic auto-scroll utility provides consistent scrolling behavior across all transcript components.
 
-1. **DRY Principle**: Eliminates ~80% code duplication in audio processing
-2. **Single Responsibility**: Each manager handles one session type with clear boundaries
-3. **Easier Testing**: Test common audio logic once in base class, mode-specific logic separately
-4. **Better Maintainability**: Changes to audio processing automatically affect both modes
-5. **Type Safety**: Better TypeScript support with abstract methods and generics
-6. **Future Extensibility**: Easy to add new session types (e.g., video calls, different models)
-7. **Isolated State**: Maintains API contract compliance with per-session audio management
+```typescript
+class TranscriptAutoScroll {
+  shouldAutoScroll(element: Element): boolean;
+  scrollToBottom(element: Element, smooth?: boolean): void;
+  handleTranscriptUpdate(element: Element, oldLength: number, newLength: number): void;
+  handleVisibilityChange(element: Element, isVisible: boolean, hasContent: boolean): void;
+  getScrollToBottomState(element: Element, currentMessageCount: number, lastSeenMessageCount: number): ScrollToBottomState;
+  handleScrollEvent(element: Element): boolean;
+}
 
-## 9. Testing Strategy
+interface ScrollToBottomState {
+  showButton: boolean;
+  newMessageCount: number;
+}
+```
+
+### 7.1. Smart Auto-scroll Logic
+- **User-Aware Scrolling:** Only auto-scrolls when user is at or near the bottom (within 50px threshold)
+- **Performance Optimization:** Uses `requestAnimationFrame` for proper DOM timing when scrolling occurs
+- **Rapid Update Handling:** Detects multiple quick updates and uses instant scrolling to avoid excessive animation
+- **Smooth Scrolling:** Applies smooth scroll behavior for single message updates
+- **First Message Handling:** Always scrolls to show the first message in an empty transcript
+- **State Tracking:** Uses WeakMap to track scroll state before DOM updates to eliminate timing issues
+
+### 7.2. Component Integration
+- **chat-view.ts:** Uses generic auto-scroll for text messaging transcript
+- **call-transcript.ts:** Uses generic auto-scroll for voice call transcript
+- **Visibility Handling:** Automatically scrolls to bottom when transcript components become visible
+- **Height Constraints:** Fixed height containers (`calc(100vh - 120px)`) ensure proper scrollable areas
+
+### 7.3. Scroll-to-Bottom Button System
+- **Smart Visibility:** Button appears when user scrolls away from bottom during calls
+- **Message Counter:** Shows count of new messages received while scrolled away
+- **Squircle Design:** Matches call button styling with consistent visual language
+- **Event Communication:** Uses custom events to communicate scroll state between components
+
+## 8. Error Handling
+- **Session Initialization Errors:** If a TTS or STS model fails to connect, display a toast notification.
+- **Summarization Errors:** If the summarization service fails, a "Summary unavailable" message will be stored in the call history.
+- **UI State Recovery:** Ensure the UI correctly returns to the tabbed chat view after a call ends, even if summarization fails.
+- **Layout Constraints:** Main container uses `overflow: hidden` to prevent page scrolling and maintain proper component boundaries.
+
+## 8. Testing Strategy
 - **Unit Tests:**
-    - Test dual-context state management logic in `index.tsx` (separate TTS/STS contexts).
-    - Test transcript window visibility logic based on active mode.
-    - Test event emission in `chat-view`, `call-transcript`, and `gdm-live-audio`.
-    - Test context preservation when switching between modes.
-    - Test audio analysis in `audio-mapper.ts`.
-    - Test `BaseSessionManager` common audio processing logic.
-    - Test `TextSessionManager` and `CallSessionManager` specific behaviors.
+    - Test the extended state management logic in `gdm-live-audio` (`activeTab`, `callHistory`).
+    - Test the `SummarizationService` by mocking the `@google/genai` client.
+    - Create tests for the new Lit components: `tab-view` and `call-history-view`.
 - **Integration Tests:**
-    - Test communication between main application and dynamic transcript components.
-    - Test the connection between active session `outputNode` and `live2d-visual`.
-    - Test proper hiding/showing of chat-view and call-transcript components.
-    - Test session manager lifecycle and delegation from main component.
+    - Verify that the `gdm-live-audio` component correctly passes state down to `tab-view` and `call-history-view`.
+    - Test the full data flow: `call-end` event -> `SummarizationService` -> `callHistory` state update -> `call-history-view` re-render.
 - **End-to-End (E2E) Tests:**
-    - Simulate full texting flow (TTS) with chat window visibility.
-    - Simulate full calling flow (STS) with call transcript window visibility.
-    - Test context switching between texting and calling modes.
-    - Test context preservation across mode switches.
-    - Mock AI services to provide predictable responses for both modes.
-    - Visually verify model animates correctly for both TTS and STS audio.
+    - Simulate a full user journey: start a call, end it, switch to the "Call History" tab, and verify the summary is present.
+    - Test starting a new TTS session from a call summary in the history view.

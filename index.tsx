@@ -18,6 +18,7 @@ import "./settings-menu";
 import "./chat-view";
 import "./call-transcript";
 import "./toast-notification";
+import "./controls-panel";
 
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
@@ -93,6 +94,12 @@ abstract class BaseSessionManager {
         this.updateError(`${this.getSessionName()} error: ${e.message}`);
       },
       onclose: (e: CloseEvent) => {
+        // Check for rate-limit in close reason
+        const msg = e.reason || "";
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
         this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
         this.session = null;
       },
@@ -185,10 +192,9 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getCallbacks() {
+    const base = super.getCallbacks();
     return {
-      onopen: () => {
-        this.updateStatus(`${this.getSessionName()} opened`);
-      },
+      ...base,
       onmessage: async (message: LiveServerMessage) => {
         // Handle text response for transcript
         const modelTurn = message.serverContent?.modelTurn;
@@ -210,24 +216,6 @@ class TextSessionManager extends BaseSessionManager {
         if (interrupted) {
           this.handleInterruption();
         }
-      },
-      onerror: (e: ErrorEvent) => {
-        // Surface rate-limit hints in error messages
-        const msg = e.message || "";
-        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
-        if (isRateLimited) {
-          this.onRateLimit(msg);
-        }
-        this.updateError(`${this.getSessionName()} error: ${e.message}`);
-      },
-      onclose: (e: CloseEvent) => {
-        const msg = e.reason || "";
-        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
-        if (isRateLimited) {
-          this.onRateLimit(msg);
-        }
-        this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
-        this.session = null;
       },
     };
   }
@@ -253,6 +241,28 @@ class TextSessionManager extends BaseSessionManager {
 }
 
 class CallSessionManager extends BaseSessionManager {
+  constructor(
+    outputAudioContext: AudioContext,
+    outputNode: GainNode,
+    client: GoogleGenAI,
+    updateStatus: (msg: string) => void,
+    updateError: (msg: string) => void,
+    onRateLimit: (msg: string) => void = () => {},
+    private updateCallTranscript: (
+      text: string,
+      author: "user" | "model",
+    ) => void,
+  ) {
+    super(
+      outputAudioContext,
+      outputNode,
+      client,
+      updateStatus,
+      updateError,
+      onRateLimit,
+    );
+  }
+
   protected getModel(): string {
     return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
   }
@@ -261,6 +271,8 @@ class CallSessionManager extends BaseSessionManager {
     return {
       responseModalities: [Modality.AUDIO],
       enableAffectiveDialog: true,
+      outputAudioTranscription: {}, // Enable transcription of model's audio output
+      inputAudioTranscription: {}, // Enable transcription of user's audio input
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -269,16 +281,35 @@ class CallSessionManager extends BaseSessionManager {
 
   protected getCallbacks() {
     const base = super.getCallbacks();
-    // Extend callbacks to detect rate-limit while in-call and surface a non-silent failure
     return {
       ...base,
-      onerror: (e: ErrorEvent) => {
-        const msg = e.message || "";
-        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
-        if (isRateLimited) {
-          this.onRateLimit(msg);
+      onmessage: async (message: LiveServerMessage) => {
+        // Handle audio transcription for call transcript (model responses)
+        if (message.serverContent?.outputTranscription?.text) {
+          this.updateCallTranscript(
+            message.serverContent.outputTranscription.text,
+            "model",
+          );
         }
-        base.onerror?.(e);
+
+        // Handle input transcription for call transcript (user speech)
+        if (message.serverContent?.inputTranscription?.text) {
+          this.updateCallTranscript(
+            message.serverContent.inputTranscription.text,
+            "user",
+          );
+        }
+
+        // Handle audio response
+        const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData;
+        if (audio) {
+          await this.handleAudioMessage(audio);
+        }
+
+        const interrupted = message.serverContent?.interrupted;
+        if (interrupted) {
+          this.handleInterruption();
+        }
       },
     };
   }
@@ -326,13 +357,6 @@ export class GdmLiveAudio extends LitElement {
   private textSessionManager: TextSessionManager;
   private callSessionManager: CallSessionManager;
 
-  // Long press state for unified call/reset button
-  private _longPressTimer: number | null = null;
-  private _isLongPressing = false;
-  @state() private _showLongPressVisual = false;
-  @state() private _longPressProgress = 0;
-  private _progressTimer: number | null = null;
-
   private client: GoogleGenAI;
   private inputAudioContext = new (
     (window as any).AudioContext || (window as any).webkitAudioContext
@@ -346,6 +370,10 @@ export class GdmLiveAudio extends LitElement {
   // Rate-limit UX state for calls
   private _callRateLimitNotified = false;
 
+  // Scroll-to-bottom state for call transcript
+  @state() private showCallScrollToBottom = false;
+  @state() private callNewMessageCount = 0;
+
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
   private callOutputNode = this.outputAudioContext.createGain();
@@ -358,7 +386,8 @@ export class GdmLiveAudio extends LitElement {
     :host {
       display: grid;
       grid-template-columns: 400px 1fr 400px;
-      height: 100%;
+      height: 100vh;
+      overflow: hidden;
     }
 
     #status {
@@ -388,94 +417,7 @@ export class GdmLiveAudio extends LitElement {
       transform: translateY(10px);
     }
 
-    .controls {
-      z-index: 10;
-      position: absolute;
-      right: 24px;
-      bottom: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 12px;
 
-      button {
-        outline: none;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.1);
-        width: 56px;
-        height: 56px;
-        cursor: pointer;
-        font-size: 24px;
-        padding: 0;
-        margin: 0;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-        backdrop-filter: blur(4px);
-        transition: all 0.2s ease;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        &.long-pressing {
-          background: rgba(255, 100, 100, 0.3);
-          border-color: rgba(255, 100, 100, 0.5);
-          transform: scale(0.95);
-          box-shadow: 0 2px 8px rgba(255, 100, 100, 0.4);
-        }
-
-        &.reset-confirmed {
-          animation: resetPulse 0.3s ease-out;
-        }
-      }
-
-      .progress-ring {
-        position: absolute;
-        top: -4px;
-        left: -4px;
-        width: 64px;
-        height: 64px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-
-        &.visible {
-          opacity: 1;
-        }
-
-        circle {
-          fill: none;
-          stroke: rgba(255, 100, 100, 0.8);
-          stroke-width: 3;
-          stroke-linecap: round;
-          transform-origin: 50% 50%;
-          transform: rotate(-90deg);
-          transition: stroke-dasharray 0.1s ease;
-        }
-      }
-
-      @keyframes resetPulse {
-        0% { 
-          transform: scale(0.95);
-          background: rgba(255, 100, 100, 0.3);
-        }
-        50% { 
-          transform: scale(1.05);
-          background: rgba(255, 50, 50, 0.6);
-          box-shadow: 0 0 20px rgba(255, 100, 100, 0.8);
-        }
-        100% { 
-          transform: scale(1);
-          background: rgba(255, 255, 255, 0.1);
-        }
-      }
-
-      button[disabled] {
-        display: none;
-      }
-    }
   `;
 
   constructor() {
@@ -500,6 +442,8 @@ export class GdmLiveAudio extends LitElement {
         this.client,
         this.updateStatus.bind(this),
         this.updateError.bind(this),
+        this._handleCallRateLimit.bind(this),
+        this.updateCallTranscript.bind(this),
       );
     }
   }
@@ -602,6 +546,27 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  private updateCallTranscript(text: string, author: "user" | "model") {
+    console.log(`[Call Transcript] Received ${author} text:`, text);
+
+    // For audio transcription, we get incremental chunks that should be appended
+    const lastTurn = this.callTranscript[this.callTranscript.length - 1];
+
+    if (lastTurn?.author === author) {
+      // Append to the existing turn by creating a new array
+      // This ensures Lit detects the change
+      const updatedTranscript = [...this.callTranscript];
+      updatedTranscript[updatedTranscript.length - 1] = {
+        ...lastTurn,
+        text: lastTurn.text + text,
+      };
+      this.callTranscript = updatedTranscript;
+    } else {
+      // Create a new turn for this author
+      this.callTranscript = [...this.callTranscript, { text, author }];
+    }
+  }
+
   private _appendCallNotice(text: string) {
     // Append a system-style notice to the call transcript to avoid silent failures
     const notice = { text, author: "model" as const, timestamp: new Date() };
@@ -612,19 +577,10 @@ export class GdmLiveAudio extends LitElement {
     if (this._callRateLimitNotified) return;
     this._callRateLimitNotified = true;
 
-    const toast = this.shadowRoot?.querySelector("toast-notification") as any;
-    toast?.show(
-      "Rate limit reached: responses may be delayed or unavailable",
-      "warning",
-      4000,
-    );
-
-    this._appendCallNotice(
-      "[Rate limited] Responses may be delayed or unavailable.",
-    );
-
     // Also surface the banner in the call transcript
-    const callT = this.shadowRoot?.querySelector('call-transcript') as HTMLElement & { rateLimited?: boolean };
+    const callT = this.shadowRoot?.querySelector(
+      "call-transcript",
+    ) as HTMLElement & { rateLimited?: boolean };
     if (callT) {
       callT.rateLimited = true;
     }
@@ -783,7 +739,9 @@ export class GdmLiveAudio extends LitElement {
     // Clear call transcript and reset rate-limit states
     this.callTranscript = [];
     this._callRateLimitNotified = false;
-    const callT = this.shadowRoot?.querySelector('call-transcript') as HTMLElement & { rateLimited?: boolean };
+    const callT = this.shadowRoot?.querySelector(
+      "call-transcript",
+    ) as HTMLElement & { rateLimited?: boolean };
     if (callT) {
       callT.rateLimited = false;
     }
@@ -912,6 +870,26 @@ export class GdmLiveAudio extends LitElement {
     }, 6000);
   }
 
+  private _scrollCallTranscriptToBottom() {
+    // Find the call transcript component and scroll it to bottom
+    const callTranscript = this.shadowRoot?.querySelector(
+      "call-transcript",
+    ) as any;
+    if (callTranscript && callTranscript._scrollToBottom) {
+      callTranscript._scrollToBottom();
+      // Reset the scroll state
+      this.showCallScrollToBottom = false;
+      this.callNewMessageCount = 0;
+    }
+  }
+
+  private _handleScrollStateChanged(e: CustomEvent) {
+    // Update the main component's scroll state based on call transcript scroll state
+    const { showButton, newMessageCount } = e.detail;
+    this.showCallScrollToBottom = showButton;
+    this.callNewMessageCount = newMessageCount;
+  }
+
   private async _handleSendMessage(e: CustomEvent) {
     const message = e.detail;
     if (!message || !message.trim()) {
@@ -964,120 +942,6 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  // Long press detection methods for unified call/reset button
-  private _handleMouseDown() {
-    this._isLongPressing = true;
-    this._showLongPressVisual = true;
-    this._longPressProgress = 0;
-
-    // Start progress animation
-    this._updateProgressIndicator();
-
-    this._longPressTimer = window.setTimeout(() => {
-      this._handleLongPress();
-    }, 1000); // 1 second threshold
-  }
-
-  private _handleMouseUp() {
-    const wasLongPressing = this._isLongPressing;
-    const hadTimer = this._longPressTimer !== null;
-
-    if (this._longPressTimer) {
-      clearTimeout(this._longPressTimer);
-      this._longPressTimer = null;
-    }
-
-    this._isLongPressing = false;
-    this._showLongPressVisual = false;
-
-    // If the long press timer was already cleared (meaning long press was triggered),
-    // don't execute normal click behavior
-    if (wasLongPressing && !hadTimer) {
-      return;
-    }
-
-    // Execute normal call button behavior only if it wasn't a long press
-    if (!this.isCallActive) {
-      this._handleCallStart();
-    } else {
-      this._handleCallEnd();
-    }
-  }
-
-  private _handleTouchStart() {
-    this._handleMouseDown();
-  }
-
-  private _handleTouchEnd() {
-    this._handleMouseUp();
-  }
-
-  private _handleLongPress() {
-    this._clearLongPressTimer();
-
-    // Trigger reset confirmation animation
-    this._triggerResetConfirmation();
-
-    // Emit reset-context event
-    this.dispatchEvent(
-      new CustomEvent("reset-context", {
-        bubbles: true,
-        composed: true,
-      }),
-    );
-
-    // Handle the reset based on current active mode
-    this._handleResetContext();
-  }
-
-  private _clearLongPressTimer() {
-    if (this._longPressTimer) {
-      clearTimeout(this._longPressTimer);
-      this._longPressTimer = null;
-    }
-    this._isLongPressing = false;
-  }
-
-  private _handleResetContext() {
-    // Call button long press always resets call context only
-    if (this.isCallActive) {
-      // If currently in a call, end it first, then reset call context
-      this._handleCallEnd();
-      this._resetCallContext();
-    } else {
-      // Just reset call context
-      this._resetCallContext();
-    }
-  }
-
-  private _updateProgressIndicator() {
-    if (!this._isLongPressing) return;
-
-    this._longPressProgress += 0.05; // Increment by 5% each frame
-
-    if (this._longPressProgress >= 1) {
-      this._longPressProgress = 1;
-      return;
-    }
-
-    this.requestUpdate(); // Trigger re-render to update progress
-
-    this._progressTimer = window.requestAnimationFrame(() => {
-      this._updateProgressIndicator();
-    });
-  }
-
-  private _triggerResetConfirmation() {
-    // Add reset-confirmed class for pulse animation
-    const callButton = this.shadowRoot?.querySelector("#callButton");
-    if (callButton) {
-      callButton.classList.add("reset-confirmed");
-      setTimeout(() => {
-        callButton.classList.remove("reset-confirmed");
-      }, 300);
-    }
-  }
-
   render() {
     return html`
       <chat-view
@@ -1100,63 +964,15 @@ export class GdmLiveAudio extends LitElement {
                 @model-url-error=${this._handleModelUrlError}></settings-menu>`
             : ""
         }
-        <div class="controls">
-          <button
-            id="settingsButton"
-            @click=${this._toggleSettings}
-            ?disabled=${this.isCallActive}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="40px"
-              viewBox="0 -960 960 960"
-              width="40px"
-              fill="#ffffff">
-              <path d="M480-320q-75 0-127.5-52.5T300-500q0-75 52.5-127.5T480-680q75 0 127.5 52.5T660-500q0 75-52.5 127.5T480-320Zm0-80q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29ZM160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Z"/>
-            </svg>
-          </button>
-
-
-
-          <button
-            id="callButton"
-            class=${this._showLongPressVisual ? "long-pressing" : ""}
-            ?disabled=${this.isCallActive}
-            @mousedown=${this._handleMouseDown}
-            @mouseup=${this._handleMouseUp}
-            @touchstart=${this._handleTouchStart}
-            @touchend=${this._handleTouchEnd}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="32px"
-              viewBox="0 -960 960 960"
-              width="32px"
-              fill="#00c800">
-              <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/>
-            </svg>
-            <svg class="progress-ring ${this._showLongPressVisual ? "visible" : ""}" viewBox="0 0 64 64">
-              <circle
-                cx="32"
-                cy="32"
-                r="28"
-                stroke-dasharray="${2 * Math.PI * 28}"
-                stroke-dashoffset="${2 * Math.PI * 28 * (1 - this._longPressProgress)}">
-              </circle>
-            </svg>
-          </button>
-          <button
-            id="endCallButton"
-            @click=${this._handleCallEnd}
-            ?disabled=${!this.isCallActive}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="32px"
-              viewBox="0 -960 960 960"
-              width="32px"
-              fill="#c80000">
-              <path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/>
-            </svg>
-          </button>
-        </div>
+        <controls-panel
+          .isCallActive=${this.isCallActive}
+          .showScrollToBottom=${this.showCallScrollToBottom}
+          .newMessageCount=${this.callNewMessageCount}
+          @toggle-settings=${this._toggleSettings}
+          @scroll-to-bottom=${this._scrollCallTranscriptToBottom}
+          @call-start=${this._handleCallStart}
+          @call-end=${this._handleCallEnd}>
+        </controls-panel>
 
         <div id="status"> ${this.error || this.status ? html`<div class="toast ${this._toastVisible ? "" : "hide"}">${this.error || this.status}</div>` : ""} </div>
         
@@ -1178,7 +994,8 @@ export class GdmLiveAudio extends LitElement {
       <call-transcript
         .transcript=${this.callTranscript}
         .visible=${this.activeMode === "calling"}
-        @reset-call=${this._resetCallContext}>
+        @reset-call=${this._resetCallContext}
+        @scroll-state-changed=${this._handleScrollStateChanged}>
       </call-transcript>
     `;
   }

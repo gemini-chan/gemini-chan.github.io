@@ -34,18 +34,18 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** the model responds during a call **THEN** the audio is played back and transcribed text appears in the call transcript window
 - **WHEN** I end the call **THEN** the call transcript window disappears and the chat window becomes visible again
 - **WHEN** a call is active AND a request is rate-limited **THEN** a toast appears explaining the rate limit and no new audio is queued
-- **WHEN** a call is active AND the API key is overloaded (rate-limited) and an existing session is reused **THEN** the UI must not silently fail: show a call-side warning (e.g., a banner or transcript entry) indicating responses may be delayed or unavailable
 
-### 2.3. Separate Context Management
+### 2.3. Context Management
 - **As a** user,
-- **I want** to maintain separate conversation contexts for texting and calling,
-- **so that** each mode preserves its own conversation history independently.
+- **I want** my text conversations to be preserved independently from voice calls,
+- **so that** I can switch between texting and fresh voice calls without losing my chat history.
 
 #### 2.3.1. Acceptance Criteria
 - **WHEN** I switch from texting to calling **THEN** the texting context is preserved but not shared with the calling session
-- **WHEN** I switch from calling to texting **THEN** the calling context is preserved but not shared with the texting session
-- **WHEN** I return to a previously used mode **THEN** the conversation history for that mode is restored
-- **WHEN** switching between modes **THEN** no confirmation dialog appears (contexts are preserved separately)
+- **WHEN** I end a call **THEN** the call's context is discarded and not preserved.
+- **WHEN** I start a new call **THEN** the call begins with a fresh, empty context, independent of any previous calls or text chats.
+- **WHEN** I return to the text messaging view after a call **THEN** the previous text conversation history is restored.
+- **WHEN** switching between modes **THEN** no confirmation dialog appears
 
 ### 2.4. Dynamic Transcript Windows
 - **As a** user,
@@ -57,6 +57,32 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** a call becomes active **THEN** the chat window is hidden and the call transcript window appears
 - **WHEN** a call ends **THEN** the call transcript window is hidden and the chat window reappears
 - **WHEN** the call transcript window is visible **THEN** it displays real-time transcription of the voice conversation
+
+### 2.15. Smart Auto-scroll Transcript Behavior
+- **As a** user,
+- **I want** transcript windows to automatically scroll when I'm following the conversation, but not interrupt me when I'm reading past content,
+- **so that** I can stay caught up with new messages while maintaining the ability to review past conversation.
+
+#### 2.15.1. Acceptance Criteria
+- **WHEN** the first message appears in a transcript **THEN** the transcript automatically scrolls to show the initial content
+- **WHEN** I am at or near the bottom of the transcript and new messages arrive **THEN** the transcript automatically scrolls to show the latest messages
+- **WHEN** I manually scroll up to read older messages **THEN** automatic scrolling is disabled to avoid interrupting my reading
+- **WHEN** I scroll back to the bottom (or use the scroll-to-bottom button) **THEN** automatic scrolling resumes for new messages
+- **WHEN** a transcript window becomes visible with existing content **THEN** it automatically scrolls to the bottom to show the most recent content
+- **WHEN** multiple messages arrive rapidly **THEN** scrolling is optimized to avoid excessive animation
+
+### 2.16. Scroll-to-Bottom Button
+- **As a** user,
+- **I want** a scroll-to-bottom button that appears when I scroll away from the latest messages,
+- **so that** I can quickly return to the current conversation.
+
+#### 2.16.1. Acceptance Criteria
+- **WHEN** I scroll up from the bottom of a transcript **THEN** a scroll-to-bottom button appears in the controls area
+- **WHEN** I am at or near the bottom of a transcript **THEN** the scroll-to-bottom button is hidden or dimmed
+- **WHEN** new messages arrive while I'm scrolled away from the bottom **THEN** the button shows a count of new messages
+- **WHEN** I click the scroll-to-bottom button **THEN** the transcript smoothly scrolls to the bottom and the button disappears
+- **WHEN** I am in a voice call **THEN** the scroll-to-bottom button uses the same squircle design as other control buttons
+- **WHEN** I am not in a call **THEN** the scroll-to-bottom button is not visible
 
 ### 2.5. Model Animation
 - **As a** user,
@@ -75,9 +101,8 @@ This document outlines the requirements for a dual-input mode that simulates a r
 
 #### 2.6.1. Acceptance Criteria
 - **GIVEN** I am in the text messaging view **WHEN** I click the "Clear conversation" button in the header **THEN** the text transcript and its corresponding context are cleared.
-- **GIVEN** I am in the voice calling view **WHEN** I click the "Clear call history" button in the header **THEN** the call transcript and its corresponding context are cleared.
+- **GIVEN** I am in the voice calling view **WHEN** I click the "Clear call history" button in the header **THEN** the call transcript is cleared from the display.
 - **WHEN** I reset the text context **THEN** the call context remains unaffected.
-- **WHEN** I reset the call context **THEN** the text context remains unaffected.
 
 ### 2.7. Direct Main UI Landing with API Key Validation
 - **As a** user,
@@ -152,3 +177,24 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** a call is active **THEN** the Live2D model area remains unoccupied by transcript windows for better visibility
 - **WHEN** a call is active **THEN** the call transcript does not extend into the space under the Live2D model
 - **WHEN** switching between texting and calling modes **THEN** both transcript windows maintain consistent dimensions and positioning
+
+### 2.13. Tabbed Chat Interface
+- **As a** user,
+- **I want** the left-side panel to have tabs for "Chat" and "Call History",
+- **so that** I can easily switch between my ongoing text conversation and my past call summaries.
+
+#### 2.13.1. Acceptance Criteria
+- **GIVEN** the application has loaded, **THEN** the left-side panel displays two tabs: "Chat" and "Call History".
+- **GIVEN** the "Chat" tab is selected, **THEN** the main text messaging interface is displayed.
+- **GIVEN** the "Call History" tab is selected, **THEN** a list of past call summaries is displayed.
+- **WHEN** I switch between tabs, **THEN** the content of the panel updates instantly without a page reload.
+
+### 2.14. Call Summarization and History
+- **As a** user,
+- **I want** to see a summarized history of my past calls in a dedicated tab,
+- **so that** I can review them and start new conversations based on them.
+
+#### 2.14.1. Acceptance Criteria
+- **GIVEN** a call has ended, **WHEN** I hang up, **THEN** a background API call is made to a `gemini-flash-lite` model to summarize the call transcript.
+- **GIVEN** a call summary is generated, **THEN** it is added to the "Call History" tab.
+- **GIVEN** I am viewing the "Call History" tab, **WHEN** I click on a call summary, **THEN** the summary content is used to start a new TTS session in the "Chat" tab.

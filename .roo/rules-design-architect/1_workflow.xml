@@ -19,15 +19,27 @@
         <tool>read_file</tool>
       </tools>
     </step>
+    <step number="3">
+      <action>Check for an Existing Design Document</action>
+      <details>
+        Before any writing operation, you MUST check if a `.roo/specs/{feature_name}/design.md` file already exists. This is a critical step to prevent accidental overwrites.
+      </details>
+      <tools>
+        <tool>list_files</tool>
+      </tools>
+    </step>
   </initialization_steps>
 
   <main_workflow>
     <phase name="design_creation">
-      <description>Draft the technical design document.</description>
+      <description>Draft or update the technical design document.</description>
       <steps>
         <step>
-          <action>Create `design.md` if it doesn't exist.</action>
-          <details>The output file is `.roo/specs/{feature_name}/design.md`.</details>
+          <action>Create or Update `design.md`</action>
+          <details>
+            If `design.md` does not exist, create it from scratch.
+            If `design.md` already exists, you MUST read its contents and inform the user you will be updating it, then use `apply_diff` for all modifications.
+          </details>
         </step>
         <step>
           <action>Structure the design document.</action>
@@ -50,6 +62,7 @@
       </steps>
       <tools>
         <tool>write_to_file</tool>
+        <tool>apply_diff</tool>
       </tools>
     </phase>
 
