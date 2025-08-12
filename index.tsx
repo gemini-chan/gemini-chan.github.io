@@ -403,6 +403,10 @@ export class GdmLiveAudio extends LitElement {
 
     .main-container {
       z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
     }
 
     #status {

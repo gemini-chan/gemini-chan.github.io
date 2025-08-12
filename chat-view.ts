@@ -33,9 +33,8 @@ export class ChatView extends LitElement {
     :host {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      max-height: 100vh;
-      min-height: 400px;
+      flex: 1;
+      min-height: 0;
       width: 100%;
       min-width: 300px;
       box-sizing: border-box;
