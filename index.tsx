@@ -142,14 +142,10 @@ abstract class BaseSessionManager {
     }
   }
 
-  public sendMessage(content: {
-    turns: Array<{
-      parts: Array<{ text?: string; inlineData?: { data: string } }>;
-    }>;
-  }): void {
+  public sendMessage(message: string): void {
     if (this.session) {
       try {
-        this.session.sendClientContent(content);
+        this.session.sendClientContent({ turns: message });
       } catch (error) {
         logger.error(
           `Error sending message to ${this.getSessionName()}:`,
@@ -223,7 +219,7 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    return "gemini-2.5-flash-live-preview";
+    return "gemini-live-2.5-flash-preview";
   }
 
   protected getConfig(): Record<string, unknown> {
@@ -979,9 +975,7 @@ export class GdmLiveAudio extends LitElement {
     // Send message to text session using session manager
     if (this.textSession) {
       try {
-        this.textSessionManager.sendMessage({
-          turns: [{ parts: [{ text: message }] }],
-        });
+        this.textSessionManager.sendMessage(message);
       } catch (error: any) {
         logger.error("Error sending message to text session:", error);
         const msg = String(error?.message || error || "");
