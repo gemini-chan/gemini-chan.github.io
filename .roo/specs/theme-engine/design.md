@@ -3,7 +3,6 @@
 ## 1. Overview
 Add a simple, extensible theme engine to support multiple visual styles for the UI. The initial release provides two themes:
 - Cyberpunk (default): neon gradients, glass surfaces, glows
-- Classic: minimal, black background, subdued surfaces
 
 Themes are applied via a data attribute on the root HTML element (`html[data-theme='<name>']`) and implemented through CSS custom properties (variables). Components consume variables only and avoid hardcoded colors, enabling runtime theme switching.
 
@@ -31,7 +30,7 @@ Themes are applied via a data attribute on the root HTML element (`html[data-the
 - Glow Variables
   - --cp-glow-cyan, --cp-glow-magenta, --cp-glow-purple (box-shadow snippets)
 
-Cyberpunk defines all variables with neon-focused values; Classic overrides them to create a subdued aesthetic and turns off glows.
+Cyberpunk defines all variables with neon-focused values. Other themes override them to create different aesthetics.
 
 ## 4. Runtime Behavior
 - Default theme is Cyberpunk if no value is stored.
@@ -41,7 +40,6 @@ Cyberpunk defines all variables with neon-focused values; Classic overrides them
 ## 5. Accessibility & Performance
 - Ensure contrast ratios are adequate in both themes (primary text vs backgrounds/surfaces).
 - Keep animations/glows modest for performance; cyberpunk glows implemented with lightweight box-shadows.
-- Users can switch to Classic for a simpler, lower-contrast variant if desired.
 
 ## 6. Extensibility
 - To add a new theme:
@@ -58,7 +56,7 @@ Cyberpunk defines all variables with neon-focused values; Classic overrides them
 - Some canvases (visualizers) may not yet consume variables; can be themed later.
 
 ## 9. Circuitry Animation
-The animated circuitry effect is controlled by several CSS variables that can be manipulated via the settings menu.
+The animated circuitry effect is controlled by several CSS variables that can be manipulated via a collapsible "Advanced Settings" dropdown in the settings menu. A `<details>` element will be used to create the dropdown, containing the controls.
 
 - `--circuit-display`: Controls visibility (`block` or `none`) of both the grid and the pulsing nodes.
 - `--circuit-speed`: Controls animation duration (e.g., `15s`).

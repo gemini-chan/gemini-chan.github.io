@@ -1,7 +1,7 @@
 # Feature: Theme Engine
 
 ## 1. Introduction
-This document captures the requirements for introducing a theme engine with a user-selectable theme toggle exposed in the Settings menu. The goal is to offer a neon "Cyberpunk" theme and a simpler "Classic" theme, with instant switching and persistence across sessions.
+This document captures the requirements for introducing a theme engine with a user-selectable theme toggle exposed in the Settings menu. The goal is to offer a neon "Cyberpunk" theme and other themes, with instant switching and persistence across sessions.
 
 ## 2. Requirements
 
@@ -11,7 +11,7 @@ This document captures the requirements for introducing a theme engine with a us
 - so that the app matches my aesthetic preference.
 
 #### 2.1.1. Acceptance Criteria
-- WHEN the settings menu opens THEN a "Theme" select appears with options "Cyberpunk" and "Classic"
+- WHEN the settings menu opens THEN a "Theme" select appears with available theme options
 - WHEN I change the theme THEN the UI updates immediately without reload
 - WHEN I change the theme THEN the choice is persisted to localStorage under key `theme`
 - WHEN I reopen the app THEN the previously selected theme is restored before UI renders
@@ -29,6 +29,15 @@ This document captures the requirements for introducing a theme engine with a us
 - WHEN I change these settings THEN the animation updates instantly.
 - WHEN I change these settings THEN my choices are persisted to `localStorage`.
 - WHEN I reopen the app THEN my circuitry animation settings are restored.
+
+### 2.6. Collapsible Advanced Settings
+- As a user,
+- I want the advanced circuitry settings to be in a collapsible dropdown,
+- so that the main settings menu remains clean and uncluttered.
+
+#### 2.6.1. Acceptance Criteria
+- WHEN I open the settings menu THEN the circuitry animation controls are hidden under a dropdown labeled "Advanced Settings".
+- WHEN I click the "Advanced Settings" dropdown THEN the animation controls become visible.
 
 ### 2.2. Theming via CSS Variables
 - As a developer,
@@ -48,7 +57,6 @@ This document captures the requirements for introducing a theme engine with a us
 #### 2.3.1. Acceptance Criteria
 - Default theme is "Cyberpunk"
 - If `localStorage.theme` is missing or invalid, fall back to "Cyberpunk"
-- Changing to "Classic" shows a neutral, black-based theme with reduced glow effects
 
 ### 2.4. Accessibility
 - As a user,

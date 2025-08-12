@@ -224,32 +224,7 @@ html[data-theme="cyberpunk"] body {
     ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 
-/* Classic theme removed; replaced by Utopia. */
-html[data-theme="classic"] {
-  --cp-bg-1: #000000;
-  --cp-bg-2: #000000;
-  --cp-bg-3: #000000;
-  --cp-text: #ffffff;
-  --cp-muted: rgba(255, 255, 255, 0.65);
-
-  --cp-cyan: #66ccff;
-  --cp-magenta: #ff66cc;
-  --cp-purple: #b399ff;
-  --cp-green: #66ffcc;
-  --cp-red: #ff6688;
-  --cp-amber: #ffcc66;
-
-  --cp-surface: rgba(255, 255, 255, 0.08);
-  --cp-surface-strong: rgba(255, 255, 255, 0.15);
-  --cp-surface-border: rgba(255, 255, 255, 0.2);
-  --cp-surface-border-2: rgba(255, 255, 255, 0.15);
-
-  --cp-glow-cyan: none;
-  --cp-glow-magenta: none;
-  --cp-glow-purple: none;
-}
-
-/* Utopia (Dark Cyberpunk) Theme */
+/* Utopia Theme */
 html[data-theme="utopia"] {
   --cp-bg-1: #05070d;
   --cp-bg-2: #0a0e1a;

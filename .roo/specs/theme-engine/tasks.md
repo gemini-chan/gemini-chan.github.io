@@ -8,7 +8,7 @@ Add theme engine support with a toggle in Settings and persistence.
   - Add cyberpunk default background and grid overlay
 
 - [x] 2. Add Theme Overrides and Toggle
-  - Implement `html[data-theme='cyberpunk'|'classic']` overrides in `index.css`
+  - Implement `html[data-theme='...']` overrides in `index.css` for theme switching
   - Add Theme select in `settings-menu.ts`
   - Persist to `localStorage` and apply via `document.documentElement.setAttribute('data-theme', theme)`
   - Restore theme on page load in `index.html`
@@ -40,3 +40,11 @@ Add theme engine support with a toggle in Settings and persistence.
 
 - [x] 7. Adjust Animation Color
   - [x] 7.1. In `index.css`, darken the circuitry animation color to better blend with the background.
+
+- [x] 8. Deprecate Classic Theme
+  - [x] 8.1. Remove all mentions of the "Classic" theme from the specification documents (`requirements.md`, `design.md`).
+  - [x] 8.2. Remove the "Classic" theme option from `settings-menu.ts`.
+  - [x] 8.3. Remove the `html[data-theme='classic']` styles from `index.css`.
+
+- [ ] 9. Refactor Advanced Settings into a Dropdown
+  - [ ] 9.1. In `settings-menu.ts`, wrap the circuitry animation controls in a `<details>` element with the summary "Advanced Settings".

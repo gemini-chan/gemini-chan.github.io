@@ -289,6 +289,30 @@ export class SettingsMenu extends LitElement {
       color: var(--cp-red);
       font-size: 0.9em;
     }
+    details {
+      border: 1px solid var(--cp-surface-border);
+      border-radius: 8px;
+      padding: 0.5em 0.65em;
+      margin-top: 1em;
+      box-shadow: var(--cp-glow-purple);
+    }
+    summary {
+      cursor: pointer;
+      color: var(--cp-text);
+      font-weight: 500;
+      list-style-position: inside;
+    }
+    details[open] summary {
+      margin-bottom: 1em;
+    }
+    details .checkbox-group,
+    details .range-group {
+      margin-left: 1em;
+      margin-bottom: 1em;
+    }
+    details label {
+      margin-left: 1em;
+    }
   `;
 
   render() {
@@ -309,31 +333,34 @@ export class SettingsMenu extends LitElement {
             </select>
           </div>
 
-          <label for="circuitryEnabled">Circuitry Animation</label>
-          <div class="checkbox-group">
-            <input
-              id="circuitryEnabled"
-              type="checkbox"
-              .checked=${this._circuitryEnabled}
-              @change=${this._onCircuitryEnabledChange}
-            />
-            <label for="circuitryEnabled">Enable animated circuitry background</label>
-          </div>
+          <details>
+            <summary>Advanced Settings</summary>
+            <label for="circuitryEnabled">Circuitry Animation</label>
+            <div class="checkbox-group">
+              <input
+                id="circuitryEnabled"
+                type="checkbox"
+                .checked=${this._circuitryEnabled}
+                @change=${this._onCircuitryEnabledChange}
+              />
+              <label for="circuitryEnabled">Enable animated circuitry background</label>
+            </div>
 
-          <label for="circuitrySpeed">Animation Speed (seconds)</label>
-          <div class="range-group">
-            <input
-              id="circuitrySpeed"
-              type="range"
-              min="5"
-              max="30"
-              step="1"
-              .value=${this._circuitrySpeed.toString()}
-              @input=${this._onCircuitrySpeedChange}
-              ?disabled=${!this._circuitryEnabled}
-            />
-            <span class="range-value">${this._circuitrySpeed}s</span>
-          </div>
+            <label for="circuitrySpeed">Animation Speed (seconds)</label>
+            <div class="range-group">
+              <input
+                id="circuitrySpeed"
+                type="range"
+                min="5"
+                max="30"
+                step="1"
+                .value=${this._circuitrySpeed.toString()}
+                @input=${this._onCircuitrySpeedChange}
+                ?disabled=${!this._circuitryEnabled}
+              />
+              <span class="range-value">${this._circuitrySpeed}s</span>
+            </div>
+          </details>
 
           <label for="modelUrl">Live2D Model URL</label>
           <div class="input-group">
