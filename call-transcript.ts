@@ -124,12 +124,7 @@ export class CallTranscript extends LitElement {
     }
 
     .transcript {
-      /* Robust height calculation with fallbacks */
-      height: calc(100vh - 120px); /* Primary: viewport minus header/padding */
-      min-height: 200px; /* Fallback minimum height */
-      max-height: calc(100vh - 80px); /* Fallback maximum height */
-      
-      /* Flexbox constraints for proper overflow behavior */
+      /* Use flexbox for proper height calculation */
       flex: 1;
       min-height: 0; /* Critical for flexbox overflow */
       
@@ -143,21 +138,6 @@ export class CallTranscript extends LitElement {
       
       /* Ensure proper scrolling on different browsers */
       -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
-    }
-    
-    /* Media query fallbacks for different viewport sizes */
-    @media (max-height: 600px) {
-      .transcript {
-        height: calc(100vh - 100px);
-        min-height: 150px;
-      }
-    }
-    
-    @media (max-height: 400px) {
-      .transcript {
-        height: calc(100vh - 80px);
-        min-height: 100px;
-      }
     }
 
     .turn {
