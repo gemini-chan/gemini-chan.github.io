@@ -68,6 +68,7 @@ export class SettingsMenu extends LitElement {
     | "tron"
     | "synthwave"
     | "matrix"
+    | "noir"
     | "auto" = (localStorage.getItem("theme") as any) || "cyberpunk";
 
   @state()
@@ -330,6 +331,7 @@ export class SettingsMenu extends LitElement {
               <option value="tron">Tron</option>
               <option value="synthwave">Synthwave</option>
               <option value="matrix">Matrix</option>
+              <option value="noir">Noir</option>
             </select>
           </div>
 
@@ -793,7 +795,14 @@ export class SettingsMenu extends LitElement {
   }
 
   private _applyTheme(
-    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "auto",
+    theme:
+      | "cyberpunk"
+      | "dystopia"
+      | "tron"
+      | "synthwave"
+      | "matrix"
+      | "noir"
+      | "auto",
   ) {
     if (theme === "auto") {
       const prefersDark =
@@ -817,6 +826,7 @@ export class SettingsMenu extends LitElement {
         | "tron"
         | "synthwave"
         | "matrix"
+        | "noir"
         | "auto") || "cyberpunk";
     this._theme = theme;
     localStorage.setItem("theme", theme);
