@@ -16,7 +16,7 @@ Add theme engine support with a toggle in Settings and persistence.
 - [x] 3. Refactor Components to Use Variables
   - Update `chat-view.ts`, `call-transcript.ts`, `controls-panel.ts`, `tab-view.ts`, `settings-menu.ts`, `call-history-view.ts`, `toast-notification.ts`, and status toast in `index.tsx`
 
-- [ ] 4. QA and Polish
+- [x] 4. QA and Polish
   - Verify instant switching and persistence
   - Audit for hardcoded colors that should use variables
   - Check contrast in both themes and tweak variables if needed
@@ -27,13 +27,16 @@ Add theme engine support with a toggle in Settings and persistence.
   - [x] 5.3. Implement logic in `settings-menu.ts` to update CSS variables and persist the settings to `localStorage`.
   - [x] 5.4. Ensure settings are restored on page load.
 - [ ] 6. Future Enhancements (Optional)
-  - Add more themes (e.g., Tron, Synthwave, Matrix)
-  - Expose a quick theme toggle in Controls panel
-  - Animate grid overlay subtly based on audio/reactivity (post-config implementation)
-  - Add prefers-color-scheme auto-selection
+  - [x] 6.1 Add more themes (e.g., Tron, Synthwave, Matrix)
+  - [?] 6.2 Expose a quick theme toggle in Controls panel
+  - [ ] 6.3 Animate grid overlay subtly based on audio/reactivity (post-config implementation)
+  - [x] 6.4 Add prefers-color-scheme auto-selection
 
 
 ## 6. Fix Pulsing Nodes Animation
 - [x] 6.1. Remove the separate "show pulsing nodes" checkbox from the `settings-menu.ts` component.
 - [x] 6.2. In `settings-menu.ts`, remove the logic that handles the separate pulsing nodes switch from the `_applyCircuitrySettings`, `_onCircuitryNodesChange`, and `applyCircuitrySettingsOnLoad` functions.
-- [ ] 6.3. In `index.css`, modify the `live2d-gate::before` styles to ensure the pulsing nodes animation is visible and correctly timed when the main circuitry animation is enabled.
+- [x] 6.3. In `index.css`, modify the `live2d-gate::before` styles to ensure the pulsing nodes animation is visible and correctly timed when the main circuitry animation is enabled.
+
+- [x] 7. Adjust Animation Color
+  - [x] 7.1. In `index.css`, darken the circuitry animation color to better blend with the background.
