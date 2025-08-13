@@ -19,12 +19,12 @@ Implement the persona management system, allowing users to create, select, and m
   - [x] 3.2. Update the main application (`gdm-live-audio`) to listen for the `persona-changed` event and update the system prompt and Live2D model.
   - Requirements: 2.4.1
 
-- [ ] 4. **Integrate with `vtuber-memory-system`**:
-  - [ ] 4.1. Modify the `VectorStore` to handle persona-specific memory stores.
-  - [ ] 4.2. Update the memory system to listen for the `persona-changed` event and switch memory contexts.
+- [x] 4. **Integrate with `vtuber-memory-system`**:
+  - [x] 4.1. Modify the `VectorStore` to handle persona-specific memory stores.
+  - [x] 4.2. Update the memory system to listen for the `persona-changed` event and switch memory contexts.
   - Requirements: 2.4.1
 
-- [ ] 5. **Testing**:
-  - [ ] 5.1. Write unit tests for the `PersonaManager` class.
-  - [ ] 5.2. Write integration tests for the `settings-menu` and `PersonaManager`.
-  - [ ] 5.3. Write E2E tests to verify that switching personas correctly updates the AI's personality, appearance, and memory.
+- [x] 5. **Testing**:
+  - [x] 5.1. Write unit tests for the `PersonaManager` class.
+  - [x] 5.2. Write integration tests for the `settings-menu` and `PersonaManager`.
+  - [x] 5.3. Write E2E tests to verify that switching personas correctly updates the AI's personality, appearance, and memory.
