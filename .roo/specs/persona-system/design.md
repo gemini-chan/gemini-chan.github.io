@@ -29,7 +29,7 @@ graph TD
 1.  The `settings-menu` will use the `PersonaManager` to get the list of personas and the current active persona.
 2.  When the user creates, updates, or deletes a persona through the UI, the `settings-menu` calls the appropriate method on the `PersonaManager`.
 3.  The `PersonaManager` updates the persona data in its internal state and persists the changes to `localStorage`.
-4.  If the active persona is changed, the `PersonaManager` dispatches a `persona-changed` event with the new persona object.
+4.  If the active persona is changed, the `PersonaManager` dispatches a `persona-changed` event with the new persona's ID.
 5.  The main application component (`gdm-live-audio`) and the `vtuber-memory-system` listen for this event.
 6.  Upon receiving the event, the main app updates the system prompt and triggers a reload of the Live2D model.
 7.  The `vtuber-memory-system` will switch its context to the memory store associated with the new persona's ID.
@@ -91,7 +91,7 @@ The system will initialize with two default personas representing different aspe
 
 ### 4.3. `persona-changed` Event
 - **Type:** `CustomEvent`
-- **Detail:** `{ persona: Persona }` - The new active persona object.
+- **Detail:** `{ personaId: string }` - The ID of the new active persona.
 
 ## 5. Storage
 - A single key in `localStorage`, e.g., `geminichan-personas`, will store an array of all `Persona` objects.
