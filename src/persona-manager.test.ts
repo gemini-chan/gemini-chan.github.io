@@ -50,7 +50,7 @@ describe("PersonaManager", () => {
     const personas = personaManager.getPersonas();
     expect(personas).toHaveLength(1);
     const defaultPersona = personas[0];
-    expect(defaultPersona.name).toBe("Gemini-chan");
+    expect(defaultPersona.name).toBe("VTuber");
     expect(defaultPersona.isDefault).toBe(true);
     expect(defaultPersona.id).toBe(defaultPersonaId);
   });
