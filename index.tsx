@@ -237,10 +237,11 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    // Optionally align text session with energy levels too
-    // Keep a sensible fallback for full-chat model if mapping returns null
+    // Align text session with energy levels; if exhausted (level 0), refuse to provide a model
     const model = energyBarService.getCurrentModel();
-    return model || "gemini-live-2.5-flash-preview";
+    if (!model)
+      throw new Error("Energy exhausted: no model available for text session");
+    return model;
   }
 
   protected getConfig(): Record<string, unknown> {
@@ -283,9 +284,11 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    // Choose model based on current energy level
+    // Choose model based on current energy level; if exhausted (0), refuse to start a call
     const model = energyBarService.getCurrentModel();
-    return model || "gemini-2.5-flash-exp-native-audio-thinking-dialog";
+    if (!model)
+      throw new Error("Energy exhausted: no model available for call session");
+    return model;
   }
 
   protected getConfig(): Record<string, unknown> {
@@ -684,8 +687,16 @@ export class GdmLiveAudio extends LitElement {
     // Initialize or reinitialize call session; if initialization fails, show non-silent failure and abort
     const ok = await this._initCallSession();
     if (!ok || !this.callSession) {
-      this._handleCallRateLimit("Call session init failed");
-      this.updateStatus("Unable to start call (rate limited or network error)");
+      // If energy is exhausted, reflect a different UX than rate limit
+      const exhausted = energyBarService.getCurrentEnergyLevel() === 0;
+      if (exhausted) {
+        this.updateStatus("Energy exhausted — please try again later.");
+      } else {
+        this._handleCallRateLimit("Call session init failed");
+        this.updateStatus(
+          "Unable to start call (rate limited or network error)",
+        );
+      }
       return;
     }
 
