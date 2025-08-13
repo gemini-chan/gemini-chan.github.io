@@ -84,7 +84,7 @@
             <ask_followup_question>
               <question>Do the tasks look good?</question>
               <follow_up>
-                <suggest mode="implementation-overseer">The tasks are approved. Begin implementation.</suggest>
+                <suggest mode="agile-dev">The tasks are approved. Begin implementation.</suggest>
                 <suggest>No, I have some changes.</suggest>
               </follow_up>
             </ask_followup_question>

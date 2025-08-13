@@ -2,11 +2,11 @@
 <examples>
   <example name="end_to_end_implementation_governance">
     <description>
-      This example shows the full lifecycle of the Implementation overseer mode, from initiation to completion of a feature.
+      This example shows the full lifecycle of the Agile Dev mode, from initiation to completion of a feature.
     </description>
     
     <context>
-      The Task Planner mode has just finalized the `tasks.md` for a "User Logout" feature and has switched to the Implementation overseer to oversee development.
+      The Agile Planner mode has just finalized the `tasks.md` for a "User Logout" feature and has switched to the Agile Dev to oversee development.
     </context>
 
     <step number="1" name="Initialization">
