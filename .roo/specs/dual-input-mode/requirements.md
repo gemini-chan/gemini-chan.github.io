@@ -43,7 +43,10 @@ This document outlines the requirements for a dual-input mode that simulates a r
 #### 2.3.1. Acceptance Criteria
 - **WHEN** I switch from texting to calling **THEN** the texting context is preserved but not shared with the calling session
 - **WHEN** I end a call **THEN** the call's context is discarded and not preserved.
-- **WHEN** I start a new call **THEN** the call begins with a fresh, empty context, independent of any previous calls or text chats.
+- **WHEN** I hang up a call **THEN** the call transcript is immediately cleared from the display for an ephemeral experience.
+- **WHEN** a call is successfully summarized **THEN** the call transcript is cleared from the display and only the summary is retained in call history.
+- **WHEN** I start a new call **THEN** the call begins with a fresh, empty context and completely empty transcript display, independent of any previous calls or text chats.
+- **WHEN** I click the "Call" button to start a new call **THEN** the call transcript UI shows no previous messages and starts completely blank.
 - **WHEN** I return to the text messaging view after a call **THEN** the previous text conversation history is restored.
 - **WHEN** switching between modes **THEN** no confirmation dialog appears
 
@@ -104,6 +107,20 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **GIVEN** I am in the voice calling view **WHEN** I click the "Clear call history" button in the header **THEN** the call transcript is cleared from the display.
 - **WHEN** I reset the text context **THEN** the call context remains unaffected.
 
+### 2.12. Configurable System Prompt
+- **As a** user,
+- **I want** to customize Gemini-chan's personality and behavior through a configurable system prompt,
+- **so that** I can personalize the AI character to my preferences across both text and voice modes.
+
+#### 2.12.1. Acceptance Criteria
+- **GIVEN** I am in the settings menu, **WHEN** I modify the system prompt, **THEN** the changes are saved with a debounce mechanism and applied to any new text or voice session.
+- **GIVEN** a text session is active **WHEN** the system prompt is changed **THEN** the text session is disconnected.
+- **GIVEN** a text session has been disconnected due to a prompt change **WHEN** I send a new message **THEN** the session reconnects automatically.
+- **GIVEN** the system prompt is changed **THEN** the text chat transcript is cleared.
+- **GIVEN** I am in the settings menu, **WHEN** I click the "Reset to Default" button, **THEN** the system prompt reverts to the default Gemini-chan personality.
+- **GIVEN** the application loads, **WHEN** no custom prompt is saved, **THEN** the default Gemini-chan personality is used for all sessions.
+- **GIVEN** a custom system prompt is saved, **WHEN** the application loads, **THEN** the saved prompt is used for all sessions.
+
 ### 2.7. Call Transcript Layout Optimization
 - **As a** user,
 - **I want** the call transcript to have the same dimensions as the chat transcript and be positioned on the right side,
@@ -136,3 +153,14 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **GIVEN** a call has ended, **WHEN** I hang up, **THEN** a background API call is made to a `gemini-flash-lite` model to summarize the call transcript.
 - **GIVEN** a call summary is generated, **THEN** it is added to the "Call History" tab.
 - **GIVEN** I am viewing the "Call History" tab, **WHEN** I click on a call summary, **THEN** the summary content is used to start a new TTS session in the "Chat" tab.
+
+### 2.13. Scrollable Text Chat
+- **As a** user,
+- **I want** the text chat to be a scrollable container with auto-scrolling,
+- **so that** I can view my entire conversation history without the UI breaking.
+
+#### 2.13.1. Acceptance Criteria
+- **GIVEN** the text chat has more messages than can be displayed at once, **WHEN** new messages are added, **THEN** the chat automatically scrolls to the bottom to show the latest message.
+- **GIVEN** I have scrolled up in the text chat, **WHEN** a new message arrives, **THEN** auto-scrolling is paused to avoid interrupting me.
+- **GIVEN** I have scrolled up in the text chat, **THEN** a "scroll-to-bottom" button appears.
+- **GIVEN** I click the "scroll-to-bottom" button, **THEN** the chat scrolls to the most recent message and the button disappears.

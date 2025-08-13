@@ -30,7 +30,7 @@ export class ToastNotification extends LitElement {
       padding: 8px 12px;
       border-radius: 10px;
       font: 17px/1.2 system-ui;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(8px);
       opacity: 0;
       transform: translateY(-20px);
@@ -38,6 +38,8 @@ export class ToastNotification extends LitElement {
       max-width: 400px;
       text-align: center;
       pointer-events: auto;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
     }
 
     .toast.visible {
@@ -46,27 +48,19 @@ export class ToastNotification extends LitElement {
     }
 
     .toast.info {
-      background: rgba(33, 150, 243, 0.9);
-      color: white;
-      border: 1px solid rgba(33, 150, 243, 0.3);
+      background: linear-gradient(135deg, rgba(0,229,255,0.85), rgba(124,77,255,0.85));
     }
 
     .toast.warning {
-      background: rgba(255, 152, 0, 0.9);
-      color: white;
-      border: 1px solid rgba(255, 152, 0, 0.3);
+      background: linear-gradient(135deg, rgba(255, 179, 0, 0.9), rgba(255, 0, 0, 0.85));
     }
 
     .toast.success {
-      background: rgba(76, 175, 80, 0.9);
-      color: white;
-      border: 1px solid rgba(76, 175, 80, 0.3);
+      background: linear-gradient(135deg, rgba(0, 255, 178, 0.9), rgba(124,77,255,0.85));
     }
 
     .toast.error {
-      background: rgba(244, 67, 54, 0.9);
-      color: white;
-      border: 1px solid rgba(244, 67, 54, 0.3);
+      background: linear-gradient(135deg, rgba(255, 59, 110, 0.95), rgba(124,77,255,0.85));
     }
 
     .toast-icon {

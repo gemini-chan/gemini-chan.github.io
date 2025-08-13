@@ -28,19 +28,20 @@ export class ChatView extends LitElement {
   private newMessageCount = 0;
 
   private lastSeenMessageCount = 0;
+  private textareaRef: HTMLTextAreaElement | null = null;
 
   static styles = css`
     :host {
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      max-height: 100vh;
-      min-height: 400px; /* Fallback minimum height */
+      flex: 1;
+      min-height: 0;
       width: 100%;
-      min-width: 300px; /* Fallback minimum width */
+      min-width: 300px;
       box-sizing: border-box;
       padding: 12px;
       gap: 12px;
+      color: var(--cp-text);
       opacity: 1;
       visibility: visible;
       transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -52,20 +53,39 @@ export class ChatView extends LitElement {
     }
 
     .transcript {
-      /* Robust height calculation with fallbacks */
       flex: 1;
-      min-height: 0; /* Critical for flexbox overflow */
-      
+      min-height: 0;
       overflow-y: auto;
-      overflow-x: hidden; /* Prevent horizontal scroll */
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       gap: 12px;
       scrollbar-width: thin;
-      scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-      
-      /* Ensure proper scrolling on different browsers */
-      -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+      scrollbar-color: var(--cp-surface-strong) var(--cp-surface);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Custom scrollbar styles for Webkit browsers */
+    .transcript::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .transcript::-webkit-scrollbar-track {
+      background-color: var(--cp-surface);
+      border-radius: 4px;
+    }
+
+    .transcript::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background-clip: content-box;
+    }
+
+    .transcript::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
     }
 
     .turn {
@@ -74,17 +94,23 @@ export class ChatView extends LitElement {
       max-width: 80%;
       font: 16px/1.4 system-ui;
       white-space: pre-wrap;
+      border: 1px solid var(--cp-surface-border);
+      background: var(--cp-surface);
     }
 
     .turn.user {
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(124, 77, 255, 0.18));
+      border-color: rgba(0, 229, 255, 0.35);
+      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
       align-self: flex-end;
     }
 
     .turn.model {
-      background: rgba(0, 0, 0, 0.3);
-      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 0, 229, 0.16), rgba(124, 77, 255, 0.16));
+      border-color: rgba(255, 0, 229, 0.3);
+      box-shadow: var(--cp-glow-magenta);
+      color: var(--cp-text);
       align-self: flex-start;
     }
 
@@ -93,12 +119,13 @@ export class ChatView extends LitElement {
       align-items: center;
       justify-content: space-between;
       padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--cp-surface);
       border-radius: 10px;
-      color: #fff;
+      border: 1px solid var(--cp-surface-border);
+      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
       font: 14px/1.4 system-ui;
       font-weight: 500;
-      margin-bottom: 12px;
     }
 
     .header-title {
@@ -114,22 +141,21 @@ export class ChatView extends LitElement {
 
     .reset-button {
       outline: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--cp-surface);
       width: 32px;
       height: 32px;
       cursor: pointer;
       font-size: 16px;
       padding: 0;
       margin: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(4px);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
+    }
+    .reset-button:hover {
+      background: var(--cp-surface-strong);
     }
 
     .input-area {
@@ -141,34 +167,60 @@ export class ChatView extends LitElement {
       flex: 1;
       padding: 8px 12px;
       border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(0, 0, 0, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      background: var(--cp-surface);
+      color: var(--cp-text);
       font: 16px/1.4 system-ui;
       resize: none;
       outline: none;
-      height: 56px;
+      min-height: 56px;
+      max-height: 200px;
+      height: auto;
+      overflow-y: auto;
       box-sizing: border-box;
+      box-shadow: var(--cp-glow-purple);
+      transition: height 0.1s ease;
+      scrollbar-width: thin;
+      scrollbar-color: var(--cp-surface-strong) transparent;
+    }
+
+    textarea::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    textarea::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    textarea::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 3px;
+    }
+
+    textarea::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
     }
 
     button {
       outline: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
       width: 56px;
       height: 56px;
       cursor: pointer;
       font-size: 24px;
       padding: 0;
       margin: 0;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(4px);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
+    button:hover {
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+      transform: translateY(-1px);
     }
 
     .scroll-to-bottom {
@@ -178,7 +230,7 @@ export class ChatView extends LitElement {
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: rgba(100, 150, 255, 0.9);
+      background: linear-gradient(135deg, rgba(0,229,255,0.9), rgba(124,77,255,0.9));
       border: 2px solid rgba(255, 255, 255, 0.3);
       color: white;
       cursor: pointer;
@@ -202,8 +254,7 @@ export class ChatView extends LitElement {
     }
 
     .scroll-to-bottom:hover {
-      background: rgba(100, 150, 255, 1);
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
 
     .scroll-to-bottom .badge {
@@ -228,13 +279,50 @@ export class ChatView extends LitElement {
       flex: 1;
       display: flex;
       flex-direction: column;
+      min-height: 0;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: var(--cp-muted);
+      font: 16px/1.4 system-ui;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .chat-icon {
+      width: 48px;
+      height: 48px;
+      opacity: 0.5;
     }
   `;
 
   private _handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     this.inputValue = target.value;
+
+    // Auto-resize textarea
+    this._resizeTextarea(target);
+
     log.debug("Input value changed");
+  }
+
+  private _resizeTextarea(textarea: HTMLTextAreaElement) {
+    // Reset height to recalculate
+    textarea.style.height = "auto";
+
+    // Calculate new height based on scroll height
+    const scrollHeight = textarea.scrollHeight;
+    const minHeight = 56;
+    const maxHeight = 200;
+
+    // Clamp the height between min and max
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    textarea.style.height = `${newHeight}px`;
   }
 
   private _sendMessage() {
@@ -245,6 +333,11 @@ export class ChatView extends LitElement {
       new CustomEvent("send-message", { detail: this.inputValue }),
     );
     this.inputValue = "";
+
+    // Reset textarea height after sending
+    if (this.textareaRef) {
+      this.textareaRef.style.height = "56px";
+    }
   }
 
   private _resetText() {
@@ -267,6 +360,11 @@ export class ChatView extends LitElement {
         this._updateScrollToBottomState();
       });
     }
+
+    // Store reference to textarea for height management
+    this.textareaRef = this.shadowRoot?.querySelector(
+      "textarea",
+    ) as HTMLTextAreaElement;
   }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
@@ -325,10 +423,24 @@ export class ChatView extends LitElement {
         showButton: state.showButton,
         newMessageCount: state.newMessageCount,
       });
+
+      // Dispatch event to notify parent component of scroll state changes
+      const detail = {
+        showButton: state.showButton,
+        newMessageCount: state.newMessageCount,
+      };
+      log.debug("Scroll state changed", detail);
+      this.dispatchEvent(
+        new CustomEvent("scroll-state-changed", {
+          detail,
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }
   }
 
-  private _scrollToBottom() {
+  _scrollToBottom() {
     log.debug("Scrolling to bottom");
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
@@ -355,38 +467,46 @@ export class ChatView extends LitElement {
       </div>
       <div class="transcript-container">
         <div class="transcript">
-          ${this.transcript.map(
-            (turn) => html`
-            <div class="turn ${turn.author}">${turn.text}</div>
-          `,
-          )}
-        </div>
-        
-        <button 
-          class="scroll-to-bottom ${this.showScrollToBottom ? "visible" : ""}"
-          @click=${this._scrollToBottom}
-          title="Scroll to bottom">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
-            <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/>
-          </svg>
           ${
-            this.newMessageCount > 0
+            this.transcript.length === 0
               ? html`
-            <div class="badge">${this.newMessageCount}</div>
-          `
-              : ""
+                  <div class="empty-state">
+                    <svg
+                      class="chat-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      height="48px"
+                      viewBox="0 -960 960 960"
+                      width="48px"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"
+                      />
+                    </svg>
+                    <div>No messages yet</div>
+                  </div>
+                `
+              : this.transcript.map(
+                  (turn) => html`
+                    <div class="turn ${turn.author}">${turn.text}</div>
+                  `,
+                )
           }
-        </button>
+        </div>
       </div>
       <div class="input-area">
-        <textarea .value=${this.inputValue} @input=${this._handleInput} @keydown=${(
-          e: KeyboardEvent,
-        ) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            this._sendMessage();
-          }
-        }} placeholder="Type a message..."></textarea>
+        <textarea 
+          .value=${this.inputValue} 
+          @input=${this._handleInput} 
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              this._sendMessage();
+            }
+          }} 
+          placeholder="Type a message..."
+          rows="1"
+        ></textarea>
         <button @click=${this._sendMessage}>
             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z"/></svg>
         </button>

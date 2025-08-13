@@ -12,7 +12,7 @@
 </script>
 <!-- Live2D Cubism Core will be downloaded by the Vite plugin into public; we keep a fallback script include if needed -->
 <script src="/assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js"></script>
-<body>
+<body onload="(function(){try {let theme = localStorage.getItem('theme');if (!theme) {const darkThemes = ['dystopia', 'tron', 'synthwave', 'matrix', 'noir']; const lightThemes = ['cyberpunk']; const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; if (prefersDark) { theme = darkThemes[Math.floor(Math.random() * darkThemes.length)]; } else { theme = lightThemes[Math.floor(Math.random() * lightThemes.length)]; } localStorage.setItem('theme', theme); } document.documentElement.setAttribute('data-theme', theme); } catch (e) {}})()">
   <gdm-live-audio></gdm-live-audio>
 <script type="module" src="/index.tsx"></script>
 </body>

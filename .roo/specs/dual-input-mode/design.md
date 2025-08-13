@@ -106,31 +106,30 @@ graph TD
 - **Events:**
     - `tab-switch`: Dispatched with the selected tab name.
 
-### 3.3. `chat-view.ts` (Texting Interface)
+### 3.3. `BaseTranscriptView.ts` (New Base Component)
 - **Responsibility:**
-    - Display the persistent texting conversation transcript.
-    - Provide text input and send button.
-    - Emit `send-message` event.
+    - Provide a shared, scrollable container for transcript messages.
+    - Implement the `TranscriptAutoScroll` utility.
+    - Manage the "scroll-to-bottom" button's visibility and state.
 - **Properties:**
     - `transcript: Turn[]`
+    - `autoScroller: TranscriptAutoScroll`
+- **Methods:**
+    - `render()`: Renders the transcript and scroll-to-bottom button.
+
+### 3.4. `chat-view.ts` (Texting Interface)
+- **Extends:** `BaseTranscriptView`
+- **Responsibility:**
+    - Provide text input and send button.
+    - Emit `send-message` event.
 - **Events:**
     - `send-message`: Dispatched with message text.
 
-### 3.4. `call-history-view.ts` (Call History)
-- **Responsibility:**
-    - Display the list of call summaries.
-    - Allow a user to click on a summary to start a new chat.
-- **Properties:**
-    - `history: CallSummary[]`
-- **Events:**
-    - `start-tts-from-summary`: Dispatched with the summary content.
-
 ### 3.5. `call-transcript.ts` (Ephemeral Call Interface)
+- **Extends:** `BaseTranscriptView`
 - **Responsibility:**
     - Display the real-time transcript for the *currently active* call.
-    - This component is temporary and only visible during a call.
 - **Properties:**
-    - `transcript: Turn[]` - The current call's conversation history.
     - `visible: boolean`
 
 ### 3.6. `controls-panel.ts` (Control Buttons)
@@ -157,17 +156,38 @@ graph TD
     - Extracts text from model responses for chat transcript
     - Manages persistent text conversation context
 
+### 3.8. Configurable System Prompt Management
+- **SystemPromptManager:** Centralized system prompt handling
+    - `getSystemPrompt(): string` - Returns current system prompt from localStorage or default.
+    - `setSystemPrompt(prompt: string): void` - Saves system prompt to localStorage after a debounce interval.
+    - `getDefaultSystemPrompt(): string` - Returns default Gemini-chan personality.
+    - `resetToDefault(): void` - Removes the custom prompt from localStorage, reverting to the default.
+- **Session Manager Integration:** Both `TextSessionManager` and `CallSessionManager` use the same system prompt.
+    - The system prompt is retrieved dynamically via `SystemPromptManager.getSystemPrompt()` when sessions are initialized.
+    - This ensures consistent personality across both text and voice modes.
+- **Settings Integration:** The settings menu provides a `textarea` for editing the system prompt.
+    - The `textarea` is populated with the current system prompt on load.
+    - Changes to the `textarea` are saved to localStorage via a debounced call to `SystemPromptManager.setSystemPrompt()`.
+    - A "Reset to Default" button calls `SystemPromptManager.resetToDefault()` and updates the `textarea` with the default prompt.
+    - A `system-prompt-changed` event is dispatched on any change, allowing the main application to re-initialize active sessions.
+- **Session Reconnection Logic:**
+    - When `system-prompt-changed` is received, `index.tsx` will disconnect the active `TextSessionManager`.
+    - The session will only be re-initialized when the user next sends a message.
+    - The text chat transcript will be cleared upon a system prompt change.
+
 ## 4. Session Lifecycle Management
 
 ### 4.1. Session and Summarization Flow
 - **TTS Session**: Persists and is lazily initialized on the first text message.
 - **STS Session**: Ephemeral. It is created when a call starts and destroyed when it ends.
-- **Summarization**: On `call-end`, the `currentCallTranscript` is sent to a `SummarizationService`. This service makes a one-off call to the `gemini-1.5-flash-latest` model. The resulting summary is added to the `callHistory`.
+- **Call Transcript Clearing**: The call transcript is immediately cleared from the display when a call ends (on hangup) to provide an ephemeral experience.
+- **Summarization**: On `call-end`, the `currentCallTranscript` is sent to a `SummarizationService` before being cleared. This service makes a one-off call to the `gemini-2.5-flash-lite` model. The resulting summary is added to the `callHistory`.
+- **Post-Summarization**: After successful summarization, the call transcript remains cleared, with only the summary retained in call history.
 
 ### 4.2. State Management
 - The `textTranscript` is preserved across the application's lifecycle.
 - The `callHistory` is preserved and grows as calls are completed and summarized.
-- The `currentCallTranscript` is cleared after each call.
+- The `currentCallTranscript` is immediately cleared on call end for ephemeral experience, regardless of summarization success or failure.
 
 ## 5. Data Models
 ```typescript
@@ -250,16 +270,16 @@ interface ScrollToBottomState {
 - **State Tracking:** Uses WeakMap to track scroll state before DOM updates to eliminate timing issues
 
 ### 7.2. Component Integration
-- **chat-view.ts:** Uses generic auto-scroll for text messaging transcript
-- **call-transcript.ts:** Uses generic auto-scroll for voice call transcript
+- **BaseTranscriptView.ts:** Implements the generic auto-scroll logic, which is inherited by both `chat-view` and `call-transcript`.
 - **Visibility Handling:** Automatically scrolls to bottom when transcript components become visible
 - **Height Constraints:** Fixed height containers (`calc(100vh - 120px)`) ensure proper scrollable areas
 
 ### 7.3. Scroll-to-Bottom Button System
-- **Smart Visibility:** Button appears when user scrolls away from bottom during calls
-- **Message Counter:** Shows count of new messages received while scrolled away
-- **Squircle Design:** Matches call button styling with consistent visual language
-- **Event Communication:** Uses custom events to communicate scroll state between components
+- **Smart Visibility:** Button appears when user scrolls away from bottom in either transcript view.
+- **Message Counter:** Shows count of new messages received while scrolled away.
+- **Squircle Design:** Matches call button styling with consistent visual language.
+- **Event Communication:** Uses custom events to communicate scroll state between components.
+- **Mirrored Positioning:** The button will appear on the right for the call transcript and on the left for the chat view, aligning with the position of each view.
 
 ## 8. Error Handling
 - **Session Initialization Errors:** If a TTS or STS model fails to connect, display a toast notification.

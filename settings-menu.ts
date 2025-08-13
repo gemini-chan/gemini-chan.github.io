@@ -1,5 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { SystemPromptManager } from "./src/system-prompt-manager";
 
 interface FieldConfig {
   storageKey: string;
@@ -8,6 +9,38 @@ interface FieldConfig {
   required?: boolean;
   preserveOnEmpty?: boolean;
 }
+
+/**
+ * Applies circuitry animation settings from localStorage to the root element.
+ * This function is called on module load to ensure settings are restored when
+ * the application starts.
+ */
+function applyCircuitrySettingsOnLoad() {
+  const root = document.documentElement;
+
+  // Restore circuitry visibility
+  const circuitryEnabled =
+    localStorage.getItem("circuitry-enabled") !== "false";
+  root.style.setProperty(
+    "--circuit-display",
+    circuitryEnabled ? "block" : "none",
+  );
+  root.setAttribute("data-circuit-enabled", circuitryEnabled.toString());
+
+  // Restore animation speed
+  const circuitrySpeed = localStorage.getItem("circuitry-speed") || "15";
+  root.style.setProperty("--circuit-speed", `${circuitrySpeed}s`);
+
+  // Restore pulsing nodes visibility
+  const circuitryNodes = localStorage.getItem("circuitry-enabled") !== "false";
+  root.style.setProperty(
+    "--circuit-nodes-display",
+    circuitryNodes ? "block" : "none",
+  );
+}
+
+// Restore settings on page load
+applyCircuitrySettingsOnLoad();
 
 @customElement("settings-menu")
 export class SettingsMenu extends LitElement {
@@ -29,6 +62,26 @@ export class SettingsMenu extends LitElement {
   @state()
   private _modelUrlInvalid = false;
 
+  @state()
+  private _theme:
+    | "cyberpunk"
+    | "dystopia"
+    | "tron"
+    | "synthwave"
+    | "matrix"
+    | "noir" = (localStorage.getItem("theme") as any) || "cyberpunk";
+
+  @state()
+  private _circuitryEnabled: boolean =
+    localStorage.getItem("circuitry-enabled") !== "false";
+
+  @state()
+  private _circuitrySpeed: number = parseInt(
+    localStorage.getItem("circuitry-speed") || "15",
+  );
+
+  private systemPromptRef: HTMLTextAreaElement | null = null;
+
   static styles = css`
     :host {
       position: absolute;
@@ -45,31 +98,61 @@ export class SettingsMenu extends LitElement {
     }
     .backdrop {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
+      inset: 0;
+      background: radial-gradient(800px 600px at 20% 20%, rgba(0,229,255,0.08), transparent 60%),
+                  radial-gradient(800px 600px at 80% 80%, rgba(255,0,229,0.08), transparent 60%),
+                  rgba(0, 0, 0, 0.55);
       display: flex;
       align-items: center;
       justify-content: center;
+      backdrop-filter: blur(2px);
     }
     .container {
-      background: #222;
-      color: #eee;
-      padding: 2em;
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      padding: 1.5em;
       border-radius: 12px;
       display: flex;
       flex-direction: column;
       gap: 1em;
-      width: 400px;
+      width: 480px;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid var(--cp-surface-border);
+      box-shadow: var(--cp-glow-purple);
+      scrollbar-width: thin;
+      scrollbar-color: var(--cp-surface-strong) var(--cp-surface);
+    }
+
+    /* Custom scrollbar styles for Webkit browsers */
+    .container::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .container::-webkit-scrollbar-track {
+      background-color: var(--cp-surface);
+      border-radius: 4px;
+    }
+
+    .container::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background-clip: content-box;
+    }
+
+    .container::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
     }
     h2 {
-      color: #fff;
+      color: var(--cp-text);
       margin: 0 0 0.5em 0;
     }
     label {
-      color: #ccc;
+      color: var(--cp-muted);
       font-size: 0.9em;
     }
     .input-group {
@@ -78,33 +161,122 @@ export class SettingsMenu extends LitElement {
       align-items: center;
     }
     input::placeholder {
-      color: #aaa;
+      color: var(--cp-muted);
+    }
+    input,
+    textarea,
+    select {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      padding: 0.5em 0.65em;
+      border-radius: 8px;
+      flex: 1;
+      font-family: system-ui;
+      box-shadow: var(--cp-glow-purple);
+    }
+    textarea {
+      min-height: 60px;
+      max-height: 40vh;
+      height: auto;
+      overflow-y: auto;
+      resize: none;
+      transition: height 0.1s ease;
+      scrollbar-width: thin;
+      scrollbar-color: var(--cp-surface-strong) transparent;
+      line-height: 1.5;
+    }
+    
+    textarea::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    textarea::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    textarea::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 3px;
+    }
+    
+    textarea::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
     }
     input {
-      background: #333;
-      border: 1px solid #555;
-      color: white;
-      padding: 0.5em 5.5em 0.5em 0.5em;
-      border-radius: 6px;
+      padding-right: 5.5em;
+    }
+    select {
+      cursor: pointer;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+    }
+    .range-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type="range"] {
       flex: 1;
+      cursor: pointer;
+      height: 6px;
+      background: var(--cp-surface);
+      border-radius: 3px;
+      outline: none;
+      appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0,229,255,0.8), rgba(124,77,255,0.8));
+      border: 2px solid var(--cp-surface-border);
+      cursor: pointer;
+      box-shadow: var(--cp-glow-cyan);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(0,229,255,0.8), rgba(124,77,255,0.8));
+      border: 2px solid var(--cp-surface-border);
+      cursor: pointer;
+      box-shadow: var(--cp-glow-cyan);
+    }
+    .range-value {
+      min-width: 40px;
+      text-align: center;
+      font-size: 0.9em;
+      color: var(--cp-muted);
     }
     .paste-button {
       position: absolute;
       right: 0.5em;
-      background: transparent;
-      border: none;
-      color: #ccc;
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-muted);
       cursor: pointer;
       padding: 0.25em;
-      border-radius: 4px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: color 0.2s ease-in-out;
+      transition: background 0.15s ease, color 0.15s ease;
+      box-shadow: var(--cp-glow-cyan);
     }
     .paste-button:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.1);
+      color: var(--cp-text);
+      background: var(--cp-surface-strong);
     }
     .paste-icon {
       width: 16px;
@@ -135,10 +307,10 @@ export class SettingsMenu extends LitElement {
       height: 16px;
     }
     .tick-icon {
-      color: #4caf50;
+      color: var(--cp-green);
     }
     .cross-icon {
-      color: #ff8a80;
+      color: var(--cp-red);
     }
     .buttons {
       display: flex;
@@ -146,21 +318,113 @@ export class SettingsMenu extends LitElement {
       justify-content: flex-end;
     }
     button {
-        outline: none;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 0.5em 1em;
-        cursor: pointer;
-        transition: background-color 0.2s ease-in-out;
+      outline: none;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      padding: 0.5em 1em;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      box-shadow: var(--cp-glow-cyan);
     }
     button:hover {
-        background: rgba(255, 255, 255, 0.2);
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+      transform: translateY(-1px);
     }
     .error {
-      color: #ff8a80;
+      color: var(--cp-red);
       font-size: 0.9em;
+    }
+    details {
+      border: 1px solid var(--cp-surface-border);
+      border-radius: 8px;
+      padding: 0.5em 0.65em;
+      margin-top: 1em;
+      box-shadow: var(--cp-glow-purple);
+    }
+    summary {
+      cursor: pointer;
+      color: var(--cp-text);
+      font-weight: 500;
+      list-style-position: inside;
+    }
+    details[open] summary {
+      margin-bottom: 1em;
+    }
+    details .checkbox-group,
+    details .range-group {
+      margin-left: 1em;
+      margin-bottom: 1em;
+    }
+    details label {
+      margin-left: 1em;
+    }
+
+    .theme-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .theme-button {
+      outline: none;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      border-radius: 8px;
+      background: var(--cp-surface);
+      padding: 0.4em 0.8em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: none;
+      font-size: 0.9em;
+    }
+
+    .theme-button:hover {
+      background: var(--cp-surface-strong);
+      transform: translateY(-1px);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .theme-button.active {
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      border-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .theme-button.active:hover {
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+    }
+    
+    .prompt-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      border-top: 1px solid var(--cp-surface-border);
+      padding-top: 1em;
+      margin-top: 0.5em;
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5em;
+    }
+    
+    .section-title {
+      font-weight: 500;
+      color: var(--cp-text);
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    
+    .prompt-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.8;
     }
   `;
 
@@ -169,6 +433,57 @@ export class SettingsMenu extends LitElement {
       <div class="backdrop" @click=${this._handleBackdropClick}>
         <div class="container" @click=${this._stopPropagation}>
           <h2>Settings</h2>
+
+          <label for="theme">Theme</label>
+          <div class="theme-buttons">
+            ${[
+              "cyberpunk",
+              "dystopia",
+              "tron",
+              "synthwave",
+              "matrix",
+              "noir",
+            ].map(
+              (theme) => html`
+                <button
+                  class="theme-button ${this._theme === theme ? "active" : ""}"
+                  @click=${() => this._onThemeChange(theme as any)}
+                >
+                  ${theme.charAt(0).toUpperCase() + theme.slice(1)}
+                </button>
+              `,
+            )}
+          </div>
+
+          <details>
+            <summary>Advanced Settings</summary>
+            <label for="circuitryEnabled">Circuitry Animation</label>
+            <div class="checkbox-group">
+              <input
+                id="circuitryEnabled"
+                type="checkbox"
+                .checked=${this._circuitryEnabled}
+                @change=${this._onCircuitryEnabledChange}
+              />
+              <label for="circuitryEnabled">Enable animated circuitry background</label>
+            </div>
+
+            <label for="circuitrySpeed">Animation Speed (seconds)</label>
+            <div class="range-group">
+              <input
+                id="circuitrySpeed"
+                type="range"
+                min="5"
+                max="30"
+                step="1"
+                .value=${this._circuitrySpeed.toString()}
+                @input=${this._onCircuitrySpeedChange}
+                ?disabled=${!this._circuitryEnabled}
+              />
+              <span class="range-value">${this._circuitrySpeed}s</span>
+            </div>
+          </details>
+
           <label for="modelUrl">Live2D Model URL</label>
           <div class="input-group">
             <input
@@ -223,13 +538,39 @@ export class SettingsMenu extends LitElement {
           <div class="buttons">
             <button @click=${this._getApiKeyUrl}>Get API Key</button>
           </div>
-        </div>
+
+          <div class="prompt-section">
+            <div class="section-header">
+              <label for="systemPrompt" class="section-title">
+                <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
+                  <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
+                </svg>
+                System Prompt
+              </label>
+              <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
+            </div>
+            <textarea
+              id="systemPrompt"
+              .value=${SystemPromptManager.getSystemPrompt()}
+              @input=${this._onSystemPromptInput}
+              placeholder="Enter Gemini-chan's personality..."
+              rows="3"
+            ></textarea>
+          </div>
       </div>
     `;
   }
 
   firstUpdated() {
     this.shadowRoot!.host.setAttribute("active", "true");
+
+    // Initialize theme select and apply current theme
+    const select = this.shadowRoot!.querySelector<HTMLSelectElement>("#theme");
+    if (select) {
+      select.value = this._theme;
+    }
+    this._applyTheme(this._theme);
+    this._applyCircuitrySettings();
 
     // Validate API Key, but only if it has a value
     if (this.apiKey) {
@@ -243,6 +584,13 @@ export class SettingsMenu extends LitElement {
     if (modelUrlInput) {
       const isModelUrlValid = this._validateLive2dUrl(modelUrlInput.value);
       this._setValidationState("modelUrl", isModelUrlValid);
+    }
+
+    // Store reference to system prompt textarea and set initial height
+    this.systemPromptRef =
+      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
+    if (this.systemPromptRef) {
+      this._resizeTextarea(this.systemPromptRef);
     }
   }
 
@@ -559,5 +907,94 @@ export class SettingsMenu extends LitElement {
 
   private _getApiKeyUrl() {
     window.open("https://aistudio.google.com/apikey", "_blank");
+  }
+
+  private _applyTheme(
+    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
+  ) {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+
+  private _onThemeChange(
+    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
+  ) {
+    this._theme = theme;
+    localStorage.setItem("theme", theme);
+    this._applyTheme(theme);
+  }
+
+  private _applyCircuitrySettings() {
+    const root = document.documentElement;
+
+    // Controls visibility of the entire circuitry effect.
+    root.style.setProperty(
+      "--circuit-display",
+      this._circuitryEnabled ? "block" : "none",
+    );
+
+    // Controls animation duration.
+    root.style.setProperty("--circuit-speed", `${this._circuitrySpeed}s`);
+
+    // Controls visibility of intersection nodes.
+    root.style.setProperty(
+      "--circuit-nodes-display",
+      this._circuitryEnabled ? "block" : "none",
+    );
+
+    // This data attribute can be used for more complex CSS selectors if needed.
+    root.setAttribute(
+      "data-circuit-enabled",
+      this._circuitryEnabled.toString(),
+    );
+  }
+
+  private _onCircuitryEnabledChange(e: Event) {
+    const checkbox = e.target as HTMLInputElement;
+    this._circuitryEnabled = checkbox.checked;
+    localStorage.setItem(
+      "circuitry-enabled",
+      this._circuitryEnabled.toString(),
+    );
+    this._applyCircuitrySettings();
+  }
+
+  private _onCircuitrySpeedChange(e: Event) {
+    const range = e.target as HTMLInputElement;
+    this._circuitrySpeed = parseInt(range.value);
+    localStorage.setItem("circuitry-speed", this._circuitrySpeed.toString());
+    this._applyCircuitrySettings();
+  }
+
+  private _onSystemPromptInput(e: Event) {
+    const textarea = e.target as HTMLTextAreaElement;
+    SystemPromptManager.setSystemPrompt(textarea.value);
+    this._resizeTextarea(textarea);
+    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
+  }
+
+  private _resizeTextarea(textarea: HTMLTextAreaElement) {
+    // Reset height to recalculate
+    textarea.style.height = "auto";
+
+    // Calculate new height based on scroll height
+    const scrollHeight = textarea.scrollHeight;
+    const minHeight = 60;
+    // Use 40vh (40% of viewport height) as max to ensure it stays visible
+    const maxHeight = window.innerHeight * 0.4;
+
+    // Clamp the height between min and max
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    textarea.style.height = `${newHeight}px`;
+  }
+
+  private _onResetSystemPrompt() {
+    SystemPromptManager.resetToDefault();
+    const textarea =
+      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
+    if (textarea) {
+      textarea.value = SystemPromptManager.getDefaultSystemPrompt();
+      this._resizeTextarea(textarea);
+    }
+    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
   }
 }

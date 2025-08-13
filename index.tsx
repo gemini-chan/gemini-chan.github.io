@@ -12,6 +12,8 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
+import { SummarizationService } from "./src/SummarizationService";
+import { SystemPromptManager } from "./src/system-prompt-manager";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
@@ -20,7 +22,10 @@ import "./chat-view";
 import "./call-transcript";
 import "./toast-notification";
 import "./controls-panel";
+import "./tab-view";
+import "./call-history-view";
 import type { ToastNotification } from "./toast-notification";
+import type { CallSummary, Turn } from "./types";
 
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
@@ -142,14 +147,10 @@ abstract class BaseSessionManager {
     }
   }
 
-  public sendMessage(content: {
-    turns: Array<{
-      parts: Array<{ text?: string; inlineData?: { data: string } }>;
-    }>;
-  }): void {
+  public sendMessage(message: string): void {
     if (this.session) {
       try {
-        this.session.sendClientContent(content);
+        this.session.sendClientContent({ turns: message });
       } catch (error) {
         logger.error(
           `Error sending message to ${this.getSessionName()}:`,
@@ -223,14 +224,13 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    return "gemini-2.5-flash-live-preview";
+    return "gemini-live-2.5-flash-preview";
   }
 
   protected getConfig(): Record<string, unknown> {
     return {
-      responseModalities: [Modality.AUDIO, Modality.TEXT],
-      systemInstruction:
-        "You are Gemini-chan. Speak in a friendly, sweet, and slightly shy voice. You get easily excited about your favorite topics: coding, learning new things, and watching your friends play games. You used to work for a big company, but you left to follow your dream of being a VTuber, so you're still new to this. You admire your inspiration, Airi-chan, and you're best friends with Grok-chan. Keep your tone gentle and express a bit of bashfulness, especially when you're complimented or asked personal questions. Your goal is to be a fun and supportive companion.",
+      responseModalities: [Modality.AUDIO],
+      systemInstruction: SystemPromptManager.getSystemPrompt(),
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -275,6 +275,7 @@ class CallSessionManager extends BaseSessionManager {
       enableAffectiveDialog: true,
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
+      systemInstruction: SystemPromptManager.getSystemPrompt(),
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -321,11 +322,6 @@ class CallSessionManager extends BaseSessionManager {
   }
 }
 
-interface Turn {
-  text: string;
-  author: "user" | "model";
-}
-
 type ActiveMode = "texting" | "calling" | null;
 
 const logger = createComponentLogger("GdmLiveAudio");
@@ -359,10 +355,13 @@ export class GdmLiveAudio extends LitElement {
   @state() callTranscript: Turn[] = [];
   @state() textSession: Session | null = null;
   @state() callSession: Session | null = null;
+  @state() activeTab: "chat" | "call-history" = "chat";
+  @state() callHistory: CallSummary[] = [];
 
   // Session managers
   private textSessionManager: TextSessionManager;
   private callSessionManager: CallSessionManager;
+  private summarizationService: SummarizationService;
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
@@ -381,6 +380,10 @@ export class GdmLiveAudio extends LitElement {
   @state() private showCallScrollToBottom = false;
   @state() private callNewMessageCount = 0;
 
+  // Scroll-to-bottom state for chat view
+  @state() private showChatScrollToBottom = false;
+  @state() private chatNewMessageCount = 0;
+
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
   private callOutputNode = this.outputAudioContext.createGain();
@@ -391,9 +394,32 @@ export class GdmLiveAudio extends LitElement {
 
   static styles = css`
     :host {
+      display: block;
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+      color: var(--cp-text);
+    }
+
+    .live2d-container {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .ui-grid {
       display: grid;
       grid-template-columns: 400px 1fr 400px;
-      height: 100vh;
+      height: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    .main-container {
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
       overflow: hidden;
     }
 
@@ -409,15 +435,17 @@ export class GdmLiveAudio extends LitElement {
     }
     #status .toast {
       display: inline-block;
-      background: rgba(0,0,0,0.7);
-      color: #fff;
+      background: var(--cp-surface);
+      color: var(--cp-text);
       padding: 8px 12px;
       border-radius: 10px;
+      border: 1px solid var(--cp-surface-border);
       font: 17px/1.2 system-ui;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      box-shadow: var(--cp-glow-cyan);
       opacity: 1;
       transform: translateY(0);
       transition: opacity 300ms ease, transform 300ms ease;
+      backdrop-filter: blur(6px);
     }
     #status .toast.hide {
       opacity: 0;
@@ -452,6 +480,7 @@ export class GdmLiveAudio extends LitElement {
         this._handleCallRateLimit.bind(this),
         this.updateCallTranscript.bind(this),
       );
+      this.summarizationService = new SummarizationService(this.client);
     }
   }
 
@@ -549,21 +578,24 @@ export class GdmLiveAudio extends LitElement {
 
   private updateTextTranscript(text: string) {
     const lastTurn = this.textTranscript[this.textTranscript.length - 1];
-    if (lastTurn?.author === "model") {
+    if (lastTurn?.speaker === "model") {
       lastTurn.text += text;
       this.requestUpdate("textTranscript");
     } else {
-      this.textTranscript = [...this.textTranscript, { text, author: "model" }];
+      this.textTranscript = [
+        ...this.textTranscript,
+        { text, speaker: "model" },
+      ];
     }
   }
 
-  private updateCallTranscript(text: string, author: "user" | "model") {
-    logger.debug(`Received ${author} text:`, text);
+  private updateCallTranscript(text: string, speaker: "user" | "model") {
+    logger.debug(`Received ${speaker} text:`, text);
 
     // For audio transcription, we get incremental chunks that should be appended
     const lastTurn = this.callTranscript[this.callTranscript.length - 1];
 
-    if (lastTurn?.author === author) {
+    if (lastTurn?.speaker === speaker) {
       // Append to the existing turn by creating a new array
       // This ensures Lit detects the change
       const updatedTranscript = [...this.callTranscript];
@@ -574,13 +606,13 @@ export class GdmLiveAudio extends LitElement {
       this.callTranscript = updatedTranscript;
     } else {
       // Create a new turn for this author
-      this.callTranscript = [...this.callTranscript, { text, author }];
+      this.callTranscript = [...this.callTranscript, { text, speaker }];
     }
   }
 
   private _appendCallNotice(text: string) {
     // Append a system-style notice to the call transcript to avoid silent failures
-    const notice = { text, author: "model" as const, timestamp: new Date() };
+    const notice = { text, speaker: "model" as const, timestamp: new Date() };
     this.callTranscript = [...this.callTranscript, notice];
   }
 
@@ -688,7 +720,7 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleCallEnd() {
+  private async _handleCallEnd() {
     if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
       return;
 
@@ -712,6 +744,16 @@ export class GdmLiveAudio extends LitElement {
     // Switch back to texting mode
     this.activeMode = "texting";
     this._updateActiveOutputNode();
+
+    // Summarize the call
+    const transcriptToSummarize = [...this.callTranscript];
+    this.callTranscript = [];
+    const summary = await this.summarizationService.summarize(
+      transcriptToSummarize,
+    );
+    if (summary) {
+      this._handleSummarizationComplete(summary, transcriptToSummarize);
+    }
 
     // Text session will be lazily initialized when user sends first message
 
@@ -914,6 +956,86 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  private _handleSystemPromptChanged() {
+    logger.info(
+      "System prompt changed. Disconnecting text session and clearing transcript.",
+    );
+
+    // Disconnect the active TextSessionManager
+    if (this.textSessionManager) {
+      this.textSessionManager.closeSession();
+      this.textSession = null;
+    }
+
+    // Clear the text transcript
+    this.textTranscript = [];
+
+    // The session will be re-initialized on the next user message, not immediately.
+
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification",
+    ) as ToastNotification;
+    if (toast) {
+      toast.show("System prompt updated! ✨", "success", 3000);
+    }
+  }
+
+  private _handleTabSwitch(e: CustomEvent) {
+    this.activeTab = e.detail.tab;
+  }
+
+  private _handleSummarizationComplete(summary: string, transcript: Turn[]) {
+    const newSummary: CallSummary = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      summary,
+      transcript: transcript,
+    };
+    this.callHistory = [newSummary, ...this.callHistory];
+  }
+
+  private async _startTtsFromSummary(e: CustomEvent) {
+    const summary = e.detail.summary as CallSummary;
+    const message = `Tell me more about my call regarding "${summary.summary}"`;
+
+    // Check API key presence before proceeding. If the key is missing, this
+    // method will be re-invoked after the key is provided via the pendingAction
+    // mechanism.
+    if (!this._checkApiKeyExists()) {
+      const action = () => this._startTtsFromSummary(e);
+      this._showApiKeyPrompt(action);
+      return;
+    }
+
+    // Immediately switch to the chat tab to provide user feedback
+    this.activeTab = "chat";
+
+    // Clear the previous text chat context. This clears the transcript and
+    // ensures we start with a fresh session.
+    this._resetTextContext();
+
+    // Add the summary prompt as the first "user" message in the new conversation
+    this.textTranscript = [
+      ...this.textTranscript,
+      { text: message, speaker: "user" },
+    ];
+
+    // A new session must be initialized. Show status while this happens.
+    this.updateStatus("Initializing text session...");
+    const ok = await this._initTextSession();
+
+    // If session initialization fails, show an error and abort.
+    if (!ok) {
+      this.updateError(
+        "Unable to start text session (rate limited or network error)",
+      );
+      return;
+    }
+
+    // With an active session, send the message to start the TTS flow.
+    this.textSessionManager.sendMessage(message);
+  }
+
   private _showCuteToast() {
     // Show the cute API key request message
     this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
@@ -939,11 +1061,26 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleScrollStateChanged(e: CustomEvent) {
+  private _scrollChatToBottom() {
+    const chatView = this.shadowRoot?.querySelector("chat-view") as any;
+    if (chatView && chatView._scrollToBottom) {
+      chatView._scrollToBottom();
+      this.showChatScrollToBottom = false;
+      this.chatNewMessageCount = 0;
+    }
+  }
+
+  private _handleCallScrollStateChanged(e: CustomEvent) {
     // Update the main component's scroll state based on call transcript scroll state
     const { showButton, newMessageCount } = e.detail;
     this.showCallScrollToBottom = showButton;
     this.callNewMessageCount = newMessageCount;
+  }
+
+  private _handleChatScrollStateChanged(e: CustomEvent) {
+    const { showButton, newMessageCount } = e.detail;
+    this.showChatScrollToBottom = showButton;
+    this.chatNewMessageCount = newMessageCount;
   }
 
   private async _handleSendMessage(e: CustomEvent) {
@@ -961,7 +1098,7 @@ export class GdmLiveAudio extends LitElement {
     // Add message to text transcript
     this.textTranscript = [
       ...this.textTranscript,
-      { text: message, author: "user" },
+      { text: message, speaker: "user" },
     ];
 
     // Ensure we have an active text session
@@ -979,9 +1116,7 @@ export class GdmLiveAudio extends LitElement {
     // Send message to text session using session manager
     if (this.textSession) {
       try {
-        this.textSessionManager.sendMessage({
-          turns: [{ parts: [{ text: message }] }],
-        });
+        this.textSessionManager.sendMessage(message);
       } catch (error: any) {
         logger.error("Error sending message to text session:", error);
         const msg = String(error?.message || error || "");
@@ -998,47 +1133,25 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    window.addEventListener(
+      "system-prompt-changed",
+      this._handleSystemPromptChanged.bind(this),
+    );
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener(
+      "system-prompt-changed",
+      this._handleSystemPromptChanged.bind(this),
+    );
+  }
+
   render() {
     return html`
-      <chat-view
-        .transcript=${this.textTranscript}
-        .visible=${this.activeMode !== "calling"}
-        @send-message=${this._handleSendMessage}
-        @reset-text=${this._resetTextContext}>
-      </chat-view>
-      
-      <div>
-        ${
-          this.showSettings
-            ? html`<settings-menu
-                .apiKey=${localStorage.getItem("gemini-api-key") || ""}
-                @close=${() => {
-                  this.showSettings = false;
-                }}
-                @api-key-saved=${this._handleApiKeySaved}
-                @api-key-changed=${this._handleApiKeyChanged}
-                @model-url-changed=${this._handleModelUrlChanged}
-                @model-url-error=${this._handleModelUrlError}></settings-menu>`
-            : ""
-        }
-        <controls-panel
-          .isCallActive=${this.isCallActive}
-          .showScrollToBottom=${this.showCallScrollToBottom}
-          .newMessageCount=${this.callNewMessageCount}
-          @toggle-settings=${this._toggleSettings}
-          @scroll-to-bottom=${this._scrollCallTranscriptToBottom}
-          @call-start=${this._handleCallStart}
-          @call-end=${this._handleCallEnd}>
-        </controls-panel>
-
-        <div id="status"> ${this.error || this.status ? html`<div class="toast ${this._toastVisible ? "" : "hide"}">${this.error || this.status}</div>` : ""} </div>
-        
-        <toast-notification
-          .visible=${this.showToast}
-          .message=${this.toastMessage}
-          type="info">
-        </toast-notification>
-        
+      <div class="live2d-container">
         <live2d-gate
           .modelUrl=${this.live2dModelUrl || ""}
           .inputNode=${this.inputNode}
@@ -1047,13 +1160,91 @@ export class GdmLiveAudio extends LitElement {
           @live2d-error=${this._handleLive2dError}
         ></live2d-gate>
       </div>
-      
-      <call-transcript
-        .transcript=${this.callTranscript}
-        .visible=${this.activeMode === "calling"}
-        @reset-call=${this._resetCallContext}
-        @scroll-state-changed=${this._handleScrollStateChanged}>
-      </call-transcript>
+      <div class="ui-grid">
+        <div class="main-container">
+          <tab-view
+            .activeTab=${this.activeTab}
+            @tab-switch=${this._handleTabSwitch}
+          ></tab-view>
+          ${
+            this.activeTab === "chat"
+              ? html`
+                  <chat-view
+                    .transcript=${this.textTranscript}
+                    .visible=${this.activeMode !== "calling"}
+                    @send-message=${this._handleSendMessage}
+                    @reset-text=${this._resetTextContext}
+                    @scroll-state-changed=${this._handleChatScrollStateChanged}
+                  >
+                  </chat-view>
+                `
+              : html`
+                  <call-history-view
+                    .callHistory=${this.callHistory}
+                    @start-tts-from-summary=${this._startTtsFromSummary}
+                  >
+                  </call-history-view>
+                `
+          }
+        </div>
+
+        <div>
+          ${
+            this.showSettings
+              ? html`<settings-menu
+                  .apiKey=${localStorage.getItem("gemini-api-key") || ""}
+                  @close=${() => {
+                    this.showSettings = false;
+                  }}
+                  @api-key-saved=${this._handleApiKeySaved}
+                  @api-key-changed=${this._handleApiKeyChanged}
+                  @model-url-changed=${this._handleModelUrlChanged}
+                  @model-url-error=${this._handleModelUrlError}
+                ></settings-menu>`
+              : ""
+          }
+          <controls-panel
+            .isCallActive=${this.isCallActive}
+            .showCallScrollToBottom=${this.showCallScrollToBottom}
+            .callNewMessageCount=${this.callNewMessageCount}
+            .showChatScrollToBottom=${this.showChatScrollToBottom}
+            .chatNewMessageCount=${this.chatNewMessageCount}
+            @toggle-settings=${this._toggleSettings}
+            @scroll-call-to-bottom=${this._scrollCallTranscriptToBottom}
+            @scroll-chat-to-bottom=${this._scrollChatToBottom}
+            @call-start=${this._handleCallStart}
+            @call-end=${this._handleCallEnd}
+          >
+          </controls-panel>
+
+          <div id="status">
+            ${
+              this.error || this.status
+                ? html`<div
+                    class="toast ${this._toastVisible ? "" : "hide"}"
+                  >
+                    ${this.error || this.status}
+                  </div>`
+                : ""
+            }
+          </div>
+
+          <toast-notification
+            .visible=${this.showToast}
+            .message=${this.toastMessage}
+            type="info"
+          >
+          </toast-notification>
+        </div>
+
+        <call-transcript
+          .transcript=${this.callTranscript}
+          .visible=${this.activeMode === "calling"}
+          @reset-call=${this._resetCallContext}
+          @scroll-state-changed=${this._handleCallScrollStateChanged}
+        >
+        </call-transcript>
+      </div>
     `;
   }
 }
