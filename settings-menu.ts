@@ -484,6 +484,25 @@ export class SettingsMenu extends LitElement {
             </div>
           </details>
 
+          <div class="prompt-section">
+            <div class="section-header">
+              <label for="systemPrompt" class="section-title">
+                <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
+                  <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
+                </svg>
+                System Prompt
+              </label>
+              <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
+            </div>
+            <textarea
+              id="systemPrompt"
+              .value=${SystemPromptManager.getSystemPrompt()}
+              @input=${this._onSystemPromptInput}
+              placeholder="Enter Gemini-chan's personality..."
+              rows="3"
+            ></textarea>
+          </div>
+
           <label for="modelUrl">Live2D Model URL</label>
           <div class="input-group">
             <input
@@ -539,24 +558,6 @@ export class SettingsMenu extends LitElement {
             <button @click=${this._getApiKeyUrl}>Get API Key</button>
           </div>
 
-          <div class="prompt-section">
-            <div class="section-header">
-              <label for="systemPrompt" class="section-title">
-                <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
-                  <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
-                </svg>
-                System Prompt
-              </label>
-              <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
-            </div>
-            <textarea
-              id="systemPrompt"
-              .value=${SystemPromptManager.getSystemPrompt()}
-              @input=${this._onSystemPromptInput}
-              placeholder="Enter Gemini-chan's personality..."
-              rows="3"
-            ></textarea>
-          </div>
       </div>
     `;
   }
