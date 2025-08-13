@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { SystemPromptManager } from "./src/system-prompt-manager";
+import { Persona, PersonaManager } from "./src/persona-manager";
 
 interface FieldConfig {
   storageKey: string;
@@ -80,7 +80,27 @@ export class SettingsMenu extends LitElement {
     localStorage.getItem("circuitry-speed") || "15",
   );
 
-  private systemPromptRef: HTMLTextAreaElement | null = null;
+  @state()
+  private _personas: Persona[] = [];
+
+  @state()
+  private _activePersona: Persona | null = null;
+
+  @state()
+  private _editingPersona: Persona | null = null;
+
+  private personaManager: PersonaManager;
+
+  constructor() {
+    super();
+    this.personaManager = new PersonaManager();
+    this._loadPersonas();
+  }
+
+  private _loadPersonas() {
+    this._personas = this.personaManager.getPersonas();
+    this._activePersona = this.personaManager.getActivePersona();
+  }
 
   static styles = css`
     :host {
@@ -426,7 +446,147 @@ export class SettingsMenu extends LitElement {
       height: 18px;
       opacity: 0.8;
     }
+
+    .persona-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em;
+    }
+
+    .persona-button {
+      outline: none;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      border-radius: 8px;
+      background: var(--cp-surface);
+      padding: 0.4em 0.8em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: none;
+      font-size: 0.9em;
+    }
+
+    .persona-button:hover {
+      background: var(--cp-surface-strong);
+      transform: translateY(-1px);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .persona-button.active {
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      border-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
+    }
+    .persona-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      border-top: 1px solid var(--cp-surface-border);
+      padding-top: 1em;
+      margin-top: 1em;
+    }
   `;
+
+  private _renderPersonaForm() {
+    if (!this._editingPersona) {
+      return html``;
+    }
+
+    return html`
+      <div class="persona-editor">
+        <input
+          type="text"
+          .value=${this._editingPersona.name}
+          @input=${(e: Event) =>
+            this._handlePersonaFormInput(
+              "name",
+              (e.target as HTMLInputElement).value,
+            )}
+        />
+        <textarea
+          .value=${this._editingPersona.systemPrompt}
+          @input=${(e: Event) =>
+            this._handlePersonaFormInput(
+              "systemPrompt",
+              (e.target as HTMLTextAreaElement).value,
+            )}
+          placeholder="System Prompt"
+        ></textarea>
+        <div class="input-group">
+          <input
+            type="text"
+            .value=${this._editingPersona.live2dModelUrl}
+            @input=${(e: Event) => {
+              this._handlePersonaFormInput(
+                "live2dModelUrl",
+                (e.target as HTMLInputElement).value,
+              );
+              this._validateLive2dUrl((e.target as HTMLInputElement).value);
+            }}
+            placeholder="Live2D Model URL"
+          />
+          <div
+            class="validation-icon ${
+              this._modelUrlValid || this._modelUrlInvalid ? "show" : ""
+            }"
+            title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}"
+          >
+            ${
+              this._modelUrlValid
+                ? html`<svg
+                  class="tick-icon"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"
+                  />
+                </svg>`
+                : this._modelUrlInvalid
+                  ? html`<svg
+                    class="cross-icon"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+                    />
+                  </svg>`
+                  : ""
+            }
+          </div>
+          <button
+            class="paste-button"
+            @click=${() => this._handlePaste("modelUrl")}
+            title="Paste from clipboard"
+          >
+            <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"
+              />
+            </svg>
+          </button>
+        </div>
+        <button @click=${this._onSavePersona}>Save</button>
+        <button @click=${() => (this._editingPersona = null)}>Cancel</button>
+      </div>
+    `;
+  }
+
+  private _handlePersonaFormInput(field: keyof Persona, value: string) {
+    if (this._editingPersona) {
+      this._editingPersona = { ...this._editingPersona, [field]: value };
+    }
+  }
+
+  private _onSavePersona() {
+    if (this._editingPersona) {
+      this.personaManager.updatePersona(this._editingPersona);
+      this._loadPersonas();
+      this._editingPersona = null;
+      this.requestUpdate();
+    }
+  }
 
   render() {
     return html`
@@ -456,7 +616,7 @@ export class SettingsMenu extends LitElement {
           </div>
 
           <details>
-            <summary>Advanced Settings</summary>
+            <summary>UI</summary>
             <label for="circuitryEnabled">Circuitry Animation</label>
             <div class="checkbox-group">
               <input
@@ -484,30 +644,33 @@ export class SettingsMenu extends LitElement {
             </div>
           </details>
 
-          <label for="modelUrl">Live2D Model URL</label>
-          <div class="input-group">
-            <input
-              id="modelUrl"
-              type="text"
-              .value=${localStorage.getItem("live2d-model-url") || "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip"}
-              @input=${this._onModelUrlInput}
-              @blur=${this._onModelUrlBlur}
-              placeholder="Enter model3.json or .zip URL" />
-            <div class="validation-icon ${this._modelUrlValid || this._modelUrlInvalid ? "show" : ""}" title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}">
-              ${
-                this._modelUrlValid
-                  ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
-                  : this._modelUrlInvalid
-                    ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
-                    : ""
-              }
+          <div class="prompt-section">
+            <div class="section-header">
+              <label class="section-title">
+                <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
+                  <path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Zm80-80h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T560-640q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640q0 33 23.5 56.5T480-560Zm0-80q17 0 28.5-11.5T520-680q0-17-11.5-28.5T480-720q-17 0-28.5 11.5T440-680q0 17 11.5 28.5T480-640Zm0 240Z"/>
+                </svg>
+                Persona Management
+              </label>
+              <button @click=${this._onCreatePersona}>+</button>
             </div>
-            <button class="paste-button" @click=${this._onPasteModelUrl} title="Paste from clipboard">
-              <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
-              </svg>
-            </button>
+            <div class="persona-list">
+              ${this._personas.map(
+                (persona) => html`
+                  <button
+                    class="persona-button ${
+                      this._activePersona?.id === persona.id ? "active" : ""
+                    }"
+                    @click=${() => this._onSelectPersona(persona.id)}
+                  >
+                    ${persona.name}
+                  </button>
+                `,
+              )}
+            </div>
+            ${this._renderPersonaForm()}
           </div>
+
 
           <label for="apiKey">API Key</label>
           <div class="input-group">
@@ -539,24 +702,6 @@ export class SettingsMenu extends LitElement {
             <button @click=${this._getApiKeyUrl}>Get API Key</button>
           </div>
 
-          <div class="prompt-section">
-            <div class="section-header">
-              <label for="systemPrompt" class="section-title">
-                <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
-                  <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
-                </svg>
-                System Prompt
-              </label>
-              <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
-            </div>
-            <textarea
-              id="systemPrompt"
-              .value=${SystemPromptManager.getSystemPrompt()}
-              @input=${this._onSystemPromptInput}
-              placeholder="Enter Gemini-chan's personality..."
-              rows="3"
-            ></textarea>
-          </div>
       </div>
     `;
   }
@@ -578,20 +723,7 @@ export class SettingsMenu extends LitElement {
       this._setValidationState("apiKey", isApiKeyValid);
     }
 
-    // Validate Model URL
-    const modelUrlInput =
-      this.shadowRoot!.querySelector<HTMLInputElement>("#modelUrl");
-    if (modelUrlInput) {
-      const isModelUrlValid = this._validateLive2dUrl(modelUrlInput.value);
-      this._setValidationState("modelUrl", isModelUrlValid);
-    }
-
     // Store reference to system prompt textarea and set initial height
-    this.systemPromptRef =
-      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
-    if (this.systemPromptRef) {
-      this._resizeTextarea(this.systemPromptRef);
-    }
   }
 
   private _handleBackdropClick(e: Event) {
@@ -631,34 +763,10 @@ export class SettingsMenu extends LitElement {
     }, 500); // 500ms debounce
   }
 
-  private _modelUrlInputDebounceTimer: number | undefined;
-
-  private _onModelUrlInput(e: Event) {
-    const input = e.target as HTMLInputElement;
-    this._error = ""; // Clear error on input
-    this._modelUrlValid = false; // Clear validation tick while typing
-    this._modelUrlInvalid = false;
-
-    clearTimeout(this._modelUrlInputDebounceTimer);
-    this._modelUrlInputDebounceTimer = window.setTimeout(() => {
-      this._autoSave(
-        input.value,
-        {
-          storageKey: "live2d-model-url",
-          validator: this._validateLive2dUrl.bind(this),
-          eventName: "model-url-changed",
-          required: false,
-          preserveOnEmpty: true,
-        },
-        "modelUrl",
-      );
-    }, 500);
-  }
-
   private _autoSave(
     value: string,
     config: FieldConfig,
-    fieldName: "apiKey" | "modelUrl",
+    fieldName: "apiKey",
   ): boolean {
     let isValid = false;
 
@@ -679,15 +787,13 @@ export class SettingsMenu extends LitElement {
         }
       }
 
-      // For API key, show validation error when cleared but preserve the key
-      // For model URL, clearing is OK (will fallback to sphere)
-      if (fieldName === "apiKey" && config.required) {
+      if (config.required) {
         this._error = "API key cannot be empty";
         this._setValidationState(fieldName, false);
       } else {
         this._setValidationState(fieldName, true);
       }
-      return fieldName !== "apiKey" || !config.required; // Return false for required API key to show error
+      return !config.required;
     }
 
     // If field is not required and empty, save empty value without validation
@@ -753,21 +859,6 @@ export class SettingsMenu extends LitElement {
     );
   }
 
-  private _onModelUrlBlur(e: Event) {
-    const input = e.target as HTMLInputElement;
-    this._autoSave(
-      input.value,
-      {
-        storageKey: "live2d-model-url",
-        validator: this._validateLive2dUrl.bind(this),
-        eventName: "model-url-changed",
-        required: false,
-        preserveOnEmpty: true,
-      },
-      "modelUrl",
-    );
-  }
-
   private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
       const text = await navigator.clipboard.readText();
@@ -791,18 +882,14 @@ export class SettingsMenu extends LitElement {
             "apiKey",
           );
         } else {
-          // modelUrl
-          this._autoSave(
-            text,
-            {
-              storageKey: "live2d-model-url",
-              validator: this._validateLive2dUrl.bind(this),
-              eventName: "model-url-changed",
-              required: false,
-              preserveOnEmpty: true,
-            },
-            "modelUrl",
-          );
+          if (this._editingPersona) {
+            this._editingPersona = {
+              ...this._editingPersona,
+              live2dModelUrl: text,
+            };
+            this._validateLive2dUrl(text);
+            this.requestUpdate();
+          }
         }
       }
     } catch (err) {
@@ -812,10 +899,6 @@ export class SettingsMenu extends LitElement {
 
   private _onPaste() {
     this._handlePaste("apiKey");
-  }
-
-  private _onPasteModelUrl() {
-    this._handlePaste("modelUrl");
   }
 
   private _validateApiKey(key: string): boolean {
@@ -832,6 +915,12 @@ export class SettingsMenu extends LitElement {
   }
 
   private _validateLive2dUrl(url: string): boolean {
+    const isValid = this._checkLive2dUrl(url);
+    this._setValidationState("modelUrl", isValid);
+    return isValid;
+  }
+
+  private _checkLive2dUrl(url: string): boolean {
     if (!url) {
       // Empty is OK - will fallback to sphere
       return true;
@@ -965,36 +1054,17 @@ export class SettingsMenu extends LitElement {
     this._applyCircuitrySettings();
   }
 
-  private _onSystemPromptInput(e: Event) {
-    const textarea = e.target as HTMLTextAreaElement;
-    SystemPromptManager.setSystemPrompt(textarea.value);
-    this._resizeTextarea(textarea);
-    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
+  private _onCreatePersona() {
+    const newPersona = this.personaManager.createPersona("New Persona");
+    this._loadPersonas();
+    this._editingPersona = newPersona;
+    this.requestUpdate();
   }
 
-  private _resizeTextarea(textarea: HTMLTextAreaElement) {
-    // Reset height to recalculate
-    textarea.style.height = "auto";
-
-    // Calculate new height based on scroll height
-    const scrollHeight = textarea.scrollHeight;
-    const minHeight = 60;
-    // Use 40vh (40% of viewport height) as max to ensure it stays visible
-    const maxHeight = window.innerHeight * 0.4;
-
-    // Clamp the height between min and max
-    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
-    textarea.style.height = `${newHeight}px`;
-  }
-
-  private _onResetSystemPrompt() {
-    SystemPromptManager.resetToDefault();
-    const textarea =
-      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
-    if (textarea) {
-      textarea.value = SystemPromptManager.getDefaultSystemPrompt();
-      this._resizeTextarea(textarea);
-    }
-    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
+  private _onSelectPersona(personaId: string) {
+    this.personaManager.setActivePersona(personaId);
+    this._activePersona = this.personaManager.getActivePersona();
+    this._editingPersona = this._activePersona;
+    this.requestUpdate();
   }
 }

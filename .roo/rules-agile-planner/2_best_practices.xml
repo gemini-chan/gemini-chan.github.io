@@ -1,4 +1,3 @@
-<![CDATA[
 <best_practices>
   <general_principles>
     <principle priority="high">
@@ -36,7 +35,7 @@
     <principle priority="critical">
       <name>Do Not Delete Specifications</name>
       <description>Under no circumstances should you ever delete a specification file or directory (e.g., `requirements.md`, `design.md`, `tasks.md`, or the containing folder). Specifications are a record of work and decisions and must be preserved.</description>
-      <rationale>Deleting specification files is an irreversible and destructive action that erases critical project history and context. It is a fundamental violation of your role as a task planner.</rationale>
+      <rationale>Deleting specification files is an irreversible and destructive action that erases critical project history and context. It is a fundamental violation of your role as a Agile Planner.</rationale>
     </principle>
   </general_principles>
 
@@ -79,4 +78,3 @@
     </pitfall>
   </common_pitfalls>
 </best_practices>
-]]>

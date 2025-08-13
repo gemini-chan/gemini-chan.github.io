@@ -31,3 +31,5 @@ Implement the settings menu and API key management functionality.
   - Requirements: 2.6.1, 2.7.1
 
 - [ ] 7. DEFERRED: Add dedicated tests for dynamic API key management and real-time validation functionality.
+- [x] 8. Refactor Design Specification: Restructure the design.md document to accurately reflect the settings menu's implemented layout, including the addition of theme, animation, and system prompt sections, and reorder them to match the UI flow.
+- [x] 9. Implement Settings Menu Layout Refactoring: Update the `settings-menu.ts` component to reorder the settings sections, positioning the "System Prompt" section between the "UI" and "Live2D Model URL" sections to align with the updated design.

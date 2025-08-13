@@ -1,4 +1,3 @@
-<![CDATA[
 <javascript_sdk_patterns>
   <overview>
     This document provides official guidelines and code patterns for using the Google Gen AI JavaScript/TypeScript SDK (`@google/genai`). For a comprehensive migration guide from the legacy SDK, see `.roo/docs/migrating-to-genai-sdk.md`.
@@ -160,4 +159,3 @@ runLiveSession();
     </pattern>
   </advanced_features>
 </javascript_sdk_patterns>
-]]>

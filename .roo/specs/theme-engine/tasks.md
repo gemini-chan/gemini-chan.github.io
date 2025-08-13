@@ -46,8 +46,8 @@ Add theme engine support with a toggle in Settings and persistence.
   - [x] 8.2. Remove the "Classic" theme option from `settings-menu.ts`.
   - [x] 8.3. Remove the `html[data-theme='classic']` styles from `index.css`.
 
-- [x] 9. Refactor Advanced Settings into a Dropdown
-  - [x] 9.1. In `settings-menu.ts`, wrap the circuitry animation controls in a `<details>` element with the summary "Advanced Settings".
+- [x] 9. Refactor UI into a Dropdown
+  - [x] 9.1. In `settings-menu.ts`, wrap the circuitry animation controls in a `<details>` element with the summary "UI".
 
 - [x] 10. Implement Noir Theme
   - [x] 10.1. In `index.css`, add a new `html[data-theme='noir']` block with reddish color overrides.

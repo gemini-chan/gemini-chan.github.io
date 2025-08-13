@@ -2,7 +2,7 @@
 <examples>
   <example name="end_to_end_design_workflow">
     <description>
-      This example demonstrates the complete workflow of the Design Architect mode, from reading requirements to producing an approved design document.
+      This example demonstrates the complete workflow of the Agile Architect mode, from reading requirements to producing an approved design document.
     </description>
     
     <context>
@@ -151,7 +151,7 @@ sequenceDiagram
         "Yes, the design is approved."
       </user_response>
       <final_output>
-        The mode confirms that the design is complete and that the next step is to use the "Task Planner" mode to create the implementation plan.
+        The mode confirms that the design is complete and that the next step is to use the "Agile Planner" mode to create the implementation plan.
       </final_output>
     </step>
   </example>

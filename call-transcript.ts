@@ -23,8 +23,18 @@ export class CallTranscript extends LitElement {
   rateLimited: boolean = false;
 
   @property({ type: String })
-  rateLimitMessage: string =
-    "E-eh? I'm getting so... sleepy all of a sudden.... S-sorry.. Maybe let's call later?... *dozing off*..... (ρω-)";
+  activePersonaName: string = "VTuber";
+
+  get rateLimitMessage(): string {
+    if (this.activePersonaName === "Assistant") {
+      return "I apologize, but I'm experiencing system limitations at the moment. Please try calling again later.";
+    } else if (this.activePersonaName === "VTuber") {
+      return "E-eh? I'm getting so... sleepy all of a sudden.... S-sorry.. Maybe let's call later?... *dozing off*..... (ρω-)";
+    } else {
+      // Generic message for custom personas
+      return "System is currently rate limited. Please try calling again later.";
+    }
+  }
 
   @state()
   private showScrollToBottom = false;

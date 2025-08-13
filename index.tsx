@@ -12,8 +12,9 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
+import { type Persona, PersonaManager } from "./src/persona-manager";
 import { SummarizationService } from "./src/SummarizationService";
-import { SystemPromptManager } from "./src/system-prompt-manager";
+import { VectorStore } from "./src/vector-store";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
@@ -190,6 +191,7 @@ class TextSessionManager extends BaseSessionManager {
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
     private updateTranscript: (text: string) => void,
+    private personaManager: PersonaManager,
   ) {
     super(outputAudioContext, outputNode, client, updateStatus, updateError);
   }
@@ -230,7 +232,7 @@ class TextSessionManager extends BaseSessionManager {
   protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
-      systemInstruction: SystemPromptManager.getSystemPrompt(),
+      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -254,6 +256,7 @@ class CallSessionManager extends BaseSessionManager {
       text: string,
       author: "user" | "model",
     ) => void,
+    private personaManager: PersonaManager,
   ) {
     super(
       outputAudioContext,
@@ -275,7 +278,7 @@ class CallSessionManager extends BaseSessionManager {
       enableAffectiveDialog: true,
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
-      systemInstruction: SystemPromptManager.getSystemPrompt(),
+      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -339,9 +342,6 @@ export class GdmLiveAudio extends LitElement {
   @state() showSettings = false;
   @state() showToast = false;
   @state() toastMessage = "";
-  @state() live2dModelUrl =
-    localStorage.getItem("live2d-model-url") ||
-    "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip";
 
   // Track pending user action for API key validation flow
   private pendingAction: (() => void) | null = null;
@@ -362,6 +362,8 @@ export class GdmLiveAudio extends LitElement {
   private textSessionManager: TextSessionManager;
   private callSessionManager: CallSessionManager;
   private summarizationService: SummarizationService;
+  private personaManager: PersonaManager;
+  private vectorStore: VectorStore;
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
@@ -457,6 +459,10 @@ export class GdmLiveAudio extends LitElement {
 
   constructor() {
     super();
+    this.personaManager = new PersonaManager();
+    this.vectorStore = new VectorStore(
+      this.personaManager.getActivePersona().id,
+    );
     this.initClient();
   }
 
@@ -470,6 +476,7 @@ export class GdmLiveAudio extends LitElement {
         this.updateStatus.bind(this),
         this.updateError.bind(this),
         this.updateTextTranscript.bind(this),
+        this.personaManager,
       );
       this.callSessionManager = new CallSessionManager(
         this.outputAudioContext,
@@ -479,6 +486,7 @@ export class GdmLiveAudio extends LitElement {
         this.updateError.bind(this),
         this._handleCallRateLimit.bind(this),
         this.updateCallTranscript.bind(this),
+        this.personaManager,
       );
       this.summarizationService = new SummarizationService(this.client);
     }
@@ -817,13 +825,25 @@ export class GdmLiveAudio extends LitElement {
     return apiKey !== null && apiKey.trim() !== "";
   }
 
+  private _getApiKeyPrompt(): string {
+    const activePersona = this.personaManager.getActivePersona();
+    if (activePersona.name === "Assistant") {
+      return "Please provide your API key from AI Studio to proceed with the task.";
+    } else if (activePersona.name === "VTuber") {
+      return "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    } else {
+      // Generic prompt for custom personas
+      return "Please provide your API key from AI Studio to continue.";
+    }
+  }
+
   private _showApiKeyPrompt(pendingAction?: () => void) {
     // Store the pending action to execute after API key is saved
     this.pendingAction = pendingAction || null;
 
     // Open settings menu and show toast prompting for API key
     this.showSettings = true;
-    this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    this.toastMessage = this._getApiKeyPrompt();
     this.showToast = true;
   }
 
@@ -833,7 +853,7 @@ export class GdmLiveAudio extends LitElement {
       "toast-notification",
     ) as ToastNotification;
     if (toast) {
-      toast.show("API key saved successfully! ✨", "success", 3000);
+      toast.show("API key saved successfully! ✨", "info", 3000);
     }
 
     logger.info("API key saved, reinitializing client");
@@ -879,7 +899,7 @@ export class GdmLiveAudio extends LitElement {
     ) as ToastNotification;
     if (toast) {
       if (newApiKey) {
-        toast.show("API key updated successfully! ✨", "success", 3000);
+        toast.show("API key updated successfully! ✨", "info", 3000);
       } else {
         toast.show("API key cleared", "info", 3000);
       }
@@ -892,30 +912,12 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleModelUrlChanged() {
-    // Update the Live2D model URL from localStorage and trigger re-render
-    const newModelUrl = localStorage.getItem("live2d-model-url") || "";
-    const currentModelUrl = this.live2dModelUrl || "";
+    // This method is now handled by persona changes
+    // Live2D model URL changes are managed through the PersonaManager
+    logger.debug("Model URL change handled via persona system");
 
-    // Check if the URL actually changed
-    if (newModelUrl === currentModelUrl) {
-      logger.debug(
-        "Runtime Model Swap] URL unchanged, skipping reload:",
-        newModelUrl,
-      );
-      return; // Silently skip reload - no toast needed
-    }
-
-    this.live2dModelUrl = newModelUrl;
-
-    // Show toast notification to indicate model is changing
-    const toast = this.shadowRoot?.querySelector(
-      "toast-notification",
-    ) as ToastNotification;
-    if (toast) {
-      toast.show("Loading new Live2D model...", "info", 3000);
-    }
-
-    logger.info("Runtime Model Swap] Model URL changed to:", newModelUrl);
+    // Trigger a re-render to update the Live2D component with the new persona's model URL
+    this.requestUpdate();
   }
 
   private _handleLive2dLoaded() {
@@ -956,27 +958,31 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleSystemPromptChanged() {
-    logger.info(
-      "System prompt changed. Disconnecting text session and clearing transcript.",
-    );
+  private async _handlePersonaChanged() {
+    const activePersona = this.personaManager.getActivePersona();
+    if (activePersona) {
+      await this.vectorStore.switchPersona(activePersona.id);
 
-    // Disconnect the active TextSessionManager
-    if (this.textSessionManager) {
-      this.textSessionManager.closeSession();
-      this.textSession = null;
-    }
+      // Disconnect the active TextSessionManager to apply the new system prompt
+      if (this.textSessionManager) {
+        this.textSessionManager.closeSession();
+        this.textSession = null;
+      }
+      this.textTranscript = [];
 
-    // Clear the text transcript
-    this.textTranscript = [];
+      const toast = this.shadowRoot?.querySelector(
+        "toast-notification",
+      ) as ToastNotification;
+      if (toast) {
+        toast.show(
+          `Switched to ${activePersona.name}. Loading model...`,
+          "info",
+          4000,
+        );
+      }
 
-    // The session will be re-initialized on the next user message, not immediately.
-
-    const toast = this.shadowRoot?.querySelector(
-      "toast-notification",
-    ) as ToastNotification;
-    if (toast) {
-      toast.show("System prompt updated! ✨", "success", 3000);
+      // Trigger a re-render to update the Live2D component with the new persona's model URL
+      this.requestUpdate();
     }
   }
 
@@ -996,7 +1002,7 @@ export class GdmLiveAudio extends LitElement {
 
   private async _startTtsFromSummary(e: CustomEvent) {
     const summary = e.detail.summary as CallSummary;
-    const message = `Tell me more about my call regarding "${summary.summary}"`;
+    const message = `Tell me more about our call regarding "${summary.summary}"`;
 
     // Check API key presence before proceeding. If the key is missing, this
     // method will be re-invoked after the key is provided via the pendingAction
@@ -1037,11 +1043,11 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _showCuteToast() {
-    // Show the cute API key request message
-    this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    // Show the API key request message based on active persona
+    this.toastMessage = this._getApiKeyPrompt();
     this.showToast = true;
 
-    // Auto-hide after 6 seconds to give time to read the cute message
+    // Auto-hide after 6 seconds to give time to read the message
     setTimeout(() => {
       this.showToast = false;
       this.toastMessage = "";
@@ -1136,16 +1142,16 @@ export class GdmLiveAudio extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener(
-      "system-prompt-changed",
-      this._handleSystemPromptChanged.bind(this),
+      "persona-changed",
+      this._handlePersonaChanged.bind(this),
     );
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener(
-      "system-prompt-changed",
-      this._handleSystemPromptChanged.bind(this),
+      "persona-changed",
+      this._handlePersonaChanged.bind(this),
     );
   }
 
@@ -1153,7 +1159,7 @@ export class GdmLiveAudio extends LitElement {
     return html`
       <div class="live2d-container">
         <live2d-gate
-          .modelUrl=${this.live2dModelUrl || ""}
+          .modelUrl=${this.personaManager.getActivePersona().live2dModelUrl || ""}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
           @live2d-loaded=${this._handleLive2dLoaded}
@@ -1200,6 +1206,7 @@ export class GdmLiveAudio extends LitElement {
                   @api-key-changed=${this._handleApiKeyChanged}
                   @model-url-changed=${this._handleModelUrlChanged}
                   @model-url-error=${this._handleModelUrlError}
+                  @persona-changed=${this._handlePersonaChanged}
                 ></settings-menu>`
               : ""
           }
@@ -1240,6 +1247,7 @@ export class GdmLiveAudio extends LitElement {
         <call-transcript
           .transcript=${this.callTranscript}
           .visible=${this.activeMode === "calling"}
+          .activePersonaName=${this.personaManager.getActivePersona().name}
           @reset-call=${this._resetCallContext}
           @scroll-state-changed=${this._handleCallScrollStateChanged}
         >

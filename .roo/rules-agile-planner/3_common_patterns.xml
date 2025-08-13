@@ -1,7 +1,6 @@
-<![CDATA[
 <common_patterns>
   <overview>
-    This file provides common patterns and templates for generating `tasks.md` files. These patterns ensure consistency and clarity in the implementation plans created by the Task Planner mode.
+    This file provides common patterns and templates for generating `tasks.md` files. These patterns ensure consistency and clarity in the implementation plans created by the Agile Planner mode.
   </overview>
 
   <task_list_structure>
@@ -67,4 +66,3 @@
     </example>
   </task_item_examples>
 </common_patterns>
-]]>

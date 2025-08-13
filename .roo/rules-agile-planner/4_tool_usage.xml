@@ -1,6 +1,6 @@
 <tool_usage_guide>
   <overview>
-    This guide provides specific instructions for using tools within the Task Planner mode. Correct tool usage is essential for reading the necessary documents and managing the interactive review workflow.
+    This guide provides specific instructions for using tools within the Agile Planner mode. Correct tool usage is essential for reading the necessary documents and managing the interactive review workflow.
   </overview>
 
   <tool_priorities>
@@ -73,14 +73,8 @@
 <file>
   <path>.roo/specs/new-feature/tasks.md</path>
   <diff>
-    <content>
-<<<<<<< SEARCH
-:start_line:4
--------
+<content>
 - [ ] 1.1. Create the main component file `src/components/NewFeature.js`.
-=======
-- [ ] 1.1. Create the main component file `src/components/feature/NewFeature.js`.
->>>>>>> REPLACE
 </content>
     <start_line>4</start_line>
   </diff>

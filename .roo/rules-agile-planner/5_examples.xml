@@ -1,8 +1,7 @@
-<![CDATA[
 <examples>
   <example name="full_task_planning_workflow">
     <description>
-      This example demonstrates the complete workflow for the Task Planner mode, from reading the initial design document to generating a final, user-approved implementation plan and handing off to the implementation overseer.
+      This example demonstrates the complete workflow for the Agile Planner mode, from reading the initial design document to generating a final, user-approved implementation plan and handing off to the Agile Dev.
     </description>
     
     <context>
@@ -39,7 +38,6 @@
         <title>Generate Initial Task List</title>
         <action>The mode creates the first version of `tasks.md` based on the design.</action>
         <tool_used>
-          <![CDATA[
 <write_to_file>
 <path>.roo/specs/user-login/tasks.md</path>
 <content>
@@ -57,3 +55,10 @@
   - Create `tests/api/auth.test.js` to test the login endpoint.
   - Include tests for valid and invalid credentials.
   - Ref: Requirement 3.1
+</content>
+</write_to_file>
+</tool_used>
+</step>
+</steps>
+</example>
+</examples>
