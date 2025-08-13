@@ -142,7 +142,15 @@ export class PersonaManager {
     const personasJson = localStorage.getItem(
       PersonaManager.PERSONAS_STORAGE_KEY,
     );
-    return personasJson ? JSON.parse(personasJson) : [];
+    if (!personasJson) {
+      return [];
+    }
+    try {
+      return JSON.parse(personasJson);
+    } catch (error) {
+      console.warn("Failed to parse personas from localStorage:", error);
+      return [];
+    }
   }
 
   /**
