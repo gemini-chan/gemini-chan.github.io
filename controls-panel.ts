@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import "./energy-bar";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("controls-panel")
@@ -19,6 +20,11 @@ export class ControlsPanel extends LitElement {
   chatNewMessageCount = 0;
 
   static styles = css`
+    energy-bar {
+      margin-right: 8px;
+      opacity: 0.9;
+    }
+
     :host {
       z-index: 10;
       position: absolute;
@@ -167,6 +173,7 @@ export class ControlsPanel extends LitElement {
       </div>
 
       <div class="right-controls">
+        <energy-bar></energy-bar>
         <button
           id="settingsButton"
           @click=${this._toggleSettings}
