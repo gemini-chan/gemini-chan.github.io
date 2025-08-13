@@ -14,7 +14,6 @@ import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
 import { type Persona, PersonaManager } from "./src/persona-manager";
 import { SummarizationService } from "./src/SummarizationService";
-import { SystemPromptManager } from "./src/system-prompt-manager";
 import { VectorStore } from "./src/vector-store";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
@@ -192,6 +191,7 @@ class TextSessionManager extends BaseSessionManager {
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
     private updateTranscript: (text: string) => void,
+    private personaManager: PersonaManager,
   ) {
     super(outputAudioContext, outputNode, client, updateStatus, updateError);
   }
@@ -232,7 +232,7 @@ class TextSessionManager extends BaseSessionManager {
   protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
-      systemInstruction: SystemPromptManager.getSystemPrompt(),
+      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -256,6 +256,7 @@ class CallSessionManager extends BaseSessionManager {
       text: string,
       author: "user" | "model",
     ) => void,
+    private personaManager: PersonaManager,
   ) {
     super(
       outputAudioContext,
@@ -277,7 +278,7 @@ class CallSessionManager extends BaseSessionManager {
       enableAffectiveDialog: true,
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
-      systemInstruction: SystemPromptManager.getSystemPrompt(),
+      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -475,6 +476,7 @@ export class GdmLiveAudio extends LitElement {
         this.updateStatus.bind(this),
         this.updateError.bind(this),
         this.updateTextTranscript.bind(this),
+        this.personaManager,
       );
       this.callSessionManager = new CallSessionManager(
         this.outputAudioContext,
@@ -484,6 +486,7 @@ export class GdmLiveAudio extends LitElement {
         this.updateError.bind(this),
         this._handleCallRateLimit.bind(this),
         this.updateCallTranscript.bind(this),
+        this.personaManager,
       );
       this.summarizationService = new SummarizationService(this.client);
     }
@@ -955,43 +958,24 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleSystemPromptChanged() {
-    logger.info(
-      "System prompt changed. Disconnecting text session and clearing transcript.",
-    );
-
-    // Disconnect the active TextSessionManager
-    if (this.textSessionManager) {
-      this.textSessionManager.closeSession();
-      this.textSession = null;
-    }
-
-    // Clear the text transcript
-    this.textTranscript = [];
-
-    // The session will be re-initialized on the next user message, not immediately.
-
-    const toast = this.shadowRoot?.querySelector(
-      "toast-notification",
-    ) as ToastNotification;
-    if (toast) {
-      toast.show("System prompt updated! ✨", "success", 3000);
-    }
-  }
 
   private async _handlePersonaChanged() {
     const activePersona = this.personaManager.getActivePersona();
     if (activePersona) {
-      SystemPromptManager.setSystemPrompt(activePersona.systemPrompt);
       await this.vectorStore.switchPersona(activePersona.id);
-      this._handleSystemPromptChanged();
 
-      // Show toast notification to indicate model is changing
+      // Disconnect the active TextSessionManager to apply the new system prompt
+      if (this.textSessionManager) {
+        this.textSessionManager.closeSession();
+        this.textSession = null;
+      }
+      this.textTranscript = [];
+
       const toast = this.shadowRoot?.querySelector(
         "toast-notification",
       ) as ToastNotification;
       if (toast) {
-        toast.show("Loading new Live2D model...", "info", 3000);
+        toast.show("Persona changed, loading new model...", "info", 4000);
       }
 
       // Trigger a re-render to update the Live2D component with the new persona's model URL
@@ -1155,10 +1139,6 @@ export class GdmLiveAudio extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener(
-      "system-prompt-changed",
-      this._handleSystemPromptChanged.bind(this),
-    );
-    window.addEventListener(
       "persona-changed",
       this._handlePersonaChanged.bind(this),
     );
@@ -1166,10 +1146,6 @@ export class GdmLiveAudio extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    window.removeEventListener(
-      "system-prompt-changed",
-      this._handleSystemPromptChanged.bind(this),
-    );
     window.removeEventListener(
       "persona-changed",
       this._handlePersonaChanged.bind(this),
