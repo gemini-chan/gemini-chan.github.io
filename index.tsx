@@ -341,7 +341,7 @@ export class GdmLiveAudio extends LitElement {
   @state() toastMessage = "";
   @state() live2dModelUrl =
     localStorage.getItem("live2d-model-url") ||
-    "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip";
+    "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/hiyori.zip";
 
   // Track pending user action for API key validation flow
   private pendingAction: (() => void) | null = null;

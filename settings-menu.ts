@@ -489,7 +489,7 @@ export class SettingsMenu extends LitElement {
             <input
               id="modelUrl"
               type="text"
-              .value=${localStorage.getItem("live2d-model-url") || "https://gateway.xn--vck1b.shop/models/hiyori_pro_en.zip"}
+              .value=${localStorage.getItem("live2d-model-url") || "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/hiyori.zip"}
               @input=${this._onModelUrlInput}
               @blur=${this._onModelUrlBlur}
               placeholder="Enter model3.json or .zip URL" />
