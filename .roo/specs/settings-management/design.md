@@ -87,51 +87,74 @@ sequenceDiagram
 - **API Key**: Required field, preserves existing key when cleared, shows validation error
 - **Live2D URL**: Optional field, allows empty values (fallback to sphere), no error on clear
 
-### 4.3. API Key Management
+### 4.3. Theme and Animation Settings
+
+The settings menu allows for customization of the application's visual appearance.
+
+- **Theme Selection**: Users can choose from several pre-defined themes (`cyberpunk`, `dystopia`, `tron`, etc.). The selection is persisted in `localStorage` and applied immediately by setting a `data-theme` attribute on the root element.
+- **Advanced Animation Settings**: Within a collapsible "Advanced Settings" section, users can:
+    - Toggle the animated circuitry background.
+    - Adjust the animation speed using a slider.
+    - These settings are persisted in `localStorage` and control the animation via CSS custom properties.
+
+### 4.4. System Prompt Management
+
+**Responsibility:** Allows the user to define a custom system prompt to guide the AI's personality.
 
 **Validation Rules:**
-- Must start with "AIzaSy" and be exactly 39 characters
-- Cannot be empty (shows error: "API key cannot be empty")
-- Invalid format shows: "Invalid API key format"
+- The field is optional and accepts any text.
+- If the input is empty, the system prompt reverts to the application's default personality.
 
-**Events:**
-- `api-key-changed`: Emitted on successful validation and save
-- Triggers Google GenAI client reinitialization
+**Persistence and Events:**
+- The prompt is saved to `localStorage` with a 300ms debounce via the `SystemPromptManager`.
+- A `system-prompt-changed` event is dispatched on change, allowing the main application to be aware of updates.
+- A "Reset to Default" button is provided to restore the original system prompt.
 
-**Smart Change Detection:**
-- Compares new API key with `currentApiKey` property
-- Skips reinitialization if key hasn't actually changed
-- Shows success toast: "API key updated successfully! ✨"
-
-### 4.4. Live2D Model URL Management
+### 4.5. Live2D Model URL Management
 
 **Validation Rules:**
-- Supports HTTP, HTTPS, IPFS, and blob protocols
-- Accepts .zip and .model3.json file extensions
-- Empty values are valid (fallback to 3D sphere)
-- IPFS URLs must include valid hash
+- Supports HTTP, HTTPS, IPFS, and blob protocols.
+- Accepts `.zip` and `.model3.json` file extensions.
+- Empty values are valid (fallback to 3D sphere).
+- IPFS URLs must include a valid hash.
 
 **Events:**
-- `model-url-changed`: Emitted on successful validation and save
-- `model-url-error`: Emitted on validation failures
-- Triggers Live2D model reload
+- `model-url-changed`: Emitted on successful validation and save.
+- `model-url-error`: Emitted on validation failures.
+- Triggers Live2D model reload.
 
 **Smart Change Detection:**
-- Compares new URL with `live2dModelUrl` property
-- Skips reload if URL hasn't actually changed
+- Compares new URL with `live2dModelUrl` property.
+- Skips reload if URL hasn't actually changed.
 - Shows loading toast: "Loading new Live2D model..."
 - Shows success toast: "Live2D model loaded successfully! ✨"
 
-### 4.5. Error Handling Strategy
+### 4.6. API Key Management
+
+**Validation Rules:**
+- Must start with "AIzaSy" and be exactly 39 characters.
+- Cannot be empty (shows error: "API key cannot be empty").
+- Invalid format shows: "Invalid API key format".
+
+**Events:**
+- `api-key-changed`: Emitted on successful validation and save.
+- Triggers Google GenAI client reinitialization.
+
+**Smart Change Detection:**
+- Compares new API key with `currentApiKey` property.
+- Skips reinitialization if key hasn't actually changed.
+- Shows success toast: "API key updated successfully! ✨"
+
+### 4.7. Error Handling Strategy
 
 **Validation Errors:**
-- API key errors prevent saving and show validation UI
-- Live2D URL errors emit `model-url-error` events with error details
-- Both show immediate visual feedback with red X icon
+- API key errors prevent saving and show validation UI.
+- Live2D URL errors emit `model-url-error` events with error details.
+- Both show immediate visual feedback with a red X icon.
 
 **Runtime Errors:**
-- API key reinitialization failures show error toasts
-- Live2D loading failures show error toasts with specific error messages
+- API key reinitialization failures show error toasts.
+- Live2D loading failures show error toasts with specific error messages.
 - Graceful degradation (sphere fallback for Live2D failures)
 
 ## 5. Data Models
