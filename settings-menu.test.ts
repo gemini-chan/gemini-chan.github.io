@@ -41,7 +41,8 @@ describe('SettingsMenu Persona Management', () => {
     
     element = await fixture(html`<settings-menu></settings-menu>`);
     // The component's internal personaManager is the one we want to assert against
-    personaManager = element.personaManager; 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    personaManager = (element as any).personaManager;
   });
 
   afterEach(() => {

@@ -33,14 +33,14 @@ This document captures the requirements for introducing a theme engine with a us
 - WHEN I change these settings THEN my choices are persisted to `localStorage`.
 - WHEN I reopen the app THEN my circuitry animation settings are restored.
 
-### 2.6. Collapsible Advanced Settings
+### 2.6. Collapsible UI
 - As a user,
 - I want the advanced circuitry settings to be in a collapsible dropdown,
 - so that the main settings menu remains clean and uncluttered.
 
 #### 2.6.1. Acceptance Criteria
-- WHEN I open the settings menu THEN the circuitry animation controls are hidden under a dropdown labeled "Advanced Settings".
-- WHEN I click the "Advanced Settings" dropdown THEN the animation controls become visible.
+- WHEN I open the settings menu THEN the circuitry animation controls are hidden under a dropdown labeled "UI".
+- WHEN I click the "UI" dropdown THEN the animation controls become visible.
 
 ### 2.2. Theming via CSS Variables
 - As a developer,

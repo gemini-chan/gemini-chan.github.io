@@ -64,7 +64,7 @@ Cyberpunk defines all variables with neon-focused values. Other themes override 
 - Some canvases (visualizers) may not yet consume variables; can be themed later.
 
 ## 9. Circuitry Animation
-The animated circuitry effect is controlled by several CSS variables that can be manipulated via a collapsible "Advanced Settings" dropdown in the settings menu. A `<details>` element will be used to create the dropdown, containing the controls.
+The animated circuitry effect is controlled by several CSS variables that can be manipulated via a collapsible "UI" dropdown in the settings menu. A `<details>` element will be used to create the dropdown, containing the controls.
 
 - `--circuit-display`: Controls visibility (`block` or `none`) of both the grid and the pulsing nodes.
 - `--circuit-speed`: Controls animation duration (e.g., `15s`).

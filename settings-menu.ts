@@ -614,7 +614,7 @@ export class SettingsMenu extends LitElement {
           </div>
 
           <details>
-            <summary>Advanced Settings</summary>
+            <summary>UI</summary>
             <label for="circuitryEnabled">Circuitry Animation</label>
             <div class="checkbox-group">
               <input

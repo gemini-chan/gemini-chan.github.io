@@ -29,7 +29,7 @@ describe('PersonaManager', () => {
     vi.spyOn(document, 'dispatchEvent');
 
     // Mock uuidv4 to return predictable values
-    (uuidv4 as vi.Mock).mockReturnValueOnce(defaultPersonaId).mockReturnValue(mockUuid);
+    vi.mocked(uuidv4).mockReturnValueOnce(defaultPersonaId).mockReturnValue(mockUuid);
     
     personaManager = new PersonaManager();
   });
@@ -96,7 +96,7 @@ describe('PersonaManager', () => {
       personaManager.setActivePersona(newPersona.id);
       
       expect(document.dispatchEvent).toHaveBeenCalled();
-      const event = (document.dispatchEvent as vi.Mock).mock.calls[0][0] as CustomEvent;
+      const event = (vi.mocked(document.dispatchEvent).mock.calls[0][0]) as CustomEvent;
       expect(event.type).toBe('persona-changed');
       expect(event.detail).toEqual({ personaId: newPersona.id });
     });

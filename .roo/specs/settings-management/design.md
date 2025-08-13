@@ -92,7 +92,7 @@ sequenceDiagram
 The settings menu allows for customization of the application's visual appearance.
 
 - **Theme Selection**: Users can choose from several pre-defined themes (`cyberpunk`, `dystopia`, `tron`, etc.). The selection is persisted in `localStorage` and applied immediately by setting a `data-theme` attribute on the root element.
-- **Advanced Animation Settings**: Within a collapsible "Advanced Settings" section, users can:
+- **Advanced Animation Settings**: Within a collapsible "UI" section, users can:
     - Toggle the animated circuitry background.
     - Adjust the animation speed using a slider.
     - These settings are persisted in `localStorage` and control the animation via CSS custom properties.
