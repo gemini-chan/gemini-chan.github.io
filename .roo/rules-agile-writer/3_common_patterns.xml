@@ -1,4 +1,3 @@
-<![CDATA[
 <common_patterns>
   <pattern name="agile_requirements_document">
     <usage>This template should be used for generating the `requirements.md` file, focusing on an Epic and User Story structure.</usage>
@@ -70,4 +69,3 @@ Scenario: Invalid credentials
     ]]></template>
   </pattern>
 </common_patterns>
-]]>

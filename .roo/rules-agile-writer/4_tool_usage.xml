@@ -26,7 +26,7 @@
     <tool name="write_to_file">
       <best_practices>
         <practice>When creating the initial `requirements.md`, use the template from `3_common_patterns.xml` to ensure correct formatting.</practice>
-        <practice>Ensure the full, complete content of the file is included in the `<content>` block.</practice>
+        <practice>Ensure the full, complete content of the file is included in the `content` block.</practice>
       </best_practices>
     </tool>
     <tool name="userInput">

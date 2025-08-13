@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <error_handling_guide>
   <overview>
     This guide provides instructions for diagnosing and resolving common errors encountered during Live2D Cubism development. The mode should follow these steps to provide effective troubleshooting assistance.
@@ -34,12 +33,12 @@ if (!context) {
     </symptom>
     <diagnosis>
       <step number="1">Verify the Cubism Core SDK files are placed in the `public` directory, not `src`.</step>
-      <step number="2">Check the `<script>` tag in `index.html`. The `src` path must be an absolute path from the project root (e.g., `/Core/live2dcubismcore.js`).</step>
+      <step number="2">Check the `script` tag in `index.html`. The `src` path must be an absolute path from the project root (e.g., `/Core/live2dcubismcore.js`).</step>
       <step number="3">Ensure the script tag for the core is placed *before* the main application script (`main.ts`).</step>
     </diagnosis>
     <resolution>
       <action>Advise the user to move the `Core` directory to the `public` folder if it's in the wrong place.</action>
-      <action>Use `apply_diff` to correct the `src` attribute in the `<script>` tag in `index.html` to use the correct absolute path.</action>
+      <action>Use `apply_diff` to correct the `src` attribute in the `script` tag in `index.html` to use the correct absolute path.</action>
     </resolution>
   </error_scenario>
 

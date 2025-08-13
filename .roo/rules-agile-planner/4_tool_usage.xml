@@ -73,14 +73,8 @@
 <file>
   <path>.roo/specs/new-feature/tasks.md</path>
   <diff>
-    <content>
-<<<<<<< SEARCH
-:start_line:4
--------
+<content>
 - [ ] 1.1. Create the main component file `src/components/NewFeature.js`.
-=======
-- [ ] 1.1. Create the main component file `src/components/feature/NewFeature.js`.
->>>>>>> REPLACE
 </content>
     <start_line>4</start_line>
   </diff>

@@ -1,4 +1,3 @@
-<![CDATA[
 <best_practices>
   <general_principles>
     <principle priority="high">
@@ -89,4 +88,3 @@ Scenario: Apply a vintage filter
     </pitfall>
   </common_pitfalls>
 </best_practices>
-]]>

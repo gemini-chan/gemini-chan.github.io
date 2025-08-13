@@ -1,4 +1,3 @@
-<![CDATA[
 <sdk_guidelines>
   <golden_rule>
     Always use the correct and current Google GenAI SDK. The legacy libraries are deprecated and should not be used in new projects.
@@ -8,7 +7,7 @@
     <sdk language="javascript_typescript">
       <name>Google Gen AI JavaScript SDK</name>
       <package_name>@google/genai</package_name>
-      <status>Active & Recommended</status>
+      <status>Active and Recommended</status>
       <installation>npm install @google/genai</installation>
       <legacy_package name="@google/generative-ai">
         <status>Deprecated</status>
@@ -34,4 +33,3 @@
     </action>
   </verification_guideline>
 </sdk_guidelines>
-]]>
