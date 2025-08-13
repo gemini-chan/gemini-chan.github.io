@@ -237,7 +237,10 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    return "gemini-live-2.5-flash-preview";
+    // Optionally align text session with energy levels too
+    // Keep a sensible fallback for full-chat model if mapping returns null
+    const model = energyBarService.getCurrentModel();
+    return model || "gemini-live-2.5-flash-preview";
   }
 
   protected getConfig(): Record<string, unknown> {
@@ -1187,7 +1190,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _onEnergyLevelChanged = (e: Event) => {
-    const { level } = (e as CustomEvent<EnergyLevelChangedDetail>).detail;
+    const { level, reason } = (e as CustomEvent<EnergyLevelChangedDetail>)
+      .detail;
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
       const prompt = this.personaManager.getPromptForEnergyLevel(
@@ -1200,6 +1204,17 @@ export class GdmLiveAudio extends LitElement {
         ) as ToastNotification;
         toast?.show(prompt, "warning", 4000);
       }
+    }
+
+    // If we are in an active call and rate-limited, reconnect with the downgraded model
+    if (
+      this.activeMode === "calling" &&
+      this.isCallActive &&
+      reason === "rate-limit-exceeded"
+    ) {
+      this.updateStatus("Rate limited — switching to a lower tier...");
+      // Re-initialize the call session to apply the downgraded model
+      this._initCallSession();
     }
   };
 
