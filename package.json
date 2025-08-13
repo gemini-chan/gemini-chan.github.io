@@ -22,7 +22,8 @@
     "lit": "^3.3.1",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^6.5.10",
-    "three": "^0.179.1"
+    "three": "^0.179.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
@@ -31,6 +32,7 @@
     "@types/chai": "^4.3.18",
     "@types/mocha": "^10.0.7",
     "@types/node": "^24.2.0",
+    "@types/uuid": "^10.0.0",
     "@web/test-runner": "^0.18.2",
     "chai": "^5.1.1",
     "husky": "^9.1.6",
