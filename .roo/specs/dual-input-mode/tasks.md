@@ -97,3 +97,9 @@ Implement the UI refactoring for scrollable views and the refined system prompt 
    - [x] 13.1. Create `SummarizationService` class
    - [x] 13.2. Integrate summarization into call lifecycle with transcript clearing
    - [x] 13.3. Implement call history persistence
+
+
+- [x] 22. **Handle Edge Case**: When a call summary is inserted into the chat while no TTS session is active, it should act like sending a new message.
+  - Requirements: 2.11.1
+  - [x] 22.1. In `index.tsx`, ensure the `_startTtsFromSummary` handler correctly initiates a new TTS session with the summary content if no session is active. This should mirror the behavior of sending the first message in the chat.
+    - Ref: Design 3.1

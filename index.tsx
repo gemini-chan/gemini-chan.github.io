@@ -980,14 +980,46 @@ export class GdmLiveAudio extends LitElement {
     this.callHistory = [newSummary, ...this.callHistory];
   }
 
-  private _startTtsFromSummary(e: CustomEvent) {
+  private async _startTtsFromSummary(e: CustomEvent) {
     const summary = e.detail.summary as CallSummary;
-    // This is a placeholder for the actual TTS implementation
-    console.log("Starting TTS for summary:", summary);
-    this.textSessionManager.sendMessage(
-      `Tell me more about my call regarding "${summary.summary}"`,
-    );
+    const message = `Tell me more about my call regarding "${summary.summary}"`;
+
+    // Check API key presence before proceeding. If the key is missing, this
+    // method will be re-invoked after the key is provided via the pendingAction
+    // mechanism.
+    if (!this._checkApiKeyExists()) {
+      const action = () => this._startTtsFromSummary(e);
+      this._showApiKeyPrompt(action);
+      return;
+    }
+
+    // Immediately switch to the chat tab to provide user feedback
     this.activeTab = "chat";
+
+    // Clear the previous text chat context. This clears the transcript and
+    // ensures we start with a fresh session.
+    this._resetTextContext();
+
+    // Add the summary prompt as the first "user" message in the new conversation
+    this.textTranscript = [
+      ...this.textTranscript,
+      { text: message, speaker: "user" },
+    ];
+
+    // A new session must be initialized. Show status while this happens.
+    this.updateStatus("Initializing text session...");
+    const ok = await this._initTextSession();
+
+    // If session initialization fails, show an error and abort.
+    if (!ok) {
+      this.updateError(
+        "Unable to start text session (rate limited or network error)",
+      );
+      return;
+    }
+
+    // With an active session, send the message to start the TTS flow.
+    this.textSessionManager.sendMessage(message);
   }
 
   private _showCuteToast() {
