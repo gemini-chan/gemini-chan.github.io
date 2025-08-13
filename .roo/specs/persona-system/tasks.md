@@ -14,9 +14,9 @@ Implement the persona management system, allowing users to create, select, and m
   - [x] 2.4. Implement UI for creating, editing, and selecting personas.
   - Requirements: 2.1.1, 2.2.1
 
-- [ ] 3. **Implement Persona Switching Logic**:
-  - [ ] 3.1. Dispatch a `persona-changed` event from the `PersonaManager` when the active persona changes.
-  - [ ] 3.2. Update the main application (`gdm-live-audio`) to listen for the `persona-changed` event and update the system prompt and Live2D model.
+- [x] 3. **Implement Persona Switching Logic**:
+  - [x] 3.1. Dispatch a `persona-changed` event from the `PersonaManager` when the active persona changes.
+  - [x] 3.2. Update the main application (`gdm-live-audio`) to listen for the `persona-changed` event and update the system prompt and Live2D model.
   - Requirements: 2.4.1
 
 - [ ] 4. **Integrate with `vtuber-memory-system`**:

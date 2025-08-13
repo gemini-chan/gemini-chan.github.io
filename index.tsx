@@ -15,6 +15,7 @@ import { createComponentLogger } from "./src/debug-logger";
 import { PersonaManager, type Persona } from "./src/persona-manager";
 import { SummarizationService } from "./src/SummarizationService";
 import { SystemPromptManager } from "./src/system-prompt-manager";
+import { VectorStore } from "./src/vector-store";
 import { createBlob, decode, decodeAudioData } from "./utils";
 import "./live2d/zip-loader";
 import "./live2d/live2d-gate";
@@ -364,6 +365,7 @@ export class GdmLiveAudio extends LitElement {
   private callSessionManager: CallSessionManager;
   private summarizationService: SummarizationService;
   private personaManager: PersonaManager;
+  private vectorStore: VectorStore;
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
@@ -460,6 +462,7 @@ export class GdmLiveAudio extends LitElement {
   constructor() {
     super();
     this.personaManager = new PersonaManager();
+    this.vectorStore = new VectorStore(this.personaManager.getActivePersona().id);
     this.initClient();
   }
 
@@ -983,11 +986,12 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handlePersonaChanged() {
+  private async _handlePersonaChanged() {
     const activePersona = this.personaManager.getActivePersona();
     if (activePersona) {
       SystemPromptManager.setSystemPrompt(activePersona.systemPrompt);
       this.live2dModelUrl = activePersona.live2dModelUrl;
+      await this.vectorStore.switchPersona(activePersona.id);
       this._handleSystemPromptChanged();
     }
   }
