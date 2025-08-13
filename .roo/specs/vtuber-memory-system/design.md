@@ -66,7 +66,7 @@ graph TD
     *   `summarizeAndStore(conversationHistory: string[]): Promise<void>`: Triggers conversation summarization and stores the result as a memory.
 
 #### 2. `GeminiApiClient` (Client-Side)
-*   **Responsibility:** Communicates with the Google GenAI API.
+*   **Responsibility:** Communicates with the Gemini API.
 *   **Interface:**
     *   `getEmbedding(text: string): Promise<number[]>`: Fetches the vector embedding for a given text from the `text-embedding-004` model.
 
