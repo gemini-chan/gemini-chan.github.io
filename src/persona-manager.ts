@@ -15,6 +15,41 @@ export interface Persona {
  * Manages persona data, handling persistence in localStorage.
  */
 export class PersonaManager {
+  /**
+   * Get a persona-specific prompt for a given energy level.
+   * Level 3 returns an empty string as no special prompt is needed.
+   */
+  getPromptForEnergyLevel(level: 0 | 1 | 2 | 3, personaName: string): string {
+    if (level >= 3) return ""; // No special prompt for full energy
+    const name = (personaName || "").toLowerCase();
+    if (level === 2) {
+      if (name === "vtuber") {
+        return "I'm feeling a little tired, so I might not be able to have super deep conversations right now, but I'll try my best!";
+      }
+      if (name === "assistant") {
+        return "System capacity is reduced. I can still help effectively, but responses may be more concise.";
+      }
+      return "Energy reduced. I can continue, but responses may be simpler for now.";
+    }
+    if (level === 1) {
+      if (name === "assistant") {
+        return "My processing power is limited at the moment. I can still assist with basic tasks.";
+      }
+      if (name === "vtuber") {
+        return "H-hngh.. I'm running low on energy... I'll still do my best, but I might be a bit slow...";
+      }
+      return "Low energy. I can help with basic requests only.";
+    }
+    // level === 0
+    if (name === "assistant") {
+      return "I'm currently out of capacity and need to pause. Please try again shortly.";
+    }
+    if (name === "vtuber") {
+      return "I'm sorry... I'm all out of energy and need to rest a little... Let's try again later, okay? (｡•́︿•̀｡)";
+    }
+    return "I'm sorry, I'm out of energy and need to rest. Please try again later.";
+  }
+
   private static readonly PERSONAS_STORAGE_KEY = "geminichan-personas";
   private static readonly ACTIVE_PERSONA_ID_STORAGE_KEY =
     "geminichan-active-persona-id";

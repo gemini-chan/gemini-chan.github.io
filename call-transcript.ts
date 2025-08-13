@@ -1,6 +1,7 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
+import "./energy-bar";
 import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 const logger = createComponentLogger("call-transcript");
@@ -35,9 +36,6 @@ export class CallTranscript extends LitElement {
       return "System is currently rate limited. Please try calling again later.";
     }
   }
-
-  @state()
-  private showScrollToBottom = false;
 
   @state()
   private newMessageCount = 0;
@@ -302,9 +300,6 @@ export class CallTranscript extends LitElement {
         this.transcript.length,
         this.lastSeenMessageCount,
       );
-      this.showScrollToBottom = state.showButton;
-      this.newMessageCount = state.newMessageCount;
-
       // Dispatch event to notify parent component of scroll state changes
       const detail = {
         showButton: state.showButton,
@@ -321,6 +316,8 @@ export class CallTranscript extends LitElement {
     }
   }
 
+  // Note: _scrollToBottom is intentionally unused in the current UI
+  // but kept here for potential future control-panel integration.
   private _scrollToBottom() {
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
@@ -348,6 +345,7 @@ export class CallTranscript extends LitElement {
   render() {
     return html`
       <div class="header">
+        <energy-bar></energy-bar>
         <div class="header-content">
           <div class="call-indicator"></div>
           <span>Call in Progress</span>

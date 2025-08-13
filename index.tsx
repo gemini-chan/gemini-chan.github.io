@@ -12,7 +12,7 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
-import { type Persona, PersonaManager } from "./src/persona-manager";
+import { PersonaManager } from "./src/persona-manager";
 import { SummarizationService } from "./src/SummarizationService";
 import { VectorStore } from "./src/vector-store";
 import { createBlob, decode, decodeAudioData } from "./utils";
@@ -21,7 +21,10 @@ import "./live2d/live2d-gate";
 import "./settings-menu";
 import "./chat-view";
 import "./call-transcript";
+import type { EnergyLevelChangedDetail } from "./src/energy-bar-service";
+import { energyBarService } from "./src/energy-bar-service";
 import "./toast-notification";
+import "./energy-bar";
 import "./controls-panel";
 import "./tab-view";
 import "./call-history-view";
@@ -190,10 +193,18 @@ class TextSessionManager extends BaseSessionManager {
     client: GoogleGenAI,
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
+    onRateLimit: (msg: string) => void = () => {},
     private updateTranscript: (text: string) => void,
     private personaManager: PersonaManager,
   ) {
-    super(outputAudioContext, outputNode, client, updateStatus, updateError);
+    super(
+      outputAudioContext,
+      outputNode,
+      client,
+      updateStatus,
+      updateError,
+      onRateLimit,
+    );
   }
 
   protected getCallbacks() {
@@ -269,7 +280,9 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
+    // Choose model based on current energy level
+    const model = energyBarService.getCurrentModel();
+    return model || "gemini-2.5-flash-exp-native-audio-thinking-dialog";
   }
 
   protected getConfig(): Record<string, unknown> {
@@ -475,6 +488,7 @@ export class GdmLiveAudio extends LitElement {
         this.client,
         this.updateStatus.bind(this),
         this.updateError.bind(this),
+        this._handleTextRateLimit.bind(this),
         this.updateTextTranscript.bind(this),
         this.personaManager,
       );
@@ -625,6 +639,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleCallRateLimit(msg?: string) {
+    // Degrade energy and notify UI
+    energyBarService.handleRateLimitError();
     if (this._callRateLimitNotified) return;
     this._callRateLimitNotified = true;
 
@@ -638,6 +654,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleTextRateLimit(msg?: string) {
+    // Degrade energy on text rate-limit as well
+    energyBarService.handleRateLimitError();
     const toast = this.shadowRoot?.querySelector(
       "toast-notification",
     ) as ToastNotification;
@@ -645,6 +663,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async _handleCallStart() {
+    // On new call session, reset energy
+    energyBarService.resetEnergyLevel("session-reset");
     if (this.isCallActive) return;
 
     // Check API key presence before proceeding
@@ -888,7 +908,7 @@ export class GdmLiveAudio extends LitElement {
     if (newApiKey === this.currentApiKey) {
       logger.debug(
         "API key unchanged, skipping reinitialization:",
-        newApiKey ? "***" + newApiKey.slice(-4) : "empty",
+        newApiKey ? `***${newApiKey.slice(-4)}` : "empty",
       );
       return; // Silently skip - no toast needed
     }
@@ -1056,9 +1076,9 @@ export class GdmLiveAudio extends LitElement {
 
   private _scrollCallTranscriptToBottom() {
     // Find the call transcript component and scroll it to bottom
-    const callTranscript = this.shadowRoot?.querySelector(
-      "call-transcript",
-    ) as any;
+    const callTranscript = this.shadowRoot?.querySelector("call-transcript") as
+      | (HTMLElement & { _scrollToBottom?: () => void })
+      | null;
     if (callTranscript && callTranscript._scrollToBottom) {
       callTranscript._scrollToBottom();
       // Reset the scroll state
@@ -1068,7 +1088,9 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _scrollChatToBottom() {
-    const chatView = this.shadowRoot?.querySelector("chat-view") as any;
+    const chatView = this.shadowRoot?.querySelector("chat-view") as
+      | (HTMLElement & { _scrollToBottom?: () => void })
+      | null;
     if (chatView && chatView._scrollToBottom) {
       chatView._scrollToBottom();
       this.showChatScrollToBottom = false;
@@ -1140,6 +1162,11 @@ export class GdmLiveAudio extends LitElement {
   }
 
   connectedCallback() {
+    // Subscribe to energy level changes to surface persona-specific prompts
+    energyBarService.addEventListener(
+      "energy-level-changed",
+      this._onEnergyLevelChanged as EventListener,
+    );
     super.connectedCallback();
     window.addEventListener(
       "persona-changed",
@@ -1148,12 +1175,33 @@ export class GdmLiveAudio extends LitElement {
   }
 
   disconnectedCallback() {
+    energyBarService.removeEventListener(
+      "energy-level-changed",
+      this._onEnergyLevelChanged as EventListener,
+    );
     super.disconnectedCallback();
     window.removeEventListener(
       "persona-changed",
       this._handlePersonaChanged.bind(this),
     );
   }
+
+  private _onEnergyLevelChanged = (e: Event) => {
+    const { level } = (e as CustomEvent<EnergyLevelChangedDetail>).detail;
+    if (level < 3) {
+      const personaName = this.personaManager.getActivePersona().name;
+      const prompt = this.personaManager.getPromptForEnergyLevel(
+        level as 0 | 1 | 2 | 3,
+        personaName,
+      );
+      if (prompt) {
+        const toast = this.shadowRoot?.querySelector(
+          "toast-notification",
+        ) as ToastNotification;
+        toast?.show(prompt, "warning", 4000);
+      }
+    }
+  };
 
   render() {
     return html`
