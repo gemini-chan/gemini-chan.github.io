@@ -52,13 +52,19 @@ export class PersonaManager {
   }
 
   /**
-   * Sets the active persona.
+   * Sets the active persona and dispatches a 'persona-changed' event.
    * @param personaId - The ID of the persona to set as active.
    */
   setActivePersona(personaId: string): void {
     const personaExists = this.personas.some(p => p.id === personaId);
     if (personaExists) {
       localStorage.setItem(PersonaManager.ACTIVE_PERSONA_ID_STORAGE_KEY, personaId);
+      const event = new CustomEvent('persona-changed', {
+        detail: { personaId },
+        bubbles: true,
+        composed: true,
+      });
+      document.dispatchEvent(event);
     } else {
       console.error(`Persona with ID "${personaId}" not found.`);
     }

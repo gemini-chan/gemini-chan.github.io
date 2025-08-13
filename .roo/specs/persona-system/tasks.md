@@ -3,15 +3,15 @@
 ## 🎯 **Current Priority**
 Implement the persona management system, allowing users to create, select, and manage different AI personas.
 
-- [ ] 1. **Create `PersonaManager` Class**: Implement the `PersonaManager` class to handle all persona-related logic, including loading from and saving to `localStorage`.
+- [x] 1. **Create `PersonaManager` Class**: Implement the `PersonaManager` class to handle all persona-related logic, including loading from and saving to `localStorage`.
   - Requirements: 2.3.1
   - Design: 3.1, 4.1, 5
 
-- [ ] 2. **Integrate `PersonaManager` with `settings-menu`**:
-  - [ ] 2.1. Replace the "System Prompt" section with a new "Persona Management" section.
-  - [ ] 2.2. Display the list of available personas.
-  - [ ] 2.3. Add a "+" button for creating new personas.
-  - [ ] 2.4. Implement UI for creating, editing, and selecting personas.
+- [x] 2. **Integrate `PersonaManager` with `settings-menu`**:
+  - [x] 2.1. Replace the "System Prompt" section with a new "Persona Management" section.
+  - [x] 2.2. Display the list of available personas.
+  - [x] 2.3. Add a "+" button for creating new personas.
+  - [x] 2.4. Implement UI for creating, editing, and selecting personas.
   - Requirements: 2.1.1, 2.2.1
 
 - [ ] 3. **Implement Persona Switching Logic**:

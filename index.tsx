@@ -12,6 +12,7 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
+import { PersonaManager, type Persona } from "./src/persona-manager";
 import { SummarizationService } from "./src/SummarizationService";
 import { SystemPromptManager } from "./src/system-prompt-manager";
 import { createBlob, decode, decodeAudioData } from "./utils";
@@ -362,6 +363,7 @@ export class GdmLiveAudio extends LitElement {
   private textSessionManager: TextSessionManager;
   private callSessionManager: CallSessionManager;
   private summarizationService: SummarizationService;
+  private personaManager: PersonaManager;
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
@@ -457,6 +459,7 @@ export class GdmLiveAudio extends LitElement {
 
   constructor() {
     super();
+    this.personaManager = new PersonaManager();
     this.initClient();
   }
 
@@ -980,6 +983,15 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
+  private _handlePersonaChanged() {
+    const activePersona = this.personaManager.getActivePersona();
+    if (activePersona) {
+      SystemPromptManager.setSystemPrompt(activePersona.systemPrompt);
+      this.live2dModelUrl = activePersona.live2dModelUrl;
+      this._handleSystemPromptChanged();
+    }
+  }
+
   private _handleTabSwitch(e: CustomEvent) {
     this.activeTab = e.detail.tab;
   }
@@ -1139,6 +1151,10 @@ export class GdmLiveAudio extends LitElement {
       "system-prompt-changed",
       this._handleSystemPromptChanged.bind(this),
     );
+    window.addEventListener(
+      "persona-changed",
+      this._handlePersonaChanged.bind(this),
+    );
   }
 
   disconnectedCallback() {
@@ -1146,6 +1162,10 @@ export class GdmLiveAudio extends LitElement {
     window.removeEventListener(
       "system-prompt-changed",
       this._handleSystemPromptChanged.bind(this),
+    );
+    window.removeEventListener(
+      "persona-changed",
+      this._handlePersonaChanged.bind(this),
     );
   }
 
@@ -1200,6 +1220,7 @@ export class GdmLiveAudio extends LitElement {
                   @api-key-changed=${this._handleApiKeyChanged}
                   @model-url-changed=${this._handleModelUrlChanged}
                   @model-url-error=${this._handleModelUrlError}
+                  @persona-changed=${this._handlePersonaChanged}
                 ></settings-menu>`
               : ""
           }

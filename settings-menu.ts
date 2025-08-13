@@ -539,7 +539,6 @@ export class SettingsMenu extends LitElement {
       this.personaManager.updatePersona(this._editingPersona);
       this._loadPersonas();
       this._editingPersona = null;
-      this.dispatchEvent(new CustomEvent("persona-changed"));
       this.requestUpdate();
     }
   }
@@ -625,7 +624,7 @@ export class SettingsMenu extends LitElement {
                 `,
               )}
             </div>
-            ${this.renderPersonaForm()}
+            ${this._renderPersonaForm()}
           </div>
 
           <label for="modelUrl">Live2D Model URL</label>
@@ -1097,64 +1096,7 @@ export class SettingsMenu extends LitElement {
     this.personaManager.setActivePersona(personaId);
     this._activePersona = this.personaManager.getActivePersona();
     this._editingPersona = this._activePersona;
-    this.dispatchEvent(new CustomEvent("persona-changed"));
     this.requestUpdate();
   }
 
-  private renderPersonaForm() {
-    if (!this._editingPersona) {
-      return html``;
-    }
-
-    return html`
-      <div class="persona-editor">
-        <input
-          type="text"
-          .value=${this._editingPersona.name}
-          @input=${(e: Event) =>
-            this.handlePersonaFormInput(
-              "name",
-              (e.target as HTMLInputElement).value,
-            )}
-        />
-        <textarea
-          .value=${this._editingPersona.systemPrompt}
-          @input=${(e: Event) =>
-            this.handlePersonaFormInput(
-              "systemPrompt",
-              (e.target as HTMLTextAreaElement).value,
-            )}
-          placeholder="System Prompt"
-        ></textarea>
-        <input
-          type="text"
-          .value=${this._editingPersona.live2dModelUrl}
-          @input=${(e: Event) =>
-            this.handlePersonaFormInput(
-              "live2dModelUrl",
-              (e.target as HTMLInputElement).value,
-            )}
-          placeholder="Live2D Model URL"
-        />
-        <button @click=${this.onSavePersona}>Save</button>
-        <button @click=${() => (this._editingPersona = null)}>Cancel</button>
-      </div>
-    `;
-  }
-
-  private handlePersonaFormInput(field: keyof Persona, value: string) {
-    if (this._editingPersona) {
-      this._editingPersona = { ...this._editingPersona, [field]: value };
-    }
-  }
-
-  private onSavePersona() {
-    if (this._editingPersona) {
-      this.personaManager.updatePersona(this._editingPersona);
-      this._loadPersonas();
-      this._editingPersona = null;
-      this.dispatchEvent(new CustomEvent("persona-changed"));
-      this.requestUpdate();
-    }
-  }
 }
