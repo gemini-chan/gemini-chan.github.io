@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { SystemPromptManager } from "./src/system-prompt-manager";
+import { Persona, PersonaManager } from "./src/persona-manager";
 
 interface FieldConfig {
   storageKey: string;
@@ -80,7 +80,27 @@ export class SettingsMenu extends LitElement {
     localStorage.getItem("circuitry-speed") || "15",
   );
 
-  private systemPromptRef: HTMLTextAreaElement | null = null;
+  @state()
+  private _personas: Persona[] = [];
+
+  @state()
+  private _activePersona: Persona | null = null;
+
+  @state()
+  private _editingPersona: Persona | null = null;
+
+  private personaManager: PersonaManager;
+
+  constructor() {
+    super();
+    this.personaManager = new PersonaManager();
+    this._loadPersonas();
+  }
+
+  private _loadPersonas() {
+    this._personas = this.personaManager.getPersonas();
+    this._activePersona = this.personaManager.getActivePersona();
+  }
 
   static styles = css`
     :host {
@@ -426,7 +446,103 @@ export class SettingsMenu extends LitElement {
       height: 18px;
       opacity: 0.8;
     }
+
+    .persona-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em;
+    }
+
+    .persona-button {
+      outline: none;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      border-radius: 8px;
+      background: var(--cp-surface);
+      padding: 0.4em 0.8em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: none;
+      font-size: 0.9em;
+    }
+
+    .persona-button:hover {
+      background: var(--cp-surface-strong);
+      transform: translateY(-1px);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .persona-button.active {
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      border-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
+    }
+    .persona-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      border-top: 1px solid var(--cp-surface-border);
+      padding-top: 1em;
+      margin-top: 1em;
+    }
   `;
+
+  private _renderPersonaForm() {
+    if (!this._editingPersona) {
+      return html``;
+    }
+
+    return html`
+      <div class="persona-editor">
+        <input
+          type="text"
+          .value=${this._editingPersona.name}
+          @input=${(e: Event) =>
+            this._handlePersonaFormInput(
+              "name",
+              (e.target as HTMLInputElement).value,
+            )}
+        />
+        <textarea
+          .value=${this._editingPersona.systemPrompt}
+          @input=${(e: Event) =>
+            this._handlePersonaFormInput(
+              "systemPrompt",
+              (e.target as HTMLTextAreaElement).value,
+            )}
+          placeholder="System Prompt"
+        ></textarea>
+        <input
+          type="text"
+          .value=${this._editingPersona.live2dModelUrl}
+          @input=${(e: Event) =>
+            this._handlePersonaFormInput(
+              "live2dModelUrl",
+              (e.target as HTMLInputElement).value,
+            )}
+          placeholder="Live2D Model URL"
+        />
+        <button @click=${this._onSavePersona}>Save</button>
+        <button @click=${() => (this._editingPersona = null)}>Cancel</button>
+      </div>
+    `;
+  }
+
+  private _handlePersonaFormInput(field: keyof Persona, value: string) {
+    if (this._editingPersona) {
+      this._editingPersona = { ...this._editingPersona, [field]: value };
+    }
+  }
+
+  private _onSavePersona() {
+    if (this._editingPersona) {
+      this.personaManager.updatePersona(this._editingPersona);
+      this._loadPersonas();
+      this._editingPersona = null;
+      this.dispatchEvent(new CustomEvent("persona-changed"));
+      this.requestUpdate();
+    }
+  }
 
   render() {
     return html`
@@ -486,21 +602,30 @@ export class SettingsMenu extends LitElement {
 
           <div class="prompt-section">
             <div class="section-header">
-              <label for="systemPrompt" class="section-title">
+              <label class="section-title">
                 <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
-                  <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
+                  <path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Zm80-80h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T560-640q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640q0 33 23.5 56.5T480-560Zm0-80q17 0 28.5-11.5T520-680q0-17-11.5-28.5T480-720q-17 0-28.5 11.5T440-680q0 17 11.5 28.5T480-640Zm0 240Z"/>
                 </svg>
-                System Prompt
+                Persona Management
               </label>
-              <button @click=${this._onResetSystemPrompt}>Reset to Default</button>
+              <button @click=${this._onCreatePersona}>+</button>
             </div>
-            <textarea
-              id="systemPrompt"
-              .value=${SystemPromptManager.getSystemPrompt()}
-              @input=${this._onSystemPromptInput}
-              placeholder="Enter Gemini-chan's personality..."
-              rows="3"
-            ></textarea>
+            <div class="persona-list">
+              ${this._personas.map(
+                (persona) => html`
+                  <button
+                    class="persona-button ${this._activePersona?.id ===
+                    persona.id
+                      ? "active"
+                      : ""}"
+                    @click=${() => this._onSelectPersona(persona.id)}
+                  >
+                    ${persona.name}
+                  </button>
+                `,
+              )}
+            </div>
+            ${this.renderPersonaForm()}
           </div>
 
           <label for="modelUrl">Live2D Model URL</label>
@@ -588,11 +713,6 @@ export class SettingsMenu extends LitElement {
     }
 
     // Store reference to system prompt textarea and set initial height
-    this.systemPromptRef =
-      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
-    if (this.systemPromptRef) {
-      this._resizeTextarea(this.systemPromptRef);
-    }
   }
 
   private _handleBackdropClick(e: Event) {
@@ -966,36 +1086,75 @@ export class SettingsMenu extends LitElement {
     this._applyCircuitrySettings();
   }
 
-  private _onSystemPromptInput(e: Event) {
-    const textarea = e.target as HTMLTextAreaElement;
-    SystemPromptManager.setSystemPrompt(textarea.value);
-    this._resizeTextarea(textarea);
-    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
+  private _onCreatePersona() {
+    const newPersona = this.personaManager.createPersona("New Persona");
+    this._loadPersonas();
+    this._editingPersona = newPersona;
+    this.requestUpdate();
   }
 
-  private _resizeTextarea(textarea: HTMLTextAreaElement) {
-    // Reset height to recalculate
-    textarea.style.height = "auto";
-
-    // Calculate new height based on scroll height
-    const scrollHeight = textarea.scrollHeight;
-    const minHeight = 60;
-    // Use 40vh (40% of viewport height) as max to ensure it stays visible
-    const maxHeight = window.innerHeight * 0.4;
-
-    // Clamp the height between min and max
-    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
-    textarea.style.height = `${newHeight}px`;
+  private _onSelectPersona(personaId: string) {
+    this.personaManager.setActivePersona(personaId);
+    this._activePersona = this.personaManager.getActivePersona();
+    this._editingPersona = this._activePersona;
+    this.dispatchEvent(new CustomEvent("persona-changed"));
+    this.requestUpdate();
   }
 
-  private _onResetSystemPrompt() {
-    SystemPromptManager.resetToDefault();
-    const textarea =
-      this.shadowRoot!.querySelector<HTMLTextAreaElement>("#systemPrompt");
-    if (textarea) {
-      textarea.value = SystemPromptManager.getDefaultSystemPrompt();
-      this._resizeTextarea(textarea);
+  private renderPersonaForm() {
+    if (!this._editingPersona) {
+      return html``;
     }
-    this.dispatchEvent(new CustomEvent("system-prompt-changed"));
+
+    return html`
+      <div class="persona-editor">
+        <input
+          type="text"
+          .value=${this._editingPersona.name}
+          @input=${(e: Event) =>
+            this.handlePersonaFormInput(
+              "name",
+              (e.target as HTMLInputElement).value,
+            )}
+        />
+        <textarea
+          .value=${this._editingPersona.systemPrompt}
+          @input=${(e: Event) =>
+            this.handlePersonaFormInput(
+              "systemPrompt",
+              (e.target as HTMLTextAreaElement).value,
+            )}
+          placeholder="System Prompt"
+        ></textarea>
+        <input
+          type="text"
+          .value=${this._editingPersona.live2dModelUrl}
+          @input=${(e: Event) =>
+            this.handlePersonaFormInput(
+              "live2dModelUrl",
+              (e.target as HTMLInputElement).value,
+            )}
+          placeholder="Live2D Model URL"
+        />
+        <button @click=${this.onSavePersona}>Save</button>
+        <button @click=${() => (this._editingPersona = null)}>Cancel</button>
+      </div>
+    `;
+  }
+
+  private handlePersonaFormInput(field: keyof Persona, value: string) {
+    if (this._editingPersona) {
+      this._editingPersona = { ...this._editingPersona, [field]: value };
+    }
+  }
+
+  private onSavePersona() {
+    if (this._editingPersona) {
+      this.personaManager.updatePersona(this._editingPersona);
+      this._loadPersonas();
+      this._editingPersona = null;
+      this.dispatchEvent(new CustomEvent("persona-changed"));
+      this.requestUpdate();
+    }
   }
 }
