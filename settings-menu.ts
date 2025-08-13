@@ -526,13 +526,14 @@ export class SettingsMenu extends LitElement {
             placeholder="Live2D Model URL"
           />
           <div
-            class="validation-icon ${this._modelUrlValid || this._modelUrlInvalid
-              ? "show"
-              : ""}"
+            class="validation-icon ${
+              this._modelUrlValid || this._modelUrlInvalid ? "show" : ""
+            }"
             title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}"
           >
-            ${this._modelUrlValid
-              ? html`<svg
+            ${
+              this._modelUrlValid
+                ? html`<svg
                   class="tick-icon"
                   viewBox="0 0 24 24"
                   fill="currentColor"
@@ -541,8 +542,8 @@ export class SettingsMenu extends LitElement {
                     d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"
                   />
                 </svg>`
-              : this._modelUrlInvalid
-                ? html`<svg
+                : this._modelUrlInvalid
+                  ? html`<svg
                     class="cross-icon"
                     viewBox="0 0 24 24"
                     fill="currentColor"
@@ -551,7 +552,8 @@ export class SettingsMenu extends LitElement {
                       d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
                     />
                   </svg>`
-                : ""}
+                  : ""
+            }
           </div>
           <button
             class="paste-button"
@@ -656,10 +658,9 @@ export class SettingsMenu extends LitElement {
               ${this._personas.map(
                 (persona) => html`
                   <button
-                    class="persona-button ${this._activePersona?.id ===
-                    persona.id
-                      ? "active"
-                      : ""}"
+                    class="persona-button ${
+                      this._activePersona?.id === persona.id ? "active" : ""
+                    }"
                     @click=${() => this._onSelectPersona(persona.id)}
                   >
                     ${persona.name}
@@ -722,7 +723,6 @@ export class SettingsMenu extends LitElement {
       this._setValidationState("apiKey", isApiKeyValid);
     }
 
-
     // Store reference to system prompt textarea and set initial height
   }
 
@@ -762,7 +762,6 @@ export class SettingsMenu extends LitElement {
       );
     }, 500); // 500ms debounce
   }
-
 
   private _autoSave(
     value: string,
@@ -860,7 +859,6 @@ export class SettingsMenu extends LitElement {
     );
   }
 
-
   private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
       const text = await navigator.clipboard.readText();
@@ -902,7 +900,6 @@ export class SettingsMenu extends LitElement {
   private _onPaste() {
     this._handlePaste("apiKey");
   }
-
 
   private _validateApiKey(key: string): boolean {
     if (!key) {
@@ -1070,5 +1067,4 @@ export class SettingsMenu extends LitElement {
     this._editingPersona = this._activePersona;
     this.requestUpdate();
   }
-
 }

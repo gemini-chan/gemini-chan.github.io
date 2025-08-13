@@ -137,7 +137,8 @@ live2d-gate::before {
   z-index: -1; /* Same as circuitry grid */
   display: var(--circuit-display, block);
 
-  background-image: radial-gradient(
+  background-image:
+    radial-gradient(
       circle at 20px 20px,
       var(--circuit-node-color, rgba(0, 229, 255, 0.4)) 2px,
       transparent 3px
@@ -147,9 +148,12 @@ live2d-gate::before {
       var(--circuit-node-color, rgba(0, 229, 255, 0.3)) 1.5px,
       transparent 2.5px
     );
-  background-size: var(--circuit-size, 60px) var(--circuit-size, 60px),
+  background-size:
+    var(--circuit-size, 60px) var(--circuit-size, 60px),
     var(--circuit-size, 60px) var(--circuit-size, 60px);
-  background-position: 0 0, 30px 30px;
+  background-position:
+    0 0,
+    30px 30px;
   animation: circuit-move-nodes var(--circuit-speed, 15s) linear infinite;
 }
 
@@ -168,12 +172,15 @@ live2d-gate::before {
 
 @keyframes circuit-move-nodes {
   from {
-    background-position: 0 0, 30px 30px;
+    background-position:
+      0 0,
+      30px 30px;
   }
   to {
-    background-position: var(--circuit-size, 60px) var(--circuit-size, 60px),
+    background-position:
+      var(--circuit-size, 60px) var(--circuit-size, 60px),
       calc(30px + var(--circuit-size, 60px))
-        calc(30px + var(--circuit-size, 60px));
+      calc(30px + var(--circuit-size, 60px));
   }
 }
 
@@ -420,15 +427,12 @@ html[data-theme="noir"] body {
       1400px 900px at 50% 10%,
       rgba(255, 0, 0, 0.15),
       transparent 70%
-    ),
-    linear-gradient(180deg, var(--cp-bg-1), var(--cp-bg-2));
+    ), linear-gradient(180deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 html[data-theme="noir"] body::after {
   --circuit-color: rgba(255, 0, 0, 0.15);
   --circuit-node-color: rgba(255, 0, 0, 0.25);
 }
-
-
 
 /* Themed Scrollbars */
 html::-webkit-scrollbar {

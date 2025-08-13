@@ -1,8 +1,8 @@
-import { openDB, type IDBPDatabase } from 'idb';
+import { openDB, type IDBPDatabase } from "idb";
 
-const DB_NAME = 'vtuber-memory';
+const DB_NAME = "vtuber-memory";
 const DB_VERSION = 1;
-const STORE_NAME_PREFIX = 'persona-memory-';
+const STORE_NAME_PREFIX = "persona-memory-";
 
 export class VectorStore {
   private db: IDBPDatabase | null = null;
@@ -21,7 +21,10 @@ export class VectorStore {
     this.db = await openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
         if (!db.objectStoreNames.contains(storeName)) {
-          db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+          db.createObjectStore(storeName, {
+            keyPath: "id",
+            autoIncrement: true,
+          });
         }
       },
     });
