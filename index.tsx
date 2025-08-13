@@ -974,7 +974,11 @@ export class GdmLiveAudio extends LitElement {
         "toast-notification",
       ) as ToastNotification;
       if (toast) {
-        toast.show("Persona changed, loading new model...", "info", 4000);
+        toast.show(
+          `Switched to ${activePersona.name}. Loading model...`,
+          "info",
+          4000,
+        );
       }
 
       // Trigger a re-render to update the Live2D component with the new persona's model URL
