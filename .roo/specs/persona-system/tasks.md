@@ -32,3 +32,7 @@ Implement the persona management system, allowing users to create, select, and m
 - [x] 6. **Refactor UI**:
   - [x] 6.1. Remove the standalone "Live2D Model URL" field from `settings-menu.ts`.
   - [x] 6.2. Integrate the `live2dModelUrl` input, including its paste button and validation, into the persona creation/editing form.
+
+- [x] 7. **Refactor Live2D Model Loading**: Refactor any remaining direct `localStorage` access for the Live2D model URL to use the `PersonaManager`.
+  - Requirements: 2.4.1
+  - Design: 3.2

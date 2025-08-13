@@ -12,7 +12,7 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
-import { PersonaManager, type Persona } from "./src/persona-manager";
+import { type Persona, PersonaManager } from "./src/persona-manager";
 import { SummarizationService } from "./src/SummarizationService";
 import { SystemPromptManager } from "./src/system-prompt-manager";
 import { VectorStore } from "./src/vector-store";
@@ -341,9 +341,6 @@ export class GdmLiveAudio extends LitElement {
   @state() showSettings = false;
   @state() showToast = false;
   @state() toastMessage = "";
-  @state() live2dModelUrl =
-    localStorage.getItem("live2d-model-url") ||
-    "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/hiyori.zip";
 
   // Track pending user action for API key validation flow
   private pendingAction: (() => void) | null = null;
@@ -462,7 +459,9 @@ export class GdmLiveAudio extends LitElement {
   constructor() {
     super();
     this.personaManager = new PersonaManager();
-    this.vectorStore = new VectorStore(this.personaManager.getActivePersona().id);
+    this.vectorStore = new VectorStore(
+      this.personaManager.getActivePersona().id,
+    );
     this.initClient();
   }
 
@@ -898,30 +897,12 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleModelUrlChanged() {
-    // Update the Live2D model URL from localStorage and trigger re-render
-    const newModelUrl = localStorage.getItem("live2d-model-url") || "";
-    const currentModelUrl = this.live2dModelUrl || "";
+    // This method is now handled by persona changes
+    // Live2D model URL changes are managed through the PersonaManager
+    logger.debug("Model URL change handled via persona system");
 
-    // Check if the URL actually changed
-    if (newModelUrl === currentModelUrl) {
-      logger.debug(
-        "Runtime Model Swap] URL unchanged, skipping reload:",
-        newModelUrl,
-      );
-      return; // Silently skip reload - no toast needed
-    }
-
-    this.live2dModelUrl = newModelUrl;
-
-    // Show toast notification to indicate model is changing
-    const toast = this.shadowRoot?.querySelector(
-      "toast-notification",
-    ) as ToastNotification;
-    if (toast) {
-      toast.show("Loading new Live2D model...", "info", 3000);
-    }
-
-    logger.info("Runtime Model Swap] Model URL changed to:", newModelUrl);
+    // Trigger a re-render to update the Live2D component with the new persona's model URL
+    this.requestUpdate();
   }
 
   private _handleLive2dLoaded() {
@@ -990,9 +971,19 @@ export class GdmLiveAudio extends LitElement {
     const activePersona = this.personaManager.getActivePersona();
     if (activePersona) {
       SystemPromptManager.setSystemPrompt(activePersona.systemPrompt);
-      this.live2dModelUrl = activePersona.live2dModelUrl;
       await this.vectorStore.switchPersona(activePersona.id);
       this._handleSystemPromptChanged();
+
+      // Show toast notification to indicate model is changing
+      const toast = this.shadowRoot?.querySelector(
+        "toast-notification",
+      ) as ToastNotification;
+      if (toast) {
+        toast.show("Loading new Live2D model...", "info", 3000);
+      }
+
+      // Trigger a re-render to update the Live2D component with the new persona's model URL
+      this.requestUpdate();
     }
   }
 
@@ -1177,7 +1168,7 @@ export class GdmLiveAudio extends LitElement {
     return html`
       <div class="live2d-container">
         <live2d-gate
-          .modelUrl=${this.live2dModelUrl || ""}
+          .modelUrl=${this.personaManager.getActivePersona().live2dModelUrl || ""}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
           @live2d-loaded=${this._handleLive2dLoaded}

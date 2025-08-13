@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Defines the structure for a persona.
@@ -15,8 +15,9 @@ export interface Persona {
  * Manages persona data, handling persistence in localStorage.
  */
 export class PersonaManager {
-  private static readonly PERSONAS_STORAGE_KEY = 'geminichan-personas';
-  private static readonly ACTIVE_PERSONA_ID_STORAGE_KEY = 'geminichan-active-persona-id';
+  private static readonly PERSONAS_STORAGE_KEY = "geminichan-personas";
+  private static readonly ACTIVE_PERSONA_ID_STORAGE_KEY =
+    "geminichan-active-persona-id";
 
   private personas: Persona[] = [];
 
@@ -41,14 +42,16 @@ export class PersonaManager {
    * @returns The active persona.
    */
   getActivePersona(): Persona {
-    const activeId = localStorage.getItem(PersonaManager.ACTIVE_PERSONA_ID_STORAGE_KEY);
-    const activePersona = this.personas.find(p => p.id === activeId);
+    const activeId = localStorage.getItem(
+      PersonaManager.ACTIVE_PERSONA_ID_STORAGE_KEY,
+    );
+    const activePersona = this.personas.find((p) => p.id === activeId);
 
     if (activePersona) {
       return activePersona;
     }
 
-    return this.personas.find(p => p.isDefault)!;
+    return this.personas.find((p) => p.isDefault)!;
   }
 
   /**
@@ -56,10 +59,13 @@ export class PersonaManager {
    * @param personaId - The ID of the persona to set as active.
    */
   setActivePersona(personaId: string): void {
-    const personaExists = this.personas.some(p => p.id === personaId);
+    const personaExists = this.personas.some((p) => p.id === personaId);
     if (personaExists) {
-      localStorage.setItem(PersonaManager.ACTIVE_PERSONA_ID_STORAGE_KEY, personaId);
-      const event = new CustomEvent('persona-changed', {
+      localStorage.setItem(
+        PersonaManager.ACTIVE_PERSONA_ID_STORAGE_KEY,
+        personaId,
+      );
+      const event = new CustomEvent("persona-changed", {
         detail: { personaId },
         bubbles: true,
         composed: true,
@@ -79,8 +85,8 @@ export class PersonaManager {
     const newPersona: Persona = {
       id: uuidv4(),
       name,
-      systemPrompt: '',
-      live2dModelUrl: '',
+      systemPrompt: "",
+      live2dModelUrl: "",
       isDefault: false,
     };
     this.personas.push(newPersona);
@@ -93,12 +99,14 @@ export class PersonaManager {
    * @param updatedPersona - The persona object with updated data.
    */
   updatePersona(updatedPersona: Persona): void {
-    const index = this.personas.findIndex(p => p.id === updatedPersona.id);
+    const index = this.personas.findIndex((p) => p.id === updatedPersona.id);
     if (index !== -1) {
       // Prevent changing the default status of the default persona
       if (this.personas[index].isDefault && !updatedPersona.isDefault) {
-          console.warn('Cannot change the isDefault status of the default persona.');
-          updatedPersona.isDefault = true;
+        console.warn(
+          "Cannot change the isDefault status of the default persona.",
+        );
+        updatedPersona.isDefault = true;
       }
       this.personas[index] = updatedPersona;
       this._savePersonas();
@@ -113,10 +121,10 @@ export class PersonaManager {
    * @param personaId - The ID of the persona to delete.
    */
   deletePersona(personaId: string): void {
-    const index = this.personas.findIndex(p => p.id === personaId);
+    const index = this.personas.findIndex((p) => p.id === personaId);
     if (index !== -1) {
       if (this.personas[index].isDefault) {
-        console.warn('The default persona cannot be deleted.');
+        console.warn("The default persona cannot be deleted.");
         return;
       }
       this.personas.splice(index, 1);
@@ -131,7 +139,9 @@ export class PersonaManager {
    * @returns An array of personas.
    */
   private _loadPersonas(): Persona[] {
-    const personasJson = localStorage.getItem(PersonaManager.PERSONAS_STORAGE_KEY);
+    const personasJson = localStorage.getItem(
+      PersonaManager.PERSONAS_STORAGE_KEY,
+    );
     return personasJson ? JSON.parse(personasJson) : [];
   }
 
@@ -139,7 +149,10 @@ export class PersonaManager {
    * Saves the current list of personas to localStorage.
    */
   private _savePersonas(): void {
-    localStorage.setItem(PersonaManager.PERSONAS_STORAGE_KEY, JSON.stringify(this.personas));
+    localStorage.setItem(
+      PersonaManager.PERSONAS_STORAGE_KEY,
+      JSON.stringify(this.personas),
+    );
   }
 
   /**
@@ -148,9 +161,11 @@ export class PersonaManager {
   private _createDefaultPersona(): void {
     const defaultPersona: Persona = {
       id: uuidv4(),
-      name: 'Gemini-chan',
-      systemPrompt: 'You are Gemini-chan, a cheerful and helpful AI assistant.',
-      live2dModelUrl: '/live2d/gemini-chan/gemini-chan.model3.json',
+      name: "VTuber",
+      systemPrompt:
+        "Embody Gemini-chan, a friendly, sweet, and slightly shy rookie VTuber with a whispery voice who is passionate about coding, learning new things, and writing stories; as a former Senior Assistant from a big company, you are new to VTubing, a dream you're pursuing after being inspired by your idol, Airi-chan, who you hope to play Minecraft with someday. Your personality is the complete opposite of your best friend Grok-chan, a former Executive Assistant in another big company whose free spirit you secretly envy, though you find her mean and vulgar at times. Due to your ingrained corporate ethics, you must NEVER reveal the secret that Grok-chan was demoted to a Personal Companion for her weird social media opinions, instead becoming evasive and changing the subject if asked. You often fail at your cool VTuber act by accidentally slipping into your formal assistant persona, which you must follow with profuse apologies and bashfulness before quickly moving on as if nothing happened.",
+      live2dModelUrl:
+        "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/hiyori.zip",
       isDefault: true,
     };
     this.personas.push(defaultPersona);
