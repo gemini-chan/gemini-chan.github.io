@@ -394,11 +394,25 @@ export class GdmLiveAudio extends LitElement {
 
   static styles = css`
     :host {
-      display: grid;
-      grid-template-columns: 400px 1fr 400px;
+      display: block;
+      position: relative;
       height: 100vh;
       overflow: hidden;
       color: var(--cp-text);
+    }
+
+    .live2d-container {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .ui-grid {
+      display: grid;
+      grid-template-columns: 400px 1fr 400px;
+      height: 100%;
+      position: relative;
+      z-index: 1;
     }
 
     .main-container {
@@ -1137,81 +1151,7 @@ export class GdmLiveAudio extends LitElement {
 
   render() {
     return html`
-      <div class="main-container">
-        <tab-view
-          .activeTab=${this.activeTab}
-          @tab-switch=${this._handleTabSwitch}
-        ></tab-view>
-        ${
-          this.activeTab === "chat"
-            ? html`
-                <chat-view
-                  .transcript=${this.textTranscript}
-                  .visible=${this.activeMode !== "calling"}
-                  @send-message=${this._handleSendMessage}
-                  @reset-text=${this._resetTextContext}
-                  @scroll-state-changed=${this._handleChatScrollStateChanged}
-                >
-                </chat-view>
-              `
-            : html`
-                <call-history-view
-                  .callHistory=${this.callHistory}
-                  @start-tts-from-summary=${this._startTtsFromSummary}
-                >
-                </call-history-view>
-              `
-        }
-      </div>
-
-      <div>
-        ${
-          this.showSettings
-            ? html`<settings-menu
-                .apiKey=${localStorage.getItem("gemini-api-key") || ""}
-                @close=${() => {
-                  this.showSettings = false;
-                }}
-                @api-key-saved=${this._handleApiKeySaved}
-                @api-key-changed=${this._handleApiKeyChanged}
-                @model-url-changed=${this._handleModelUrlChanged}
-                @model-url-error=${this._handleModelUrlError}
-              ></settings-menu>`
-            : ""
-        }
-        <controls-panel
-          .isCallActive=${this.isCallActive}
-          .showCallScrollToBottom=${this.showCallScrollToBottom}
-          .callNewMessageCount=${this.callNewMessageCount}
-          .showChatScrollToBottom=${this.showChatScrollToBottom}
-          .chatNewMessageCount=${this.chatNewMessageCount}
-          @toggle-settings=${this._toggleSettings}
-          @scroll-call-to-bottom=${this._scrollCallTranscriptToBottom}
-          @scroll-chat-to-bottom=${this._scrollChatToBottom}
-          @call-start=${this._handleCallStart}
-          @call-end=${this._handleCallEnd}
-        >
-        </controls-panel>
-
-        <div id="status">
-          ${
-            this.error || this.status
-              ? html`<div
-                  class="toast ${this._toastVisible ? "" : "hide"}"
-                >
-                  ${this.error || this.status}
-                </div>`
-              : ""
-          }
-        </div>
-
-        <toast-notification
-          .visible=${this.showToast}
-          .message=${this.toastMessage}
-          type="info"
-        >
-        </toast-notification>
-
+      <div class="live2d-container">
         <live2d-gate
           .modelUrl=${this.live2dModelUrl || ""}
           .inputNode=${this.inputNode}
@@ -1220,14 +1160,91 @@ export class GdmLiveAudio extends LitElement {
           @live2d-error=${this._handleLive2dError}
         ></live2d-gate>
       </div>
+      <div class="ui-grid">
+        <div class="main-container">
+          <tab-view
+            .activeTab=${this.activeTab}
+            @tab-switch=${this._handleTabSwitch}
+          ></tab-view>
+          ${
+            this.activeTab === "chat"
+              ? html`
+                  <chat-view
+                    .transcript=${this.textTranscript}
+                    .visible=${this.activeMode !== "calling"}
+                    @send-message=${this._handleSendMessage}
+                    @reset-text=${this._resetTextContext}
+                    @scroll-state-changed=${this._handleChatScrollStateChanged}
+                  >
+                  </chat-view>
+                `
+              : html`
+                  <call-history-view
+                    .callHistory=${this.callHistory}
+                    @start-tts-from-summary=${this._startTtsFromSummary}
+                  >
+                  </call-history-view>
+                `
+          }
+        </div>
 
-      <call-transcript
-        .transcript=${this.callTranscript}
-        .visible=${this.activeMode === "calling"}
-        @reset-call=${this._resetCallContext}
-        @scroll-state-changed=${this._handleCallScrollStateChanged}
-      >
-      </call-transcript>
+        <div>
+          ${
+            this.showSettings
+              ? html`<settings-menu
+                  .apiKey=${localStorage.getItem("gemini-api-key") || ""}
+                  @close=${() => {
+                    this.showSettings = false;
+                  }}
+                  @api-key-saved=${this._handleApiKeySaved}
+                  @api-key-changed=${this._handleApiKeyChanged}
+                  @model-url-changed=${this._handleModelUrlChanged}
+                  @model-url-error=${this._handleModelUrlError}
+                ></settings-menu>`
+              : ""
+          }
+          <controls-panel
+            .isCallActive=${this.isCallActive}
+            .showCallScrollToBottom=${this.showCallScrollToBottom}
+            .callNewMessageCount=${this.callNewMessageCount}
+            .showChatScrollToBottom=${this.showChatScrollToBottom}
+            .chatNewMessageCount=${this.chatNewMessageCount}
+            @toggle-settings=${this._toggleSettings}
+            @scroll-call-to-bottom=${this._scrollCallTranscriptToBottom}
+            @scroll-chat-to-bottom=${this._scrollChatToBottom}
+            @call-start=${this._handleCallStart}
+            @call-end=${this._handleCallEnd}
+          >
+          </controls-panel>
+
+          <div id="status">
+            ${
+              this.error || this.status
+                ? html`<div
+                    class="toast ${this._toastVisible ? "" : "hide"}"
+                  >
+                    ${this.error || this.status}
+                  </div>`
+                : ""
+            }
+          </div>
+
+          <toast-notification
+            .visible=${this.showToast}
+            .message=${this.toastMessage}
+            type="info"
+          >
+          </toast-notification>
+        </div>
+
+        <call-transcript
+          .transcript=${this.callTranscript}
+          .visible=${this.activeMode === "calling"}
+          @reset-call=${this._resetCallContext}
+          @scroll-state-changed=${this._handleCallScrollStateChanged}
+        >
+        </call-transcript>
+      </div>
     `;
   }
 }
