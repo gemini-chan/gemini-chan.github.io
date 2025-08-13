@@ -958,7 +958,6 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-
   private async _handlePersonaChanged() {
     const activePersona = this.personaManager.getActivePersona();
     if (activePersona) {
@@ -999,7 +998,7 @@ export class GdmLiveAudio extends LitElement {
 
   private async _startTtsFromSummary(e: CustomEvent) {
     const summary = e.detail.summary as CallSummary;
-    const message = `Tell me more about my call regarding "${summary.summary}"`;
+    const message = `Tell me more about our call regarding "${summary.summary}"`;
 
     // Check API key presence before proceeding. If the key is missing, this
     // method will be re-invoked after the key is provided via the pendingAction
