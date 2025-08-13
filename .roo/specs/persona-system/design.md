@@ -71,10 +71,25 @@ This is the core data structure for a persona, which will be stored in an array 
 | `name` | `string` | The user-defined name of the persona. |
 | `systemPrompt`| `string` | The system prompt that defines the persona's personality. |
 | `live2dModelUrl`| `string` | The URL for the persona's Live2D model. |
-| `isDefault` | `boolean` | (Optional) Flag to indicate if this is the default "Gemini-chan" persona, which cannot be deleted. |
+| `isDefault` | `boolean` | Flag to indicate if this is a default persona (VTuber or Assistant), which cannot be deleted. |
+
+### 4.2. Default Personas
+The system will initialize with two default personas representing different aspects of Gemini-chan:
+
+#### VTuber Persona
+- **Name:** "VTuber"
+- **Personality:** Friendly, sweet, slightly shy rookie VTuber passionate about coding and learning
+- **Model:** Casual appearance suitable for entertainment interactions
+- **System Prompt:** Current VTuber personality with occasional slips into formal assistant behavior
+
+#### Assistant Persona  
+- **Name:** "Assistant"
+- **Personality:** Professional Senior Assistant from corporate background
+- **Model:** Business attire reflecting her professional past
+- **System Prompt:** Formal, competent assistant suitable for serious tasks
 
 
-### 4.2. `persona-changed` Event
+### 4.3. `persona-changed` Event
 - **Type:** `CustomEvent`
 - **Detail:** `{ persona: Persona }` - The new active persona object.
 

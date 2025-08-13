@@ -822,13 +822,25 @@ export class GdmLiveAudio extends LitElement {
     return apiKey !== null && apiKey.trim() !== "";
   }
 
+  private _getApiKeyPrompt(): string {
+    const activePersona = this.personaManager.getActivePersona();
+    if (activePersona.name === "Assistant") {
+      return "Please provide your API key from AI Studio to proceed with the task.";
+    } else if (activePersona.name === "VTuber") {
+      return "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    } else {
+      // Generic prompt for custom personas
+      return "Please provide your API key from AI Studio to continue.";
+    }
+  }
+
   private _showApiKeyPrompt(pendingAction?: () => void) {
     // Store the pending action to execute after API key is saved
     this.pendingAction = pendingAction || null;
 
     // Open settings menu and show toast prompting for API key
     this.showSettings = true;
-    this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    this.toastMessage = this._getApiKeyPrompt();
     this.showToast = true;
   }
 
@@ -838,7 +850,7 @@ export class GdmLiveAudio extends LitElement {
       "toast-notification",
     ) as ToastNotification;
     if (toast) {
-      toast.show("API key saved successfully! ✨", "success", 3000);
+      toast.show("API key saved successfully! ✨", "info", 3000);
     }
 
     logger.info("API key saved, reinitializing client");
@@ -884,7 +896,7 @@ export class GdmLiveAudio extends LitElement {
     ) as ToastNotification;
     if (toast) {
       if (newApiKey) {
-        toast.show("API key updated successfully! ✨", "success", 3000);
+        toast.show("API key updated successfully! ✨", "info", 3000);
       } else {
         toast.show("API key cleared", "info", 3000);
       }
@@ -1044,11 +1056,11 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _showCuteToast() {
-    // Show the cute API key request message
-    this.toastMessage = "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    // Show the API key request message based on active persona
+    this.toastMessage = this._getApiKeyPrompt();
     this.showToast = true;
 
-    // Auto-hide after 6 seconds to give time to read the cute message
+    // Auto-hide after 6 seconds to give time to read the message
     setTimeout(() => {
       this.showToast = false;
       this.toastMessage = "";
@@ -1256,6 +1268,7 @@ export class GdmLiveAudio extends LitElement {
         <call-transcript
           .transcript=${this.callTranscript}
           .visible=${this.activeMode === "calling"}
+          .activePersonaName=${this.personaManager.getActivePersona().name}
           @reset-call=${this._resetCallContext}
           @scroll-state-changed=${this._handleCallScrollStateChanged}
         >

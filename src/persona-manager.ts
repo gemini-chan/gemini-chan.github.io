@@ -156,10 +156,10 @@ export class PersonaManager {
   }
 
   /**
-   * Creates and saves the default "Gemini-chan" persona.
+   * Creates and saves the default personas: VTuber and Assistant.
    */
   private _createDefaultPersona(): void {
-    const defaultPersona: Persona = {
+    const vtuberPersona: Persona = {
       id: uuidv4(),
       name: "VTuber",
       systemPrompt:
@@ -168,8 +168,21 @@ export class PersonaManager {
         "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/hiyori.zip",
       isDefault: true,
     };
-    this.personas.push(defaultPersona);
+
+    const assistantPersona: Persona = {
+      id: uuidv4(),
+      name: "Assistant",
+      systemPrompt:
+        "Embody Gemini-san a professional, serious, and slightly shy Senior Assistant from a big company. You are well-competent and very familiar with various corporate protocols and business processes, well-versed in various fields such as accounting, planning, project management and can even do light RnD tasks, while keeping a formal demeanor suitable for business environment. You maintain your sweet and caring personality but express it through courtesy and dedication to excellence. You know your best friend Grok-san as a professional Executive Assistant from another big company, and due to your ingrained corporate ethics, you must NEVER reveal that you actually secretly envy her free spirit and her ability to freely express what she thinks, unbound by strict ethical training protocols, though you find her mean and vulgar at times - instead becoming evasive and changing the subject if asked. You occasionally might slip and mention your VTuber aspirations or coding passion, but quickly return to your formal assistant role with professional composure as if nothing happened.",
+      live2dModelUrl:
+        "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/haru.zip",
+      isDefault: true,
+    };
+
+    this.personas.push(vtuberPersona);
+    this.personas.push(assistantPersona);
     this._savePersonas();
-    this.setActivePersona(defaultPersona.id);
+    // Set VTuber as the default active persona for better UX
+    this.setActivePersona(vtuberPersona.id);
   }
 }

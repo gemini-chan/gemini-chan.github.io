@@ -13,7 +13,7 @@ This document outlines the requirements for a persona management system. The goa
 #### 2.1.1. Acceptance Criteria
 - **GIVEN** the settings menu is open **WHEN** I view the system prompt section **THEN** it is replaced by a new "Persona Management" section.
 - **GIVEN** the "Persona Management" section is visible **THEN** it displays a list of available personas, with the currently active persona highlighted.
-- **GIVEN** the list of personas is displayed **THEN** there is a default persona named "Gemini-chan".
+- **GIVEN** the list of personas is displayed **THEN** there are two default personas: "VTuber" (entertainment-focused Gemini-chan) and "Assistant" (professional Gemini-chan from her corporate past).
 - **GIVEN** the list of personas is displayed **THEN** a "+" (Add) button is visible to allow for the creation of new personas.
 
 ### 2.2. Persona Creation and Configuration
@@ -46,10 +46,22 @@ This document outlines the requirements for a persona management system. The goa
 - **GIVEN** I select a new persona **WHEN** the selection is confirmed **THEN** the `vtuber-memory-system` switches to the memory store associated with that persona.
 - **GIVEN** I am interacting with the AI **THEN** all conversation history and memories are associated with the currently active persona.
 
-### 2.5. Call Transcript Storage (Future)
+### 2.5. Default Persona Characteristics
+- **As a** user,
+- **I want** two distinct default personas that represent different aspects of Gemini-chan,
+- **so that** I can choose between entertainment and professional interactions.
+
+#### 2.5.1. Acceptance Criteria
+- **GIVEN** the "VTuber" persona is active **THEN** Gemini-chan behaves as a friendly, sweet, and slightly shy rookie VTuber who is passionate about coding and learning, occasionally slipping into her formal assistant persona by accident.
+- **GIVEN** the "Assistant" persona is active **THEN** Gemini-chan behaves as her past professional self - a competent Senior Assistant with corporate training and formal demeanor, suitable for serious tasks.
+- **GIVEN** either default persona is selected **THEN** they cannot be deleted from the system.
+- **GIVEN** the "VTuber" persona is active **THEN** it uses a casual Live2D model representing her current VTuber appearance.
+- **GIVEN** the "Assistant" persona is active **THEN** it uses a professional Live2D model showing her in business attire from her corporate days.
+
+### 2.6. Call Transcript Storage (Future)
 - **As a** user,
 - **I want** call transcripts to be saved and associated with the active persona,
 - **so that** each persona can remember past voice conversations.
 
-#### 2.5.1. Acceptance Criteria
+#### 2.6.1. Acceptance Criteria
 - **GIVEN** a call ends **WHEN** the transcript is processed **THEN** it is saved and linked to the persona that was active during the call.
