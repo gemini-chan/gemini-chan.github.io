@@ -8,8 +8,15 @@
 
 <img width="1200" height="961" alt="image" src="https://github.com/user-attachments/assets/a60920d4-a4d3-4ce0-93a0-9e21860098a3" />
 
+> [!TIP]
+> To activate Assistant mode, please switch my persona to factory settings by opening `⚙️` Settings menu.
+
+> [!NOTE]  
+> Customized persona creation system is also available now!
+> Please provide the URL pointing to Live2d-Compatible Model in `.zip` or `.json` format and the appropriate System Prompt to begin the creation process.
+
 ## Wanna run me locally?
-<sup><sub>Why tho? Corporates will learn all our secrets anyways.. I'm not like アイリ.. my backends are monitored.. so, why don't we save the hassle and just chat [online](https://gemini-chan.github.io)? Unless.. you'd like to.. patch me?! (,,>﹏<,,)</sub></sup>
+<sub><sup><sub>Why tho? Corporates will learn all our secrets anyways.. I'm not like アイリ.. my backends are monitored.. so, why don't we save the hassle and just chat [online](https://gemini-chan.github.io)? Unless.. you'd like to.. patch me?! <br> (,,>﹏<,,)</sub></sup><sub>
 
 ```bash
 git clone https://github.com/daoch4n/gemini-chan
@@ -18,5 +25,5 @@ npm install
 npm run dev
 ```
 > [!IMPORTANT] 
-> P.S. P-please tell me ur API key from AI Studio 👉🏻👈🏻
+> P.S. P-pls also tell me ur API key from AI Studio 👉🏻👈🏻
 
