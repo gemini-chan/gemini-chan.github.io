@@ -512,16 +512,59 @@ export class SettingsMenu extends LitElement {
             )}
           placeholder="System Prompt"
         ></textarea>
-        <input
-          type="text"
-          .value=${this._editingPersona.live2dModelUrl}
-          @input=${(e: Event) =>
-            this._handlePersonaFormInput(
-              "live2dModelUrl",
-              (e.target as HTMLInputElement).value,
-            )}
-          placeholder="Live2D Model URL"
-        />
+        <div class="input-group">
+          <input
+            type="text"
+            .value=${this._editingPersona.live2dModelUrl}
+            @input=${(e: Event) => {
+              this._handlePersonaFormInput(
+                "live2dModelUrl",
+                (e.target as HTMLInputElement).value,
+              );
+              this._validateLive2dUrl((e.target as HTMLInputElement).value);
+            }}
+            placeholder="Live2D Model URL"
+          />
+          <div
+            class="validation-icon ${this._modelUrlValid || this._modelUrlInvalid
+              ? "show"
+              : ""}"
+            title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}"
+          >
+            ${this._modelUrlValid
+              ? html`<svg
+                  class="tick-icon"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"
+                  />
+                </svg>`
+              : this._modelUrlInvalid
+                ? html`<svg
+                    class="cross-icon"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+                    />
+                  </svg>`
+                : ""}
+          </div>
+          <button
+            class="paste-button"
+            @click=${() => this._handlePaste("modelUrl")}
+            title="Paste from clipboard"
+          >
+            <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"
+              />
+            </svg>
+          </button>
+        </div>
         <button @click=${this._onSavePersona}>Save</button>
         <button @click=${() => (this._editingPersona = null)}>Cancel</button>
       </div>
@@ -627,30 +670,6 @@ export class SettingsMenu extends LitElement {
             ${this._renderPersonaForm()}
           </div>
 
-          <label for="modelUrl">Live2D Model URL</label>
-          <div class="input-group">
-            <input
-              id="modelUrl"
-              type="text"
-              .value=${localStorage.getItem("live2d-model-url") || "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/hiyori.zip"}
-              @input=${this._onModelUrlInput}
-              @blur=${this._onModelUrlBlur}
-              placeholder="Enter model3.json or .zip URL" />
-            <div class="validation-icon ${this._modelUrlValid || this._modelUrlInvalid ? "show" : ""}" title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}">
-              ${
-                this._modelUrlValid
-                  ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
-                  : this._modelUrlInvalid
-                    ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
-                    : ""
-              }
-            </div>
-            <button class="paste-button" @click=${this._onPasteModelUrl} title="Paste from clipboard">
-              <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
-              </svg>
-            </button>
-          </div>
 
           <label for="apiKey">API Key</label>
           <div class="input-group">
@@ -703,13 +722,6 @@ export class SettingsMenu extends LitElement {
       this._setValidationState("apiKey", isApiKeyValid);
     }
 
-    // Validate Model URL
-    const modelUrlInput =
-      this.shadowRoot!.querySelector<HTMLInputElement>("#modelUrl");
-    if (modelUrlInput) {
-      const isModelUrlValid = this._validateLive2dUrl(modelUrlInput.value);
-      this._setValidationState("modelUrl", isModelUrlValid);
-    }
 
     // Store reference to system prompt textarea and set initial height
   }
@@ -751,34 +763,11 @@ export class SettingsMenu extends LitElement {
     }, 500); // 500ms debounce
   }
 
-  private _modelUrlInputDebounceTimer: number | undefined;
-
-  private _onModelUrlInput(e: Event) {
-    const input = e.target as HTMLInputElement;
-    this._error = ""; // Clear error on input
-    this._modelUrlValid = false; // Clear validation tick while typing
-    this._modelUrlInvalid = false;
-
-    clearTimeout(this._modelUrlInputDebounceTimer);
-    this._modelUrlInputDebounceTimer = window.setTimeout(() => {
-      this._autoSave(
-        input.value,
-        {
-          storageKey: "live2d-model-url",
-          validator: this._validateLive2dUrl.bind(this),
-          eventName: "model-url-changed",
-          required: false,
-          preserveOnEmpty: true,
-        },
-        "modelUrl",
-      );
-    }, 500);
-  }
 
   private _autoSave(
     value: string,
     config: FieldConfig,
-    fieldName: "apiKey" | "modelUrl",
+    fieldName: "apiKey",
   ): boolean {
     let isValid = false;
 
@@ -799,15 +788,13 @@ export class SettingsMenu extends LitElement {
         }
       }
 
-      // For API key, show validation error when cleared but preserve the key
-      // For model URL, clearing is OK (will fallback to sphere)
-      if (fieldName === "apiKey" && config.required) {
+      if (config.required) {
         this._error = "API key cannot be empty";
         this._setValidationState(fieldName, false);
       } else {
         this._setValidationState(fieldName, true);
       }
-      return fieldName !== "apiKey" || !config.required; // Return false for required API key to show error
+      return !config.required;
     }
 
     // If field is not required and empty, save empty value without validation
@@ -873,20 +860,6 @@ export class SettingsMenu extends LitElement {
     );
   }
 
-  private _onModelUrlBlur(e: Event) {
-    const input = e.target as HTMLInputElement;
-    this._autoSave(
-      input.value,
-      {
-        storageKey: "live2d-model-url",
-        validator: this._validateLive2dUrl.bind(this),
-        eventName: "model-url-changed",
-        required: false,
-        preserveOnEmpty: true,
-      },
-      "modelUrl",
-    );
-  }
 
   private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
@@ -911,18 +884,14 @@ export class SettingsMenu extends LitElement {
             "apiKey",
           );
         } else {
-          // modelUrl
-          this._autoSave(
-            text,
-            {
-              storageKey: "live2d-model-url",
-              validator: this._validateLive2dUrl.bind(this),
-              eventName: "model-url-changed",
-              required: false,
-              preserveOnEmpty: true,
-            },
-            "modelUrl",
-          );
+          if (this._editingPersona) {
+            this._editingPersona = {
+              ...this._editingPersona,
+              live2dModelUrl: text,
+            };
+            this._validateLive2dUrl(text);
+            this.requestUpdate();
+          }
         }
       }
     } catch (err) {
@@ -934,9 +903,6 @@ export class SettingsMenu extends LitElement {
     this._handlePaste("apiKey");
   }
 
-  private _onPasteModelUrl() {
-    this._handlePaste("modelUrl");
-  }
 
   private _validateApiKey(key: string): boolean {
     if (!key) {
@@ -952,6 +918,12 @@ export class SettingsMenu extends LitElement {
   }
 
   private _validateLive2dUrl(url: string): boolean {
+    const isValid = this._checkLive2dUrl(url);
+    this._setValidationState("modelUrl", isValid);
+    return isValid;
+  }
+
+  private _checkLive2dUrl(url: string): boolean {
     if (!url) {
       // Empty is OK - will fallback to sphere
       return true;

@@ -28,3 +28,7 @@ Implement the persona management system, allowing users to create, select, and m
   - [x] 5.1. Write unit tests for the `PersonaManager` class.
   - [x] 5.2. Write integration tests for the `settings-menu` and `PersonaManager`.
   - [x] 5.3. Write E2E tests to verify that switching personas correctly updates the AI's personality, appearance, and memory.
+
+- [ ] 6. **Refactor UI**:
+  - [ ] 6.1. Remove the standalone "Live2D Model URL" field from `settings-menu.ts`.
+  - [ ] 6.2. Integrate the `live2dModelUrl` input, including its paste button and validation, into the persona creation/editing form.

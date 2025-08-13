@@ -50,8 +50,9 @@ graph TD
 - **Responsibility:**
     - Display the list of personas.
     - Allow selection of the active persona.
-    - Provide UI for creating and editing personas.
-    - The existing "System Prompt" section will be replaced with the new "Persona Management" UI.
+    - Provide UI for creating and editing personas, including fields for `name`, `systemPrompt`, and `live2dModelUrl`.
+    - The `live2dModelUrl` input within the persona form will integrate the validation logic and paste functionality from the previous standalone field.
+    - The existing "System Prompt" and "Live2D Model URL" sections will be removed and their functionality consolidated into the new "Persona Management" UI.
     - The "Reset to Default" button will be repurposed or replaced within the context of the default "Gemini-chan" persona. A "+" button will be added to create new personas.
 
 ### 3.3. `vtuber-memory-system` (Modification)
