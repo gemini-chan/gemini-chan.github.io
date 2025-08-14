@@ -1,212 +1,154 @@
-# Feature: Energy Bar System
+# Feature: Energy Bar System (Dual-Mode)
 
 ## 1. Introduction
-This document outlines the requirements for the Energy Bar System. This feature will manage the AI's "energy" level, which corresponds to different backend AI models. As rate limits for more powerful models are exhausted, the system will gracefully degrade to less powerful models, communicating the change to the user through a visual energy bar icon and adjusted conversational prompts. This system will leverage the existing rate limit detection logic.
+This document outlines the requirements for the Energy Bar System, which is designed to work in concert with the **Dual-Input Mode** feature (see `../dual-input-mode/requirements.md`). This system manages the AI's "energy" level by maintaining separate energy pools for the **STS (voice call)** and **TTS (text chat)** modes.
+
+As rate limits for more powerful models are exhausted in a specific mode, the system will gracefully degrade to a less powerful model for that mode only, communicating the change to the user through a visual energy bar icon (for STS) and adjusted conversational prompts.
 
 ## 2. Epics
 
-### 2.1. Epic: Tiered Model State Management
-This epic covers the logic for tracking the current model tier and managing the fallback to lower tiers when the existing rate-limit detection indicates a failure.
+### 2.1. Epic: Tiered Model State Management (Dual-Mode)
+This epic covers the logic for tracking the current model tier for both STS and TTS modes and managing the fallback to lower tiers when rate-limit failures occur in either mode.
 
-#### 2.1.1. User Story: Track Current Energy Level
+#### 2.1.1. User Story: Track Independent Energy Levels
 - **Priority**: High
 - **As a** system,
-- **I want** to maintain the current energy level state (e.g., 3, 2, 1, 0),
-- **so that** other parts of the application can react to changes in the energy level.
+- **I want** to maintain separate energy level states (e.g., 3, 2, 1, 0) for the STS and TTS modes,
+- **so that** energy depletion in one mode does not affect the other.
 
-##### Acceptance Criteria (Gherkin Syntax)
+##### Acceptance Criteria
 ```gherkin
-Scenario: Initialize at full energy
+Scenario: Initialize at full energy for both modes
   Given the application starts
   When the Energy Bar System is initialized
-  Then the energy level is set to 3 (full).
+  Then the energy level for STS is set to 3
+  And the energy level for TTS is set to 3.
 ```
 
-#### 2.1.2. User Story: Downgrade Energy Level on Rate Limit
+#### 2.1.2. User Story: Downgrade Energy Level on Mode-Specific Rate Limit
 - **Priority**: High
 - **As a** system,
-- **I want** to decrement the energy level when a rate limit error is detected,
-- **so that** the application can switch to the next model tier.
+- **I want** to decrement the energy level for the specific mode (STS or TTS) where a rate limit error is detected,
+- **so that** the application can switch to the next model tier for that mode only.
 
-##### Acceptance Criteria (Gherkin Syntax)
+##### Acceptance Criteria
 ```gherkin
-Scenario: Downgrade from full to medium
-  Given the current energy level is 3
-  And a rate limit error is detected
+Scenario: Downgrade STS energy on call rate limit
+  Given the current STS energy level is 3
+  And the TTS energy level is 3
+  And a rate limit error is detected during an STS call
   When the system processes the error
-  Then the energy level is set to 2.
+  Then the STS energy level is set to 2
+  And the TTS energy level remains 3.
 
-Scenario: Downgrade from medium to low
-  Given the current energy level is 2
-  And a rate limit error is detected
+Scenario: Downgrade TTS energy on chat rate limit
+  Given the current STS energy level is 3
+  And the TTS energy level is 2
+  And a rate limit error is detected during a TTS chat session
   When the system processes the error
-  Then the energy level is set to 1.
-
-Scenario: Downgrade from low to exhausted
-  Given the current energy level is 1
-  And a rate limit error is detected
-  When the system processes the error
-  Then the energy level is set to 0.
+  Then the TTS energy level is set to 1
+  And the STS energy level remains 3.
 ```
 
-#### 2.1.3. User Story: Reset Energy Level on New Session
+#### 2.1.3. User Story: Reset STS Energy Level on New Call Session
 - **Priority**: High
 - **As a** system,
-- **I want** to reset the energy level to the highest tier at the start of every new call session,
-- **so that** each conversation starts with the best possible model, regardless of the previous session's state.
+- **I want** to reset the **STS energy level** to the highest tier at the start of every new call session,
+- **so that** each call starts with the best possible model, without affecting the TTS energy state.
 
-##### Acceptance Criteria (Gherkin Syntax)
+##### Acceptance Criteria
 ```gherkin
 Scenario: Start a new call after previous session was exhausted
-  Given the energy level was 0 at the end of the last call
+  Given the STS energy level was 0 at the end of the last call
+  And the TTS energy level is 1
   When a new STS session is connected (a new call starts)
-  Then the energy level is reset to 3.
-
-Scenario: Start a new call while previous session was degraded
-  Given the energy level was 1 at the end of the last call
-  When a new STS session is connected (a new call starts)
-  Then the energy level is reset to 3.
+  Then the STS energy level is reset to 3
+  And the TTS energy level remains 1.
 ```
 
-#### 2.1.4. User Story: Log Energy Level Changes
+#### 2.1.4. User Story: Log Mode-Specific Energy Level Changes
 - **Priority**: Medium
 - **As a** developer,
-- **I want** every change in the energy level to be logged using the standard debug logging system,
-- **so that** I can easily trace the model switching behavior during development and troubleshooting.
+- **I want** every change in energy level to be logged with its corresponding mode (STS or TTS),
+- **so that** I can easily trace model switching behavior.
 
-##### Acceptance Criteria (Gherkin Syntax)
+##### Acceptance Criteria
 ```gherkin
-Scenario: Log a downgrade event
+Scenario: Log an STS downgrade event
   Given the debug logger is enabled for the 'energy-bar-system' component
-  And the energy level is 3
-  When a rate limit error causes a downgrade
+  And the STS energy level is 3
+  When a rate limit error on an STS call causes a downgrade
   Then a debug log is emitted with the message "Energy level downgraded"
-  And the log data includes the old level (3), the new level (2), and the reason ("rate-limit-exceeded").
-
-Scenario: Log a session reset event
-  Given the debug logger is enabled for the 'energy-bar-system' component
-  And the energy level is 0
-  When a new session starts
-  Then a debug log is emitted with the message "Energy level reset"
-  And the log data includes the new level (3) and the reason ("session-reset").
-
-Scenario: Do not log when disabled
-  Given the debug logger is disabled for the 'energy-bar-system' component
-  When the energy level changes for any reason
-  Then no log related to the energy level is emitted.
+  And the log data includes the mode ('sts'), old level (3), new level (2), and reason ("rate-limit-exceeded").
 ```
 
-### 2.2. Epic: Energy Bar UI
-This epic covers the implementation of the battery-style UI component that visually represents the current energy level to the user.
+### 2.2. Epic: Energy Bar UI (STS Focus)
+This epic covers the UI component that visually represents the **STS energy level only**.
 
-#### 2.2.1. User Story: Display Energy Bar Icon
+#### 2.2.1. User Story: Display STS Energy Bar Icon
 - **Priority**: High
 - **As a** user,
 - **I want** to see a battery-style icon in the call transcript view,
-- **so that** I am aware of the current energy level of the AI.
+- **so that** I am aware of the current energy level of the AI for the call.
 
-##### Acceptance Criteria (Gherkin Syntax)
+##### Acceptance Criteria
 ```gherkin
-Scenario: Display the energy bar
+Scenario: Display the energy bar for STS
   Given I am in the call transcript view
   When the application loads
-  Then the energy bar icon is visible.
+  Then the energy bar icon is visible and reflects the STS energy level.
 ```
 
-#### 2.2.2. User Story: Update Icon Based on Energy Level
+#### 2.2.2. User Story: Update Icon Based on STS Energy Level
 - **Priority**: High
 - **As a** user,
-- **I want** the energy bar icon to visually change as the energy level changes,
-- **so that** I can instantly understand the current state of the AI's capabilities.
+- **I want** the energy bar icon to visually change as the STS energy level changes,
+- **so that** I can instantly understand the current state of the AI's calling capabilities.
 
-##### Acceptance Criteria (Gherkin Syntax)
+##### Acceptance Criteria
 ```gherkin
-Scenario: Full energy
-  Given the energy level is 3
+Scenario: Full STS energy
+  Given the STS energy level is 3
   When the UI updates
-  Then the battery icon shows 3 out of 3 bars filled
-  And the icon color is green.
+  Then the battery icon shows 3 out of 3 bars filled and is green.
 
-Scenario: Medium energy
-  Given the energy level is 2
+Scenario: Exhausted STS energy
+  Given the STS energy level is 0
   When the UI updates
-  Then the battery icon shows 2 out of 3 bars filled
-  And the icon color is yellow.
+  Then the battery icon shows 0 out of 3 bars filled and is red.
 
-Scenario: Low energy
-  Given the energy level is 1
-  When the UI updates
-  Then the battery icon shows 1 out of 3 bars filled
-  And the icon color is orange.
-
-Scenario: Exhausted energy
-  Given the energy level is 0
-  When the UI updates
-  Then the battery icon shows 0 out of 3 bars filled (empty)
-  And the icon color is red.
+Scenario: TTS energy change does not affect the UI
+  Given the STS energy level is 3
+  And the TTS energy level is 2
+  When the TTS energy level drops to 1
+  Then the battery icon remains unchanged (showing 3 bars).
 ```
 
-#### 2.2.3. User Story: Animate Energy Bar on State Change
-- **Priority**: Medium
-- **As a** user,
-- **I want** the energy bar to have a subtle animation when its state changes,
-- **so that** the transition is visually engaging and draws my attention to the change.
+### 2.3. Epic: Persona-Based Conversational Prompts (Mode-Aware)
+This epic covers the different conversational prompts Gemini-chan will use at each energy level, tailored to the active persona and the specific interaction mode (STS or TTS).
 
-##### Acceptance Criteria (Gherkin Syntax)
-```gherkin
-Scenario: Energy level decreases
-  Given the energy level is 3
-  When the energy level drops to 2
-  Then the third bar of the battery icon animates out (e.g., fades or drains).
-
-Scenario: Energy level resets on new connection
-  Given the energy level is 1
-  When a new session starts and the level resets to 3
-  Then the battery icon animates to fill up to 3 bars
-  And the icon flashes briefly to indicate a successful connection.
-```
-
-### 2.3. Epic: Persona-Based Conversational Prompts
-This epic covers the different conversational prompts Gemini-chan will use at each energy level. The prompts must also be tailored to the currently active persona (e.g., VTuber, Assistant, or Generic).
-
-#### 2.3.1. User Story: Persona-Specific Prompts for Degraded Energy Levels
+#### 2.3.1. User Story: Persona-Specific Prompts for Degraded STS Energy
 - **Priority**: High
 - **As a** user,
-- **I want** Gemini-chan's conversational prompts to change based on her energy level and selected persona,
+- **I want** Gemini-chan's conversational prompts during a call to change based on her STS energy level,
 - **so that** the experience feels immersive and I understand the reason for any change in conversational depth.
 
-##### Acceptance Criteria (Gherkin Syntax)
+##### Acceptance Criteria
 ```gherkin
-Scenario: Medium energy prompt for VTuber persona
-  Given the current energy level is 2
+Scenario: Medium STS energy prompt for VTuber persona
+  Given the STS energy level is 2
   And the selected persona is 'VTuber'
-  When the system needs to display a prompt
-  Then a message like "I'm feeling a little tired, so I might not be able to have super deep conversations right now, but I'll try my best!" is used.
+  When the system needs to display a prompt during a call
+  Then a message like "I might be running a tiny bit low on brainpower—so if I trail off or keep things simpler, forgive me!" is used.
 
-Scenario: Low energy prompt for Assistant persona
-  Given the current energy level is 1
+Scenario: Low STS energy prompt for Assistant persona
+  Given the STS energy level is 1
   And the selected persona is 'Assistant'
-  When the system needs to display a prompt
-  Then a message like "My processing power is limited at the moment. I can still assist with basic tasks." is used.
+  When the system needs to display a prompt during a call
+  Then a message like "My emotional scanner’s flickering... I can still hear you just fine and respond, but my feeling for the conversation’s tone might be a bit off." is used.
 
-Scenario: Exhausted energy prompt for Generic persona
-  Given the current energy level is 0
-  And the selected persona is 'Generic'
-  When the system needs to display a prompt
-  Then a message like "I'm sorry, I'm out of energy and need to rest. Please try again later." is used.
-```
-
-#### 2.3.2. User Story: No Special Prompt for Full Energy
-- **Priority**: High
-- **As a** user,
-- **I want** the conversation to proceed normally when the energy level is full,
-- **so that** the experience is seamless and uninterrupted when the AI is at full capacity.
-
-##### Acceptance Criteria (Gherkin Syntax)
-```gherkin
-Scenario: Full energy conversation
-  Given the energy level is 3
+Scenario: Exhausted STS energy prompt (sleepy mode)
+  Given the STS energy level is 0
   And any persona is selected
-  When the user interacts with the system
-  Then no special energy-related prompt is displayed, and the conversation proceeds as normal.
-```
+  When a user tries to start a call
+  Then an immersive, persona-specific "sleepy" prompt is displayed indicating zero consciousness.
