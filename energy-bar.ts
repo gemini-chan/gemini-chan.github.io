@@ -8,7 +8,7 @@ import {
 @customElement("energy-bar")
 export class EnergyBar extends LitElement {
   @property({ type: Number, reflect: true }) level: 0 | 1 | 2 | 3 =
-    energyBarService.getCurrentEnergyLevel();
+    energyBarService.getCurrentEnergyLevel("sts");
 
   @state() private _animating = false;
   @state() private _changedIndex: number = -1;
@@ -46,6 +46,9 @@ export class EnergyBar extends LitElement {
   }
 
   private _onEnergyChanged = (e: CustomEvent<EnergyLevelChangedDetail>) => {
+    // Only reflect STS mode in this bar
+    if (e.detail.mode !== "sts") return;
+
     const old = this.level;
     const next = e.detail.level;
     if (old === next) return;
@@ -85,7 +88,7 @@ export class EnergyBar extends LitElement {
   render() {
     const filledCount = this.level;
     const bars = [0, 1, 2].map((i) => i < filledCount);
-    const model = energyBarService.getModelForLevel(this.level);
+    const model = energyBarService.getModelForLevel(this.level, "sts");
     const ariaValueText = `${this._energyText(this.level)}${model ? ` — ${model}` : ""}`;
 
     return html`

@@ -19,35 +19,45 @@ export class PersonaManager {
    * Get a persona-specific prompt for a given energy level.
    * Level 3 returns an empty string as no special prompt is needed.
    */
-  getPromptForEnergyLevel(level: 0 | 1 | 2 | 3, personaName: string): string {
+  getPromptForEnergyLevel(
+    level: 0 | 1 | 2 | 3,
+    personaName: string,
+    mode: "sts" | "tts" = "sts",
+  ): string {
     if (level >= 3) return ""; // No special prompt for full energy
     const name = (personaName || "").toLowerCase();
-    if (level === 2) {
+    // STS immersive prompts per spec
+    if (mode === "sts" && level === 2) {
       if (name === "vtuber") {
-        return "I'm feeling a little tired, so I might not be able to have super deep conversations right now, but I'll try my best!";
+        return "I might be running a tiny bit low on brainpower—so if I trail off or keep things simpler, forgive me! I’ll still give it my all, promise~";
       }
       if (name === "assistant") {
         return "System capacity is reduced. I can still help effectively, but responses may be more concise.";
       }
       return "Energy reduced. I can continue, but responses may be simpler for now.";
     }
-    if (level === 1) {
+    if (mode === "sts" && level === 1) {
       if (name === "assistant") {
         return "My processing power is limited at the moment. I can still assist with basic tasks.";
       }
       if (name === "vtuber") {
-        return "H-hngh.. I'm running low on energy... I'll still do my best, but I might be a bit slow...";
+        return "Mm... my emotional scanner’s flickering... I can still hear you just fine and respond, but my feelings might sound a little sleepy...";
       }
       return "Low energy. I can help with basic requests only.";
     }
-    // level === 0
-    if (name === "assistant") {
-      return "I'm currently out of capacity and need to pause. Please try again shortly.";
+    // STS exhausted
+    if (mode === "sts" && level === 0) {
+      if (name === "assistant") {
+        return "My systems just powered down to protect my core. I’ll need a moment to recharge—please try again in a bit.";
+      }
+      if (name === "vtuber") {
+        return "N-nngh... I’m out of juice... My consciousness is drifting... I’ll nap for a bit and come back brighter, o-okay? (｡•́︿•̀｡)";
+      }
+      return "I'm sorry, I'm out of energy and need to rest. Please try again later.";
     }
-    if (name === "vtuber") {
-      return "I'm sorry... I'm all out of energy and need to rest a little... Let's try again later, okay? (｡•́︿•̀｡)";
-    }
-    return "I'm sorry, I'm out of energy and need to rest. Please try again later.";
+
+    // Default: no prompt for other modes yet
+    return "";
   }
 
   private static readonly PERSONAS_STORAGE_KEY = "geminichan-personas";

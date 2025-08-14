@@ -27,6 +27,8 @@ export class CallTranscript extends LitElement {
   activePersonaName: string = "VTuber";
 
   get rateLimitMessage(): string {
+    // This banner remains for rate-limit failures; energy prompts are handled via index.tsx toasts
+
     if (this.activePersonaName === "Assistant") {
       return "I apologize, but I'm experiencing system limitations at the moment. Please try calling again later.";
     } else if (this.activePersonaName === "VTuber") {

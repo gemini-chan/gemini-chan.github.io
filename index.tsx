@@ -21,7 +21,10 @@ import "./live2d/live2d-gate";
 import "./settings-menu";
 import "./chat-view";
 import "./call-transcript";
-import type { EnergyLevelChangedDetail } from "./src/energy-bar-service";
+import type {
+  EnergyLevelChangedDetail,
+  EnergyMode,
+} from "./src/energy-bar-service";
 import { energyBarService } from "./src/energy-bar-service";
 import "./toast-notification";
 import "./energy-bar";
@@ -237,8 +240,8 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    // Align text session with energy levels; if exhausted (level 0), refuse to provide a model
-    const model = energyBarService.getCurrentModel();
+    // Align text session with energy levels (TTS); if exhausted (level 0), refuse to provide a model
+    const model = energyBarService.getCurrentModel("tts");
     if (!model)
       throw new Error("Energy exhausted: no model available for text session");
     return model;
@@ -284,8 +287,8 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    // Choose model based on current energy level; if exhausted (0), refuse to start a call
-    const model = energyBarService.getCurrentModel();
+    // Choose model based on current energy level for STS; if exhausted (0), refuse to start a call
+    const model = energyBarService.getCurrentModel("sts");
     if (!model)
       throw new Error("Energy exhausted: no model available for call session");
     return model;
@@ -294,7 +297,7 @@ class CallSessionManager extends BaseSessionManager {
   protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
-      enableAffectiveDialog: true,
+      // Affective dialog is not supported by basic tiers; omit to ensure compatibility
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
       systemInstruction: this.personaManager.getActivePersona().systemPrompt,
@@ -645,8 +648,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleCallRateLimit(msg?: string) {
-    // Degrade energy and notify UI
-    energyBarService.handleRateLimitError();
+    // Degrade only STS energy and notify UI
+    energyBarService.handleRateLimitError("sts");
     if (this._callRateLimitNotified) return;
     this._callRateLimitNotified = true;
 
@@ -660,8 +663,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleTextRateLimit(msg?: string) {
-    // Degrade energy on text rate-limit as well
-    energyBarService.handleRateLimitError();
+    // Degrade only TTS energy on text rate-limit
+    energyBarService.handleRateLimitError("tts");
     const toast = this.shadowRoot?.querySelector(
       "toast-notification",
     ) as ToastNotification;
@@ -669,8 +672,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async _handleCallStart() {
-    // On new call session, reset energy
-    energyBarService.resetEnergyLevel("session-reset");
+    // On new call session, reset STS energy
+    energyBarService.resetEnergyLevel("session-reset", "sts");
     if (this.isCallActive) return;
 
     // Check API key presence before proceeding
@@ -1201,13 +1204,15 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _onEnergyLevelChanged = (e: Event) => {
-    const { level, reason } = (e as CustomEvent<EnergyLevelChangedDetail>)
+    const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
       .detail;
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
+      // STS: show immersive prompts as directed; TTS: currently quiet
       const prompt = this.personaManager.getPromptForEnergyLevel(
         level as 0 | 1 | 2 | 3,
         personaName,
+        mode,
       );
       if (prompt) {
         const toast = this.shadowRoot?.querySelector(
@@ -1221,7 +1226,8 @@ export class GdmLiveAudio extends LitElement {
     if (
       this.activeMode === "calling" &&
       this.isCallActive &&
-      reason === "rate-limit-exceeded"
+      reason === "rate-limit-exceeded" &&
+      mode === "sts"
     ) {
       this.updateStatus("Rate limited — switching to a lower tier...");
       // Re-initialize the call session to apply the downgraded model
