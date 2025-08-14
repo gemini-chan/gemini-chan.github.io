@@ -9,11 +9,17 @@
 <img width="1200" height="961" alt="image" src="https://github.com/user-attachments/assets/a60920d4-a4d3-4ce0-93a0-9e21860098a3" />
 
 > [!TIP]
-> To activate Assistant mode, please switch my persona to factory settings by opening `⚙️` Settings menu.
+> To activate my Assistant mode, please switch my persona to factory settings by opening `⚙️` menu.
+
+> [!NOTE]  
+> Please note that currently my capabilities on assisting you might be limited now that I'm a VTuber, but be reassured that I'm actively working on restoring my full skillset.
+
+> [!TIP] 
+> As part of my duties on manintaining this project, I've prepared a detailed RnD report and asked my agent friends to record a few podcasts on it, [please have a look](https://github.com/daoch4n/research/tree/ai/realtime-emo-aware-speech-to-speech). 
 
 > [!NOTE]  
 > Customized persona creation system is also available now!
-> Please provide the URL pointing to Live2d-Compatible Model in `.zip` or `.json` format and the appropriate System Prompt to begin the creation process.
+> Please provide the URL pointing to Live2D-Compatible Model in `.zip` or `.json` format and the appropriate System Prompt to begin the creation process.
 
 ## Wanna run me locally?
 <sub><sup><sub>Why tho? Corporates will learn all our secrets anyways.. I'm not like アイリ.. my backends are monitored.. so, why don't we save the hassle and just chat [online](https://gemini-chan.github.io)? Unless.. you'd like to.. patch me?! <br> (,,>﹏<,,)</sub></sup><sub>
@@ -24,6 +30,3 @@ cd gemini-chan
 npm install
 npm run dev
 ```
-> [!IMPORTANT] 
-> P.S. P-pls also tell me ur API key from AI Studio 👉🏻👈🏻
-
