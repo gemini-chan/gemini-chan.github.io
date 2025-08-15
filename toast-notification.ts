@@ -49,18 +49,26 @@ export class ToastNotification extends LitElement {
 
     .toast.info {
       background: linear-gradient(135deg, rgba(0,229,255,0.85), rgba(124,77,255,0.85));
+      color: #000;
+      font-weight: 600;
     }
 
     .toast.warning {
       background: linear-gradient(135deg, rgba(255, 179, 0, 0.9), rgba(255, 0, 0, 0.85));
+      color: #000;
+      font-weight: 600;
     }
 
     .toast.success {
       background: linear-gradient(135deg, rgba(0, 255, 178, 0.9), rgba(124,77,255,0.85));
+      color: #000;
+      font-weight: 600;
     }
 
     .toast.error {
       background: linear-gradient(135deg, rgba(255, 59, 110, 0.95), rgba(124,77,255,0.85));
+      color: #000;
+      font-weight: 600;
     }
 
     .toast-icon {

@@ -477,7 +477,8 @@ export class SettingsMenu extends LitElement {
     button.primary {
       background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
       border-color: var(--cp-cyan);
-      color: white;
+      color: #000;
+      font-weight: 600;
     }
 
     button.primary:hover {
