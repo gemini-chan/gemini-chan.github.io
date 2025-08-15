@@ -250,6 +250,7 @@ class TextSessionManager extends BaseSessionManager {
   protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
+      contextWindowCompression: { slidingWindow: {} },
       systemInstruction: this.personaManager.getActivePersona().systemPrompt,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
@@ -297,6 +298,7 @@ class CallSessionManager extends BaseSessionManager {
   protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
+      contextWindowCompression: { slidingWindow: {} },
       // Affective dialog is not supported by basic tiers; omit to ensure compatibility
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
