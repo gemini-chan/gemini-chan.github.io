@@ -1176,11 +1176,9 @@ export class SettingsMenu extends LitElement {
 
   private _renderThemeCard(theme: ThemeType, preview: ThemePreview) {
     const isActive = this._theme === theme;
-    const isEditing = this._editingTheme;
-
     return html`
-      <div 
-        class="theme-card ${isActive ? "active" : ""} ${isEditing ? "editing-mode" : ""}"
+      <div
+        class="theme-card ${isActive ? "active" : ""}"
         role="button"
         tabindex="0"
         aria-label="Select ${this._formatThemeName(theme)} theme"
@@ -1257,8 +1255,6 @@ export class SettingsMenu extends LitElement {
       e.preventDefault();
       const target = e.target as HTMLElement;
       target.click();
-    } else if (e.key === "Escape" && this._editingTheme) {
-      this._onCancelTheme();
     } else if (
       e.key === "ArrowRight" ||
       e.key === "ArrowLeft" ||
