@@ -621,6 +621,7 @@ export class SettingsMenu extends LitElement {
     if (this._editingTheme) {
       localStorage.setItem("theme", this._theme);
       this._editingTheme = false;
+      this._showAdvancedThemeSettings = false;
       this.requestUpdate();
     }
   }
