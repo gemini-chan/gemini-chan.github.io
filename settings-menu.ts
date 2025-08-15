@@ -603,33 +603,30 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _renderThemeAdvancedForm() {
+  private _renderThemeEditor() {
+    if (!this._editingTheme) {
+      return html``;
+    }
     return html`
-      <div class="persona-editor">
-        <button @click=${this._onSaveTheme}>Save</button>
-        <button @click=${this._onCancelTheme}>Cancel</button>
+      <div class="theme-editor">
+        <div class="buttons">
+          <button @click=${this._onSaveTheme}>Save</button>
+          <button @click=${this._onCancelTheme}>Cancel</button>
+        </div>
       </div>
     `;
-  }
-
-  private _handleThemeFormInput(field: keyof Persona, value: string) {
-    if (this._editingTheme) {
-      this._editingTheme = { ...this._editingTheme, [field]: value };
-    }
   }
 
   private _onSaveTheme() {
     if (this._editingTheme) {
       localStorage.setItem("theme", this._theme);
       this._editingTheme = false;
-      this._showAdvancedThemeSettings = false;
       this.requestUpdate();
     }
   }
 
   private _onCancelTheme() {
     this._editingTheme = false;
-    this._showAdvancedThemeSettings = false;
     this._theme = (localStorage.getItem("theme") as any) || "cyberpunk";
     this._applyTheme(this._theme);
     this.requestUpdate();
@@ -662,6 +659,7 @@ export class SettingsMenu extends LitElement {
             )}
           </div>
 
+          ${this._renderThemeEditor()}
           ${this._showAdvancedThemeSettings
             ? html` <details open>
                 <summary>UI</summary>
@@ -692,7 +690,6 @@ export class SettingsMenu extends LitElement {
                   />
                   <span class="range-value">${this._circuitrySpeed}s</span>
                 </div>
-                ${this._renderThemeAdvancedForm()}
               </details>`
             : ""}
 
