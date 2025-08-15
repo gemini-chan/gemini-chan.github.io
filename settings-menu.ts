@@ -306,13 +306,52 @@ export class SettingsMenu extends LitElement {
     .checkbox-group {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
     }
+    
+    /* Custom Checkbox Styling */
     input[type="checkbox"] {
-      width: auto;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--cp-surface-border);
+      border-radius: 4px;
+      background: var(--cp-surface);
+      cursor: pointer;
+      position: relative;
+      transition: all var(--animation-duration-fast) var(--animation-easing);
       margin: 0;
       padding: 0;
-      cursor: pointer;
+      flex: none;
+      flex-shrink: 0;
+    }
+
+    input[type="checkbox"]:hover {
+      border-color: var(--cp-cyan);
+      box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+    }
+
+    input[type="checkbox"]:checked {
+      background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
+      border-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 2px;
+      width: 6px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    input[type="checkbox"]:focus {
+      outline: 2px solid var(--cp-cyan);
+      outline-offset: 2px;
     }
     .range-group {
       display: flex;
@@ -748,12 +787,94 @@ export class SettingsMenu extends LitElement {
       }
     }
 
+    /* Theme Options Styling */
+    .theme-options-section {
+      margin-top: 1rem;
+    }
+
+    .theme-options-details {
+      border: 1px solid var(--cp-surface-border);
+      border-radius: 8px;
+      background: var(--cp-surface);
+      overflow: hidden;
+    }
+
+    .theme-options-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      transition: background-color var(--animation-duration-fast) var(--animation-easing);
+    }
+
+    .theme-options-summary:hover {
+      background: var(--cp-surface-strong);
+    }
+
+    .theme-options-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .summary-text {
+      font-weight: 500;
+      color: var(--cp-text);
+    }
+
+    .chevron-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--cp-muted);
+      transition: transform var(--animation-duration-fast) var(--animation-easing);
+    }
+
+    .theme-options-details[open] .chevron-icon {
+      transform: rotate(180deg);
+    }
+
+    .theme-options-content {
+      padding: 1rem;
+      border-top: 1px solid var(--cp-surface-border);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* API Key Priority Section */
+    .api-key-section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      border: 2px solid var(--cp-cyan);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(124, 77, 255, 0.05));
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .section-label.priority {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--cp-cyan);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .priority-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--cp-cyan);
+    }
+
     /* Accessibility Enhancements */
     @media (prefers-reduced-motion: reduce) {
       .theme-card,
       .control-button,
       .theme-preview,
-      .active-indicator {
+      .active-indicator,
+      .chevron-icon {
         animation: none;
         transition: none;
       }
@@ -1029,7 +1150,40 @@ export class SettingsMenu extends LitElement {
         <div class="container" @click=${this._stopPropagation}>
           <h2>Settings</h2>
 
-          ${this._renderThemeSelection()}
+          <div class="api-key-section">
+            <label class="section-label priority">
+              <svg class="priority-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7H13V9H11V7M11,11H13V17H11V11Z"/>
+              </svg>
+              API Key
+            </label>
+            <div class="input-group">
+              <input
+                id="apiKey"
+                type="password"
+                .value=${this.apiKey}
+                @input=${this._onApiKeyInput}
+                @blur=${this._onApiKeyBlur}
+                placeholder="Enter your Gemini API Key" />
+              <div class="validation-icon ${this._apiKeyValid || this._apiKeyInvalid ? "show" : ""}" title="${this._apiKeyValid ? "Valid API Key" : "Invalid API Key"}">
+                ${
+                  this._apiKeyValid
+                    ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
+                    : this._apiKeyInvalid
+                      ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
+                      : ""
+                }
+              </div>
+              <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
+                <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
+                </svg>
+              </button>
+            </div>
+            <div class="buttons">
+              <button @click=${this._getApiKeyUrl}>Get API Key</button>
+            </div>
+          </div>
 
           <div class="prompt-section">
             <div class="section-header">
@@ -1058,36 +1212,7 @@ export class SettingsMenu extends LitElement {
             ${this._renderPersonaForm()}
           </div>
 
-
-          <label for="apiKey">API Key</label>
-          <div class="input-group">
-            <input
-              id="apiKey"
-              type="password"
-              .value=${this.apiKey}
-              @input=${this._onApiKeyInput}
-              @blur=${this._onApiKeyBlur}
-              placeholder="Enter your API Key" />
-            <div class="validation-icon ${this._apiKeyValid || this._apiKeyInvalid ? "show" : ""}" title="${this._apiKeyValid ? "Valid API Key" : "Invalid API Key"}">
-              ${
-                this._apiKeyValid
-                  ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
-                  : this._apiKeyInvalid
-                    ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
-                    : ""
-              }
-            </div>
-            <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
-              <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
-              </svg>
-            </button>
-          </div>
-  
-
-          <div class="buttons">
-            <button @click=${this._getApiKeyUrl}>Get API Key</button>
-          </div>
+          ${this._renderThemeSelection()}
 
       </div>
     `;
