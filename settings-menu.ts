@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Persona, PersonaManager } from "./src/persona-manager";
+import { type Persona, PersonaManager } from "./src/persona-manager";
 
 interface FieldConfig {
   storageKey: string;
@@ -9,6 +9,62 @@ interface FieldConfig {
   required?: boolean;
   preserveOnEmpty?: boolean;
 }
+
+// Theme system types and data
+type ThemeType =
+  | "cyberpunk"
+  | "dystopia"
+  | "tron"
+  | "synthwave"
+  | "matrix"
+  | "noir";
+
+interface ThemePreview {
+  primary: string;
+  secondary: string;
+  gradient: string;
+  name: string;
+}
+
+// Theme preview data with color gradients for visual representation
+const THEME_PREVIEWS: Record<ThemeType, ThemePreview> = {
+  cyberpunk: {
+    primary: "#00e5ff",
+    secondary: "#ff00e5",
+    gradient: "linear-gradient(135deg, #00e5ff 0%, #7c4dff 50%, #ff00e5 100%)",
+    name: "Cyberpunk",
+  },
+  dystopia: {
+    primary: "#23d5ff",
+    secondary: "#6a4cff",
+    gradient: "linear-gradient(135deg, #23d5ff 0%, #6a4cff 50%, #b400ff 100%)",
+    name: "Dystopia",
+  },
+  tron: {
+    primary: "#00f0ff",
+    secondary: "#00bfff",
+    gradient: "linear-gradient(135deg, #00f0ff 0%, #00bfff 50%, #33ffd6 100%)",
+    name: "Tron",
+  },
+  synthwave: {
+    primary: "#ff00a8",
+    secondary: "#a96dff",
+    gradient: "linear-gradient(135deg, #ff00a8 0%, #a96dff 50%, #ff6b9d 100%)",
+    name: "Synthwave",
+  },
+  matrix: {
+    primary: "#39ff14",
+    secondary: "#00ff41",
+    gradient: "linear-gradient(135deg, #39ff14 0%, #00ff41 50%, #7fff00 100%)",
+    name: "Matrix",
+  },
+  noir: {
+    primary: "#ff4757",
+    secondary: "#ff3838",
+    gradient: "linear-gradient(135deg, #ff4757 0%, #ff3838 50%, #ff6b7a 100%)",
+    name: "Noir",
+  },
+};
 
 /**
  * Applies circuitry animation settings from localStorage to the root element.
@@ -69,7 +125,10 @@ export class SettingsMenu extends LitElement {
     | "tron"
     | "synthwave"
     | "matrix"
-    | "noir" = (localStorage.getItem("theme") as any) || "cyberpunk";
+    | "noir" = (localStorage.getItem("theme") as ThemeType) || "cyberpunk";
+
+  @state()
+  private _editingTheme: boolean = false;
 
   @state()
   private _circuitryEnabled: boolean =
@@ -103,7 +162,22 @@ export class SettingsMenu extends LitElement {
   }
 
   static styles = css`
+    /* Enhanced Design Tokens */
     :host {
+      --theme-card-width: 90px;
+      --theme-card-height: 60px;
+      --theme-card-radius: 8px;
+      --theme-card-border: 1px;
+      --theme-card-spacing: 8px;
+
+      --animation-duration-fast: 0.15s;
+      --animation-duration-medium: 0.25s;
+      --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+      --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
+      --shadow-theme-glow: 0 0 0 2px var(--theme-accent), 0 4px 16px var(--theme-accent-alpha);
+
       position: absolute;
       top: 0;
       left: 0;
@@ -232,13 +306,52 @@ export class SettingsMenu extends LitElement {
     .checkbox-group {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
     }
+    
+    /* Custom Checkbox Styling */
     input[type="checkbox"] {
-      width: auto;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--cp-surface-border);
+      border-radius: 4px;
+      background: var(--cp-surface);
+      cursor: pointer;
+      position: relative;
+      transition: all var(--animation-duration-fast) var(--animation-easing);
       margin: 0;
       padding: 0;
-      cursor: pointer;
+      flex: none;
+      flex-shrink: 0;
+    }
+
+    input[type="checkbox"]:hover {
+      border-color: var(--cp-cyan);
+      box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+    }
+
+    input[type="checkbox"]:checked {
+      background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
+      border-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 2px;
+      width: 6px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    input[type="checkbox"]:focus {
+      outline: 2px solid var(--cp-cyan);
+      outline-offset: 2px;
     }
     .range-group {
       display: flex;
@@ -341,16 +454,35 @@ export class SettingsMenu extends LitElement {
       outline: none;
       border: 1px solid var(--cp-surface-border);
       color: var(--cp-text);
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
-      padding: 0.5em 1em;
+      border-radius: 8px;
+      background: var(--cp-surface);
+      padding: 0.75rem 1.5rem;
       cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
-      box-shadow: var(--cp-glow-cyan);
+      font-weight: 500;
+      transition: all var(--animation-duration-fast) var(--animation-easing);
+      position: relative;
+      overflow: hidden;
     }
+    
     button:hover {
-      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
       transform: translateY(-1px);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    button:focus {
+      outline: 2px solid var(--cp-cyan);
+      outline-offset: 2px;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
+      border-color: var(--cp-cyan);
+      color: #000;
+      font-weight: 600;
+    }
+
+    button.primary:hover {
+      box-shadow: 0 4px 16px rgba(0, 229, 255, 0.3);
     }
     .error {
       color: var(--cp-red);
@@ -381,40 +513,148 @@ export class SettingsMenu extends LitElement {
       margin-left: 1em;
     }
 
-    .theme-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5em;
-      margin-bottom: 0.5em;
+    /* Theme Selection Section */
+    .theme-selection-section {
+      margin-bottom: 1.5rem;
     }
 
-    .theme-button {
-      outline: none;
-      border: 1px solid var(--cp-surface-border);
+    .section-label {
+      display: block;
+      margin-bottom: 1rem;
+      font-weight: 500;
       color: var(--cp-text);
-      border-radius: 8px;
+    }
+
+    /* Theme Grid Layout */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(var(--theme-card-width), 1fr));
+      gap: var(--theme-card-spacing);
+      margin-bottom: 1rem;
+    }
+
+    /* Theme Card Styling */
+    .theme-card {
+      position: relative;
+      width: var(--theme-card-width);
+      height: var(--theme-card-height);
+      border-radius: var(--theme-card-radius);
+      border: var(--theme-card-border) solid var(--cp-surface-border);
       background: var(--cp-surface);
-      padding: 0.4em 0.8em;
       cursor: pointer;
-      transition: all 0.15s ease;
-      box-shadow: none;
-      font-size: 0.9em;
+      transition: all var(--animation-duration-medium) var(--animation-easing);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      outline: none;
     }
 
-    .theme-button:hover {
+    .theme-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-elevated);
+      border-color: var(--theme-accent);
+    }
+
+    .theme-card:focus {
+      outline: 2px solid var(--theme-accent);
+      outline-offset: 2px;
+    }
+
+    .theme-card.active {
+      border-color: var(--theme-accent);
+      box-shadow: var(--shadow-theme-glow);
+    }
+
+    .theme-card.active:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 2px var(--theme-accent), 0 6px 20px var(--theme-accent-alpha);
+    }
+
+    .theme-card.editing-mode:not(.active) {
+      opacity: 0.6;
+      transform: scale(0.98);
+    }
+
+    /* Theme Preview Area */
+    .theme-preview {
+      flex: 1;
+      background: var(--theme-gradient);
+      position: relative;
+    }
+
+    .theme-preview::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.1) 100%);
+    }
+
+    /* Theme Label */
+    .theme-label {
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: center;
       background: var(--cp-surface-strong);
-      transform: translateY(-1px);
-      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
+      border-top: 1px solid var(--cp-surface-border);
     }
 
-    .theme-button.active {
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+    /* Active Theme Indicator */
+    .active-indicator {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      background: var(--theme-accent);
+      box-shadow: 0 0 8px var(--theme-accent);
+      z-index: 1;
+    }
+
+    /* Theme Controls */
+    .theme-controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      padding: 1rem 0;
+      border-top: 1px solid var(--cp-surface-border);
+      margin-top: 1rem;
+    }
+
+    .control-button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--cp-surface-border);
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--animation-duration-fast) var(--animation-easing);
+      position: relative;
+      overflow: hidden;
+      outline: none;
+    }
+
+    .control-button.primary {
+      background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
       border-color: var(--cp-cyan);
-      box-shadow: var(--cp-glow-cyan);
+      color: white;
     }
 
-    .theme-button.active:hover {
-      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+    .control-button:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .control-button.primary:hover {
+      box-shadow: 0 4px 16px rgba(0, 229, 255, 0.3);
+    }
+
+    .control-button:focus {
+      outline: 2px solid var(--cp-cyan);
+      outline-offset: 2px;
     }
     
     .prompt-section {
@@ -484,6 +724,195 @@ export class SettingsMenu extends LitElement {
       border-top: 1px solid var(--cp-surface-border);
       padding-top: 1em;
       margin-top: 1em;
+    }
+
+    .theme-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      border-top: 1px solid var(--cp-surface-border);
+      padding-top: 1em;
+      margin-top: 1em;
+    }
+
+    /* Micro-interactions and Animations */
+    @keyframes theme-card-select {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { 
+        box-shadow: var(--shadow-theme-glow);
+      }
+      50% { 
+        box-shadow: 0 0 0 2px var(--theme-accent), 0 6px 20px var(--theme-accent-alpha);
+      }
+    }
+
+    @keyframes active-indicator-pulse {
+      0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% { 
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+    }
+
+    /* Enhanced Active States */
+    .theme-card.active {
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
+
+    .theme-card:active {
+      animation: theme-card-select 0.2s ease-out;
+    }
+
+    .active-indicator {
+      animation: active-indicator-pulse 2s ease-in-out infinite;
+    }
+
+    /* Smooth Transitions for All Interactive Elements */
+    .theme-card,
+    .control-button,
+    .theme-preview {
+      transition: all var(--animation-duration-medium) var(--animation-easing);
+    }
+
+    /* Enhanced Hover Effects */
+    .theme-card:hover .theme-preview::after {
+      background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+    }
+
+    .theme-card:hover .active-indicator {
+      transform: scale(1.1);
+      box-shadow: 0 0 12px var(--theme-accent);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 480px) {
+      :host {
+        --theme-card-width: 80px;
+        --theme-card-height: 50px;
+        --theme-card-spacing: 6px;
+      }
+      
+      .theme-label {
+        font-size: 0.75rem;
+        padding: 0.4rem;
+      }
+    }
+
+    /* Theme Options Styling */
+    .theme-options-section {
+      margin-top: 1rem;
+    }
+
+    .theme-options-details {
+      border: 1px solid var(--cp-surface-border);
+      border-radius: 8px;
+      background: var(--cp-surface);
+      overflow: hidden;
+    }
+
+    .theme-options-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      transition: background-color var(--animation-duration-fast) var(--animation-easing);
+    }
+
+    .theme-options-summary:hover {
+      background: var(--cp-surface-strong);
+    }
+
+    .theme-options-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .summary-text {
+      font-weight: 500;
+      color: var(--cp-text);
+    }
+
+    .chevron-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--cp-muted);
+      transition: transform var(--animation-duration-fast) var(--animation-easing);
+    }
+
+    .theme-options-details[open] .chevron-icon {
+      transform: rotate(180deg);
+    }
+
+    .theme-options-content {
+      padding: 1rem;
+      border-top: 1px solid var(--cp-surface-border);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* API Key Priority Section */
+    .api-key-section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      border: 2px solid var(--cp-cyan);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(124, 77, 255, 0.05));
+      box-shadow: var(--cp-glow-cyan);
+    }
+
+    .section-label.priority {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--cp-cyan);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .priority-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--cp-cyan);
+    }
+
+    .api-key-buttons {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-start;
+    }
+
+    .persona-form-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      padding: 1rem 0;
+      border-top: 1px solid var(--cp-surface-border);
+      margin-top: 1rem;
+    }
+
+    /* Accessibility Enhancements */
+    @media (prefers-reduced-motion: reduce) {
+      .theme-card,
+      .control-button,
+      .theme-preview,
+      .active-indicator,
+      .chevron-icon {
+        animation: none;
+        transition: none;
+      }
     }
   `;
 
@@ -567,8 +996,10 @@ export class SettingsMenu extends LitElement {
             </svg>
           </button>
         </div>
-        <button @click=${this._onSavePersona}>Save</button>
-        <button @click=${() => (this._editingPersona = null)}>Cancel</button>
+        <div class="persona-form-buttons">
+          <button @click=${this._cancelPersonaEdit}>Cancel</button>
+          <button class="primary" @click=${this._onSavePersona}>Save</button>
+        </div>
       </div>
     `;
   }
@@ -588,35 +1019,78 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  render() {
+  private _cancelPersonaEdit() {
+    this._editingPersona = null;
+    this.requestUpdate();
+  }
+
+  private _onSaveTheme() {
+    if (this._editingTheme) {
+      localStorage.setItem("theme", this._theme);
+      this._editingTheme = false;
+      this.requestUpdate();
+    }
+  }
+
+  private _onCancelTheme() {
+    this._editingTheme = false;
+    this._theme = (localStorage.getItem("theme") as ThemeType) || "cyberpunk";
+    this._applyTheme(this._theme);
+    this.requestUpdate();
+  }
+
+  private _formatThemeName(theme: ThemeType): string {
+    return THEME_PREVIEWS[theme].name;
+  }
+
+  private _renderThemeCard(theme: ThemeType, preview: ThemePreview) {
+    const isActive = this._theme === theme;
+    const isEditing = this._editingTheme;
+
     return html`
-      <div class="backdrop" @click=${this._handleBackdropClick}>
-        <div class="container" @click=${this._stopPropagation}>
-          <h2>Settings</h2>
+      <div 
+        class="theme-card ${isActive ? "active" : ""} ${isEditing ? "editing-mode" : ""}"
+        role="button"
+        tabindex="0"
+        aria-label="Select ${this._formatThemeName(theme)} theme"
+        aria-pressed="${isActive}"
+        @click=${() => this._onThemeSelect(theme)}
+        @keydown=${this._handleThemeCardKeydown}
+        style="--theme-gradient: ${preview.gradient}; --theme-accent: ${preview.primary}; --theme-accent-alpha: ${preview.primary}40"
+      >
+        <div class="theme-preview" style="background: ${preview.gradient}"></div>
+        <div class="theme-label">${this._formatThemeName(theme)}</div>
+        ${isActive ? html`<div class="active-indicator"></div>` : ""}
+      </div>
+    `;
+  }
 
-          <label for="theme">Theme</label>
-          <div class="theme-buttons">
-            ${[
-              "cyberpunk",
-              "dystopia",
-              "tron",
-              "synthwave",
-              "matrix",
-              "noir",
-            ].map(
-              (theme) => html`
-                <button
-                  class="theme-button ${this._theme === theme ? "active" : ""}"
-                  @click=${() => this._onThemeChange(theme as any)}
-                >
-                  ${theme.charAt(0).toUpperCase() + theme.slice(1)}
-                </button>
-              `,
-            )}
-          </div>
+  private _renderThemeSelection() {
+    return html`
+      <div class="theme-selection-section">
+        <label class="section-label">Theme</label>
+        <div class="theme-grid">
+          ${Object.entries(THEME_PREVIEWS).map(([themeKey, preview]) =>
+            this._renderThemeCard(themeKey as ThemeType, preview),
+          )}
+        </div>
+        ${this._editingTheme ? this._renderThemeOptions() : ""}
+        ${this._editingTheme ? this._renderThemeControls() : ""}
+      </div>
+    `;
+  }
 
-          <details>
-            <summary>UI</summary>
+  private _renderThemeOptions() {
+    return html`
+      <div class="theme-options-section">
+        <details class="theme-options-details" open>
+          <summary class="theme-options-summary">
+            <span class="summary-text">Theme Options</span>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+            </svg>
+          </summary>
+          <div class="theme-options-content">
             <label for="circuitryEnabled">Circuitry Animation</label>
             <div class="checkbox-group">
               <input
@@ -642,7 +1116,111 @@ export class SettingsMenu extends LitElement {
               />
               <span class="range-value">${this._circuitrySpeed}s</span>
             </div>
-          </details>
+          </div>
+        </details>
+      </div>
+    `;
+  }
+
+  private _renderThemeControls() {
+    return html`
+      <div class="theme-controls">
+        <button @click=${this._onCancelTheme}>Cancel</button>
+        <button class="primary" @click=${this._onSaveTheme}>Save</button>
+      </div>
+    `;
+  }
+
+  private _handleThemeCardKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const target = e.target as HTMLElement;
+      target.click();
+    } else if (e.key === "Escape" && this._editingTheme) {
+      this._onCancelTheme();
+    } else if (
+      e.key === "ArrowRight" ||
+      e.key === "ArrowLeft" ||
+      e.key === "ArrowUp" ||
+      e.key === "ArrowDown"
+    ) {
+      e.preventDefault();
+      this._navigateThemeCards(e.key, e.target as HTMLElement);
+    }
+  }
+
+  private _navigateThemeCards(key: string, currentElement: HTMLElement) {
+    const themeCards = Array.from(
+      this.shadowRoot!.querySelectorAll(".theme-card"),
+    ) as HTMLElement[];
+    const currentIndex = themeCards.indexOf(currentElement);
+
+    if (currentIndex === -1) return;
+
+    let nextIndex = currentIndex;
+
+    switch (key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex = (currentIndex + 1) % themeCards.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex = (currentIndex - 1 + themeCards.length) % themeCards.length;
+        break;
+    }
+
+    if (nextIndex !== currentIndex) {
+      themeCards[nextIndex].focus();
+    }
+  }
+
+  private _onThemeSelect(theme: ThemeType) {
+    this._theme = theme;
+    this._applyTheme(theme);
+    this._editingTheme = true;
+  }
+
+  render() {
+    return html`
+      <div class="backdrop" @click=${this._handleBackdropClick}>
+        <div class="container" @click=${this._stopPropagation}>
+          <h2>Settings</h2>
+
+          <div class="api-key-section">
+            <label class="section-label priority">
+              <svg class="priority-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7H13V9H11V7M11,11H13V17H11V11Z"/>
+              </svg>
+              API Key
+            </label>
+            <div class="input-group">
+              <input
+                id="apiKey"
+                type="password"
+                .value=${this.apiKey}
+                @input=${this._onApiKeyInput}
+                @blur=${this._onApiKeyBlur}
+                placeholder="Enter your Gemini API Key" />
+              <div class="validation-icon ${this._apiKeyValid || this._apiKeyInvalid ? "show" : ""}" title="${this._apiKeyValid ? "Valid API Key" : "Invalid API Key"}">
+                ${
+                  this._apiKeyValid
+                    ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
+                    : this._apiKeyInvalid
+                      ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
+                      : ""
+                }
+              </div>
+              <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
+                <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
+                </svg>
+              </button>
+            </div>
+            <div class="api-key-buttons">
+              <button @click=${this._getApiKeyUrl}>Get API Key</button>
+            </div>
+          </div>
 
           <div class="prompt-section">
             <div class="section-header">
@@ -671,36 +1249,7 @@ export class SettingsMenu extends LitElement {
             ${this._renderPersonaForm()}
           </div>
 
-
-          <label for="apiKey">API Key</label>
-          <div class="input-group">
-            <input
-              id="apiKey"
-              type="password"
-              .value=${this.apiKey}
-              @input=${this._onApiKeyInput}
-              @blur=${this._onApiKeyBlur}
-              placeholder="Enter your API Key" />
-            <div class="validation-icon ${this._apiKeyValid || this._apiKeyInvalid ? "show" : ""}" title="${this._apiKeyValid ? "Valid API Key" : "Invalid API Key"}">
-              ${
-                this._apiKeyValid
-                  ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
-                  : this._apiKeyInvalid
-                    ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
-                    : ""
-              }
-            </div>
-            <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
-              <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
-              </svg>
-            </button>
-          </div>
-  
-
-          <div class="buttons">
-            <button @click=${this._getApiKeyUrl}>Get API Key</button>
-          </div>
+          ${this._renderThemeSelection()}
 
       </div>
     `;
@@ -1002,14 +1551,6 @@ export class SettingsMenu extends LitElement {
     theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
   ) {
     document.documentElement.setAttribute("data-theme", theme);
-  }
-
-  private _onThemeChange(
-    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
-  ) {
-    this._theme = theme;
-    localStorage.setItem("theme", theme);
-    this._applyTheme(theme);
   }
 
   private _applyCircuitrySettings() {
