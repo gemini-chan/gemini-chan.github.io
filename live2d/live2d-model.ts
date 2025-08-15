@@ -64,6 +64,9 @@ export class Live2DModelComponent extends LitElement {
     this._maybeLoad();
   };
 
+  private _loadingPromise?: Promise<void>;
+  private _currentUrl?: string;
+
   protected updated(changed: Map<string, unknown>) {
     if (changed.has("app") && this.app && !this._app) {
       log.debug("app provided via prop");
@@ -71,9 +74,46 @@ export class Live2DModelComponent extends LitElement {
       this._maybeLoad();
     }
     if (changed.has("url")) {
-      // reload on url change
+      const oldUrl = changed.get("url") as string;
+      const newUrl = this.url;
+
+      // Skip if URL hasn't actually changed
+      if (oldUrl === newUrl) {
+        log.debug("url change ignored - same URL", { url: newUrl });
+        return;
+      }
+
+      log.debug("url changed, destroying current model", { oldUrl, newUrl });
       this._destroyModel();
-      this._maybeLoad();
+
+      // Cancel any pending load operation
+      this._loadingPromise = undefined;
+      this._currentUrl = newUrl;
+
+      // Add a delay to ensure cleanup is complete and prevent race conditions
+      this._loadingPromise = new Promise<void>((resolve) => {
+        setTimeout(async () => {
+          // Check if URL changed again while we were waiting
+          if (this._currentUrl !== newUrl) {
+            log.debug("url changed during delay, skipping load", {
+              expectedUrl: newUrl,
+              currentUrl: this._currentUrl,
+            });
+            resolve();
+            return;
+          }
+
+          if (this._loadingPromise === undefined) {
+            // Load was cancelled, don't proceed
+            log.debug("load was cancelled, skipping");
+            resolve();
+            return;
+          }
+
+          await this._maybeLoad();
+          resolve();
+        }, 150); // Increased delay to 150ms for better cleanup
+      });
     }
     if (changed.has("inputNode") || changed.has("outputNode")) {
       // re-init mapper
@@ -110,8 +150,14 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private async _loadModel(url: string) {
-    log.debug("loadModel start", { url });
+    log.debug("loadModel start", { url, currentLoading: this._loading });
     if (!this._app) return;
+
+    // Prevent multiple simultaneous loads
+    if (this._loading) {
+      log.debug("already loading, skipping duplicate load request");
+      return;
+    }
 
     this._loading = true;
     this._error = "";
@@ -186,15 +232,37 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private _destroyModel() {
+    log.debug("destroying model", {
+      hasModel: !!this._model,
+      hasApp: !!this._app,
+    });
     this._stopLoop();
     if (!this._model || !this._app) return;
+
     try {
-      this._app.stage.removeChild(this._model as any);
-    } catch {}
+      // Remove from stage first
+      if (this._app.stage && this._model) {
+        this._app.stage.removeChild(this._model as any);
+        log.debug("model removed from stage");
+      }
+    } catch (e) {
+      log.warn("failed to remove model from stage", { error: e });
+    }
+
     try {
-      this._model.destroy?.();
-    } catch {}
+      // Destroy the model to free resources
+      if (this._model.destroy) {
+        this._model.destroy();
+        log.debug("model destroyed");
+      }
+    } catch (e) {
+      log.warn("failed to destroy model", { error: e });
+    }
+
+    // Clear reference
     this._model = undefined;
+    this._error = "";
+    this._loading = false;
   }
 
   render() {

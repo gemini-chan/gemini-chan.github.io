@@ -3,6 +3,9 @@
 ## 1. Overview
 This document outlines the technical design for the application's settings and API key management. The system ensures that the application is always functional, prompting the user for an API key only when an action requiring it is performed. The key is validated, persisted in local storage, and can be managed through a dedicated settings menu.
 
+**Related Specs:**
+- [Persona System Design](../persona-system/design.md) - Extends this settings architecture to support persona management, leveraging the field validation patterns and event system defined here
+
 ## 2. Architecture
 The settings management will be handled by a dedicated `settings-menu` component. The main application component (`gdm-live-audio`) will control its visibility and respond to events, such as when a new API key is saved. A `ToastNotification` component will be used to display user prompts.
 

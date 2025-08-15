@@ -3,6 +3,9 @@
 ## 1. Overview
 This document outlines the technical design for the Persona Management System. This system will provide the core functionality for creating, managing, and switching between different AI personas. It will act as a central hub, integrating with the `settings-menu` for the user interface, the `vtuber-memory-system` for persona-specific memories, and the Live2D model loader.
 
+**Related Specs:**
+- [Settings Management Design](../settings-management/design.md) - Defines the field management patterns, validation architecture, and event system that the persona system leverages
+
 ## 2. Architecture
 The architecture will be centered around a `PersonaManager` class that handles all persona-related logic. It will be responsible for loading, saving, and managing persona data in `localStorage`. The `settings-menu` component will be updated to interact with this manager, and events will be used to communicate persona changes to the rest of the application.
 

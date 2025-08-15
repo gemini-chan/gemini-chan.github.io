@@ -3,6 +3,9 @@
 ## 1. Introduction
 This document outlines the requirements for a persona management system. The goal is to allow users to create, select, and manage different AI personas, each with its own distinct personality (system prompt), appearance (Live2D model), and memory. This system will serve as a central hub for the AI's identity, integrating with the settings menu, memory system, and model loading.
 
+**Related Specs:**
+- [Settings Management](../settings-management/requirements.md) - Provides the UI framework and field management patterns that the persona system integrates with
+
 ## 2. Requirements
 
 ### 2.1. Persona Management in Settings
@@ -25,6 +28,18 @@ This document outlines the requirements for a persona management system. The goa
 - **GIVEN** I click the "+" button **WHEN** the new persona UI appears **THEN** I can enter a name for the new persona.
 - **GIVEN** a new persona is created **THEN** it is assigned a default system prompt and Live2D model URL.
 - **GIVEN** a persona is selected **THEN** I can edit its name, system prompt, and Live2D model URL.
+
+### 2.3. Persona Deletion
+- **As a** user,
+- **I want** to delete custom personas that I no longer need,
+- **so that** I can keep my persona list organized and relevant.
+
+#### 2.3.1. Acceptance Criteria
+- **GIVEN** I am editing a custom persona **WHEN** I view the persona form **THEN** a "Delete" button is visible.
+- **GIVEN** I click the "Delete" button on a custom persona **WHEN** the confirmation appears **THEN** I can confirm or cancel the deletion.
+- **GIVEN** I confirm deletion of a custom persona **THEN** the persona is permanently removed from the system and I am returned to the persona list.
+- **GIVEN** I try to delete a default persona (VTuber or Assistant) **THEN** no delete button is shown and the action is prevented.
+- **GIVEN** I delete the currently active persona **THEN** the system automatically switches to the default VTuber persona.
 
 ### 2.3. Persona Data Persistence
 - **As a** user,

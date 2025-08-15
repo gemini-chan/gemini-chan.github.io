@@ -3,6 +3,9 @@
 ## 🎯 **Current Priority**
 Implement the persona management system, allowing users to create, select, and manage different AI personas.
 
+**Related Specs:**
+- [Settings Management Tasks](../settings-management/tasks.md) - Contains the foundational settings menu implementation that this persona system builds upon
+
 - [x] 1. **Create `PersonaManager` Class**: Implement the `PersonaManager` class to handle all persona-related logic, including loading from and saving to `localStorage`.
   - Requirements: 2.3.1
   - Design: 3.1, 4.1, 5
@@ -36,3 +39,9 @@ Implement the persona management system, allowing users to create, select, and m
 - [x] 7. **Refactor Live2D Model Loading**: Refactor any remaining direct `localStorage` access for the Live2D model URL to use the `PersonaManager`.
   - Requirements: 2.4.1
   - Design: 3.2
+
+- [x] 8. **Implement Persona Deletion UI**: Add delete functionality to the persona management interface.
+  - Add delete button to persona editing form for custom personas only
+  - Implement confirmation dialog for persona deletion
+  - Handle active persona deletion by switching to default VTuber persona
+  - Requirements: 2.3.1

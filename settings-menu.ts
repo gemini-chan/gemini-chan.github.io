@@ -148,6 +148,9 @@ export class SettingsMenu extends LitElement {
   @state()
   private _editingPersona: Persona | null = null;
 
+  @state()
+  private _showDeleteConfirmation: boolean = false;
+
   private personaManager: PersonaManager;
 
   constructor() {
@@ -897,10 +900,72 @@ export class SettingsMenu extends LitElement {
     .persona-form-buttons {
       display: flex;
       gap: 1rem;
-      justify-content: flex-end;
+      justify-content: space-between;
       padding: 1rem 0;
       border-top: 1px solid var(--cp-surface-border);
       margin-top: 1rem;
+    }
+
+    .persona-form-buttons .right-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    button.danger {
+      background: linear-gradient(135deg, var(--cp-red), #ff6b7a);
+      border-color: var(--cp-red);
+      color: white;
+      font-weight: 600;
+    }
+
+    button.danger:hover {
+      box-shadow: 0 4px 16px rgba(255, 71, 87, 0.3);
+    }
+
+    /* Confirmation Dialog Styles */
+    .confirmation-dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .confirmation-content {
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid var(--cp-surface-border);
+      box-shadow: var(--cp-glow-purple);
+      max-width: 400px;
+      width: 90vw;
+      text-align: center;
+    }
+
+    .confirmation-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--cp-red);
+    }
+
+    .confirmation-message {
+      margin-bottom: 2rem;
+      line-height: 1.5;
+      color: var(--cp-muted);
+    }
+
+    .confirmation-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
     }
 
     /* Accessibility Enhancements */
@@ -997,8 +1062,22 @@ export class SettingsMenu extends LitElement {
           </button>
         </div>
         <div class="persona-form-buttons">
-          <button @click=${this._cancelPersonaEdit}>Cancel</button>
-          <button class="primary" @click=${this._onSavePersona}>Save</button>
+          ${
+            !this._editingPersona.isDefault
+              ? html`
+            <button class="danger" @click=${this._onDeletePersona}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.5rem;">
+                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+              </svg>
+              Delete
+            </button>
+          `
+              : ""
+          }
+          <div class="right-buttons">
+            <button @click=${this._cancelPersonaEdit}>Cancel</button>
+            <button class="primary" @click=${this._onSavePersona}>Save</button>
+          </div>
         </div>
       </div>
     `;
@@ -1022,6 +1101,76 @@ export class SettingsMenu extends LitElement {
   private _cancelPersonaEdit() {
     this._editingPersona = null;
     this.requestUpdate();
+  }
+
+  private _onDeletePersona() {
+    this._showDeleteConfirmation = true;
+    this.requestUpdate();
+  }
+
+  private _confirmDeletePersona() {
+    if (this._editingPersona && !this._editingPersona.isDefault) {
+      const wasActive = this._activePersona?.id === this._editingPersona.id;
+      const personaToDelete = this._editingPersona;
+
+      // Close dialogs first to prevent UI flickering
+      this._editingPersona = null;
+      this._showDeleteConfirmation = false;
+
+      // Delete the persona
+      this.personaManager.deletePersona(personaToDelete.id);
+
+      // If we deleted the active persona, switch to default VTuber persona
+      if (wasActive) {
+        const defaultPersona = this.personaManager
+          .getPersonas()
+          .find((p) => p.isDefault);
+        if (defaultPersona) {
+          // Use setTimeout to ensure proper sequencing and prevent race conditions
+          setTimeout(() => {
+            this.personaManager.setActivePersona(defaultPersona.id);
+            // The persona-changed event will trigger the main app update
+            // We just need to reload our local state
+            this._loadPersonas();
+            this.requestUpdate();
+          }, 50);
+          return; // Don't call requestUpdate immediately
+        }
+      }
+
+      // If we didn't delete the active persona, just reload the list
+      this._loadPersonas();
+      this.requestUpdate();
+    }
+  }
+
+  private _cancelDeletePersona() {
+    this._showDeleteConfirmation = false;
+    this.requestUpdate();
+  }
+
+  private _renderDeleteConfirmation() {
+    if (!this._editingPersona) return html``;
+
+    return html`
+      <div class="confirmation-dialog" @click=${this._cancelDeletePersona}>
+        <div class="confirmation-content" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="confirmation-title">Delete Persona</div>
+          <div class="confirmation-message">
+            Are you sure you want to delete "${this._editingPersona.name}"? This action cannot be undone.
+            ${
+              this._activePersona?.id === this._editingPersona.id
+                ? html`<br><br><strong>Note:</strong> This is your currently active persona. You will be switched to the default VTuber persona.`
+                : ""
+            }
+          </div>
+          <div class="confirmation-buttons">
+            <button @click=${this._cancelDeletePersona}>Cancel</button>
+            <button class="danger" @click=${this._confirmDeletePersona}>Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private _onSaveTheme() {
@@ -1252,6 +1401,8 @@ export class SettingsMenu extends LitElement {
           ${this._renderThemeSelection()}
 
       </div>
+      
+      ${this._showDeleteConfirmation ? this._renderDeleteConfirmation() : ""}
     `;
   }
 
