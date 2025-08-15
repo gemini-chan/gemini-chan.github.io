@@ -75,6 +75,9 @@ export class SettingsMenu extends LitElement {
   private _showAdvancedThemeSettings = false;
 
   @state()
+  private _editingTheme: boolean = false;
+
+  @state()
   private _circuitryEnabled: boolean =
     localStorage.getItem("circuitry-enabled") !== "false";
 
@@ -488,6 +491,15 @@ export class SettingsMenu extends LitElement {
       padding-top: 1em;
       margin-top: 1em;
     }
+
+    .theme-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      border-top: 1px solid var(--cp-surface-border);
+      padding-top: 1em;
+      margin-top: 1em;
+    }
   `;
 
   private _renderPersonaForm() {
@@ -591,6 +603,38 @@ export class SettingsMenu extends LitElement {
     }
   }
 
+  private _renderThemeAdvancedForm() {
+    return html`
+      <div class="persona-editor">
+        <button @click=${this._onSaveTheme}>Save</button>
+        <button @click=${this._onCancelTheme}>Cancel</button>
+      </div>
+    `;
+  }
+
+  private _handleThemeFormInput(field: keyof Persona, value: string) {
+    if (this._editingTheme) {
+      this._editingTheme = { ...this._editingTheme, [field]: value };
+    }
+  }
+
+  private _onSaveTheme() {
+    if (this._editingTheme) {
+      localStorage.setItem("theme", this._theme);
+      this._editingTheme = false;
+      this._showAdvancedThemeSettings = false;
+      this.requestUpdate();
+    }
+  }
+
+  private _onCancelTheme() {
+    this._editingTheme = false;
+    this._showAdvancedThemeSettings = false;
+    this._theme = (localStorage.getItem("theme") as any) || "cyberpunk";
+    this._applyTheme(this._theme);
+    this.requestUpdate();
+  }
+
   render() {
     return html`
       <div class="backdrop" @click=${this._handleBackdropClick}>
@@ -648,6 +692,7 @@ export class SettingsMenu extends LitElement {
                   />
                   <span class="range-value">${this._circuitrySpeed}s</span>
                 </div>
+                ${this._renderThemeAdvancedForm()}
               </details>`
             : ""}
 
@@ -1015,9 +1060,9 @@ export class SettingsMenu extends LitElement {
     theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
   ) {
     this._theme = theme;
-    localStorage.setItem("theme", theme);
     this._applyTheme(theme);
     this._showAdvancedThemeSettings = true;
+    this._editingTheme = true;
   }
 
   private _applyCircuitrySettings() {
