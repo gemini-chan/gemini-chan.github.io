@@ -659,11 +659,11 @@ export class SettingsMenu extends LitElement {
               `,
             )}
           </div>
-
           ${this._renderThemeEditor()}
-          ${this._showAdvancedThemeSettings
-            ? html` <details open>
-                <summary>UI</summary>
+          ${
+            this._showAdvancedThemeSettings
+              ? html` <details open>
+                  <summary>Theme Options</summary>
                 <label for="circuitryEnabled">Circuitry Animation</label>
                 <div class="checkbox-group">
                   <input
@@ -692,7 +692,8 @@ export class SettingsMenu extends LitElement {
                   <span class="range-value">${this._circuitrySpeed}s</span>
                 </div>
               </details>`
-            : ""}
+              : ""
+          }
 
           <div class="prompt-section">
             <div class="section-header">

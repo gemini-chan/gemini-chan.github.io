@@ -1263,11 +1263,13 @@ export class GdmLiveAudio extends LitElement {
         ></live2d-gate>
       </div>
       <div class="ui-grid">
-        ${!this.isCallActive
-          ? html`<div class="status-bar">
-              <energy-bar></energy-bar>
-            </div>`
-          : ""}
+        ${
+          !this.isCallActive
+            ? html`<div class="status-bar">
+                <energy-bar></energy-bar>
+              </div>`
+            : ""
+        }
         <div class="main-container">
           <tab-view
             .activeTab=${this.activeTab}
