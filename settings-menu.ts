@@ -1122,13 +1122,13 @@ export class SettingsMenu extends LitElement {
 
       // If we deleted the active persona, switch to default VTuber persona
       if (wasActive) {
-        const vtuberPersona = this.personaManager
+        const defaultPersona = this.personaManager
           .getPersonas()
-          .find((p) => p.name === "VTuber");
-        if (vtuberPersona) {
+          .find((p) => p.isDefault);
+        if (defaultPersona) {
           // Use setTimeout to ensure proper sequencing and prevent race conditions
           setTimeout(() => {
-            this.personaManager.setActivePersona(vtuberPersona.id);
+            this.personaManager.setActivePersona(defaultPersona.id);
             // The persona-changed event will trigger the main app update
             // We just need to reload our local state
             this._loadPersonas();
