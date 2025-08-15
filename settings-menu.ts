@@ -137,6 +137,9 @@ export class SettingsMenu extends LitElement {
   );
 
   @state()
+  private _themeOptionsOpen = false;
+
+  @state()
   private _personas: Persona[] = [];
 
   @state()
@@ -1211,7 +1214,7 @@ export class SettingsMenu extends LitElement {
   private _renderThemeOptions() {
     return html`
       <div class="theme-options-section">
-        <details class="theme-options-details" open>
+        <details class="theme-options-details" .open=${this._themeOptionsOpen} @toggle=${this._handleThemeOptionsToggle}>
           <summary class="theme-options-summary">
             <span class="summary-text">Theme Options</span>
             <svg class="chevron-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -1268,7 +1271,7 @@ export class SettingsMenu extends LitElement {
 
   private _navigateThemeCards(key: string, currentElement: HTMLElement) {
     const themeCards = Array.from(
-      this.shadowRoot!.querySelectorAll(".theme-card"),
+      this.shadowRoot?.querySelectorAll(".theme-card"),
     ) as HTMLElement[];
     const currentIndex = themeCards.indexOf(currentElement);
 
@@ -1296,6 +1299,11 @@ export class SettingsMenu extends LitElement {
     this._theme = theme;
     this._applyTheme(theme);
     localStorage.setItem("theme", theme);
+    this._themeOptionsOpen = true;
+  }
+
+  private _handleThemeOptionsToggle(e: Event) {
+    this._themeOptionsOpen = (e.target as HTMLDetailsElement).open;
   }
 
   render() {
@@ -1375,10 +1383,10 @@ export class SettingsMenu extends LitElement {
   }
 
   firstUpdated() {
-    this.shadowRoot!.host.setAttribute("active", "true");
+    this.shadowRoot?.host.setAttribute("active", "true");
 
     // Initialize theme select and apply current theme
-    const select = this.shadowRoot!.querySelector<HTMLSelectElement>("#theme");
+    const select = this.shadowRoot?.querySelector<HTMLSelectElement>("#theme");
     if (select) {
       select.value = this._theme;
     }
@@ -1445,11 +1453,11 @@ export class SettingsMenu extends LitElement {
       localStorage.getItem(config.storageKey)
     ) {
       // Value exists, user cleared it, so we restore it and preserve in storage
-      const input = this.shadowRoot!.querySelector<HTMLInputElement>(
+      const input = this.shadowRoot?.querySelector<HTMLInputElement>(
         `#${fieldName}`,
       );
       if (input) {
-        const oldValue = localStorage.getItem(config.storageKey)!;
+        const oldValue = localStorage.getItem(config.storageKey) ?? "";
         input.value = oldValue;
         if (fieldName === "apiKey") {
           this.apiKey = oldValue;
@@ -1531,7 +1539,7 @@ export class SettingsMenu extends LitElement {
   private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
       const text = await navigator.clipboard.readText();
-      const input = this.shadowRoot!.querySelector<HTMLInputElement>(
+      const input = this.shadowRoot?.querySelector<HTMLInputElement>(
         `#${fieldName}`,
       );
       if (input) {
@@ -1650,7 +1658,7 @@ export class SettingsMenu extends LitElement {
 
       // All other cases pass - let the Live2D loader handle it
       return true;
-    } catch (err) {
+    } catch (_err) {
       this._error = "Invalid URL format.";
       this.dispatchEvent(
         new CustomEvent("model-url-error", {
