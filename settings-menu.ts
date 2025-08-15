@@ -128,9 +128,6 @@ export class SettingsMenu extends LitElement {
     | "noir" = (localStorage.getItem("theme") as ThemeType) || "cyberpunk";
 
   @state()
-  private _editingTheme: boolean = false;
-
-  @state()
   private _circuitryEnabled: boolean =
     localStorage.getItem("circuitry-enabled") !== "false";
 
@@ -1173,21 +1170,6 @@ export class SettingsMenu extends LitElement {
     `;
   }
 
-  private _onSaveTheme() {
-    if (this._editingTheme) {
-      localStorage.setItem("theme", this._theme);
-      this._editingTheme = false;
-      this.requestUpdate();
-    }
-  }
-
-  private _onCancelTheme() {
-    this._editingTheme = false;
-    this._theme = (localStorage.getItem("theme") as ThemeType) || "cyberpunk";
-    this._applyTheme(this._theme);
-    this.requestUpdate();
-  }
-
   private _formatThemeName(theme: ThemeType): string {
     return THEME_PREVIEWS[theme].name;
   }
@@ -1223,8 +1205,7 @@ export class SettingsMenu extends LitElement {
             this._renderThemeCard(themeKey as ThemeType, preview),
           )}
         </div>
-        ${this._editingTheme ? this._renderThemeOptions() : ""}
-        ${this._editingTheme ? this._renderThemeControls() : ""}
+        ${this._renderThemeOptions()}
       </div>
     `;
   }
@@ -1267,15 +1248,6 @@ export class SettingsMenu extends LitElement {
             </div>
           </div>
         </details>
-      </div>
-    `;
-  }
-
-  private _renderThemeControls() {
-    return html`
-      <div class="theme-controls">
-        <button @click=${this._onCancelTheme}>Cancel</button>
-        <button class="primary" @click=${this._onSaveTheme}>Save</button>
       </div>
     `;
   }
@@ -1327,7 +1299,7 @@ export class SettingsMenu extends LitElement {
   private _onThemeSelect(theme: ThemeType) {
     this._theme = theme;
     this._applyTheme(theme);
-    this._editingTheme = true;
+    localStorage.setItem("theme", theme);
   }
 
   render() {
@@ -1429,6 +1401,7 @@ export class SettingsMenu extends LitElement {
   private _handleBackdropClick(e: Event) {
     // Only close if clicking directly on the backdrop element
     if (e.target === e.currentTarget) {
+      localStorage.setItem("theme", this._theme);
       this.dispatchEvent(new CustomEvent("close"));
     }
   }

@@ -85,3 +85,7 @@ Add theme engine support with a toggle in Settings and persistence.
 - [x] 19. Refine Theme Settings UI
   - [x] 19.1. In `settings-menu.ts`, rename the "UI" dropdown to "Theme Options".
   - [x] 19.2. In `settings-menu.ts`, move the save/cancel buttons to be directly below the theme selection buttons, and above the "Theme Options" dropdown.
+- [x] 20. Implement Auto-Save on Click-Out for Theme Selection
+  - [x] 20.1. In `settings-menu.ts`, remove the `_editingTheme` state and the save/cancel buttons.
+  - [x] 20.2. In `settings-menu.ts`, refactor the `_onThemeSelect` method to directly save the theme to `localStorage`.
+  - [x] 20.3. In `settings-menu.ts`, refactor the `_handleBackdropClick` method to save the theme to `localStorage` when the menu is closed.
