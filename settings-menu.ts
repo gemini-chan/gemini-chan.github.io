@@ -72,6 +72,9 @@ export class SettingsMenu extends LitElement {
     | "noir" = (localStorage.getItem("theme") as any) || "cyberpunk";
 
   @state()
+  private _showAdvancedThemeSettings = false;
+
+  @state()
   private _circuitryEnabled: boolean =
     localStorage.getItem("circuitry-enabled") !== "false";
 
@@ -615,34 +618,38 @@ export class SettingsMenu extends LitElement {
             )}
           </div>
 
-          <details>
-            <summary>UI</summary>
-            <label for="circuitryEnabled">Circuitry Animation</label>
-            <div class="checkbox-group">
-              <input
-                id="circuitryEnabled"
-                type="checkbox"
-                .checked=${this._circuitryEnabled}
-                @change=${this._onCircuitryEnabledChange}
-              />
-              <label for="circuitryEnabled">Enable animated circuitry background</label>
-            </div>
+          ${this._showAdvancedThemeSettings
+            ? html` <details open>
+                <summary>UI</summary>
+                <label for="circuitryEnabled">Circuitry Animation</label>
+                <div class="checkbox-group">
+                  <input
+                    id="circuitryEnabled"
+                    type="checkbox"
+                    .checked=${this._circuitryEnabled}
+                    @change=${this._onCircuitryEnabledChange}
+                  />
+                  <label for="circuitryEnabled"
+                    >Enable animated circuitry background</label
+                  >
+                </div>
 
-            <label for="circuitrySpeed">Animation Speed (seconds)</label>
-            <div class="range-group">
-              <input
-                id="circuitrySpeed"
-                type="range"
-                min="5"
-                max="30"
-                step="1"
-                .value=${this._circuitrySpeed.toString()}
-                @input=${this._onCircuitrySpeedChange}
-                ?disabled=${!this._circuitryEnabled}
-              />
-              <span class="range-value">${this._circuitrySpeed}s</span>
-            </div>
-          </details>
+                <label for="circuitrySpeed">Animation Speed (seconds)</label>
+                <div class="range-group">
+                  <input
+                    id="circuitrySpeed"
+                    type="range"
+                    min="5"
+                    max="30"
+                    step="1"
+                    .value=${this._circuitrySpeed.toString()}
+                    @input=${this._onCircuitrySpeedChange}
+                    ?disabled=${!this._circuitryEnabled}
+                  />
+                  <span class="range-value">${this._circuitrySpeed}s</span>
+                </div>
+              </details>`
+            : ""}
 
           <div class="prompt-section">
             <div class="section-header">
@@ -1010,6 +1017,7 @@ export class SettingsMenu extends LitElement {
     this._theme = theme;
     localStorage.setItem("theme", theme);
     this._applyTheme(theme);
+    this._showAdvancedThemeSettings = true;
   }
 
   private _applyCircuitrySettings() {
