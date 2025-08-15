@@ -454,16 +454,34 @@ export class SettingsMenu extends LitElement {
       outline: none;
       border: 1px solid var(--cp-surface-border);
       color: var(--cp-text);
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
-      padding: 0.5em 1em;
+      border-radius: 8px;
+      background: var(--cp-surface);
+      padding: 0.75rem 1.5rem;
       cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
-      box-shadow: var(--cp-glow-cyan);
+      font-weight: 500;
+      transition: all var(--animation-duration-fast) var(--animation-easing);
+      position: relative;
+      overflow: hidden;
     }
+    
     button:hover {
-      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
       transform: translateY(-1px);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    button:focus {
+      outline: 2px solid var(--cp-cyan);
+      outline-offset: 2px;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
+      border-color: var(--cp-cyan);
+      color: white;
+    }
+
+    button.primary:hover {
+      box-shadow: 0 4px 16px rgba(0, 229, 255, 0.3);
     }
     .error {
       color: var(--cp-red);
@@ -868,6 +886,22 @@ export class SettingsMenu extends LitElement {
       color: var(--cp-cyan);
     }
 
+    .api-key-buttons {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-start;
+    }
+
+    .persona-form-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      padding: 1rem 0;
+      border-top: 1px solid var(--cp-surface-border);
+      margin-top: 1rem;
+    }
+
     /* Accessibility Enhancements */
     @media (prefers-reduced-motion: reduce) {
       .theme-card,
@@ -961,8 +995,10 @@ export class SettingsMenu extends LitElement {
             </svg>
           </button>
         </div>
-        <button @click=${this._onSavePersona}>Save</button>
-        <button @click=${this._cancelPersonaEdit}>Cancel</button>
+        <div class="persona-form-buttons">
+          <button @click=${this._cancelPersonaEdit}>Cancel</button>
+          <button class="primary" @click=${this._onSavePersona}>Save</button>
+        </div>
       </div>
     `;
   }
@@ -1088,8 +1124,8 @@ export class SettingsMenu extends LitElement {
   private _renderThemeControls() {
     return html`
       <div class="theme-controls">
-        <button class="control-button" @click=${this._onCancelTheme}>Cancel</button>
-        <button class="control-button primary" @click=${this._onSaveTheme}>Save</button>
+        <button @click=${this._onCancelTheme}>Cancel</button>
+        <button class="primary" @click=${this._onSaveTheme}>Save</button>
       </div>
     `;
   }
@@ -1180,7 +1216,7 @@ export class SettingsMenu extends LitElement {
                 </svg>
               </button>
             </div>
-            <div class="buttons">
+            <div class="api-key-buttons">
               <button @click=${this._getApiKeyUrl}>Get API Key</button>
             </div>
           </div>
