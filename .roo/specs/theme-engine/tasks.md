@@ -76,7 +76,12 @@ Add theme engine support with a toggle in Settings and persistence.
         - If no theme is found, check the system's `prefers-color-scheme`.
         - If the system theme is dark, randomly select one of the available dark themes.
         - If the system theme is light, randomly select one of the available light themes.
-- [ ] 18. Add save/cancel button block to theme settings
-  - [ ] 18.1. **REVISION:** The previous implementation was incorrect.
+- [x] 18. Add save/cancel button block to theme settings
+  - [x] 18.1. **REVISION:** The previous implementation was incorrect.
     - The `_handleThemeFormInput` function is unused and should be removed.
     - The save/cancel logic needs to be simplified to correctly save the selected theme to localStorage or revert to the previous theme.
+  - [x] 18.2. **REVISION:** The UI block does not disappear after saving.
+    - The `_onSaveTheme` function in `settings-menu.ts` should set `_showAdvancedThemeSettings` to `false`.
+- [x] 19. Refine Theme Settings UI
+  - [x] 19.1. In `settings-menu.ts`, rename the "UI" dropdown to "Theme Options".
+  - [x] 19.2. In `settings-menu.ts`, move the save/cancel buttons to be directly below the theme selection buttons, and above the "Theme Options" dropdown.

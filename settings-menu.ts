@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Persona, PersonaManager } from "./src/persona-manager";
+import { type Persona, PersonaManager } from "./src/persona-manager";
 
 interface FieldConfig {
   storageKey: string;
@@ -9,6 +9,62 @@ interface FieldConfig {
   required?: boolean;
   preserveOnEmpty?: boolean;
 }
+
+// Theme system types and data
+type ThemeType =
+  | "cyberpunk"
+  | "dystopia"
+  | "tron"
+  | "synthwave"
+  | "matrix"
+  | "noir";
+
+interface ThemePreview {
+  primary: string;
+  secondary: string;
+  gradient: string;
+  name: string;
+}
+
+// Theme preview data with color gradients for visual representation
+const THEME_PREVIEWS: Record<ThemeType, ThemePreview> = {
+  cyberpunk: {
+    primary: "#00e5ff",
+    secondary: "#ff00e5",
+    gradient: "linear-gradient(135deg, #00e5ff 0%, #7c4dff 50%, #ff00e5 100%)",
+    name: "Cyberpunk",
+  },
+  dystopia: {
+    primary: "#23d5ff",
+    secondary: "#6a4cff",
+    gradient: "linear-gradient(135deg, #23d5ff 0%, #6a4cff 50%, #b400ff 100%)",
+    name: "Dystopia",
+  },
+  tron: {
+    primary: "#00f0ff",
+    secondary: "#00bfff",
+    gradient: "linear-gradient(135deg, #00f0ff 0%, #00bfff 50%, #33ffd6 100%)",
+    name: "Tron",
+  },
+  synthwave: {
+    primary: "#ff00a8",
+    secondary: "#a96dff",
+    gradient: "linear-gradient(135deg, #ff00a8 0%, #a96dff 50%, #ff6b9d 100%)",
+    name: "Synthwave",
+  },
+  matrix: {
+    primary: "#39ff14",
+    secondary: "#00ff41",
+    gradient: "linear-gradient(135deg, #39ff14 0%, #00ff41 50%, #7fff00 100%)",
+    name: "Matrix",
+  },
+  noir: {
+    primary: "#ff4757",
+    secondary: "#ff3838",
+    gradient: "linear-gradient(135deg, #ff4757 0%, #ff3838 50%, #ff6b7a 100%)",
+    name: "Noir",
+  },
+};
 
 /**
  * Applies circuitry animation settings from localStorage to the root element.
@@ -69,10 +125,7 @@ export class SettingsMenu extends LitElement {
     | "tron"
     | "synthwave"
     | "matrix"
-    | "noir" = (localStorage.getItem("theme") as any) || "cyberpunk";
-
-  @state()
-  private _showAdvancedThemeSettings = false;
+    | "noir" = (localStorage.getItem("theme") as ThemeType) || "cyberpunk";
 
   @state()
   private _editingTheme: boolean = false;
@@ -109,7 +162,22 @@ export class SettingsMenu extends LitElement {
   }
 
   static styles = css`
+    /* Enhanced Design Tokens */
     :host {
+      --theme-card-width: 90px;
+      --theme-card-height: 60px;
+      --theme-card-radius: 8px;
+      --theme-card-border: 1px;
+      --theme-card-spacing: 8px;
+
+      --animation-duration-fast: 0.15s;
+      --animation-duration-medium: 0.25s;
+      --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+      --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
+      --shadow-theme-glow: 0 0 0 2px var(--theme-accent), 0 4px 16px var(--theme-accent-alpha);
+
       position: absolute;
       top: 0;
       left: 0;
@@ -387,40 +455,148 @@ export class SettingsMenu extends LitElement {
       margin-left: 1em;
     }
 
-    .theme-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5em;
-      margin-bottom: 0.5em;
+    /* Theme Selection Section */
+    .theme-selection-section {
+      margin-bottom: 1.5rem;
     }
 
-    .theme-button {
-      outline: none;
-      border: 1px solid var(--cp-surface-border);
+    .section-label {
+      display: block;
+      margin-bottom: 1rem;
+      font-weight: 500;
       color: var(--cp-text);
-      border-radius: 8px;
+    }
+
+    /* Theme Grid Layout */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(var(--theme-card-width), 1fr));
+      gap: var(--theme-card-spacing);
+      margin-bottom: 1rem;
+    }
+
+    /* Theme Card Styling */
+    .theme-card {
+      position: relative;
+      width: var(--theme-card-width);
+      height: var(--theme-card-height);
+      border-radius: var(--theme-card-radius);
+      border: var(--theme-card-border) solid var(--cp-surface-border);
       background: var(--cp-surface);
-      padding: 0.4em 0.8em;
       cursor: pointer;
-      transition: all 0.15s ease;
-      box-shadow: none;
-      font-size: 0.9em;
+      transition: all var(--animation-duration-medium) var(--animation-easing);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      outline: none;
     }
 
-    .theme-button:hover {
+    .theme-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-elevated);
+      border-color: var(--theme-accent);
+    }
+
+    .theme-card:focus {
+      outline: 2px solid var(--theme-accent);
+      outline-offset: 2px;
+    }
+
+    .theme-card.active {
+      border-color: var(--theme-accent);
+      box-shadow: var(--shadow-theme-glow);
+    }
+
+    .theme-card.active:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 2px var(--theme-accent), 0 6px 20px var(--theme-accent-alpha);
+    }
+
+    .theme-card.editing-mode:not(.active) {
+      opacity: 0.6;
+      transform: scale(0.98);
+    }
+
+    /* Theme Preview Area */
+    .theme-preview {
+      flex: 1;
+      background: var(--theme-gradient);
+      position: relative;
+    }
+
+    .theme-preview::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.1) 100%);
+    }
+
+    /* Theme Label */
+    .theme-label {
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: center;
       background: var(--cp-surface-strong);
-      transform: translateY(-1px);
-      box-shadow: var(--cp-glow-cyan);
+      color: var(--cp-text);
+      border-top: 1px solid var(--cp-surface-border);
     }
 
-    .theme-button.active {
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+    /* Active Theme Indicator */
+    .active-indicator {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      background: var(--theme-accent);
+      box-shadow: 0 0 8px var(--theme-accent);
+      z-index: 1;
+    }
+
+    /* Theme Controls */
+    .theme-controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      padding: 1rem 0;
+      border-top: 1px solid var(--cp-surface-border);
+      margin-top: 1rem;
+    }
+
+    .control-button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--cp-surface-border);
+      background: var(--cp-surface);
+      color: var(--cp-text);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--animation-duration-fast) var(--animation-easing);
+      position: relative;
+      overflow: hidden;
+      outline: none;
+    }
+
+    .control-button.primary {
+      background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
       border-color: var(--cp-cyan);
-      box-shadow: var(--cp-glow-cyan);
+      color: white;
     }
 
-    .theme-button.active:hover {
-      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+    .control-button:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .control-button.primary:hover {
+      box-shadow: 0 4px 16px rgba(0, 229, 255, 0.3);
+    }
+
+    .control-button:focus {
+      outline: 2px solid var(--cp-cyan);
+      outline-offset: 2px;
     }
     
     .prompt-section {
@@ -499,6 +675,88 @@ export class SettingsMenu extends LitElement {
       border-top: 1px solid var(--cp-surface-border);
       padding-top: 1em;
       margin-top: 1em;
+    }
+
+    /* Micro-interactions and Animations */
+    @keyframes theme-card-select {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { 
+        box-shadow: var(--shadow-theme-glow);
+      }
+      50% { 
+        box-shadow: 0 0 0 2px var(--theme-accent), 0 6px 20px var(--theme-accent-alpha);
+      }
+    }
+
+    @keyframes active-indicator-pulse {
+      0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% { 
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+    }
+
+    /* Enhanced Active States */
+    .theme-card.active {
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
+
+    .theme-card:active {
+      animation: theme-card-select 0.2s ease-out;
+    }
+
+    .active-indicator {
+      animation: active-indicator-pulse 2s ease-in-out infinite;
+    }
+
+    /* Smooth Transitions for All Interactive Elements */
+    .theme-card,
+    .control-button,
+    .theme-preview {
+      transition: all var(--animation-duration-medium) var(--animation-easing);
+    }
+
+    /* Enhanced Hover Effects */
+    .theme-card:hover .theme-preview::after {
+      background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+    }
+
+    .theme-card:hover .active-indicator {
+      transform: scale(1.1);
+      box-shadow: 0 0 12px var(--theme-accent);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 480px) {
+      :host {
+        --theme-card-width: 80px;
+        --theme-card-height: 50px;
+        --theme-card-spacing: 6px;
+      }
+      
+      .theme-label {
+        font-size: 0.75rem;
+        padding: 0.4rem;
+      }
+    }
+
+    /* Accessibility Enhancements */
+    @media (prefers-reduced-motion: reduce) {
+      .theme-card,
+      .control-button,
+      .theme-preview,
+      .active-indicator {
+        animation: none;
+        transition: none;
+      }
     }
   `;
 
@@ -583,7 +841,7 @@ export class SettingsMenu extends LitElement {
           </button>
         </div>
         <button @click=${this._onSavePersona}>Save</button>
-        <button @click=${() => (this._editingPersona = null)}>Cancel</button>
+        <button @click=${this._cancelPersonaEdit}>Cancel</button>
       </div>
     `;
   }
@@ -603,34 +861,166 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _renderThemeEditor() {
-    if (!this._editingTheme) {
-      return html``;
-    }
-    return html`
-      <div class="theme-editor">
-        <div class="buttons">
-          <button @click=${this._onSaveTheme}>Save</button>
-          <button @click=${this._onCancelTheme}>Cancel</button>
-        </div>
-      </div>
-    `;
+  private _cancelPersonaEdit() {
+    this._editingPersona = null;
+    this.requestUpdate();
   }
 
   private _onSaveTheme() {
     if (this._editingTheme) {
       localStorage.setItem("theme", this._theme);
       this._editingTheme = false;
-      this._showAdvancedThemeSettings = false;
       this.requestUpdate();
     }
   }
 
   private _onCancelTheme() {
     this._editingTheme = false;
-    this._theme = (localStorage.getItem("theme") as any) || "cyberpunk";
+    this._theme = (localStorage.getItem("theme") as ThemeType) || "cyberpunk";
     this._applyTheme(this._theme);
     this.requestUpdate();
+  }
+
+  private _formatThemeName(theme: ThemeType): string {
+    return THEME_PREVIEWS[theme].name;
+  }
+
+  private _renderThemeCard(theme: ThemeType, preview: ThemePreview) {
+    const isActive = this._theme === theme;
+    const isEditing = this._editingTheme;
+
+    return html`
+      <div 
+        class="theme-card ${isActive ? "active" : ""} ${isEditing ? "editing-mode" : ""}"
+        role="button"
+        tabindex="0"
+        aria-label="Select ${this._formatThemeName(theme)} theme"
+        aria-pressed="${isActive}"
+        @click=${() => this._onThemeSelect(theme)}
+        @keydown=${this._handleThemeCardKeydown}
+        style="--theme-gradient: ${preview.gradient}; --theme-accent: ${preview.primary}; --theme-accent-alpha: ${preview.primary}40"
+      >
+        <div class="theme-preview" style="background: ${preview.gradient}"></div>
+        <div class="theme-label">${this._formatThemeName(theme)}</div>
+        ${isActive ? html`<div class="active-indicator"></div>` : ""}
+      </div>
+    `;
+  }
+
+  private _renderThemeSelection() {
+    return html`
+      <div class="theme-selection-section">
+        <label class="section-label">Theme</label>
+        <div class="theme-grid">
+          ${Object.entries(THEME_PREVIEWS).map(([themeKey, preview]) =>
+            this._renderThemeCard(themeKey as ThemeType, preview),
+          )}
+        </div>
+        ${this._editingTheme ? this._renderThemeOptions() : ""}
+        ${this._editingTheme ? this._renderThemeControls() : ""}
+      </div>
+    `;
+  }
+
+  private _renderThemeOptions() {
+    return html`
+      <div class="theme-options-section">
+        <details class="theme-options-details" open>
+          <summary class="theme-options-summary">
+            <span class="summary-text">Theme Options</span>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+            </svg>
+          </summary>
+          <div class="theme-options-content">
+            <label for="circuitryEnabled">Circuitry Animation</label>
+            <div class="checkbox-group">
+              <input
+                id="circuitryEnabled"
+                type="checkbox"
+                .checked=${this._circuitryEnabled}
+                @change=${this._onCircuitryEnabledChange}
+              />
+              <label for="circuitryEnabled">Enable animated circuitry background</label>
+            </div>
+
+            <label for="circuitrySpeed">Animation Speed (seconds)</label>
+            <div class="range-group">
+              <input
+                id="circuitrySpeed"
+                type="range"
+                min="5"
+                max="30"
+                step="1"
+                .value=${this._circuitrySpeed.toString()}
+                @input=${this._onCircuitrySpeedChange}
+                ?disabled=${!this._circuitryEnabled}
+              />
+              <span class="range-value">${this._circuitrySpeed}s</span>
+            </div>
+          </div>
+        </details>
+      </div>
+    `;
+  }
+
+  private _renderThemeControls() {
+    return html`
+      <div class="theme-controls">
+        <button class="control-button" @click=${this._onCancelTheme}>Cancel</button>
+        <button class="control-button primary" @click=${this._onSaveTheme}>Save</button>
+      </div>
+    `;
+  }
+
+  private _handleThemeCardKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const target = e.target as HTMLElement;
+      target.click();
+    } else if (e.key === "Escape" && this._editingTheme) {
+      this._onCancelTheme();
+    } else if (
+      e.key === "ArrowRight" ||
+      e.key === "ArrowLeft" ||
+      e.key === "ArrowUp" ||
+      e.key === "ArrowDown"
+    ) {
+      e.preventDefault();
+      this._navigateThemeCards(e.key, e.target as HTMLElement);
+    }
+  }
+
+  private _navigateThemeCards(key: string, currentElement: HTMLElement) {
+    const themeCards = Array.from(
+      this.shadowRoot!.querySelectorAll(".theme-card"),
+    ) as HTMLElement[];
+    const currentIndex = themeCards.indexOf(currentElement);
+
+    if (currentIndex === -1) return;
+
+    let nextIndex = currentIndex;
+
+    switch (key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex = (currentIndex + 1) % themeCards.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex = (currentIndex - 1 + themeCards.length) % themeCards.length;
+        break;
+    }
+
+    if (nextIndex !== currentIndex) {
+      themeCards[nextIndex].focus();
+    }
+  }
+
+  private _onThemeSelect(theme: ThemeType) {
+    this._theme = theme;
+    this._applyTheme(theme);
+    this._editingTheme = true;
   }
 
   render() {
@@ -639,61 +1029,7 @@ export class SettingsMenu extends LitElement {
         <div class="container" @click=${this._stopPropagation}>
           <h2>Settings</h2>
 
-          <label for="theme">Theme</label>
-          <div class="theme-buttons">
-            ${[
-              "cyberpunk",
-              "dystopia",
-              "tron",
-              "synthwave",
-              "matrix",
-              "noir",
-            ].map(
-              (theme) => html`
-                <button
-                  class="theme-button ${this._theme === theme ? "active" : ""}"
-                  @click=${() => this._onThemeChange(theme as any)}
-                >
-                  ${theme.charAt(0).toUpperCase() + theme.slice(1)}
-                </button>
-              `,
-            )}
-          </div>
-          ${this._renderThemeEditor()}
-          ${
-            this._showAdvancedThemeSettings
-              ? html` <details open>
-                  <summary>Theme Options</summary>
-                <label for="circuitryEnabled">Circuitry Animation</label>
-                <div class="checkbox-group">
-                  <input
-                    id="circuitryEnabled"
-                    type="checkbox"
-                    .checked=${this._circuitryEnabled}
-                    @change=${this._onCircuitryEnabledChange}
-                  />
-                  <label for="circuitryEnabled"
-                    >Enable animated circuitry background</label
-                  >
-                </div>
-
-                <label for="circuitrySpeed">Animation Speed (seconds)</label>
-                <div class="range-group">
-                  <input
-                    id="circuitrySpeed"
-                    type="range"
-                    min="5"
-                    max="30"
-                    step="1"
-                    .value=${this._circuitrySpeed.toString()}
-                    @input=${this._onCircuitrySpeedChange}
-                    ?disabled=${!this._circuitryEnabled}
-                  />
-                  <span class="range-value">${this._circuitrySpeed}s</span>
-                </div>
-              </details>`
-              : ""
-          }
+          ${this._renderThemeSelection()}
 
           <div class="prompt-section">
             <div class="section-header">
@@ -1053,15 +1389,6 @@ export class SettingsMenu extends LitElement {
     theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
   ) {
     document.documentElement.setAttribute("data-theme", theme);
-  }
-
-  private _onThemeChange(
-    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
-  ) {
-    this._theme = theme;
-    this._applyTheme(theme);
-    this._showAdvancedThemeSettings = true;
-    this._editingTheme = true;
   }
 
   private _applyCircuitrySettings() {
