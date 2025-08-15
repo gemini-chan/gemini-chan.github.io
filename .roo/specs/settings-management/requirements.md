@@ -3,6 +3,9 @@
 ## 1. Introduction
 This document outlines the requirements for the application's settings management, focusing on API key configuration. The goal is to provide a seamless user experience where users are guided to configure their API key when necessary, can manage it through a dedicated settings menu, and have their key persist across sessions.
 
+**Related Specs:**
+- [Persona System](../persona-system/requirements.md) - Builds upon this settings framework to provide persona management functionality within the settings menu
+
 ## 2. Requirements
 
 ### 2.1. Direct Main UI Landing with API Key Validation

@@ -3,6 +3,9 @@
 ## 🎯 **Current Priority**
 Implement the settings menu and API key management functionality.
 
+**Related Specs:**
+- [Persona System Tasks](../persona-system/tasks.md) - Builds upon the settings menu foundation implemented here to add persona management capabilities
+
 - [x] 1. Implement Settings Menu UI: Create the `settings-menu.ts` component with an API key input field, validation, and paste/get key buttons.
   - Requirements: 2.3.1, 2.4.1, 2.5.1
 

@@ -3,6 +3,9 @@
 ## 1. Introduction
 This document outlines the requirements for a persona management system. The goal is to allow users to create, select, and manage different AI personas, each with its own distinct personality (system prompt), appearance (Live2D model), and memory. This system will serve as a central hub for the AI's identity, integrating with the settings menu, memory system, and model loading.
 
+**Related Specs:**
+- [Settings Management](../settings-management/requirements.md) - Provides the UI framework and field management patterns that the persona system integrates with
+
 ## 2. Requirements
 
 ### 2.1. Persona Management in Settings

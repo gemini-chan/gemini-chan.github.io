@@ -3,6 +3,9 @@
 ## 🎯 **Current Priority**
 Implement the persona management system, allowing users to create, select, and manage different AI personas.
 
+**Related Specs:**
+- [Settings Management Tasks](../settings-management/tasks.md) - Contains the foundational settings menu implementation that this persona system builds upon
+
 - [x] 1. **Create `PersonaManager` Class**: Implement the `PersonaManager` class to handle all persona-related logic, including loading from and saving to `localStorage`.
   - Requirements: 2.3.1
   - Design: 3.1, 4.1, 5
