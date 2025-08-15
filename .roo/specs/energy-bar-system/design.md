@@ -64,7 +64,7 @@ graph TD
     *   `energy-level-changed`: Dispatched with detail `{ mode, level, prevLevel, reason, modelTier }`.
 
 #### 2. UI Component: Energy Bar
-*   **Responsibility:** Displays the battery-style icon for the **STS mode only**. Handles visual updates (bar count, color, animations).
+*   **Responsibility:** Displays the battery-style icon for the **STS mode only** in a status bar at the top-right of the main UI. It is hidden when the call UI is active to avoid redundancy. Handles visual updates (bar count, color, animations).
 *   **Interface:**
     *   `updateEnergyLevel(level: number): void`
 

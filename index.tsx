@@ -439,6 +439,20 @@ export class GdmLiveAudio extends LitElement {
       z-index: 1;
     }
 
+    .status-bar {
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .status-bar energy-bar {
+      opacity: 0.9;
+    }
+
     .main-container {
       z-index: 1;
       display: flex;
@@ -1214,7 +1228,9 @@ export class GdmLiveAudio extends LitElement {
         personaName,
         mode,
       );
-      if (prompt) {
+      if (prompt && mode === "sts") {
+        this._appendCallNotice(prompt);
+      } else if (prompt) {
         const toast = this.shadowRoot?.querySelector(
           "toast-notification",
         ) as ToastNotification;
@@ -1247,6 +1263,11 @@ export class GdmLiveAudio extends LitElement {
         ></live2d-gate>
       </div>
       <div class="ui-grid">
+        ${!this.isCallActive
+          ? html`<div class="status-bar">
+              <energy-bar></energy-bar>
+            </div>`
+          : ""}
         <div class="main-container">
           <tab-view
             .activeTab=${this.activeTab}

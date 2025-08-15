@@ -28,15 +28,8 @@ export class CallTranscript extends LitElement {
 
   get rateLimitMessage(): string {
     // This banner remains for rate-limit failures; energy prompts are handled via index.tsx toasts
-
-    if (this.activePersonaName === "Assistant") {
-      return "I apologize, but I'm experiencing system limitations at the moment. Please try calling again later.";
-    } else if (this.activePersonaName === "VTuber") {
-      return "E-eh? I'm getting so... sleepy all of a sudden.... S-sorry.. Maybe let's call later?... *dozing off*..... (ρω-)";
-    } else {
-      // Generic message for custom personas
-      return "System is currently rate limited. Please try calling again later.";
-    }
+    // The text here is now a fallback, as prompts are dynamically added as notices.
+    return ""
   }
 
   @state()

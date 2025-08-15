@@ -88,15 +88,20 @@ This epic covers the UI component that visually represents the **STS energy leve
 #### 2.2.1. User Story: Display STS Energy Bar Icon
 - **Priority**: High
 - **As a** user,
-- **I want** to see a battery-style icon in the call transcript view,
+- **I want** to see a battery-style icon in a status bar at the top-right of the main UI,
 - **so that** I am aware of the current energy level of the AI for the call.
 
 ##### Acceptance Criteria
 ```gherkin
 Scenario: Display the energy bar for STS
-  Given I am in the call transcript view
+  Given I am in the main UI
   When the application loads
-  Then the energy bar icon is visible and reflects the STS energy level.
+  Then the energy bar icon is visible in the top-right status bar and reflects the STS energy level.
+
+Scenario: Hide energy bar during active call
+  Given the energy bar is visible in the status bar
+  When a call becomes active
+  Then the energy bar in the status bar is hidden.
 ```
 
 #### 2.2.2. User Story: Update Icon Based on STS Energy Level
