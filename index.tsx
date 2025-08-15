@@ -12,7 +12,7 @@ import {
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
-import { type Persona, PersonaManager } from "./src/persona-manager";
+import { PersonaManager } from "./src/persona-manager";
 import { SummarizationService } from "./src/SummarizationService";
 import { VectorStore } from "./src/vector-store";
 import { createBlob, decode, decodeAudioData } from "./utils";
@@ -21,7 +21,13 @@ import "./live2d/live2d-gate";
 import "./settings-menu";
 import "./chat-view";
 import "./call-transcript";
+import type {
+  EnergyLevelChangedDetail,
+  EnergyMode,
+} from "./src/energy-bar-service";
+import { energyBarService } from "./src/energy-bar-service";
 import "./toast-notification";
+import "./energy-bar";
 import "./controls-panel";
 import "./tab-view";
 import "./call-history-view";
@@ -190,10 +196,18 @@ class TextSessionManager extends BaseSessionManager {
     client: GoogleGenAI,
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
+    onRateLimit: (msg: string) => void = () => {},
     private updateTranscript: (text: string) => void,
     private personaManager: PersonaManager,
   ) {
-    super(outputAudioContext, outputNode, client, updateStatus, updateError);
+    super(
+      outputAudioContext,
+      outputNode,
+      client,
+      updateStatus,
+      updateError,
+      onRateLimit,
+    );
   }
 
   protected getCallbacks() {
@@ -226,7 +240,11 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    return "gemini-live-2.5-flash-preview";
+    // Align text session with energy levels (TTS); if exhausted (level 0), refuse to provide a model
+    const model = energyBarService.getCurrentModel("tts");
+    if (!model)
+      throw new Error("Energy exhausted: no model available for text session");
+    return model;
   }
 
   protected getConfig(): Record<string, unknown> {
@@ -269,13 +287,17 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getModel(): string {
-    return "gemini-2.5-flash-exp-native-audio-thinking-dialog";
+    // Choose model based on current energy level for STS; if exhausted (0), refuse to start a call
+    const model = energyBarService.getCurrentModel("sts");
+    if (!model)
+      throw new Error("Energy exhausted: no model available for call session");
+    return model;
   }
 
   protected getConfig(): Record<string, unknown> {
     return {
       responseModalities: [Modality.AUDIO],
-      enableAffectiveDialog: true,
+      // Affective dialog is not supported by basic tiers; omit to ensure compatibility
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
       systemInstruction: this.personaManager.getActivePersona().systemPrompt,
@@ -417,6 +439,20 @@ export class GdmLiveAudio extends LitElement {
       z-index: 1;
     }
 
+    .status-bar {
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      pointer-events: auto;
+    }
+
+    .status-bar energy-bar {
+      opacity: 0.9;
+    }
+
     .main-container {
       z-index: 1;
       display: flex;
@@ -475,6 +511,7 @@ export class GdmLiveAudio extends LitElement {
         this.client,
         this.updateStatus.bind(this),
         this.updateError.bind(this),
+        this._handleTextRateLimit.bind(this),
         this.updateTextTranscript.bind(this),
         this.personaManager,
       );
@@ -625,6 +662,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleCallRateLimit(msg?: string) {
+    // Degrade only STS energy and notify UI
+    energyBarService.handleRateLimitError("sts");
     if (this._callRateLimitNotified) return;
     this._callRateLimitNotified = true;
 
@@ -638,6 +677,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _handleTextRateLimit(msg?: string) {
+    // Degrade only TTS energy on text rate-limit
+    energyBarService.handleRateLimitError("tts");
     const toast = this.shadowRoot?.querySelector(
       "toast-notification",
     ) as ToastNotification;
@@ -645,6 +686,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private async _handleCallStart() {
+    // On new call session, reset STS energy
+    energyBarService.resetEnergyLevel("session-reset", "sts");
     if (this.isCallActive) return;
 
     // Check API key presence before proceeding
@@ -661,8 +704,16 @@ export class GdmLiveAudio extends LitElement {
     // Initialize or reinitialize call session; if initialization fails, show non-silent failure and abort
     const ok = await this._initCallSession();
     if (!ok || !this.callSession) {
-      this._handleCallRateLimit("Call session init failed");
-      this.updateStatus("Unable to start call (rate limited or network error)");
+      // If energy is exhausted, reflect a different UX than rate limit
+      const exhausted = energyBarService.getCurrentEnergyLevel() === 0;
+      if (exhausted) {
+        this.updateStatus("Energy exhausted — please try again later.");
+      } else {
+        this._handleCallRateLimit("Call session init failed");
+        this.updateStatus(
+          "Unable to start call (rate limited or network error)",
+        );
+      }
       return;
     }
 
@@ -888,7 +939,7 @@ export class GdmLiveAudio extends LitElement {
     if (newApiKey === this.currentApiKey) {
       logger.debug(
         "API key unchanged, skipping reinitialization:",
-        newApiKey ? "***" + newApiKey.slice(-4) : "empty",
+        newApiKey ? `***${newApiKey.slice(-4)}` : "empty",
       );
       return; // Silently skip - no toast needed
     }
@@ -1056,9 +1107,9 @@ export class GdmLiveAudio extends LitElement {
 
   private _scrollCallTranscriptToBottom() {
     // Find the call transcript component and scroll it to bottom
-    const callTranscript = this.shadowRoot?.querySelector(
-      "call-transcript",
-    ) as any;
+    const callTranscript = this.shadowRoot?.querySelector("call-transcript") as
+      | (HTMLElement & { _scrollToBottom?: () => void })
+      | null;
     if (callTranscript && callTranscript._scrollToBottom) {
       callTranscript._scrollToBottom();
       // Reset the scroll state
@@ -1068,7 +1119,9 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _scrollChatToBottom() {
-    const chatView = this.shadowRoot?.querySelector("chat-view") as any;
+    const chatView = this.shadowRoot?.querySelector("chat-view") as
+      | (HTMLElement & { _scrollToBottom?: () => void })
+      | null;
     if (chatView && chatView._scrollToBottom) {
       chatView._scrollToBottom();
       this.showChatScrollToBottom = false;
@@ -1140,6 +1193,11 @@ export class GdmLiveAudio extends LitElement {
   }
 
   connectedCallback() {
+    // Subscribe to energy level changes to surface persona-specific prompts
+    energyBarService.addEventListener(
+      "energy-level-changed",
+      this._onEnergyLevelChanged as EventListener,
+    );
     super.connectedCallback();
     window.addEventListener(
       "persona-changed",
@@ -1148,12 +1206,50 @@ export class GdmLiveAudio extends LitElement {
   }
 
   disconnectedCallback() {
+    energyBarService.removeEventListener(
+      "energy-level-changed",
+      this._onEnergyLevelChanged as EventListener,
+    );
     super.disconnectedCallback();
     window.removeEventListener(
       "persona-changed",
       this._handlePersonaChanged.bind(this),
     );
   }
+
+  private _onEnergyLevelChanged = (e: Event) => {
+    const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
+      .detail;
+    if (level < 3) {
+      const personaName = this.personaManager.getActivePersona().name;
+      // STS: show immersive prompts as directed; TTS: currently quiet
+      const prompt = this.personaManager.getPromptForEnergyLevel(
+        level as 0 | 1 | 2 | 3,
+        personaName,
+        mode,
+      );
+      if (prompt && mode === "sts") {
+        this._appendCallNotice(prompt);
+      } else if (prompt) {
+        const toast = this.shadowRoot?.querySelector(
+          "toast-notification",
+        ) as ToastNotification;
+        toast?.show(prompt, "warning", 4000);
+      }
+    }
+
+    // If we are in an active call and rate-limited, reconnect with the downgraded model
+    if (
+      this.activeMode === "calling" &&
+      this.isCallActive &&
+      reason === "rate-limit-exceeded" &&
+      mode === "sts"
+    ) {
+      this.updateStatus("Rate limited — switching to a lower tier...");
+      // Re-initialize the call session to apply the downgraded model
+      this._initCallSession();
+    }
+  };
 
   render() {
     return html`
@@ -1167,6 +1263,11 @@ export class GdmLiveAudio extends LitElement {
         ></live2d-gate>
       </div>
       <div class="ui-grid">
+        ${!this.isCallActive
+          ? html`<div class="status-bar">
+              <energy-bar></energy-bar>
+            </div>`
+          : ""}
         <div class="main-container">
           <tab-view
             .activeTab=${this.activeTab}

@@ -1,6 +1,7 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
+import "./energy-bar";
 import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 const logger = createComponentLogger("call-transcript");
@@ -19,25 +20,8 @@ export class CallTranscript extends LitElement {
   @property({ type: Boolean })
   visible: boolean = false;
 
-  @property({ type: Boolean })
-  rateLimited: boolean = false;
-
   @property({ type: String })
   activePersonaName: string = "VTuber";
-
-  get rateLimitMessage(): string {
-    if (this.activePersonaName === "Assistant") {
-      return "I apologize, but I'm experiencing system limitations at the moment. Please try calling again later.";
-    } else if (this.activePersonaName === "VTuber") {
-      return "E-eh? I'm getting so... sleepy all of a sudden.... S-sorry.. Maybe let's call later?... *dozing off*..... (ρω-)";
-    } else {
-      // Generic message for custom personas
-      return "System is currently rate limited. Please try calling again later.";
-    }
-  }
-
-  @state()
-  private showScrollToBottom = false;
 
   @state()
   private newMessageCount = 0;
@@ -88,23 +72,6 @@ export class CallTranscript extends LitElement {
       gap: 8px;
     }
 
-    .banner {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0 0 0;
-      padding: 6px 10px;
-      border-radius: 8px;
-      font: 13px/1.3 system-ui;
-      color: var(--cp-text);
-      background: linear-gradient(135deg, rgba(255, 179, 0, 0.15), rgba(255, 0, 0, 0.12));
-      border: 1px solid rgba(255, 179, 0, 0.35);
-      box-shadow: 0 0 0 1px rgba(255, 179, 0, 0.2), 0 0 12px rgba(255, 179, 0, 0.2);
-    }
-
-    :host([ratelimited]) .banner {
-      display: flex;
-    }
 
     .reset-button {
       outline: none;
@@ -245,14 +212,6 @@ export class CallTranscript extends LitElement {
   }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
-    if (changedProperties.has("rateLimited")) {
-      if (this.rateLimited) {
-        this.setAttribute("ratelimited", "");
-      } else {
-        this.removeAttribute("ratelimited");
-      }
-    }
-
     if (changedProperties.has("transcript")) {
       // Use generic auto-scroll utility
       const transcriptEl = this.shadowRoot?.querySelector(".transcript");
@@ -302,9 +261,6 @@ export class CallTranscript extends LitElement {
         this.transcript.length,
         this.lastSeenMessageCount,
       );
-      this.showScrollToBottom = state.showButton;
-      this.newMessageCount = state.newMessageCount;
-
       // Dispatch event to notify parent component of scroll state changes
       const detail = {
         showButton: state.showButton,
@@ -321,6 +277,8 @@ export class CallTranscript extends LitElement {
     }
   }
 
+  // Note: _scrollToBottom is intentionally unused in the current UI
+  // but kept here for potential future control-panel integration.
   private _scrollToBottom() {
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
@@ -348,6 +306,7 @@ export class CallTranscript extends LitElement {
   render() {
     return html`
       <div class="header">
+        <energy-bar></energy-bar>
         <div class="header-content">
           <div class="call-indicator"></div>
           <span>Call in Progress</span>
@@ -358,13 +317,6 @@ export class CallTranscript extends LitElement {
           </svg>
         </button>
       </div>
-      <div class="banner" role="status" aria-live="polite">
-        <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
-          <path d="M120-160v-640h720v640H120Zm80-80h560v-480H200v480Zm200-80h160v-80H400v80Zm-80-160h320v-80H320v80Z"/>
-        </svg>
-        <span>${this.rateLimitMessage}</span>
-      </div>
-      
       <div class="transcript">
         ${
           this.transcript.length === 0

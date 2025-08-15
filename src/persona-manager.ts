@@ -15,6 +15,51 @@ export interface Persona {
  * Manages persona data, handling persistence in localStorage.
  */
 export class PersonaManager {
+  /**
+   * Get a persona-specific prompt for a given energy level.
+   * Level 3 returns an empty string as no special prompt is needed.
+   */
+  getPromptForEnergyLevel(
+    level: 0 | 1 | 2 | 3,
+    personaName: string,
+    mode: "sts" | "tts" = "sts",
+  ): string {
+    if (level >= 3) return ""; // No special prompt for full energy
+    const name = (personaName || "").toLowerCase();
+    // STS immersive prompts per spec
+    if (mode === "sts" && level === 2) {
+      if (name === "vtuber") {
+        return "I might be running a tiny bit low on brainpower—so if I trail off or keep things simpler, forgive me! I’ll still give it my all, promise~";
+      }
+      if (name === "assistant") {
+        return "System capacity is reduced. I can still help effectively, but responses may be more concise.";
+      }
+      return "Energy reduced. I can continue, but responses may be simpler for now.";
+    }
+    if (mode === "sts" && level === 1) {
+      if (name === "assistant") {
+        return "My processing power is limited at the moment. I can still assist with basic tasks.";
+      }
+      if (name === "vtuber") {
+        return "Mm... my emotional scanner’s flickering... I can still hear you just fine and respond, but my feelings might sound a little sleepy...";
+      }
+      return "Low energy. I can help with basic requests only.";
+    }
+    // STS exhausted
+    if (mode === "sts" && level === 0) {
+      if (name === "assistant") {
+        return "My systems just powered down to protect my core. I’ll need a moment to recharge—please try again in a bit.";
+      }
+      if (name === "vtuber") {
+        return "N-nngh... I’m out of juice... My consciousness is drifting... I’ll nap for a bit and come back brighter, o-okay? (｡•́︿•̀｡)";
+      }
+      return "I'm sorry, I'm out of energy and need to rest. Please try again later.";
+    }
+
+    // Default: no prompt for other modes yet
+    return "";
+  }
+
   private static readonly PERSONAS_STORAGE_KEY = "geminichan-personas";
   private static readonly ACTIVE_PERSONA_ID_STORAGE_KEY =
     "geminichan-active-persona-id";

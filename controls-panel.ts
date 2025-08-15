@@ -1,4 +1,5 @@
 import { css, html, LitElement } from "lit";
+import "./energy-bar";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("controls-panel")
