@@ -29,6 +29,18 @@ This document outlines the requirements for a persona management system. The goa
 - **GIVEN** a new persona is created **THEN** it is assigned a default system prompt and Live2D model URL.
 - **GIVEN** a persona is selected **THEN** I can edit its name, system prompt, and Live2D model URL.
 
+### 2.3. Persona Deletion
+- **As a** user,
+- **I want** to delete custom personas that I no longer need,
+- **so that** I can keep my persona list organized and relevant.
+
+#### 2.3.1. Acceptance Criteria
+- **GIVEN** I am editing a custom persona **WHEN** I view the persona form **THEN** a "Delete" button is visible.
+- **GIVEN** I click the "Delete" button on a custom persona **WHEN** the confirmation appears **THEN** I can confirm or cancel the deletion.
+- **GIVEN** I confirm deletion of a custom persona **THEN** the persona is permanently removed from the system and I am returned to the persona list.
+- **GIVEN** I try to delete a default persona (VTuber or Assistant) **THEN** no delete button is shown and the action is prevented.
+- **GIVEN** I delete the currently active persona **THEN** the system automatically switches to the default VTuber persona.
+
 ### 2.3. Persona Data Persistence
 - **As a** user,
 - **I want** my created personas to be saved,

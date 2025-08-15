@@ -39,3 +39,9 @@ Implement the persona management system, allowing users to create, select, and m
 - [x] 7. **Refactor Live2D Model Loading**: Refactor any remaining direct `localStorage` access for the Live2D model URL to use the `PersonaManager`.
   - Requirements: 2.4.1
   - Design: 3.2
+
+- [x] 8. **Implement Persona Deletion UI**: Add delete functionality to the persona management interface.
+  - Add delete button to persona editing form for custom personas only
+  - Implement confirmation dialog for persona deletion
+  - Handle active persona deletion by switching to default VTuber persona
+  - Requirements: 2.3.1
