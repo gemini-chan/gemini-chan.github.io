@@ -73,18 +73,18 @@ Implement the UI refactoring for scrollable views and the refined system prompt 
     - In `index.css`, add styles to position the chat's scroll-to-bottom button on the left side of the controls panel.
     - Ref: Design 7.3
 
-- [x] 9. Testing: Write unit and integration tests for all new functionality. (DEFERRED)
+- [ ] 9. Testing: Write unit and integration tests for all new functionality. (DEFERRED)
   - Sub-tasks:
     - [x] 9.1. Test dual-context state management.
-    - [x] 9.2. Test TTS and STS session management (add STS text transcript test). (DEFERRED)
+    - [ ] 9.2. Test TTS and STS session management (add STS text transcript test). (DEFERRED)
     - [x] 9.3. Test API key validation, settings auto-close, and pending action continuation.
     - [x] 9.4. Test dedicated reset button functionality via events.
     - [x] 9.5. Test SessionManager architecture integration paths.
-    - [x] 9.6. Add unit tests for `SummarizationService`. (DEFERRED)
-    - [x] 9.7. Add unit tests for `tab-view` and `call-history-view`. (DEFERRED)
-    - [x] 9.8. Add integration tests for the call summarization and history flow. (DEFERRED)
-    - [x] 9.9. Add unit tests for `SystemPromptManager` including debounce logic. (DEFERRED)
-    - [x] 9.10. Add unit tests for `BaseTranscriptVew` and the scroll interaction. (DEFERRED)
+    - [ ] 9.6. Add unit tests for `SummarizationService`. (DEFERRED)
+    - [ ] 9.7. Add unit tests for `tab-view` and `call-history-view`. (DEFERRED)
+    - [ ] 9.8. Add integration tests for the call summarization and history flow. (DEFERRED)
+    - [ ] 9.9. Add unit tests for `SystemPromptManager` including debounce logic. (DEFERRED)
+    - [ ] 9.10. Add unit tests for `BaseTranscriptView` and the scroll interaction. (DEFERRED)
 
 - [x] 12. Implement Tabbed UI System
    - Requirements: 2.10.1
