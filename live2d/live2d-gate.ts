@@ -1,6 +1,6 @@
+import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "../src/debug-logger";
 import "./live2d-visual";
 
 const log = createComponentLogger("live2d-gate");
@@ -16,6 +16,7 @@ export class Live2DGate extends LitElement {
   @property({ attribute: false }) outputNode?: AudioNode;
 
   @state() private _live2dReady = false;
+  @state() private _live2dError: string | null = null;
   @state() private _fallbackLoaded = false;
 
   static styles = css`
@@ -47,7 +48,7 @@ export class Live2DGate extends LitElement {
 
   private async _ensureFallbackLoaded() {
     try {
-      await import("../visual-3d");
+      await import("@visuals/Visual3D");
     } catch (e) {
       log.warn("Failed to load fallback 3D visual module", { error: e });
     } finally {

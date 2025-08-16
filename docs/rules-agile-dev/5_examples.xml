@@ -18,13 +18,13 @@
 <read_file>
 <args>
   <file>
-    <path>.roo/specs/user-logout/requirements.md</path>
+    <path>docs/specs/user-logout/requirements.md</path>
   </file>
   <file>
-    <path>.roo/specs/user-logout/design.md</path>
+    <path>docs/specs/user-logout/design.md</path>
   </file>
   <file>
-    <path>.roo/specs/user-logout/tasks.md</path>
+    <path>docs/specs/user-logout/tasks.md</path>
   </file>
 </args>
 </read_file>
@@ -74,7 +74,7 @@ Relevant Design Details: The design specifies a button with the class `nav-logou
 <apply_diff>
 <args>
 <file>
-  <path>.roo/specs/user-logout/tasks.md</path>
+  <path>docs/specs/user-logout/tasks.md</path>
   <diff>
     <content>
 <<<<<<< SEARCH

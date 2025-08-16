@@ -1,7 +1,7 @@
 /**
  * Converts audio analyser data into smooth animation parameters.
  */
-import { Analyser } from "../analyser";
+import { Analyser } from "@visuals/analyser";
 
 export class AudioToAnimationMapper {
   private inputAnalyser?: Analyser;

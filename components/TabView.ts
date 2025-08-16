@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import "./tts-energy-bar";
+import "@features/tts/TtsEnergyBar";
 
 @customElement("tab-view")
 export class TabView extends LitElement {

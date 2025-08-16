@@ -1,79 +1,32 @@
-import { css, html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
 import {
   type EnergyLevelChangedDetail,
   energyBarService,
-  type TTSEnergyLevel,
-} from "./src/energy-bar-service";
+} from "@services/EnergyBarService";
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 
-@customElement("tts-energy-bar")
-export class TTSEnergyBar extends LitElement {
-  @property({ type: Number, reflect: true }) level: 0 | 1 | 2 =
-    energyBarService.getCurrentEnergyLevel("tts") as TTSEnergyLevel;
+@customElement("energy-bar")
+export class EnergyBar extends LitElement {
+  @property({ type: Number, reflect: true }) level: 0 | 1 | 2 | 3 =
+    energyBarService.getCurrentEnergyLevel("sts");
 
   @state() private _animating = false;
   @state() private _changedIndex: number = -1;
   @state() private _changeKind: "fill" | "drain" | null = null;
 
   static styles = css`
-    :host { 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 8px; 
-    }
-    
-    .battery { 
-      position: relative; 
-      width: 32px; 
-      height: 16px; 
-      border: 2px solid currentColor; 
-      border-radius: 3px; 
-      box-sizing: border-box; 
-    }
-    
-    .battery::after { 
-      content: ""; 
-      position: absolute; 
-      right: -3px; 
-      top: 3px; 
-      width: 2px; 
-      height: 8px; 
-      background: currentColor; 
-      border-radius: 1px; 
-    }
-    
-    .bars { 
-      display: grid; 
-      grid-template-columns: repeat(2, 1fr); 
-      gap: 2px; 
-      padding: 2px; 
-      height: 100%; 
-    }
-    
-    .bar { 
-      border-radius: 1px; 
-      background: currentColor; 
-      opacity: 0.35; 
-      transition: opacity 200ms ease, transform 200ms ease; 
-    }
-    
-    .bar.filled { 
-      opacity: 1; 
-    }
-    
-    /* TTS-specific colors for 3-level system */
-    :host([level="2"]) { color: #00c853; } /* Green - Full */
-    :host([level="1"]) { color: #fdd835; } /* Yellow - Degraded */
-    :host([level="0"]) { color: #e53935; } /* Red - Exhausted */
-    
-    .bar.drain { 
-      transform: scaleY(0); 
-      opacity: 0.3; 
-    }
-    
-    .bar.fill { 
-      transform: scaleY(1.1); 
-    }
+    :host { display: inline-flex; align-items: center; gap: 8px; }
+    .battery { position: relative; width: 36px; height: 18px; border: 2px solid currentColor; border-radius: 4px; box-sizing: border-box; }
+    .battery::after { content: ""; position: absolute; right: -4px; top: 4px; width: 3px; height: 8px; background: currentColor; border-radius: 1px; }
+    .bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; height: 100%; }
+    .bar { border-radius: 2px; background: currentColor; opacity: 0.35; transition: opacity 200ms ease, transform 200ms ease; }
+    .bar.filled { opacity: 1; }
+    :host([level="3"]) { color: #00c853; }
+    :host([level="2"]) { color: #fdd835; }
+    :host([level="1"]) { color: #fb8c00; }
+    :host([level="0"]) { color: #e53935; }
+    .bar.drain { transform: scaleY(0); opacity: 0.3; }
+    .bar.fill { transform: scaleY(1.1); }
   `;
 
   connectedCallback(): void {
@@ -93,11 +46,11 @@ export class TTSEnergyBar extends LitElement {
   }
 
   private _onEnergyChanged = (e: CustomEvent<EnergyLevelChangedDetail>) => {
-    // Only reflect TTS mode in this bar
-    if (e.detail.mode !== "tts") return;
+    // Only reflect STS mode in this bar
+    if (e.detail.mode !== "sts") return;
 
     const old = this.level;
-    const next = e.detail.level as 0 | 1 | 2;
+    const next = e.detail.level;
     if (old === next) return;
 
     // Determine which bar changed and the kind of change
@@ -119,12 +72,14 @@ export class TTSEnergyBar extends LitElement {
     }, 250);
   };
 
-  private _energyText(level: 0 | 1 | 2): string {
+  private _energyText(level: 0 | 1 | 2 | 3): string {
     switch (level) {
-      case 2:
+      case 3:
         return "Full";
+      case 2:
+        return "Medium";
       case 1:
-        return "Degraded";
+        return "Low";
       default:
         return "Exhausted";
     }
@@ -132,8 +87,8 @@ export class TTSEnergyBar extends LitElement {
 
   render() {
     const filledCount = this.level;
-    const bars = [0, 1].map((i) => i < filledCount);
-    const model = energyBarService.getModelForLevel(this.level, "tts");
+    const bars = [0, 1, 2].map((i) => i < filledCount);
+    const model = energyBarService.getModelForLevel(this.level, "sts");
     const ariaValueText = `${this._energyText(this.level)}${model ? ` — ${model}` : ""}`;
 
     return html`
@@ -141,10 +96,10 @@ export class TTSEnergyBar extends LitElement {
         class="battery"
         role="meter"
         aria-valuemin="0"
-        aria-valuemax="2"
+        aria-valuemax="3"
         aria-valuenow=${String(this.level)}
         aria-valuetext=${ariaValueText}
-        title=${`Chat Energy: ${this.level}/2 (${this._energyText(this.level)})${model ? ` — ${model}` : ""}`}
+        title=${`Energy: ${this.level}/3 (${this._energyText(this.level)})${model ? ` — ${model}` : ""}`}
       >
         <div class="bars">
           ${bars.map((filled, idx) => {

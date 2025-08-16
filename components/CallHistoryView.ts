@@ -1,6 +1,6 @@
+import type { CallSummary } from "@shared/types";
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import type { CallSummary } from "./types"; // Assuming types are defined in types.ts
 
 @customElement("call-history-view")
 export class CallHistoryView extends LitElement {

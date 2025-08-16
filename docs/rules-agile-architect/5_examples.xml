@@ -17,7 +17,7 @@
 
     <step number="2" name="Reading Requirements">
       <action>
-        The mode reads the file at `.roo/specs/profile-picture-upload/requirements.md`.
+        The mode reads the file at `docs/specs/profile-picture-upload/requirements.md`.
       </action>
       <file_content name="requirements.md"><![CDATA[
 # Requirements: User Profile Picture Upload

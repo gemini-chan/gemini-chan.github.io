@@ -22,10 +22,10 @@
 <read_file>
 <args>
   <file>
-    <path>.roo/specs/user-login/design.md</path>
+    <path>docs/specs/user-login/design.md</path>
   </file>
   <file>
-    <path>.roo/specs/user-login/requirements.md</path>
+    <path>docs/specs/user-login/requirements.md</path>
   </file>
 </args>
 </read_file>
@@ -39,7 +39,7 @@
         <action>The mode creates the first version of `tasks.md` based on the design.</action>
         <tool_used>
 <write_to_file>
-<path>.roo/specs/user-login/tasks.md</path>
+<path>docs/specs/user-login/tasks.md</path>
 <content>
 # Implementation Plan: User Login
 

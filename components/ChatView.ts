@@ -1,7 +1,7 @@
+import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
+import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "./src/debug-logger";
-import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 interface Turn {
   text: string;
@@ -439,7 +439,6 @@ export class ChatView extends LitElement {
         this.transcript.length,
         this.lastSeenMessageCount,
       );
-      this.showScrollToBottom = state.showButton;
       this.newMessageCount = state.newMessageCount;
       log.debug("Scroll to bottom state updated", {
         showButton: state.showButton,
@@ -462,13 +461,12 @@ export class ChatView extends LitElement {
     }
   }
 
-  _scrollToBottom() {
+  private _scrollToBottom() {
     log.debug("Scrolling to bottom");
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
       defaultAutoScroll.scrollToBottom(transcriptEl, true);
       this.lastSeenMessageCount = this.transcript.length;
-      this._updateScrollToBottomState();
     }
   }
 

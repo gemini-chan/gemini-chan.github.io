@@ -7,13 +7,13 @@
     <step number="1">
       <action>Identify the target feature</action>
       <details>
-        Parse the user's request to determine the `{feature_name}`. This is essential for locating the correct spec file at `.roo/specs/{feature_name}/requirements.md`.
+        Parse the user's request to determine the `{feature_name}`. This is essential for locating the correct spec file at `docs/specs/{feature_name}/requirements.md`.
       </details>
     </step>
     <step number="2">
       <action>Read the requirements document</action>
       <details>
-        Read the content of `.roo/specs/{feature_name}/requirements.md`. This document is the foundation for the entire design process.
+        Read the content of `docs/specs/{feature_name}/requirements.md`. This document is the foundation for the entire design process.
       </details>
       <tools>
         <tool>read_file</tool>
@@ -22,7 +22,7 @@
     <step number="3">
       <action>Check for an Existing Design Document</action>
       <details>
-        Before any writing operation, you MUST check if a `.roo/specs/{feature_name}/design.md` file already exists. This is a critical step to prevent accidental overwrites.
+        Before any writing operation, you MUST check if a `docs/specs/{feature_name}/design.md` file already exists. This is a critical step to prevent accidental overwrites.
       </details>
       <tools>
         <tool>list_files</tool>

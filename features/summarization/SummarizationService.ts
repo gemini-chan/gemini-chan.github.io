@@ -1,5 +1,5 @@
 import type { GoogleGenAI } from "@google/genai";
-import type { Turn } from "../types";
+import type { Turn } from "@shared/types";
 
 const MODEL_NAME = "gemini-2.5-flash-lite";
 

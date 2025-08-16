@@ -25,6 +25,7 @@ export interface PixiApplicationLike {
   };
   ticker?: { start?: () => void; stop?: () => void };
   destroy: (removeView?: boolean) => void;
+  screen: { width: number; height: number };
 }
 
 export interface Live2DModelLike extends EventTarget {

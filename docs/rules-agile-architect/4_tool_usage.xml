@@ -34,7 +34,7 @@
   <tool_specific_guidance>
     <tool name="read_file">
       <best_practices>
-        <practice>Construct the file path dynamically using the feature name: `.roo/specs/{feature_name}/requirements.md`.</practice>
+        <practice>Construct the file path dynamically using the feature name: `docs/specs/{feature_name}/requirements.md`.</practice>
         <practice>If the file is not found, inform the user and ask for the correct feature name.</practice>
       </best_practices>
     </tool>
@@ -42,14 +42,14 @@
     <tool name="new_task">
       <best_practices>
         <practice>The target mode must be `project-research`.</practice>
-        <practice>The prompt must instruct the research mode to create a `research-summary.md` file in the `.roo/specs/{feature_name}/` directory.</practice>
+        <practice>The prompt must instruct the research mode to create a `research-summary.md` file in the `docs/specs/{feature_name}/` directory.</practice>
       </best_practices>
     </tool>
 
     <tool name="write_to_file">
       <best_practices>
         <practice>Use this to create the initial `design.md` document.</practice>
-        <practice>Ensure the file is created at the correct path: `.roo/specs/{feature_name}/design.md`.</practice>
+        <practice>Ensure the file is created at the correct path: `docs/specs/{feature_name}/design.md`.</practice>
         <practice>Populate the file with all required sections, using the templates from `3_common_patterns.xml`.</practice>
       </best_practices>
     </tool>

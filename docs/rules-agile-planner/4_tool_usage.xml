@@ -13,10 +13,10 @@
 <read_file>
 <args>
   <file>
-    <path>.roo/specs/{feature_name}/design.md</path>
+    <path>docs/specs/{feature_name}/design.md</path>
   </file>
   <file>
-    <path>.roo/specs/{feature_name}/requirements.md</path>
+    <path>docs/specs/{feature_name}/requirements.md</path>
   </file>
 </args>
 </read_file>
@@ -39,13 +39,13 @@
     <tool name="write_to_file">
       <best_practices>
         <practice>Use `write_to_file` to create the initial `tasks.md` file.</practice>
-        <practice>Ensure the path is correct: `.roo/specs/{feature_name}/tasks.md`.</practice>
+        <practice>Ensure the path is correct: `docs/specs/{feature_name}/tasks.md`.</practice>
         <practice>The content should be a well-formatted markdown checklist.</practice>
       </best_practices>
       <example>
         <![CDATA[
 <write_to_file>
-  <path>.roo/specs/new-feature/tasks.md</path>
+  <path>docs/specs/new-feature/tasks.md</path>
   <content>
 # Implementation Plan for New Feature
 
@@ -71,7 +71,7 @@
 <apply_diff>
 <args>
 <file>
-  <path>.roo/specs/new-feature/tasks.md</path>
+  <path>docs/specs/new-feature/tasks.md</path>
   <diff>
 <content>
 - [ ] 1.1. Create the main component file `src/components/NewFeature.js`.

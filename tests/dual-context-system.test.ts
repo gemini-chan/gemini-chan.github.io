@@ -1,5 +1,5 @@
+import { GdmLiveAudio } from "@app/main";
 import { expect } from "chai";
-import { GdmLiveAudio } from "./index.js";
 
 // Mock the Google GenAI client
 class MockSession {
@@ -9,7 +9,7 @@ class MockSession {
     callbacks: Record<string, (...args: unknown[]) => void>;
   }) {
     this.callbacks = options.callbacks;
-    this.isOpen = true;
+    (this as unknown as { isOpen: boolean }).isOpen = true;
     if (this.callbacks.onopen) {
       setTimeout(() => this.callbacks.onopen(), 10);
     }
@@ -49,7 +49,7 @@ class MockSession {
   }
 
   close() {
-    this.isOpen = false;
+    (this as unknown as { isOpen: boolean }).isOpen = false;
     if (this.callbacks.onclose) {
       setTimeout(() => this.callbacks.onclose({ reason: "Manual close" }), 10);
     }
@@ -253,10 +253,8 @@ describe("Dual-Context System", () => {
   describe("Reset Functionality", () => {
     it("should have separate reset methods for text and call contexts", () => {
       // Verify the methods exist
-      // @ts-expect-error - testing private method
-      expect(typeof element._resetTextContext).to.equal("function");
-      // @ts-expect-error - testing private method
-      expect(typeof element._resetCallContext).to.equal("function");
+      expect(typeof (element as any)._resetTextContext).to.equal("function");
+      expect(typeof (element as any)._resetCallContext).to.equal("function");
     });
 
     it("should reset only text context when _resetTextContext is called", () => {
@@ -265,8 +263,7 @@ describe("Dual-Context System", () => {
       element.callTranscript = [{ text: "Call message", speaker: "user" }];
 
       // Call the text reset method directly
-      // @ts-expect-error - testing private method
-      element._resetTextContext();
+      (element as any)._resetTextContext();
 
       // Only text transcript should be cleared
       expect(element.textTranscript).to.be.empty;
@@ -279,8 +276,7 @@ describe("Dual-Context System", () => {
       element.callTranscript = [{ text: "Call message", speaker: "user" }];
 
       // Call the call reset method directly
-      // @ts-expect-error - testing private method
-      element._resetCallContext();
+      (element as any)._resetCallContext();
 
       // Only call transcript should be cleared
       expect(element.textTranscript).to.have.lengthOf(1);

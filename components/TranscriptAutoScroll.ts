@@ -2,7 +2,7 @@
  * Generic auto-scroll utility for transcript components
  * Provides smart scrolling behavior that respects user interaction
  */
-import { createComponentLogger } from "./src/debug-logger";
+import { createComponentLogger } from "@services/DebugLogger";
 
 const logger = createComponentLogger("transcript-auto-scroll");
 
@@ -45,14 +45,6 @@ export class TranscriptAutoScroll {
     const threshold = this.options.threshold;
 
     const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
-
-    logger.debug("Scroll check", {
-      scrollTop,
-      clientHeight,
-      scrollHeight,
-      threshold,
-      isNearBottom,
-    });
 
     return isNearBottom;
   }
@@ -116,6 +108,8 @@ export class TranscriptAutoScroll {
     if (wasAtBottom) {
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
+        // @ts-ignore
+        element.offsetHeight;
         // Detect rapid updates (multiple messages at once)
         const isRapidUpdate = newLength - oldLength > 1;
         logger.debug("Auto-scrolling", { smooth: !isRapidUpdate });

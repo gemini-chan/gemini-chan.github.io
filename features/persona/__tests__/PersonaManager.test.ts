@@ -1,6 +1,6 @@
+import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
 import { v4 as uuidv4 } from "uuid";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type Persona, PersonaManager } from "./persona-manager";
 
 // Mock the uuid module to have predictable IDs
 vi.mock("uuid", () => ({
@@ -36,8 +36,8 @@ describe("PersonaManager", () => {
 
     // Mock uuidv4 to return predictable values
     vi.mocked(uuidv4)
-      .mockReturnValueOnce(defaultPersonaId)
-      .mockReturnValue(mockUuid);
+      .mockReturnValueOnce(new TextEncoder().encode(defaultPersonaId))
+      .mockReturnValue(new TextEncoder().encode(mockUuid));
 
     personaManager = new PersonaManager();
   });

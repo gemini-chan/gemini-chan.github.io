@@ -1,12 +1,12 @@
 import { fixture, html, waitUntil } from "@open-wc/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "vitest-dom/extend-expect";
-import "./settings-menu";
-import type { SettingsMenu } from "./settings-menu";
-import { type Persona, PersonaManager } from "./src/persona-manager";
+import "@components/SettingsMenu";
+import type { SettingsMenu } from "@components/SettingsMenu";
+import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
 
 // Mock PersonaManager to avoid actual localStorage access and network calls
-vi.mock("./src/persona-manager", () => {
+vi.mock("@features/persona/PersonaManager", () => {
   const mockPersonas: Persona[] = [
     {
       id: "default-1",
@@ -59,8 +59,7 @@ describe("SettingsMenu Persona Management", () => {
 
     element = await fixture(html`<settings-menu></settings-menu>`);
     // The component's internal personaManager is the one we want to assert against
-    // @ts-expect-error - testing private property
-    personaManager = element.personaManager;
+    personaManager = (element as any).personaManager;
   });
 
   afterEach(() => {

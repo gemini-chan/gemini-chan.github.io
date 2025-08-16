@@ -8,7 +8,7 @@
     <step number="1">
       <action>Identify Feature and Read Specifications</action>
       <details>
-        Parse the user's request to identify the `{feature_name}`. Read the three core specification documents: `.roo/specs/{feature_name}/requirements.md`, `.roo/specs/{feature_name}/design.md`, and `.roo/specs/{feature_name}/tasks.md`. These documents are the single source of truth for the implementation.
+        Parse the user's request to identify the `{feature_name}`. Read the three core specification documents: `docs/specs/{feature_name}/requirements.md`, `docs/specs/{feature_name}/design.md`, and `docs/specs/{feature_name}/tasks.md`. These documents are the single source of truth for the implementation.
       </details>
       <tools>
         <tool>read_file</tool>

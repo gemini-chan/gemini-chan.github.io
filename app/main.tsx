@@ -3,32 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { PersonaManager } from "@features/persona/PersonaManager";
+import { SummarizationService } from "@features/summarization/SummarizationService";
 import {
   GoogleGenAI,
   type LiveServerMessage,
   Modality,
   type Session,
 } from "@google/genai";
+import { createComponentLogger } from "@services/DebugLogger";
+import { createBlob, decode, decodeAudioData } from "@shared/utils";
+import { VectorStore } from "@store/VectorStore";
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { createComponentLogger } from "./src/debug-logger";
-import { PersonaManager } from "./src/persona-manager";
-import { SummarizationService } from "./src/SummarizationService";
-import { VectorStore } from "./src/vector-store";
-import { createBlob, decode, decodeAudioData } from "./utils";
-import "./live2d/zip-loader";
-import "./live2d/live2d-gate";
-import "./settings-menu";
-import "./chat-view";
-import "./call-transcript";
-import type { EnergyLevelChangedDetail } from "./src/energy-bar-service";
-import { energyBarService } from "./src/energy-bar-service";
-import "./toast-notification";
-import "./controls-panel";
-import "./tab-view";
-import "./call-history-view";
-import type { ToastNotification } from "./toast-notification";
-import type { CallSummary, Turn } from "./types";
+import "@live2d/zip-loader";
+import "@live2d/live2d-gate";
+import "@components/SettingsMenu";
+import "@components/ChatView";
+import "@components/CallTranscript";
+import type { EnergyLevelChangedDetail } from "@services/EnergyBarService";
+import { energyBarService } from "@services/EnergyBarService";
+import "@components/ToastNotification";
+import "@components/ControlsPanel";
+import "@components/TabView";
+import "@components/CallHistoryView";
+import type { ToastNotification } from "@components/ToastNotification";
+import type { CallSummary, Turn } from "@shared/types";
 
 declare global {
   interface Window {
@@ -360,6 +360,7 @@ export class GdmLiveAudio extends LitElement {
   @state() isCallActive = false;
   @state() status = "";
   @state() error = "";
+  @state() private _toastVisible = false;
   private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
     undefined;
   private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
@@ -1148,10 +1149,10 @@ export class GdmLiveAudio extends LitElement {
   private _scrollCallTranscriptToBottom() {
     // Find the call transcript component and scroll it to bottom
     const callTranscript = this.shadowRoot?.querySelector("call-transcript") as
-      | (HTMLElement & { _scrollToBottom?: () => void })
+      | (HTMLElement & { scrollToBottom?: () => void })
       | null;
-    if (callTranscript?._scrollToBottom) {
-      callTranscript._scrollToBottom();
+    if (callTranscript?.scrollToBottom) {
+      callTranscript.scrollToBottom();
       // Reset the scroll state
       this.showCallScrollToBottom = false;
       this.callNewMessageCount = 0;
