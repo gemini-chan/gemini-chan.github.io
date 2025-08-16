@@ -3,12 +3,11 @@ import { GdmLiveAudio } from "./index.js";
 
 // Mock the Google GenAI client
 class MockSession {
-  private callbacks: any = {};
-  private isOpen = false;
+  private callbacks: Record<string, (...args: unknown[]) => void> = {};
 
-  constructor(private config: any) {}
-
-  async connect(options: any) {
+  async connect(options: {
+    callbacks: Record<string, (...args: unknown[]) => void>;
+  }) {
     this.callbacks = options.callbacks;
     this.isOpen = true;
     if (this.callbacks.onopen) {
@@ -17,7 +16,7 @@ class MockSession {
     return this;
   }
 
-  sendClientContent(content: any) {
+  sendClientContent(content: { turns: { parts: { text: string }[] }[] }) {
     // Simulate model response
     setTimeout(() => {
       if (this.callbacks.onmessage) {
@@ -25,7 +24,7 @@ class MockSession {
           serverContent: {
             modelTurn: {
               parts: [
-                { text: "Mock response to: " + content.turns[0].parts[0].text },
+                { text: `Mock response to: ${content.turns[0].parts[0].text}` },
               ],
             },
           },
@@ -34,7 +33,7 @@ class MockSession {
     }, 50);
   }
 
-  sendRealtimeInput(input: any) {
+  sendRealtimeInput(_input: unknown) {
     // Simulate real-time audio response
     setTimeout(() => {
       if (this.callbacks.onmessage) {
@@ -59,8 +58,10 @@ class MockSession {
 
 class MockGoogleGenAI {
   live = {
-    connect: async (options: any) => {
-      return new MockSession(options);
+    connect: async (options: {
+      callbacks: Record<string, (...args: unknown[]) => void>;
+    }) => {
+      return new MockSession().connect(options);
     },
   };
 }
@@ -70,10 +71,11 @@ describe("Dual-Context System", () => {
 
   beforeEach(() => {
     // Mock localStorage
-    localStorage.setItem("gemini-api-key", "AIzaSy" + "a".repeat(33));
+    localStorage.setItem("gemini-api-key", `AIzaSy${"a".repeat(33)}`);
 
     // Mock GoogleGenAI
-    (window as any).GoogleGenAI = MockGoogleGenAI;
+    (window as unknown as { GoogleGenAI: unknown }).GoogleGenAI =
+      MockGoogleGenAI;
 
     // Mock getUserMedia
     Object.defineProperty(navigator, "mediaDevices", {
@@ -87,53 +89,54 @@ describe("Dual-Context System", () => {
     });
 
     // Mock AudioContext
-    (window as any).AudioContext = class MockAudioContext {
-      currentTime = 0;
-      sampleRate = 16000;
-      destination = { connect: () => {} };
+    (window as unknown as { AudioContext: unknown }).AudioContext =
+      class MockAudioContext {
+        currentTime = 0;
+        sampleRate = 16000;
+        destination = { connect: () => {} };
 
-      createGain() {
-        return {
-          connect: () => {},
-          disconnect: () => {},
-        };
-      }
+        createGain() {
+          return {
+            connect: () => {},
+            disconnect: () => {},
+          };
+        }
 
-      createMediaStreamSource() {
-        return {
-          connect: () => {},
-          disconnect: () => {},
-        };
-      }
+        createMediaStreamSource() {
+          return {
+            connect: () => {},
+            disconnect: () => {},
+          };
+        }
 
-      createScriptProcessor() {
-        return {
-          connect: () => {},
-          disconnect: () => {},
-          onaudioprocess: null,
-        };
-      }
+        createScriptProcessor() {
+          return {
+            connect: () => {},
+            disconnect: () => {},
+            onaudioprocess: null,
+          };
+        }
 
-      createBufferSource() {
-        return {
-          buffer: null,
-          connect: () => {},
-          start: () => {},
-          stop: () => {},
-          addEventListener: () => {},
-        };
-      }
+        createBufferSource() {
+          return {
+            buffer: null,
+            connect: () => {},
+            start: () => {},
+            stop: () => {},
+            addEventListener: () => {},
+          };
+        }
 
-      resume() {
-        return Promise.resolve();
-      }
+        resume() {
+          return Promise.resolve();
+        }
 
-      decodeAudioData() {
-        return Promise.resolve({
-          duration: 1.0,
-        });
-      }
-    };
+        decodeAudioData() {
+          return Promise.resolve({
+            duration: 1.0,
+          });
+        }
+      };
 
     // Create element instance directly for unit testing
     element = new GdmLiveAudio();
@@ -250,8 +253,10 @@ describe("Dual-Context System", () => {
   describe("Reset Functionality", () => {
     it("should have separate reset methods for text and call contexts", () => {
       // Verify the methods exist
-      expect(typeof (element as any)._resetTextContext).to.equal("function");
-      expect(typeof (element as any)._resetCallContext).to.equal("function");
+      // @ts-expect-error - testing private method
+      expect(typeof element._resetTextContext).to.equal("function");
+      // @ts-expect-error - testing private method
+      expect(typeof element._resetCallContext).to.equal("function");
     });
 
     it("should reset only text context when _resetTextContext is called", () => {
@@ -260,7 +265,8 @@ describe("Dual-Context System", () => {
       element.callTranscript = [{ text: "Call message", speaker: "user" }];
 
       // Call the text reset method directly
-      (element as any)._resetTextContext();
+      // @ts-expect-error - testing private method
+      element._resetTextContext();
 
       // Only text transcript should be cleared
       expect(element.textTranscript).to.be.empty;
@@ -273,7 +279,8 @@ describe("Dual-Context System", () => {
       element.callTranscript = [{ text: "Call message", speaker: "user" }];
 
       // Call the call reset method directly
-      (element as any)._resetCallContext();
+      // @ts-expect-error - testing private method
+      element._resetCallContext();
 
       // Only call transcript should be cleared
       expect(element.textTranscript).to.have.lengthOf(1);

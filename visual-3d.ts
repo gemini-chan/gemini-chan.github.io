@@ -34,7 +34,6 @@ export class GdmLiveAudioVisuals3D extends LitElement {
   private prevTime = 0;
   private rotation = new THREE.Vector3(0, 0, 0);
   private _raf = 0;
-  private _running = false;
   private _onResizeBound?: () => void;
 
   private _outputNode!: AudioNode;
@@ -79,13 +78,14 @@ export class GdmLiveAudioVisuals3D extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    this._running = false;
     cancelAnimationFrame(this._raf);
     try {
-      window.removeEventListener("resize", this._onResizeBound!);
+      if (this._onResizeBound) {
+        window.removeEventListener("resize", this._onResizeBound);
+      }
     } catch {}
     try {
-      (this.composer as any)?.renderer?.dispose?.();
+      this.composer?.renderer?.dispose?.();
     } catch {}
   }
 
@@ -188,7 +188,7 @@ export class GdmLiveAudioVisuals3D extends LitElement {
       backdrop.material.uniforms.resolution.value.set(w * dPR, h * dPR);
       renderer.setSize(w, h);
       composer.setSize(w, h);
-      fxaaPass.material.uniforms["resolution"].value.set(
+      fxaaPass.material.uniforms.resolution.value.set(
         1 / (w * dPR),
         1 / (h * dPR),
       );
@@ -256,7 +256,7 @@ export class GdmLiveAudioVisuals3D extends LitElement {
   }
 
   protected firstUpdated() {
-    this.canvas = this.shadowRoot!.querySelector("canvas") as HTMLCanvasElement;
+    this.canvas = this.shadowRoot?.querySelector("canvas") as HTMLCanvasElement;
     this.init();
   }
 

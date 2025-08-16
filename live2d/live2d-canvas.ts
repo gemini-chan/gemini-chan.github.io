@@ -1,5 +1,5 @@
 import { css, html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { createComponentLogger } from "../src/debug-logger";
 import type { PixiApplicationLike } from "./types";
 
@@ -8,7 +8,6 @@ const log = createComponentLogger("live2d-canvas");
 @customElement("live2d-canvas")
 export class Live2DCanvas extends LitElement {
   private _container?: HTMLDivElement;
-  private _canvas?: HTMLCanvasElement;
   private _app?: PixiApplicationLike;
 
   @state() private _error: string = "";
@@ -51,23 +50,23 @@ export class Live2DCanvas extends LitElement {
     if (this._app) return;
     try {
       // Dynamically import to avoid bundling if not used
-      const [pixi, live2d] = await Promise.all([
-        import("pixi.js") as any,
-        import("pixi-live2d-display/cubism4") as any,
-      ]);
-      const { Application, Ticker } = pixi as any;
-      const { Live2DModel } = live2d as any;
+      const [pixi, live2d] = (await Promise.all([
+        import("pixi.js"),
+        import("pixi-live2d-display/cubism4"),
+      ])) as [typeof import("pixi.js"), typeof import("pixi-live2d-display")];
+      const { Application, Ticker } = pixi;
+      const { Live2DModel } = live2d;
       // Expose PIXI globally and register ticker for Live2D
-      (window as any).PIXI = pixi;
+      (window as unknown as { PIXI: unknown }).PIXI = pixi;
       Live2DModel?.registerTicker?.(Ticker);
 
       // create canvas and container
-      this._container = this.shadowRoot!.querySelector(
+      this._container = this.shadowRoot?.querySelector(
         ".root",
       ) as HTMLDivElement;
       if (!this._container) {
         await this.updateComplete;
-        this._container = this.shadowRoot!.querySelector(
+        this._container = this.shadowRoot?.querySelector(
           ".root",
         ) as HTMLDivElement;
       }
@@ -81,7 +80,7 @@ export class Live2DCanvas extends LitElement {
         height: Math.max(1, this._container?.clientHeight || 1),
       }) as unknown as PixiApplicationLike;
 
-      const view = (app as any).view as HTMLCanvasElement;
+      const view = app.view as HTMLCanvasElement;
       if (this._container && view && !view.isConnected) {
         this._container.appendChild(view);
       }
@@ -90,16 +89,15 @@ export class Live2DCanvas extends LitElement {
         view.style.width = "100%";
         view.style.height = "100%";
         view.style.display = "block";
-        (app as any).renderer?.resize?.(
+        app.renderer?.resize?.(
           this._container.clientWidth,
           this._container.clientHeight,
         );
       }
 
-      this._canvas = view;
       this._app = app;
       this._dispatchAppReady(app);
-    } catch (e: any) {
+    } catch (e) {
       log.error("Failed to init PIXI", { error: e });
       this._error = "Failed to initialize graphics";
     }
@@ -107,15 +105,13 @@ export class Live2DCanvas extends LitElement {
 
   private _teardown() {
     try {
-      const app = this._app as any;
       // stop ticker and destroy app if available
-      app?.ticker?.stop?.();
-      app?.destroy?.(true);
-    } catch (e) {
+      this._app?.ticker?.stop?.();
+      this._app?.destroy?.(true);
+    } catch (_e) {
       // ignore
     } finally {
       this._app = undefined;
-      this._canvas = undefined;
     }
   }
 
@@ -128,7 +124,7 @@ export class Live2DCanvas extends LitElement {
   firstUpdated(): void {
     // Attach observer for resize for better high-DPI handling
     const ro = new ResizeObserver(this._onResize);
-    const el = this.shadowRoot!.querySelector(".root") as HTMLElement;
+    const el = this.shadowRoot?.querySelector(".root") as HTMLElement;
     if (el) ro.observe(el);
   }
 

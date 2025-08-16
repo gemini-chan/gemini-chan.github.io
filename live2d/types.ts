@@ -2,23 +2,35 @@
  * Core types and interfaces for Live2D integration
  */
 
+export interface PixiDisplayObjectLike {
+  width: number;
+  height: number;
+}
+
+export interface PointLike {
+  x: number;
+  y: number;
+}
+
 export interface PixiApplicationLike {
+  view: HTMLCanvasElement;
   renderer: {
     width: number;
     height: number;
     resize: (w: number, h: number) => void;
   };
   stage: {
-    addChild: (child: any) => void;
-    removeChild: (child: any) => void;
+    addChild: <T extends PixiDisplayObjectLike>(child: T) => T;
+    removeChild: <T extends PixiDisplayObjectLike>(child: T) => T;
   };
   ticker?: { start?: () => void; stop?: () => void };
+  destroy: (removeView?: boolean) => void;
 }
 
 export interface Live2DModelLike extends EventTarget {
-  anchor?: { set: (x: number, y: number) => void } | any;
-  scale?: { set: (x: number, y: number) => void } | any;
-  position?: { set: (x: number, y: number) => void } | any;
+  anchor?: PointLike;
+  scale?: PointLike;
+  position?: PointLike;
   width?: number;
   height?: number;
   destroy?: () => void;

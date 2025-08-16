@@ -21,7 +21,7 @@ export interface LogEntry {
   component: string;
   level: "debug" | "info" | "warn" | "error";
   message: string;
-  data?: any;
+  data?: unknown;
   timestamp: Date;
 }
 
@@ -29,11 +29,11 @@ export interface LogEntry {
  * Interface for a simplified, component-specific logger.
  */
 export interface ComponentLogger {
-  debug(message: string, data?: any): void;
-  info(message: string, data?: any): void;
-  warn(message: string, data?: any): void;
-  error(message: string, data?: any): void;
-  trace(methodName: string, ...args: any[]): void;
+  debug(message: string, data?: unknown): void;
+  info(message: string, data?: unknown): void;
+  warn(message: string, data?: unknown): void;
+  error(message: string, data?: unknown): void;
+  trace(methodName: string, ...args: unknown[]): void;
   time(label: string): () => void;
 }
 
@@ -59,8 +59,6 @@ interface ConfigSource {
  */
 class ConfigurationManager {
   private sources: ConfigSource[] = [];
-
-  constructor() {}
 
   /**
    * Adds a new configuration source.
@@ -94,14 +92,18 @@ class ConfigurationManager {
       prefix: true,
     };
 
-    return this.sources.reduce((acc, source) => {
-      const config = source.load();
-      return {
-        ...acc,
-        ...config,
-        components: { ...acc.components, ...config.components },
-      };
-    }, defaultConfig);
+    this.sources
+      .slice()
+      .reverse()
+      .forEach((source) => {
+        const config = source.load();
+        const { components, ...rest } = config;
+        Object.assign(defaultConfig, rest);
+        if (components) {
+          Object.assign(defaultConfig.components, components);
+        }
+      });
+    return defaultConfig;
   }
 
   /**
@@ -247,7 +249,7 @@ export class DebugLogger {
     level: "debug" | "info" | "warn" | "error",
     component: string,
     message: string,
-    data?: any,
+    data?: unknown,
   ): void {
     if (!this.config.enabled || !this.isComponentEnabled(component)) {
       return;
@@ -278,7 +280,7 @@ export class DebugLogger {
     if (this.config.prefix) {
       parts.push(`[${component}]`);
     }
-    parts.push(level.toUpperCase() + ":", message);
+    parts.push(`${level.toUpperCase()}:`, message);
 
     const logMethod = console[level] || console.log;
 
@@ -292,28 +294,28 @@ export class DebugLogger {
   /**
    * Logs a debug message for a specific component.
    */
-  debug(component: string, message: string, data?: any): void {
+  debug(component: string, message: string, data?: unknown): void {
     this.log("debug", component, message, data);
   }
 
   /**
    * Logs an info message for a specific component.
    */
-  info(component: string, message: string, data?: any): void {
+  info(component: string, message: string, data?: unknown): void {
     this.log("info", component, message, data);
   }
 
   /**
    * Logs a warning message for a specific component.
    */
-  warn(component: string, message: string, data?: any): void {
+  warn(component: string, message: string, data?: unknown): void {
     this.log("warn", component, message, data);
   }
 
   /**
    * Logs an error message for a specific component.
    */
-  error(component: string, message: string, data?: any): void {
+  error(component: string, message: string, data?: unknown): void {
     this.log("error", component, message, data);
   }
 
@@ -365,15 +367,15 @@ export class DebugLogger {
    */
   createComponentLogger(component: string): ComponentLogger {
     return {
-      debug: (message: string, data?: any) =>
+      debug: (message: string, data?: unknown) =>
         this.debug(component, message, data),
-      info: (message: string, data?: any) =>
+      info: (message: string, data?: unknown) =>
         this.info(component, message, data),
-      warn: (message: string, data?: any) =>
+      warn: (message: string, data?: unknown) =>
         this.warn(component, message, data),
-      error: (message: string, data?: any) =>
+      error: (message: string, data?: unknown) =>
         this.error(component, message, data),
-      trace: (methodName: string, ...args: any[]) =>
+      trace: (methodName: string, ...args: unknown[]) =>
         this.debug(component, `Entering ${methodName}`, { args }),
       time: (label: string) => {
         const startTime =

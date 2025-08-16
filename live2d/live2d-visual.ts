@@ -1,16 +1,27 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createComponentLogger } from "../src/debug-logger";
+import type { PixiApplicationLike } from "./types";
 import "./live2d-canvas";
 import "./live2d-model";
 
 const log = createComponentLogger("live2d-visual");
 
+interface PixiReadyEvent extends CustomEvent {
+  detail: {
+    app: PixiApplicationLike;
+    width: number;
+    height: number;
+  };
+}
+
 @customElement("live2d-visual")
 export class Live2DVisual extends LitElement {
   @state() private _status: "idle" | "loading" | "ready" | "error" = "idle";
   @state() private _error = "";
-  @state() private _app: any = undefined;
+  @state() private _app?: PixiApplicationLike;
+  @state() private _containerWidth = 0;
+  @state() private _containerHeight = 0;
   @property({ type: String }) modelUrl = "";
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
@@ -39,20 +50,20 @@ export class Live2DVisual extends LitElement {
   render() {
     return html`
       ${this._status !== "idle" ? html`<div class="status">${this._status}${this._error ? `: ${this._error}` : ""}</div>` : ""}
-      <live2d-canvas @pixi-ready=${(e: CustomEvent) => {
+      <live2d-canvas @pixi-ready=${(e: PixiReadyEvent) => {
         log.debug("pixi-ready", e.detail);
         this._onPixiReady();
-        this._app = (e.detail as any).app;
-        (this as any)._containerWidth = (e.detail as any).width;
-        (this as any)._containerHeight = (e.detail as any).height;
+        this._app = e.detail.app;
+        this._containerWidth = e.detail.width;
+        this._containerHeight = e.detail.height;
       }}>
         <live2d-model
           .url=${this.modelUrl}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
           .app=${this._app}
-          .containerWidth=${(this as any)._containerWidth}
-          .containerHeight=${(this as any)._containerHeight}
+          .containerWidth=${this._containerWidth}
+          .containerHeight=${this._containerHeight}
           @live2d-loaded=${this._onLoaded}
           @live2d-error=${this._onError}
         ></live2d-model>

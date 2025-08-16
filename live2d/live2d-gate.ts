@@ -16,7 +16,6 @@ export class Live2DGate extends LitElement {
   @property({ attribute: false }) outputNode?: AudioNode;
 
   @state() private _live2dReady = false;
-  @state() private _live2dError = "";
   @state() private _fallbackLoaded = false;
 
   static styles = css`

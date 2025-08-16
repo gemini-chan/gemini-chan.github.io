@@ -288,17 +288,6 @@ export class CallTranscript extends LitElement {
     }
   }
 
-  // Note: _scrollToBottom is intentionally unused in the current UI
-  // but kept here for potential future control-panel integration.
-  private _scrollToBottom() {
-    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-    if (transcriptEl) {
-      defaultAutoScroll.scrollToBottom(transcriptEl, true);
-      this.lastSeenMessageCount = this.transcript.length;
-      this._updateScrollToBottomState();
-    }
-  }
-
   private _formatTimestamp(timestamp?: Date): string {
     if (!timestamp) return "";
     return timestamp.toLocaleTimeString([], {

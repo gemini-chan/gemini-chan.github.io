@@ -21,10 +21,7 @@ import "./live2d/live2d-gate";
 import "./settings-menu";
 import "./chat-view";
 import "./call-transcript";
-import type {
-  EnergyLevelChangedDetail,
-  EnergyMode,
-} from "./src/energy-bar-service";
+import type { EnergyLevelChangedDetail } from "./src/energy-bar-service";
 import { energyBarService } from "./src/energy-bar-service";
 import "./toast-notification";
 import "./controls-panel";
@@ -32,6 +29,12 @@ import "./tab-view";
 import "./call-history-view";
 import type { ToastNotification } from "./toast-notification";
 import type { CallSummary, Turn } from "./types";
+
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
 
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
@@ -134,9 +137,9 @@ abstract class BaseSessionManager {
         config: this.getConfig(),
       });
       return true;
-    } catch (e: any) {
+    } catch (e) {
       logger.error(`Error initializing ${this.getSessionName()}:`, e);
-      const msg = String(e?.message || e || "");
+      const msg = String((e as Error)?.message || e || "");
       this.updateError(`Failed to initialize ${this.getSessionName()}: ${msg}`);
       return false;
     }
@@ -173,8 +176,8 @@ abstract class BaseSessionManager {
     if (!this.session) return;
     try {
       this.session.sendRealtimeInput(input);
-    } catch (e: any) {
-      const msg = String(e?.message || e || "");
+    } catch (e) {
+      const msg = String((e as Error)?.message || e || "");
       this.updateError(`Failed to stream audio: ${msg}`);
     }
   }
@@ -361,7 +364,6 @@ export class GdmLiveAudio extends LitElement {
     undefined;
   private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
     undefined;
-  @state() private _toastVisible = false;
   @state() showSettings = false;
   @state() toastMessage = "";
 
@@ -389,10 +391,10 @@ export class GdmLiveAudio extends LitElement {
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
-    (window as any).AudioContext || (window as any).webkitAudioContext
+    window.AudioContext || window.webkitAudioContext
   )({ sampleRate: 16000 });
   private outputAudioContext = new (
-    (window as any).AudioContext || (window as any).webkitAudioContext
+    window.AudioContext || window.webkitAudioContext
   )({ sampleRate: 24000 });
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
@@ -709,7 +711,7 @@ export class GdmLiveAudio extends LitElement {
     this.requestUpdate("textTranscript");
   }
 
-  private _handleCallRateLimit(msg?: string) {
+  private _handleCallRateLimit(_msg?: string) {
     // Degrade only STS energy and notify UI
     energyBarService.handleRateLimitError("sts");
     if (this._callRateLimitNotified) return;
@@ -724,7 +726,7 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleTextRateLimit(msg?: string) {
+  private _handleTextRateLimit(_msg?: string) {
     // Degrade only TTS energy on text rate-limit
     energyBarService.handleRateLimitError("tts");
     const toast = this.shadowRoot?.querySelector(
@@ -801,8 +803,8 @@ export class GdmLiveAudio extends LitElement {
             this.callSessionManager.sendRealtimeInput({
               media: createBlob(pcmData),
             });
-          } catch (e: any) {
-            const msg = String(e?.message || e || "");
+          } catch (e) {
+            const msg = String((e as Error)?.message || e || "");
             this.updateError(`Failed to stream audio: ${msg}`);
           }
         }
@@ -1143,24 +1145,12 @@ export class GdmLiveAudio extends LitElement {
     this.textSessionManager.sendMessage(message);
   }
 
-  private _showCuteToast() {
-    // Show the API key request message based on active persona
-    this.toastMessage = this._getApiKeyPrompt();
-    this._toastVisible = true;
-
-    // Auto-hide after 6 seconds to give time to read the message
-    setTimeout(() => {
-      this._toastVisible = false;
-      this.toastMessage = "";
-    }, 6000);
-  }
-
   private _scrollCallTranscriptToBottom() {
     // Find the call transcript component and scroll it to bottom
     const callTranscript = this.shadowRoot?.querySelector("call-transcript") as
       | (HTMLElement & { _scrollToBottom?: () => void })
       | null;
-    if (callTranscript && callTranscript._scrollToBottom) {
+    if (callTranscript?._scrollToBottom) {
       callTranscript._scrollToBottom();
       // Reset the scroll state
       this.showCallScrollToBottom = false;
@@ -1172,7 +1162,7 @@ export class GdmLiveAudio extends LitElement {
     const chatView = this.shadowRoot?.querySelector("chat-view") as
       | (HTMLElement & { _scrollToBottom?: () => void })
       | null;
-    if (chatView && chatView._scrollToBottom) {
+    if (chatView?._scrollToBottom) {
       chatView._scrollToBottom();
       this.showChatScrollToBottom = false;
       this.chatNewMessageCount = 0;
@@ -1230,9 +1220,9 @@ export class GdmLiveAudio extends LitElement {
     if (this.textSession) {
       try {
         this.textSessionManager.sendMessage(message);
-      } catch (error: any) {
+      } catch (error) {
         logger.error("Error sending message to text session:", error);
-        const msg = String(error?.message || error || "");
+        const msg = String((error as Error)?.message || error || "");
         this.updateError(`Failed to send message: ${msg}`);
 
         // Try to reinitialize the session and abort if still failing

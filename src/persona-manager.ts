@@ -126,7 +126,12 @@ export class PersonaManager {
       return activePersona;
     }
 
-    return this.personas.find((p) => p.isDefault)!;
+    const defaultPersona = this.personas.find((p) => p.isDefault);
+    if (defaultPersona) {
+      return defaultPersona;
+    }
+
+    throw new Error("No default persona found");
   }
 
   /**
