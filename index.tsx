@@ -1287,8 +1287,8 @@ export class GdmLiveAudio extends LitElement {
       if (prompt && mode === "sts") {
         this._appendCallNotice(prompt);
         logger.debug(`Appended STS call notice`, { prompt });
-      } else if (prompt && mode === "tts") {
-        // All TTS prompts: inject directly into chat window
+      } else if (prompt && mode === "tts" && level < 2) {
+        // Only inject prompts for degraded/exhausted states.
         this._appendTextMessage(prompt, "model");
         logger.debug(`Appended TTS text message`, { prompt });
       }
