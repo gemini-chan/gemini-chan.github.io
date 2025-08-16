@@ -19,7 +19,7 @@
     <step number="3">
       <action>Check for Existing Specification</action>
       <details>
-        Check if a `.roo/specs/{feature_name}/requirements.md` file already exists. If not, create it.
+        Check if a `docs/specs/{feature_name}/requirements.md` file already exists. If not, create it.
       </details>
       <tools>
         <tool>list_files</tool>
