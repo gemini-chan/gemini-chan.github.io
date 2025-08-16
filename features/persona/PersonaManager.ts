@@ -40,7 +40,7 @@ export class PersonaManager {
           assistant:
             "My processing power is limited at the moment. I can still assist with basic tasks.",
           vtuber:
-            " Mm... My emotional scanner’s flickering... I mean.. So sleepy....",
+            "Mm... My emotional scanner’s flickering... I mean... So sleepy...",
           default: "Low energy. I can help with basic requests only.",
         },
         0: {
