@@ -1,10 +1,10 @@
-import { css, html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
 import {
   type EnergyLevelChangedDetail,
   energyBarService,
   type TTSEnergyLevel,
 } from "@services/EnergyBarService";
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("tts-energy-bar")
 export class TTSEnergyBar extends LitElement {

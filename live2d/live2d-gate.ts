@@ -1,6 +1,6 @@
+import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "@services/DebugLogger";
 import "./live2d-visual";
 
 const log = createComponentLogger("live2d-gate");

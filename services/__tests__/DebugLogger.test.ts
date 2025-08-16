@@ -1,7 +1,7 @@
 // src/debug-logger.test.ts
 
-import { expect } from "chai";
 import { DebugLogger } from "@services/DebugLogger";
+import { expect } from "chai";
 
 // Define globals for the test environment
 declare global {
@@ -72,11 +72,15 @@ describe("DebugLogger with ConfigurationManager", () => {
 
   it("should load default configuration correctly", () => {
     const logger = new DebugLogger();
-    const config = (logger as unknown as { config: {
-      enabled: boolean;
-      logLevel: string;
-      components: Record<string, boolean>
-    } }).config;
+    const config = (
+      logger as unknown as {
+        config: {
+          enabled: boolean;
+          logLevel: string;
+          components: Record<string, boolean>;
+        };
+      }
+    ).config;
 
     expect(config.enabled).to.be.true;
     expect(config.logLevel).to.equal("info");
@@ -91,10 +95,14 @@ describe("DebugLogger with ConfigurationManager", () => {
     window.location.search = "?debug=component-c,component-d";
 
     const logger = new DebugLogger();
-    const config = (logger as unknown as { config: {
-      enabled: boolean;
-      components: Record<string, boolean>
-    } }).config;
+    const config = (
+      logger as unknown as {
+        config: {
+          enabled: boolean;
+          components: Record<string, boolean>;
+        };
+      }
+    ).config;
 
     expect(config.enabled).to.be.true;
     expect(config.components).to.deep.equal({
@@ -118,11 +126,15 @@ describe("DebugLogger with ConfigurationManager", () => {
     );
 
     const logger = new DebugLogger();
-    const config = (logger as unknown as { config: {
-      enabled: boolean;
-      logLevel: string;
-      components: Record<string, boolean>
-    } }).config;
+    const config = (
+      logger as unknown as {
+        config: {
+          enabled: boolean;
+          logLevel: string;
+          components: Record<string, boolean>;
+        };
+      }
+    ).config;
 
     expect(config.enabled).to.be.true;
     expect(config.logLevel).to.equal("debug");
@@ -138,7 +150,8 @@ describe("DebugLogger with ConfigurationManager", () => {
     process.env.DEBUG_ENABLED = "false";
 
     const logger = new DebugLogger();
-    const config = (logger as unknown as { config: { enabled: boolean } }).config;
+    const config = (logger as unknown as { config: { enabled: boolean } })
+      .config;
 
     expect(config.enabled).to.be.false;
   });

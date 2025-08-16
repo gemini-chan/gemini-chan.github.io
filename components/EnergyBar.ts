@@ -1,9 +1,9 @@
-import { css, html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
 import {
   type EnergyLevelChangedDetail,
   energyBarService,
 } from "@services/EnergyBarService";
+import { css, html, LitElement } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("energy-bar")
 export class EnergyBar extends LitElement {

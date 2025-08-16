@@ -1,7 +1,7 @@
+import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
+import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "@services/DebugLogger";
-import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
 
 interface Turn {
   text: string;
@@ -464,7 +464,6 @@ export class ChatView extends LitElement {
       );
     }
   }
-
 
   render() {
     return html`

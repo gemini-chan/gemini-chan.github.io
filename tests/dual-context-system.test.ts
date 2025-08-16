@@ -1,5 +1,5 @@
-import { expect } from "chai";
 import { GdmLiveAudio } from "@app/main";
+import { expect } from "chai";
 
 // Mock the Google GenAI client
 class MockSession {

@@ -3,19 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { PersonaManager } from "@features/persona/PersonaManager";
+import { SummarizationService } from "@features/summarization/SummarizationService";
 import {
   GoogleGenAI,
   type LiveServerMessage,
   Modality,
   type Session,
 } from "@google/genai";
+import { createComponentLogger } from "@services/DebugLogger";
+import { createBlob, decode, decodeAudioData } from "@shared/utils";
+import { VectorStore } from "@store/VectorStore";
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { createComponentLogger } from "@services/DebugLogger";
-import { PersonaManager } from "@features/persona/PersonaManager";
-import { SummarizationService } from "@features/summarization/SummarizationService";
-import { VectorStore } from "@store/VectorStore";
-import { createBlob, decode, decodeAudioData } from "@shared/utils";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
 import "@components/SettingsMenu";

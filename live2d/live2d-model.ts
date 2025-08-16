@@ -1,6 +1,6 @@
+import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "@services/DebugLogger";
 import { AudioToAnimationMapper } from "./audio-mapper";
 import { IdleEyeFocus } from "./idle-eye-focus";
 import type {
@@ -189,7 +189,9 @@ export class Live2DModelComponent extends LitElement {
       // Configure ZipLoader if available so .zip URLs work
       await import("./zip-loader");
       const mod = await import("pixi-live2d-display/cubism4");
-      const Live2DModel = (mod.Live2DModel ?? mod.default ?? mod) as unknown as {
+      const Live2DModel = (mod.Live2DModel ??
+        mod.default ??
+        mod) as unknown as {
         from: (
           url: string,
         ) => Promise<Live2DModelLike & { internalModel?: unknown }>;
@@ -213,16 +215,14 @@ export class Live2DModelComponent extends LitElement {
 
       // basic transform
       try {
-        (model.anchor as unknown as { set: (x: number, y: number) => void })?.set?.(
-          this.anchor[0],
-          this.anchor[1],
-        );
+        (
+          model.anchor as unknown as { set: (x: number, y: number) => void }
+        )?.set?.(this.anchor[0], this.anchor[1]);
       } catch {}
       try {
-        (model.scale as unknown as { set: (x: number, y: number) => void })?.set?.(
-          this.scale,
-          this.scale,
-        );
+        (
+          model.scale as unknown as { set: (x: number, y: number) => void }
+        )?.set?.(this.scale, this.scale);
       } catch {}
 
       // Placement & scaling (Airi-aligned): bottom-center with fit-to-canvas using container size
@@ -406,9 +406,9 @@ export class Live2DModelComponent extends LitElement {
   private _stopLoop() {
     const ticker = this._app?.ticker;
     if (ticker && this._loopCb)
-      (
-        ticker as { remove: (cb: (delta: number) => void) => void }
-      ).remove(this._loopCb);
+      (ticker as { remove: (cb: (delta: number) => void) => void }).remove(
+        this._loopCb,
+      );
     this._loopCb = undefined;
   }
 
@@ -433,7 +433,10 @@ export class Live2DModelComponent extends LitElement {
     const widthScale = ((cw * fit) / initialW) * offsetFactor;
     const s = Math.min(heightScale, widthScale) * (this.scale || 1.0);
     try {
-      (m.scale as unknown as { set: (x: number, y: number) => void })?.set?.(s, s);
+      (m.scale as unknown as { set: (x: number, y: number) => void })?.set?.(
+        s,
+        s,
+      );
     } catch {}
     try {
       (m.position as unknown as { set: (x: number, y: number) => void })?.set?.(

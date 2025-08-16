@@ -1,5 +1,5 @@
-import { expect } from "chai";
 import { energyBarService } from "@services/EnergyBarService";
+import { expect } from "chai";
 
 describe("EnergyBarService", () => {
   beforeEach(() => {

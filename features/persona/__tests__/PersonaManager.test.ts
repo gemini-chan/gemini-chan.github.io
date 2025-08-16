@@ -1,6 +1,6 @@
+import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
 import { v4 as uuidv4 } from "uuid";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
 
 // Mock the uuid module to have predictable IDs
 vi.mock("uuid", () => ({

@@ -1,5 +1,5 @@
-import { expect } from "chai";
 import { PersonaManager } from "@features/persona/PersonaManager";
+import { expect } from "chai";
 
 describe("PersonaManager.getPromptForEnergyLevel", () => {
   const pm = new PersonaManager();
