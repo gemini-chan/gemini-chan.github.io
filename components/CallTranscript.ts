@@ -1,8 +1,8 @@
+import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
+import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "@services/DebugLogger";
-import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
-import "./energy-bar.js";
+import "@components/EnergyBar";
 
 const logger = createComponentLogger("call-transcript");
 
