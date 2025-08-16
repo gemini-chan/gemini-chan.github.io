@@ -357,8 +357,10 @@ export class GdmLiveAudio extends LitElement {
   @state() isCallActive = false;
   @state() status = "";
   @state() error = "";
-  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined = undefined;
-  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
+    undefined;
+  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
+    undefined;
   @state() private _toastVisible = false;
   @state() showSettings = false;
   @state() toastMessage = "";
@@ -497,31 +499,31 @@ export class GdmLiveAudio extends LitElement {
       this.personaManager.getActivePersona().id,
     );
     this.initClient();
-    
+
     // Debug: Check initial TTS energy state
     logger.debug("Initial TTS energy state", {
       level: energyBarService.getCurrentEnergyLevel("tts"),
-      model: energyBarService.getCurrentModel("tts")
+      model: energyBarService.getCurrentModel("tts"),
     });
-    
+
     // Initial TTS greeting is now triggered in firstUpdated
   }
 
   private _triggerInitialTTSGreeting() {
     const ttsLevel = energyBarService.getCurrentEnergyLevel("tts");
     const personaName = this.personaManager.getActivePersona().name;
-    
+
     logger.debug("Triggering initial TTS greeting", { ttsLevel, personaName });
-    
+
     if (ttsLevel === 2) {
       const prompt = this.personaManager.getPromptForEnergyLevel(
         2,
         personaName,
         "tts",
       );
-      
+
       logger.debug("Generated initial TTS greeting", { prompt });
-      
+
       if (prompt) {
         this._appendTextMessage(prompt, "model");
         logger.debug("Injected initial greeting into chat");
@@ -690,19 +692,19 @@ export class GdmLiveAudio extends LitElement {
 
   private _appendTextMessage(text: string, speaker: "user" | "model") {
     // Append a message directly to the text transcript
-    logger.debug("Appending text message", { 
-      text, 
-      speaker, 
-      currentLength: this.textTranscript.length 
+    logger.debug("Appending text message", {
+      text,
+      speaker,
+      currentLength: this.textTranscript.length,
     });
-    
+
     this.textTranscript = [...this.textTranscript, { text, speaker }];
-    
-    logger.debug("Text message appended", { 
+
+    logger.debug("Text message appended", {
       newLength: this.textTranscript.length,
-      lastMessage: this.textTranscript[this.textTranscript.length - 1]
+      lastMessage: this.textTranscript[this.textTranscript.length - 1],
     });
-    
+
     // Force a re-render to ensure the UI updates
     this.requestUpdate("textTranscript");
   }
@@ -944,14 +946,22 @@ export class GdmLiveAudio extends LitElement {
 
     // Open settings menu and show toast prompting for API key
     this.showSettings = true;
-    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
-    globalToast?.show(this._getApiKeyPrompt(), 'info', 4000, { position: 'top-right' });
+    const globalToast = this.shadowRoot?.querySelector(
+      "#global-toast",
+    ) as ToastNotification;
+    globalToast?.show(this._getApiKeyPrompt(), "info", 4000, {
+      position: "top-right",
+    });
   }
 
   private async _handleApiKeySaved() {
     // Show success toast for API key saved
-    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
-    globalToast?.show("API key saved successfully! ✨", "success", 2500, { position: "top-right" });
+    const globalToast = this.shadowRoot?.querySelector(
+      "#global-toast",
+    ) as ToastNotification;
+    globalToast?.show("API key saved successfully! ✨", "success", 2500, {
+      position: "top-right",
+    });
 
     logger.info("API key saved, reinitializing client");
 
@@ -1136,11 +1146,11 @@ export class GdmLiveAudio extends LitElement {
   private _showCuteToast() {
     // Show the API key request message based on active persona
     this.toastMessage = this._getApiKeyPrompt();
-    this.showToast = true;
+    this._toastVisible = true;
 
     // Auto-hide after 6 seconds to give time to read the message
     setTimeout(() => {
-      this.showToast = false;
+      this._toastVisible = false;
       this.toastMessage = "";
     }, 6000);
   }
@@ -1269,10 +1279,10 @@ export class GdmLiveAudio extends LitElement {
   private _onEnergyLevelChanged = (e: Event) => {
     const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
       .detail;
-    
+
     // Debug logging
     logger.debug(`Energy level changed`, { mode, level, reason });
-    
+
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
       // STS: show immersive prompts as directed; TTS: inject into chat or show as toast
@@ -1281,9 +1291,14 @@ export class GdmLiveAudio extends LitElement {
         personaName,
         mode,
       );
-      
-      logger.debug(`Generated prompt for energy level`, { mode, level, personaName, prompt });
-      
+
+      logger.debug(`Generated prompt for energy level`, {
+        mode,
+        level,
+        personaName,
+        prompt,
+      });
+
       if (prompt && mode === "sts") {
         this._appendCallNotice(prompt);
         logger.debug(`Appended STS call notice`, { prompt });

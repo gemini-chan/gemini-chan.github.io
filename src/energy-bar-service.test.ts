@@ -76,14 +76,14 @@ describe("EnergyBarService", () => {
       // Drain STS energy
       energyBarService.handleRateLimitError("sts"); // 3 -> 2
       energyBarService.handleRateLimitError("sts"); // 2 -> 1
-      
+
       // TTS should remain at 2
       expect(energyBarService.getCurrentEnergyLevel("sts")).to.equal(1);
       expect(energyBarService.getCurrentEnergyLevel("tts")).to.equal(2);
-      
+
       // Drain TTS energy
       energyBarService.handleRateLimitError("tts"); // 2 -> 1
-      
+
       // STS should remain at 1
       expect(energyBarService.getCurrentEnergyLevel("sts")).to.equal(1);
       expect(energyBarService.getCurrentEnergyLevel("tts")).to.equal(1);

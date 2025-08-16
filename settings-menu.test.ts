@@ -1,9 +1,9 @@
-import { html, fixture, waitUntil } from "@open-wc/testing";
-import { vi, describe, it, beforeEach, afterEach, expect } from "vitest";
+import { fixture, html, waitUntil } from "@open-wc/testing";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "vitest-dom/extend-expect";
 import "./settings-menu";
-import { SettingsMenu } from "./settings-menu";
-import { Persona, PersonaManager } from "./src/persona-manager";
+import type { SettingsMenu } from "./settings-menu";
+import { type Persona, PersonaManager } from "./src/persona-manager";
 
 // Mock PersonaManager to avoid actual localStorage access and network calls
 vi.mock("./src/persona-manager", () => {

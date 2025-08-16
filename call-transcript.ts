@@ -320,13 +320,15 @@ export class CallTranscript extends LitElement {
         <div class="header-content">
           <div class="call-indicator"></div>
           <span>
-            ${this.callState === "connecting"
-              ? "Connecting..."
-              : this.callState === "active"
-              ? "Call in Progress"
-              : this.callState === "ending"
-              ? "Ending call..."
-              : "Call"}
+            ${
+              this.callState === "connecting"
+                ? "Connecting..."
+                : this.callState === "active"
+                  ? "Call in Progress"
+                  : this.callState === "ending"
+                    ? "Ending call..."
+                    : "Call"
+            }
           </span>
         </div>
         <div class="header-controls">

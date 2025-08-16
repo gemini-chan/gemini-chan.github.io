@@ -14,7 +14,8 @@ export class ToastNotification extends LitElement {
 
   // Screen position for the toast
   @property({ type: String, reflect: true })
-  position: "top-center" | "bottom-center" | "top-right" | "bottom-right" = "top-center";
+  position: "top-center" | "bottom-center" | "top-right" | "bottom-right" =
+    "top-center";
 
   // Visual variant (inline = lighter surface, used over Live2D center bottom)
   @property({ type: String, reflect: true })
@@ -121,11 +122,16 @@ export class ToastNotification extends LitElement {
 
   private _getIcon(): string {
     switch (this.type) {
-      case "info": return "ℹ️";
-      case "success": return "✅";
-      case "warning": return "⚠️";
-      case "error": return "❌";
-      default: return "ℹ️";
+      case "info":
+        return "ℹ️";
+      case "success":
+        return "✅";
+      case "warning":
+        return "⚠️";
+      case "error":
+        return "❌";
+      default:
+        return "ℹ️";
     }
   }
 
@@ -136,7 +142,10 @@ export class ToastNotification extends LitElement {
     message: string,
     type: "info" | "success" | "warning" | "error" = "info",
     duration: number = 0,
-    opts?: { position?: "top-center" | "bottom-center" | "top-right" | "bottom-right"; variant?: "standard" | "inline" }
+    opts?: {
+      position?: "top-center" | "bottom-center" | "top-right" | "bottom-right";
+      variant?: "standard" | "inline";
+    },
   ) {
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);
@@ -152,11 +161,13 @@ export class ToastNotification extends LitElement {
       this.hideTimeout = setTimeout(() => this.hide(), duration);
     }
 
-    this.dispatchEvent(new CustomEvent("toast-show", {
-      detail: { message, type },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent("toast-show", {
+        detail: { message, type },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   hide() {
@@ -167,9 +178,15 @@ export class ToastNotification extends LitElement {
       this._isAnimating = false;
       this.hideTimeout = undefined;
     }, 300);
-    this.dispatchEvent(new CustomEvent("toast-hide", { bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("toast-hide", { bubbles: true, composed: true }),
+    );
   }
 
-  get isVisible(): boolean { return this.visible; }
-  get isAnimating(): boolean { return this._isAnimating; }
+  get isVisible(): boolean {
+    return this.visible;
+  }
+  get isAnimating(): boolean {
+    return this._isAnimating;
+  }
 }

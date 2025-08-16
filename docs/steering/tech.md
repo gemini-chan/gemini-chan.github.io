@@ -7,6 +7,10 @@
 - **Live2D** - 2D character animation and rendering
 - **Google GenAI** - Real-time AI voice conversation API
 
+## Backend Architecture
+- The application is a frontend-only system that communicates directly with the Google Gemini API.
+- The user's provided Google AI API key is used for all interactions with the Gemini models, acting as the sole authentication and ignition key for the system.
+
 ## Visualization Technologies
 - **Live2D Cubism SDK** - Primary character animation system
 - **Three.js** - Currently used for 3D sphere (to be replaced)
@@ -21,7 +25,7 @@
 ## Development Setup
 - Uses ES modules with import maps in HTML
 - Vite handles TypeScript compilation and bundling
-- Environment variables loaded via `.env` files
+- The `GEMINI_API_KEY` is primarily managed through the in-app settings UI. For development convenience, it can also be loaded from a `.env` file.
 - Path aliases configured (`@/*` maps to workspace root)
 
 ## Common Commands

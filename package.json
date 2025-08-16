@@ -6,12 +6,8 @@
   "scripts": {
     "dev": "vite",
     "test": "wtr '**/*.test.ts' --node-resolve",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "biome lint .",
-    "lint:fix": "biome lint --apply .",
-    "format": "biome format .",
-    "check": "biome check .",
-    "check:fix": "biome check --apply .",
+    "type": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome check --write .",
     "prepare": "husky install",
     "build": "vite build"
   },
