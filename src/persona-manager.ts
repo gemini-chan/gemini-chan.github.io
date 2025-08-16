@@ -25,67 +25,68 @@ export class PersonaManager {
     mode: "sts" | "tts" = "sts",
   ): string {
     if (level >= 3) return ""; // No special prompt for full energy
+
+    const prompts = {
+      sts: {
+        2: {
+          vtuber:
+            "I might be running a tiny bit low on brainpower—so if I trail off or keep things simpler, forgive me! I’ll still give it my all, promise~",
+          assistant:
+            "System capacity is reduced. I can still help effectively, but responses may be more concise.",
+          default:
+            "Energy reduced. I can continue, but responses may be simpler for now.",
+        },
+        1: {
+          assistant:
+            "My processing power is limited at the moment. I can still assist with basic tasks.",
+          vtuber:
+            "Mm... my emotional scanner’s flickering... I can still hear you just fine and respond, but my feelings might sound a little sleepy...",
+          default: "Low energy. I can help with basic requests only.",
+        },
+        0: {
+          assistant:
+            "My systems just powered down to protect my core. I’ll need a moment to recharge—please try again in a bit.",
+          vtuber:
+            "N-nngh... I’m out of juice... My consciousness is drifting... I’ll nap for a bit and come back brighter, o-okay? (｡•́︿•̀｡)",
+          default:
+            "I'm sorry, I'm out of energy and need to rest. Please try again later.",
+        },
+      },
+      tts: {
+        2: {
+          vtuber:
+            "Hey there! ✨ I'm Gemini-chan, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~",
+          assistant:
+            "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.",
+          default:
+            "Hello! I'm ready to chat with you. What would you like to talk about today?",
+        },
+        1: {
+          vtuber:
+            "Mm... I'm feeling a bit sleepy, but I'm still here for you! My responses might be a little simpler than usual, but let's chat anyway~ (´∀｀)",
+          assistant:
+            "I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries and tasks.",
+          default:
+            "I'm running on reduced power, but I'm still here to help with simpler requests.",
+        },
+        0: {
+          vtuber:
+            "Zzz... I'm too tired to chat right now... (｡-ω-｡) Please let me rest for a bit and try again later, okay?",
+          assistant:
+            "My systems are currently offline for maintenance. Please try again later when I've had time to recharge.",
+          default:
+            "I'm currently out of energy and need to rest. Please try again later.",
+        },
+      },
+    };
+
     const name = (personaName || "").toLowerCase();
-    // STS immersive prompts per spec
-    if (mode === "sts" && level === 2) {
-      if (name === "vtuber") {
-        return "I might be running a tiny bit low on brainpower—so if I trail off or keep things simpler, forgive me! I’ll still give it my all, promise~";
-      }
-      if (name === "assistant") {
-        return "System capacity is reduced. I can still help effectively, but responses may be more concise.";
-      }
-      return "Energy reduced. I can continue, but responses may be simpler for now.";
-    }
-    if (mode === "sts" && level === 1) {
-      if (name === "assistant") {
-        return "My processing power is limited at the moment. I can still assist with basic tasks.";
-      }
-      if (name === "vtuber") {
-        return "Mm... my emotional scanner’s flickering... I can still hear you just fine and respond, but my feelings might sound a little sleepy...";
-      }
-      return "Low energy. I can help with basic requests only.";
-    }
-    // STS exhausted
-    if (mode === "sts" && level === 0) {
-      if (name === "assistant") {
-        return "My systems just powered down to protect my core. I’ll need a moment to recharge—please try again in a bit.";
-      }
-      if (name === "vtuber") {
-        return "N-nngh... I’m out of juice... My consciousness is drifting... I’ll nap for a bit and come back brighter, o-okay? (｡•́︿•̀｡)";
-      }
-      return "I'm sorry, I'm out of energy and need to rest. Please try again later.";
+    const promptSet = prompts[mode]?.[level as 0 | 1 | 2];
+
+    if (promptSet) {
+      return promptSet[name as keyof typeof promptSet] || promptSet.default;
     }
 
-    // TTS immersive prompts for chat
-    if (mode === "tts" && level === 2) {
-      if (name === "vtuber") {
-        return "Hey there! ✨ I'm Gemini-chan, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~";
-      }
-      if (name === "assistant") {
-        return "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.";
-      }
-      return "Hello! I'm ready to chat with you. What would you like to talk about today?";
-    }
-    if (mode === "tts" && level === 1) {
-      if (name === "vtuber") {
-        return "Mm... I'm feeling a bit sleepy, but I'm still here for you! My responses might be a little simpler than usual, but let's chat anyway~ (´∀｀)";
-      }
-      if (name === "assistant") {
-        return "I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries and tasks.";
-      }
-      return "I'm running on reduced power, but I'm still here to help with simpler requests.";
-    }
-    if (mode === "tts" && level === 0) {
-      if (name === "vtuber") {
-        return "Zzz... I'm too tired to chat right now... (｡-ω-｡) Please let me rest for a bit and try again later, okay?";
-      }
-      if (name === "assistant") {
-        return "My systems are currently offline for maintenance. Please try again later when I've had time to recharge.";
-      }
-      return "I'm currently out of energy and need to rest. Please try again later.";
-    }
-
-    // Default: no prompt for other modes yet
     return "";
   }
 

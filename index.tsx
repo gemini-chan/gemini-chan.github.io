@@ -504,10 +504,7 @@ export class GdmLiveAudio extends LitElement {
       model: energyBarService.getCurrentModel("tts")
     });
     
-    // Trigger initial TTS greeting after a short delay to ensure UI is ready
-    setTimeout(() => {
-      this._triggerInitialTTSGreeting();
-    }, 1000);
+    // Initial TTS greeting is now triggered in firstUpdated
   }
 
   private _triggerInitialTTSGreeting() {
@@ -951,7 +948,7 @@ export class GdmLiveAudio extends LitElement {
     globalToast?.show(this._getApiKeyPrompt(), 'info', 4000, { position: 'top-right' });
   }
 
-  private _handleApiKeySaved() {
+  private async _handleApiKeySaved() {
     // Show success toast for API key saved
     const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
     globalToast?.show("API key saved successfully! ✨", "success", 2500, { position: "top-right" });
@@ -959,7 +956,7 @@ export class GdmLiveAudio extends LitElement {
     logger.info("API key saved, reinitializing client");
 
     // Reinitialize the client with the new API key
-    this.initClient();
+    await this.initClient();
 
     // Close settings menu and toast when API key is saved
     this.showSettings = false;
@@ -969,12 +966,8 @@ export class GdmLiveAudio extends LitElement {
       const action = this.pendingAction;
       this.pendingAction = null; // Clear the pending action
 
-      // Execute the action after a brief delay to ensure client is initialized
-      // The 100ms delay allows the client initialization to complete before
-      // attempting to use the new API key for the pending action
-      setTimeout(() => {
-        action();
-      }, 100);
+      // Execute the action now that the client is initialized
+      action();
     }
   }
 
@@ -1266,6 +1259,16 @@ export class GdmLiveAudio extends LitElement {
       "persona-changed",
       this._handlePersonaChanged.bind(this),
     );
+  }
+
+  protected firstUpdated() {
+    // Trigger initial TTS greeting once the UI is ready
+    this._triggerInitialTTSGreeting();
+  }
+
+  protected firstUpdated() {
+    // Trigger initial TTS greeting once the UI is ready
+    this._triggerInitialTTSGreeting();
   }
 
   private _onEnergyLevelChanged = (e: Event) => {
