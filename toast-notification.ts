@@ -23,6 +23,8 @@ export class ToastNotification extends LitElement {
   @state()
   private _isAnimating = false;
 
+  private hideTimeout?: ReturnType<typeof setTimeout>;
+
   static styles = css`
     :host {
       /* Theming hooks */
@@ -136,6 +138,9 @@ export class ToastNotification extends LitElement {
     duration: number = 0,
     opts?: { position?: "top-center" | "bottom-center" | "top-right" | "bottom-right"; variant?: "standard" | "inline" }
   ) {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+    }
     this.message = message;
     this.type = type;
     if (opts?.position) this.position = opts.position;
@@ -144,7 +149,7 @@ export class ToastNotification extends LitElement {
     this._isAnimating = true;
 
     if (duration > 0) {
-      setTimeout(() => this.hide(), duration);
+      this.hideTimeout = setTimeout(() => this.hide(), duration);
     }
 
     this.dispatchEvent(new CustomEvent("toast-show", {
