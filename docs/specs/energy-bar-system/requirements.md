@@ -187,7 +187,7 @@ Scenario: Medium STS energy prompt for VTuber persona
   Given the STS energy level is 2
   And the selected persona is 'VTuber'
   When the system needs to display a prompt during a call
-  Then a message like "I might be running a tiny bit low on brainpower—so if I trail off or keep things simpler, forgive me!" is used.
+  Then a message like "I'm getting a little sleepy... " is used.
 
 Scenario: Low STS energy prompt for Assistant persona
   Given the STS energy level is 1
