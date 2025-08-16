@@ -357,13 +357,10 @@ export class GdmLiveAudio extends LitElement {
   @state() isCallActive = false;
   @state() status = "";
   @state() error = "";
-  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
-    undefined;
-  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
-    undefined;
+  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined = undefined;
   @state() private _toastVisible = false;
   @state() showSettings = false;
-  @state() showToast = false;
   @state() toastMessage = "";
 
   // Track pending user action for API key validation flow
@@ -407,6 +404,7 @@ export class GdmLiveAudio extends LitElement {
 
   // Scroll-to-bottom state for chat view
   @state() private showChatScrollToBottom = false;
+  @state() callState: "idle" | "connecting" | "active" | "ending" = "idle";
   @state() private chatNewMessageCount = 0;
   @state() private isChatActive = false;
 
@@ -449,6 +447,15 @@ export class GdmLiveAudio extends LitElement {
       flex-direction: column;
       height: 100%;
       overflow: hidden;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 200ms ease, visibility 200ms ease;
+    }
+
+    .main-container.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     #status {
@@ -741,6 +748,7 @@ export class GdmLiveAudio extends LitElement {
     logger.debug("Call start. Existing callSession:", this.callSession);
     // Switch to calling mode
     this.activeMode = "calling";
+    this.callState = "connecting";
     this._updateActiveOutputNode();
 
     // Initialize or reinitialize call session; if initialization fails, show non-silent failure and abort
@@ -768,7 +776,8 @@ export class GdmLiveAudio extends LitElement {
         video: false,
       });
 
-      this.updateStatus("Call connected");
+      this.updateStatus("");
+      this.callState = "active";
 
       this.sourceNode = this.inputAudioContext.createMediaStreamSource(
         this.mediaStream,
@@ -825,7 +834,8 @@ export class GdmLiveAudio extends LitElement {
     if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
       return;
 
-    this.updateStatus("Ending call...");
+    this.updateStatus("");
+    this.callState = "ending";
 
     this.isCallActive = false;
 
@@ -866,7 +876,8 @@ export class GdmLiveAudio extends LitElement {
       }),
     );
 
-    this.updateStatus("Call ended");
+    this.updateStatus("");
+    this.callState = "idle";
     logger.debug("Call ended. callSession preserved:", this.callSession);
   }
 
@@ -936,18 +947,14 @@ export class GdmLiveAudio extends LitElement {
 
     // Open settings menu and show toast prompting for API key
     this.showSettings = true;
-    this.toastMessage = this._getApiKeyPrompt();
-    this.showToast = true;
+    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
+    globalToast?.show(this._getApiKeyPrompt(), 'info', 4000, { position: 'top-right' });
   }
 
   private _handleApiKeySaved() {
     // Show success toast for API key saved
-    const toast = this.shadowRoot?.querySelector(
-      "toast-notification",
-    ) as ToastNotification;
-    if (toast) {
-      toast.show("API key saved successfully! ✨", "info", 3000);
-    }
+    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
+    globalToast?.show("API key saved successfully! ✨", "success", 2500, { position: "top-right" });
 
     logger.info("API key saved, reinitializing client");
 
@@ -956,8 +963,6 @@ export class GdmLiveAudio extends LitElement {
 
     // Close settings menu and toast when API key is saved
     this.showSettings = false;
-    this.showToast = false;
-    this.toastMessage = "";
 
     // Execute the pending action if there is one
     if (this.pendingAction) {
@@ -1317,9 +1322,10 @@ export class GdmLiveAudio extends LitElement {
       </div>
       <div class="ui-grid">
 
-        <div class="main-container">
+        <div class="main-container ${this.activeMode === "calling" ? "hidden" : ""}">
           <tab-view
             .activeTab=${this.activeTab}
+            .visible=${this.activeMode !== "calling"}
             @tab-switch=${this._handleTabSwitch}
           ></tab-view>
           ${
@@ -1376,30 +1382,15 @@ export class GdmLiveAudio extends LitElement {
           >
           </controls-panel>
 
-          <div id="status">
-            ${
-              this.error || this.status
-                ? html`<div
-                    class="toast ${this._toastVisible ? "" : "hide"}"
-                  >
-                    ${this.error || this.status}
-                  </div>`
-                : ""
-            }
-          </div>
-
-          <toast-notification
-            .visible=${this.showToast}
-            .message=${this.toastMessage}
-            type="info"
-          >
-          </toast-notification>
+          <toast-notification id="inline-toast" position="bottom-center" variant="inline"></toast-notification>
+          <toast-notification id="global-toast" position="top-right"></toast-notification>
         </div>
 
         <call-transcript
           .transcript=${this.callTranscript}
           .visible=${this.activeMode === "calling"}
           .activePersonaName=${this.personaManager.getActivePersona().name}
+          .callState=${this.callState}
           @reset-call=${this._resetCallContext}
           @scroll-state-changed=${this._handleCallScrollStateChanged}
         ></call-transcript>

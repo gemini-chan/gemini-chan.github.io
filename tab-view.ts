@@ -5,8 +5,18 @@ import "./tts-energy-bar";
 @customElement("tab-view")
 export class TabView extends LitElement {
   @property({ type: String }) activeTab: "chat" | "call-history" = "chat";
+  @property({ type: Boolean, reflect: true }) visible: boolean = true;
 
   static styles = css`
+    :host {
+      display: none;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    :host([visible]) {
+      display: block;
+    }
+
     .tabs {
       display: flex;
       justify-content: space-between;
