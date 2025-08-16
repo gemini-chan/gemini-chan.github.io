@@ -1,7 +1,7 @@
 # Implementation Plan: Root-Level Domain Structure
 
 ### 1. File & Directory Scaffolding
-- [ ] 1.1. Create the following directories at the project root: `app`, `components`, `features`, `services`, `store`, `visuals`, `shared`, and `tests`.
+- [x] 1.1. Create the following directories at the project root: `app`, `components`, `features`, `services`, `store`, `visuals`, `shared`, and `tests`.
   - Ref: Requirement 2.1.1, Design 2.1
 
 ### 2. Source Code Migration
