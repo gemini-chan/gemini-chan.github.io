@@ -439,7 +439,6 @@ export class ChatView extends LitElement {
         this.transcript.length,
         this.lastSeenMessageCount,
       );
-      this._scrollToBottom();
       this.newMessageCount = state.newMessageCount;
       log.debug("Scroll to bottom state updated", {
         showButton: state.showButton,
@@ -468,7 +467,6 @@ export class ChatView extends LitElement {
     if (transcriptEl) {
       defaultAutoScroll.scrollToBottom(transcriptEl, true);
       this.lastSeenMessageCount = this.transcript.length;
-      this._updateScrollToBottomState();
     }
   }
 
