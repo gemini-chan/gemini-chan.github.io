@@ -74,13 +74,13 @@ graph TD
     *   `updateEnergyLevel(level: number): void`
 *   **Visibility:** Only visible during active calls within the call controls area.
 
-#### 3. TTS Energy Indicator  
+#### 3. TTS Energy Indicator
 *   **Responsibility:** Displays the battery-style icon within the chat interface header. Shows TTS energy levels (0-2) with appropriate colors and animations.
 *   **Interface:**
     *   `updateEnergyLevel(level: number): void`
 *   **Visibility:** Always visible in the chat header when the chat interface is displayed.
 
-#### 3. Persona Service (Existing, Modified)
+#### 4. Persona Service (Existing, Modified)
 *   **Responsibility:** Selects and provides the appropriate conversational prompt based on the current energy level, selected persona, and interaction mode.
 *   **Interface (New/Modified):**
     *   `getPromptForEnergyLevel(level: number, persona: string, mode: 'sts' | 'tts'): string`
