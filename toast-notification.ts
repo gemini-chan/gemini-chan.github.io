@@ -165,6 +165,7 @@ export class ToastNotification extends LitElement {
     setTimeout(() => {
       this.message = "";
       this._isAnimating = false;
+      this.hideTimeout = undefined;
     }, 300);
     this.dispatchEvent(new CustomEvent("toast-hide", { bubbles: true, composed: true }));
   }
