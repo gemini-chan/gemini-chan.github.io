@@ -1,7 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createComponentLogger } from "./src/debug-logger";
-import "./energy-bar";
 import { defaultAutoScroll } from "./transcript-auto-scroll";
 
 const logger = createComponentLogger("call-transcript");
@@ -306,7 +305,6 @@ export class CallTranscript extends LitElement {
   render() {
     return html`
       <div class="header">
-        <energy-bar></energy-bar>
         <div class="header-content">
           <div class="call-indicator"></div>
           <span>Call in Progress</span>

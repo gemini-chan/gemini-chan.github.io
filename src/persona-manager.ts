@@ -56,6 +56,35 @@ export class PersonaManager {
       return "I'm sorry, I'm out of energy and need to rest. Please try again later.";
     }
 
+    // TTS immersive prompts for chat
+    if (mode === "tts" && level === 2) {
+      if (name === "vtuber") {
+        return "Hey there! ✨ I'm Gemini-chan, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~";
+      }
+      if (name === "assistant") {
+        return "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.";
+      }
+      return "Hello! I'm ready to chat with you. What would you like to talk about today?";
+    }
+    if (mode === "tts" && level === 1) {
+      if (name === "vtuber") {
+        return "Mm... I'm feeling a bit sleepy, but I'm still here for you! My responses might be a little simpler than usual, but let's chat anyway~ (´∀｀)";
+      }
+      if (name === "assistant") {
+        return "I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries and tasks.";
+      }
+      return "I'm running on reduced power, but I'm still here to help with simpler requests.";
+    }
+    if (mode === "tts" && level === 0) {
+      if (name === "vtuber") {
+        return "Zzz... I'm too tired to chat right now... (｡-ω-｡) Please let me rest for a bit and try again later, okay?";
+      }
+      if (name === "assistant") {
+        return "My systems are currently offline for maintenance. Please try again later when I've had time to recharge.";
+      }
+      return "I'm currently out of energy and need to rest. Please try again later.";
+    }
+
     // Default: no prompt for other modes yet
     return "";
   }

@@ -27,7 +27,6 @@ import type {
 } from "./src/energy-bar-service";
 import { energyBarService } from "./src/energy-bar-service";
 import "./toast-notification";
-import "./energy-bar";
 import "./controls-panel";
 import "./tab-view";
 import "./call-history-view";
@@ -441,19 +440,7 @@ export class GdmLiveAudio extends LitElement {
       z-index: 1;
     }
 
-    .status-bar {
-      position: absolute;
-      top: 16px;
-      right: 24px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      pointer-events: auto;
-    }
 
-    .status-bar energy-bar {
-      opacity: 0.9;
-    }
 
     .main-container {
       z-index: 1;
@@ -502,6 +489,39 @@ export class GdmLiveAudio extends LitElement {
       this.personaManager.getActivePersona().id,
     );
     this.initClient();
+    
+    // Debug: Check initial TTS energy state
+    logger.debug("Initial TTS energy state", {
+      level: energyBarService.getCurrentEnergyLevel("tts"),
+      model: energyBarService.getCurrentModel("tts")
+    });
+    
+    // Trigger initial TTS greeting after a short delay to ensure UI is ready
+    setTimeout(() => {
+      this._triggerInitialTTSGreeting();
+    }, 1000);
+  }
+
+  private _triggerInitialTTSGreeting() {
+    const ttsLevel = energyBarService.getCurrentEnergyLevel("tts");
+    const personaName = this.personaManager.getActivePersona().name;
+    
+    logger.debug("Triggering initial TTS greeting", { ttsLevel, personaName });
+    
+    if (ttsLevel === 2) {
+      const prompt = this.personaManager.getPromptForEnergyLevel(
+        2,
+        personaName,
+        "tts",
+      );
+      
+      logger.debug("Generated initial TTS greeting", { prompt });
+      
+      if (prompt) {
+        this._appendTextMessage(prompt, "model");
+        logger.debug("Injected initial greeting into chat");
+      }
+    }
   }
 
   private initSessionManagers() {
@@ -661,6 +681,25 @@ export class GdmLiveAudio extends LitElement {
     // Append a system-style notice to the call transcript to avoid silent failures
     const notice = { text, speaker: "model" as const, timestamp: new Date() };
     this.callTranscript = [...this.callTranscript, notice];
+  }
+
+  private _appendTextMessage(text: string, speaker: "user" | "model") {
+    // Append a message directly to the text transcript
+    logger.debug("Appending text message", { 
+      text, 
+      speaker, 
+      currentLength: this.textTranscript.length 
+    });
+    
+    this.textTranscript = [...this.textTranscript, { text, speaker }];
+    
+    logger.debug("Text message appended", { 
+      newLength: this.textTranscript.length,
+      lastMessage: this.textTranscript[this.textTranscript.length - 1]
+    });
+    
+    // Force a re-render to ensure the UI updates
+    this.requestUpdate("textTranscript");
   }
 
   private _handleCallRateLimit(msg?: string) {
@@ -1222,21 +1261,28 @@ export class GdmLiveAudio extends LitElement {
   private _onEnergyLevelChanged = (e: Event) => {
     const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
       .detail;
+    
+    // Debug logging
+    logger.debug(`Energy level changed`, { mode, level, reason });
+    
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
-      // STS: show immersive prompts as directed; TTS: currently quiet
+      // STS: show immersive prompts as directed; TTS: inject into chat or show as toast
       const prompt = this.personaManager.getPromptForEnergyLevel(
         level as 0 | 1 | 2 | 3,
         personaName,
         mode,
       );
+      
+      logger.debug(`Generated prompt for energy level`, { mode, level, personaName, prompt });
+      
       if (prompt && mode === "sts") {
         this._appendCallNotice(prompt);
-      } else if (prompt) {
-        const toast = this.shadowRoot?.querySelector(
-          "toast-notification",
-        ) as ToastNotification;
-        toast?.show(prompt, "warning", 4000);
+        logger.debug(`Appended STS call notice`, { prompt });
+      } else if (prompt && mode === "tts") {
+        // All TTS prompts: inject directly into chat window
+        this._appendTextMessage(prompt, "model");
+        logger.debug(`Appended TTS text message`, { prompt });
       }
     }
 
@@ -1265,13 +1311,7 @@ export class GdmLiveAudio extends LitElement {
         ></live2d-gate>
       </div>
       <div class="ui-grid">
-        ${
-          !this.isCallActive
-            ? html`<div class="status-bar">
-                <energy-bar></energy-bar>
-              </div>`
-            : ""
-        }
+
         <div class="main-container">
           <tab-view
             .activeTab=${this.activeTab}
@@ -1355,8 +1395,7 @@ export class GdmLiveAudio extends LitElement {
           .activePersonaName=${this.personaManager.getActivePersona().name}
           @reset-call=${this._resetCallContext}
           @scroll-state-changed=${this._handleCallScrollStateChanged}
-        >
-        </call-transcript>
+        ></call-transcript>
       </div>
     `;
   }

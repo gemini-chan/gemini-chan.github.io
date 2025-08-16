@@ -1,12 +1,14 @@
-# Technical Design: Energy Bar System (Dual-Mode)
+# Technical Design: Energy Bar System (Dual-Session Indicators)
 
 ### Overview
 
-This document outlines the technical design for the **Energy Bar System** feature, now updated to support the **Dual-Input Mode** (see `../dual-input-mode/design.md`). The goal is to gracefully manage the AI's conversational capabilities by dynamically switching between different Gemini models as rate limits are exhausted. This is achieved by maintaining **independent energy levels** for the two primary interaction modes:
-- **STS (Speech-to-Speech):** For live, ephemeral voice calls.
-- **TTS (Text-to-Speech):** For the persistent text-based chat.
+This document outlines the technical design for the **Energy Bar System** feature, designed to work seamlessly with the **Dual-Input Mode** (see `../dual-input-mode/design.md`). The goal is to gracefully manage the AI's conversational capabilities by dynamically switching between different Gemini models as rate limits are exhausted, while providing clear session-specific feedback to users.
 
-The solution involves a central state management service (`EnergyBarService`) to track energy levels for each mode, updating the UI to reflect the current state, and integrating with the existing persona and logging systems. This design ensures the solution is robust, maintainable, and provides clear, mode-specific feedback to the user.
+This is achieved by maintaining **independent energy levels** for the two primary interaction sessions:
+- **STS (Speech-to-Speech):** For live, ephemeral voice calls with indicators in the call interface.
+- **TTS (Text-to-Speech):** For persistent text-based chat with indicators in the chat interface.
+
+The solution involves a central state management service (`EnergyBarService`) to track energy levels for each session, dedicated UI indicators within their respective interfaces, and integration with the existing persona and logging systems. This design aligns with the dual-input-mode philosophy of separate, contextual interfaces for each interaction type.
 
 ### Architecture
 
@@ -26,9 +28,10 @@ graph TD
     end
 
     subgraph "UI & Persona"
-        F[UI Component: Energy Bar (STS Only)]
-        G[Persona Service]
-        H((Debug Logging System))
+        F[STS Energy Indicator - Call Interface]
+        G[TTS Energy Indicator - Chat Interface]
+        H[Persona Service]
+        I((Debug Logging System))
     end
 
     A -- "Notifies of STS Error" --> D;
@@ -36,18 +39,20 @@ graph TD
     C -- "Notifies of New STS Session" --> D;
     D -- "Updates State (STS/TTS)" --> E;
     E -- "Notifies of STS Change" --> F;
-    E -- "Notifies of Change" --> G;
-    D -- "Sends Log (STS/TTS)" --> H;
+    E -- "Notifies of TTS Change" --> G;
+    E -- "Notifies of Change" --> H;
+    D -- "Sends Log (STS/TTS)" --> I;
 ```
 
 **Data Flow:**
-1.  The `EnergyBarService` is initialized with full energy levels (3) for both `STS` and `TTS` modes.
+1.  The `EnergyBarService` is initialized with full energy levels: STS at level 3 and TTS at level 2 (maximum for each mode).
 2.  A `Rate Limit Detector` for a given mode (e.g., an error during a call) notifies the `EnergyBarService`, specifying the mode (`sts` or `tts`).
 3.  The `EnergyBarService` decrements the energy level for **only the specified mode** and updates the central `Application State`.
 4.  The `STS Session Connector` notifies the `EnergyBarService` when a new call session begins, and the service resets the **STS energy level** to 3.
-5.  The `UI Component` (Energy Bar) subscribes to state changes and updates the visual icon, but **only for the STS mode**.
-6.  The `Persona Service` receives energy level changes for both modes and can provide mode-specific conversational prompts.
-7.  All state changes within the `EnergyBarService` are logged with their corresponding mode.
+5.  The `STS Energy Indicator` subscribes to state changes and updates the visual icon within the call interface **only for STS energy changes**.
+6.  The `TTS Energy Indicator` subscribes to state changes and updates the visual icon within the chat interface **only for TTS energy changes**.
+7.  The `Persona Service` receives energy level changes for both modes and can provide mode-specific conversational prompts.
+8.  All state changes within the `EnergyBarService` are logged with their corresponding mode.
 
 ### Components and Interfaces
 
@@ -63,10 +68,17 @@ graph TD
 *   **Events:**
     *   `energy-level-changed`: Dispatched with detail `{ mode, level, prevLevel, reason, modelTier }`.
 
-#### 2. UI Component: Energy Bar
-*   **Responsibility:** Displays the battery-style icon for the **STS mode only** in a status bar at the top-right of the main UI. It is hidden when the call UI is active to avoid redundancy. Handles visual updates (bar count, color, animations).
+#### 2. STS Energy Indicator
+*   **Responsibility:** Displays the battery-style icon within the call interface during active calls. Shows STS energy levels (0-3) with appropriate colors and animations.
 *   **Interface:**
     *   `updateEnergyLevel(level: number): void`
+*   **Visibility:** Only visible during active calls within the call controls area.
+
+#### 3. TTS Energy Indicator  
+*   **Responsibility:** Displays the battery-style icon within the chat interface header. Shows TTS energy levels (0-2) with appropriate colors and animations.
+*   **Interface:**
+    *   `updateEnergyLevel(level: number): void`
+*   **Visibility:** Always visible in the chat header when the chat interface is displayed.
 
 #### 3. Persona Service (Existing, Modified)
 *   **Responsibility:** Selects and provides the appropriate conversational prompt based on the current energy level, selected persona, and interaction mode.
@@ -76,12 +88,12 @@ graph TD
 ### Data Models
 
 #### Energy State
-The application state now stores two independent energy pools.
+The application state now stores two independent energy pools with different level ranges.
 
 | State Property      | Type     | Constraints | Description                               |
 |---------------------|----------|-------------|-------------------------------------------|
 | `stsEnergyLevel`    | `number` | `0, 1, 2, 3`| The current energy level for the STS mode.|
-| `ttsEnergyLevel`    | `number` | `0, 1, 2, 3`| The current energy level for the TTS mode.|
+| `ttsEnergyLevel`    | `number` | `0, 1, 2`   | The current energy level for the TTS mode (simplified 3-level system).|
 | `stsModelTier`      | `string` |             | The corresponding AI model for the STS level.|
 | `ttsModelTier`      | `string` |             | The corresponding AI model for the TTS level.|
 
@@ -92,8 +104,12 @@ The application state now stores two independent energy pools.
     *   **Level 1:** `gemini-2.5-flash-live-preview`
     *   **Level 0:** No model / Exhausted state
 *   **TTS Mode (Chat):**
-    *   **Level 3, 2, 1:** `gemini-live-2.5-flash-preview`
+    *   **Level 2:** `gemini-live-2.5-flash-preview` (stable primary model)
+    *   **Level 1:** `gemini-2.0-flash-live-001` (fallback model for degraded performance)
     *   **Level 0:** No model / Exhausted state
+
+**TTS Energy Level Design Rationale:**
+The TTS mode uses a simplified 3-level system (2, 1, 0) instead of 4 levels to avoid redundant model reconnections. Since levels 3 and 2 would use the same model (`gemini-live-2.5-flash-preview`), combining them into a single level 2 eliminates unnecessary switching while maintaining the same functionality. The fallback model (`gemini-2.0-flash-live-001`) is only used at level 1, providing a stable degraded experience when the primary model hits rate limits.
 
 ### Persona-driven Prompts (Call/STS)
 As defined in the `dual-input-mode` requirements, the STS flow has specific immersive prompts:
