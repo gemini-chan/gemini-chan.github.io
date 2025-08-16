@@ -7,6 +7,17 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "baseUrl": ".",
+    "paths": {
+      "@app/*": ["app/*"],
+      "@components/*": ["components/*"],
+      "@features/*": ["features/*"],
+      "@services/*": ["services/*"],
+      "@store/*": ["store/*"],
+      "@visuals/*": ["visuals/*"],
+      "@shared/*": ["shared/*"],
+      "@tests/*": ["tests/*"],
+      "@live2d/*": ["live2d/*"]
+    },
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
