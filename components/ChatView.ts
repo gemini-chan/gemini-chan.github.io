@@ -27,9 +27,6 @@ export class ChatView extends LitElement {
   @state()
   private isChatActive = false;
 
-  @state()
-  private _scrollToBottom = false;
-
   private lastSeenMessageCount = 0;
   private textareaRef: HTMLTextAreaElement | null = null;
 
@@ -442,7 +439,7 @@ export class ChatView extends LitElement {
         this.transcript.length,
         this.lastSeenMessageCount,
       );
-      this._scrollToBottom = state.showButton;
+      this._scrollToBottom();
       this.newMessageCount = state.newMessageCount;
       log.debug("Scroll to bottom state updated", {
         showButton: state.showButton,
@@ -462,6 +459,16 @@ export class ChatView extends LitElement {
           composed: true,
         }),
       );
+    }
+  }
+
+  private _scrollToBottom() {
+    log.debug("Scrolling to bottom");
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      defaultAutoScroll.scrollToBottom(transcriptEl, true);
+      this.lastSeenMessageCount = this.transcript.length;
+      this._updateScrollToBottomState();
     }
   }
 
