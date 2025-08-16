@@ -16,6 +16,7 @@
 
 ### 4. Dependency Resolution & Verification
 - [x] 4.1. Run a static analysis pass (e.g., `tsc --noEmit`) to identify and fix all broken relative import paths in the moved TypeScript files.
-- [ ] 4.2. Execute the full test suite to ensure all unit and integration tests pass after the refactor.
-- [ ] 4.3. Run the production build process to confirm that the application bundles correctly with the new structure.
+- [x] 4.2. Execute the full test suite to ensure all unit and integration tests pass after the refactor.
+- [x] 4.3. Run the production build process to confirm that the application bundles correctly with the new structure.
+- [x] 5.1. Fix call transcript scrolling bug.
   - Ref: Requirement 2.4.1, Design 6.0

@@ -46,14 +46,6 @@ export class TranscriptAutoScroll {
 
     const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
 
-    logger.debug("Scroll check", {
-      scrollTop,
-      clientHeight,
-      scrollHeight,
-      threshold,
-      isNearBottom,
-    });
-
     return isNearBottom;
   }
 
@@ -116,6 +108,8 @@ export class TranscriptAutoScroll {
     if (wasAtBottom) {
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
+        // @ts-ignore
+        element.offsetHeight;
         // Detect rapid updates (multiple messages at once)
         const isRapidUpdate = newLength - oldLength > 1;
         logger.debug("Auto-scrolling", { smooth: !isRapidUpdate });

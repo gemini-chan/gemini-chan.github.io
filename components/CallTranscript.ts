@@ -213,10 +213,7 @@ export class CallTranscript extends LitElement {
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
       transcriptEl.addEventListener("scroll", () => {
-        const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
-        if (isAtBottom) {
-          this.lastSeenMessageCount = this.transcript.length;
-        }
+        defaultAutoScroll.handleScrollEvent(transcriptEl);
         this._updateScrollToBottomState();
       });
     }
@@ -233,14 +230,21 @@ export class CallTranscript extends LitElement {
           oldLength: oldTranscript.length,
           newLength: this.transcript.length,
         });
+
+        const isAtBottom = defaultAutoScroll.shouldAutoScroll(transcriptEl);
+
         defaultAutoScroll.handleTranscriptUpdate(
           transcriptEl,
           oldTranscript.length,
           this.transcript.length,
         );
 
-        // Update scroll-to-bottom button state
-        this._updateScrollToBottomState();
+        if (isAtBottom) {
+          this.lastSeenMessageCount = this.transcript.length;
+        }
+
+        // Update scroll-to-bottom button state after the next frame
+        requestAnimationFrame(() => this._updateScrollToBottomState());
       }
     }
 
@@ -261,6 +265,13 @@ export class CallTranscript extends LitElement {
       } else {
         this.removeAttribute("visible");
       }
+    }
+  }
+
+  public scrollToBottom() {
+    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+    if (transcriptEl) {
+      defaultAutoScroll.scrollToBottom(transcriptEl);
     }
   }
 

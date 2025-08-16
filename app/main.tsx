@@ -1149,10 +1149,10 @@ export class GdmLiveAudio extends LitElement {
   private _scrollCallTranscriptToBottom() {
     // Find the call transcript component and scroll it to bottom
     const callTranscript = this.shadowRoot?.querySelector("call-transcript") as
-      | (HTMLElement & { _scrollToBottom?: () => void })
+      | (HTMLElement & { scrollToBottom?: () => void })
       | null;
-    if (callTranscript?._scrollToBottom) {
-      callTranscript._scrollToBottom();
+    if (callTranscript?.scrollToBottom) {
+      callTranscript.scrollToBottom();
       // Reset the scroll state
       this.showCallScrollToBottom = false;
       this.callNewMessageCount = 0;
