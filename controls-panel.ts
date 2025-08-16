@@ -1,14 +1,10 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import "./tts-energy-bar";
 
 @customElement("controls-panel")
 export class ControlsPanel extends LitElement {
   @property({ type: Boolean })
   isCallActive = false;
-
-  @property({ type: Boolean })
-  isChatActive = false;
 
   @property({ type: Boolean })
   showCallScrollToBottom = false;
@@ -171,7 +167,6 @@ export class ControlsPanel extends LitElement {
       </div>
 
       <div class="right-controls">
-        ${!this.isChatActive ? html`<tts-energy-bar></tts-energy-bar>` : ""}
         <button
           id="settingsButton"
           @click=${this._toggleSettings}
