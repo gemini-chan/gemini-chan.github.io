@@ -408,6 +408,7 @@ export class GdmLiveAudio extends LitElement {
   // Scroll-to-bottom state for chat view
   @state() private showChatScrollToBottom = false;
   @state() private chatNewMessageCount = 0;
+  @state() private isChatActive = false;
 
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
@@ -1183,6 +1184,10 @@ export class GdmLiveAudio extends LitElement {
     this.chatNewMessageCount = newMessageCount;
   }
 
+  private _handleChatActiveChanged(e: CustomEvent) {
+    this.isChatActive = e.detail.isChatActive;
+  }
+
   private async _handleSendMessage(e: CustomEvent) {
     const message = e.detail;
     if (!message || !message.trim()) {
@@ -1326,6 +1331,7 @@ export class GdmLiveAudio extends LitElement {
                     @send-message=${this._handleSendMessage}
                     @reset-text=${this._resetTextContext}
                     @scroll-state-changed=${this._handleChatScrollStateChanged}
+                    @chat-active-changed=${this._handleChatActiveChanged}
                   >
                   </chat-view>
                 `
@@ -1357,6 +1363,7 @@ export class GdmLiveAudio extends LitElement {
           }
           <controls-panel
             .isCallActive=${this.isCallActive}
+            .isChatActive=${this.isChatActive}
             .showCallScrollToBottom=${this.showCallScrollToBottom}
             .callNewMessageCount=${this.callNewMessageCount}
             .showChatScrollToBottom=${this.showChatScrollToBottom}

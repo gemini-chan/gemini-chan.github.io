@@ -8,6 +8,9 @@ export class ControlsPanel extends LitElement {
   isCallActive = false;
 
   @property({ type: Boolean })
+  isChatActive = false;
+
+  @property({ type: Boolean })
   showCallScrollToBottom = false;
 
   @property({ type: Number })
@@ -168,7 +171,7 @@ export class ControlsPanel extends LitElement {
       </div>
 
       <div class="right-controls">
-        <tts-energy-bar></tts-energy-bar>
+        ${!this.isChatActive ? html`<tts-energy-bar></tts-energy-bar>` : ""}
         <button
           id="settingsButton"
           @click=${this._toggleSettings}

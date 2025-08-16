@@ -27,6 +27,9 @@ export class ChatView extends LitElement {
   @state()
   private newMessageCount = 0;
 
+  @state()
+  private isChatActive = false;
+
   private lastSeenMessageCount = 0;
   private textareaRef: HTMLTextAreaElement | null = null;
 
@@ -311,6 +314,28 @@ export class ChatView extends LitElement {
     log.debug("Input value changed");
   }
 
+  private _handleFocus() {
+    this.isChatActive = true;
+    this._dispatchChatActiveChanged();
+  }
+
+  private _handleBlur() {
+    this.isChatActive = false;
+    this._dispatchChatActiveChanged();
+  }
+
+  private _dispatchChatActiveChanged() {
+    const detail = { isChatActive: this.isChatActive };
+    log.debug("Chat active changed", detail);
+    this.dispatchEvent(
+      new CustomEvent("chat-active-changed", {
+        detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
     // Reset height to recalculate
     textarea.style.height = "auto";
@@ -497,9 +522,11 @@ export class ChatView extends LitElement {
         </div>
       </div>
       <div class="input-area">
-        <textarea 
-          .value=${this.inputValue} 
-          @input=${this._handleInput} 
+        <textarea
+          .value=${this.inputValue}
+          @input=${this._handleInput}
+          @focus=${this._handleFocus}
+          @blur=${this._handleBlur}
           @keydown=${(e: KeyboardEvent) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
