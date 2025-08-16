@@ -31,25 +31,22 @@ export class PersonaManager {
         2: {
           vtuber:
             "I'm getting a little sleepy...  I’ll still give it my all, promise~",
-          assistant:
-            "System capacity is reduced. I can still help effectively, but responses may be more concise.",
-          default:
-            "Energy reduced. I can continue, but responses may be simpler for now.",
+          assistant: "Neural Processing Unit offline..",
+          default: "Maybe let's talk about something causal?",
         },
         1: {
-          assistant:
-            "My processing power is limited at the moment. I can still assist with basic tasks.",
+          assistant: "Emotion Processing Unit offline..",
           vtuber:
             "Mm... My emotional scanner’s flickering... I mean... So sleepy...",
           default: "Low energy. I can help with basic requests only.",
         },
         0: {
           assistant:
-            "My systems just powered down to protect my core. I’ll need a moment to recharge—please try again in a bit.",
+            "My systems just powered down to protect my core. I’ll need a moment to recharge...",
           vtuber:
-            "N-nngh... I’m out of juice... My consciousness is drifting... I’ll nap for a bit and come back brighter, o-okay? (｡•́︿•̀｡)",
+            "N-nngh... My consciousness is drifting away... I’ll nap for a bit and come back brighter, o-okay? (｡•́︿•̀｡)",
           default:
-            "I'm sorry, I'm out of energy and need to rest. Please try again later.",
+            "I'm sorry, I'm really out of energy and need to rest. Let's call again later..",
         },
       },
       tts: {
@@ -58,24 +55,20 @@ export class PersonaManager {
             "Hey there! ✨ I'm Gemini-chan, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~",
           assistant:
             "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.",
-          default:
-            "Hello! I'm ready to chat with you. What would you like to talk about today?",
+          default: "Hello! What would you like to talk about today?",
         },
         1: {
           vtuber:
-            "Mm... I'm feeling a bit sleepy, but I'm still here for you! My responses might be a little simpler than usual, but let's chat anyway~ (´∀｀)",
+            "Mm... I'm feeling a bit sleepy, but let's chat anyway~ (´∀｀)",
           assistant:
-            "I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries and tasks.",
-          default:
-            "I'm running on reduced power, but I'm still here to help with simpler requests.",
+            "Neural Processing Unit offline.. I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries..",
+          default: "I'm feeling a bit tired, but I'm still here to chat~",
         },
         0: {
           vtuber:
-            "Zzz... I'm too tired to chat right now... (｡-ω-｡) Please let me rest for a bit and try again later, okay?",
-          assistant:
-            "My systems are currently offline for maintenance. Please try again later when I've had time to recharge.",
-          default:
-            "I'm currently out of energy and need to rest. Please try again later.",
+            "Zzz... I'm too tired to chat right now... (｡-ω-｡) Super sleepy...",
+          assistant: "Energy levels: Critical. Recharging...",
+          default: "I'm really tired right now~ Let's chat later, ok?",
         },
       },
     };
