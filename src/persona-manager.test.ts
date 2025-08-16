@@ -35,7 +35,7 @@ describe("PersonaManager", () => {
     vi.spyOn(document, "dispatchEvent");
 
     // Mock uuidv4 to return predictable values
-    (vi.mocked(uuidv4) as any)
+    vi.mocked(uuidv4)
       .mockReturnValueOnce(defaultPersonaId)
       .mockReturnValue(mockUuid);
 
@@ -82,7 +82,7 @@ describe("PersonaManager", () => {
 
   describe("getActivePersona", () => {
     it("should return the active persona from localStorage", () => {
-      const personas = personaManager.getPersonas();
+      const _personas = personaManager.getPersonas();
       const secondPersona = personaManager.createPersona("Second");
       personaManager.setActivePersona(secondPersona.id);
 

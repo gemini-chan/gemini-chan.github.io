@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import {
   type EnergyLevelChangedDetail,
   energyBarService,
-  TTSEnergyLevel,
+  type TTSEnergyLevel,
 } from "./src/energy-bar-service";
 
 @customElement("tts-energy-bar")

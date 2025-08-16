@@ -29,8 +29,8 @@ const STS_MODEL_TIER_BY_LEVEL: Record<STSEnergyLevel, string | null> = {
 // TTS mapping: simplified 3-level system with fallback model at level 1
 const TTS_MODEL_TIER_BY_LEVEL: Record<TTSEnergyLevel, string | null> = {
   2: "gemini-live-2.5-flash-preview", // Primary stable model
-  1: "gemini-2.0-flash-live-001",     // Fallback model for degraded performance
-  0: null,                            // Exhausted state
+  1: "gemini-2.0-flash-live-001", // Fallback model for degraded performance
+  0: null, // Exhausted state
 };
 
 /**
@@ -100,7 +100,7 @@ export class EnergyBarService extends EventTarget {
     const prev = this._levels[mode];
     const maxLevel = mode === "sts" ? 3 : 2; // STS max: 3, TTS max: 2
     if (prev === maxLevel) return;
-    
+
     this._levels[mode] = maxLevel as EnergyLevel;
     const detail: EnergyLevelChangedDetail = {
       mode,
@@ -124,7 +124,10 @@ export class EnergyBarService extends EventTarget {
     mode: EnergyMode = "sts",
   ): void {
     const maxLevel = mode === "sts" ? 3 : 2; // STS max: 3, TTS max: 2
-    const clamped = Math.max(0, Math.min(maxLevel, Math.floor(level))) as EnergyLevel;
+    const clamped = Math.max(
+      0,
+      Math.min(maxLevel, Math.floor(level)),
+    ) as EnergyLevel;
     const prev = this._levels[mode];
     if (clamped === prev) return;
 

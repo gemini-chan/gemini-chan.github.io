@@ -1,11 +1,10 @@
-import { openDB, type IDBPDatabase } from "idb";
+import { openDB } from "idb";
 
 const DB_NAME = "vtuber-memory";
 const DB_VERSION = 1;
 const STORE_NAME_PREFIX = "persona-memory-";
 
 export class VectorStore {
-  private db: IDBPDatabase | null = null;
   private personaId: string;
 
   constructor(personaId: string) {

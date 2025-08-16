@@ -1,19 +1,23 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { createComponentLogger } from "../src/debug-logger";
-import type {
-  Live2DModelConfig,
-  Live2DModelLike,
-  PixiApplicationLike,
-} from "./types";
+import { AudioToAnimationMapper } from "./audio-mapper";
+import { IdleEyeFocus } from "./idle-eye-focus";
+import type { Live2DModelLike, PixiApplicationLike } from "./types";
 
 const log = createComponentLogger("live2d-model");
+
+declare global {
+  interface Window {
+    Live2DCubismCore?: unknown;
+  }
+}
 
 @customElement("live2d-model")
 export class Live2DModelComponent extends LitElement {
   private _app?: PixiApplicationLike;
   @property({ attribute: false }) app?: PixiApplicationLike;
-  private _model?: (Live2DModelLike & { internalModel?: any }) | undefined;
+  private _model?: Live2DModelLike & { internalModel?: unknown };
 
   @property({ type: String }) url: string = "";
   @property({ type: Number }) scale = 1.0;
@@ -26,19 +30,17 @@ export class Live2DModelComponent extends LitElement {
 
   // Guarded restart for animation loop after errors
   private _loopRestartDelay = 1000; // ms
-  private _loopRestartTimer: any = undefined;
+  private _loopRestartTimer?: ReturnType<typeof setTimeout>;
 
   // Ticker callback reference for start/stop control
-  private _loopCb?: (...args: any[]) => void;
+  private _loopCb?: (delta: number) => void;
 
   // Audio nodes for future integration
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
 
-  private _mapper?: any;
-  private _idle?: any;
-
-  @state() private _error: string = "";
+  private _mapper?: AudioToAnimationMapper;
+  private _idle?: IdleEyeFocus;
   @state() private _loading: boolean = false;
 
   static styles = css`
@@ -126,9 +128,11 @@ export class Live2DModelComponent extends LitElement {
 
   protected firstUpdated() {
     if (!this._app) {
-      const parentAny =
-        (this.parentElement as any) ?? (this.getRootNode() as any)?.host;
-      const app = parentAny?.app;
+      const parentWithApp = (this.parentElement ??
+        this.getRootNode()?.host) as LitElement & {
+        app?: PixiApplicationLike;
+      };
+      const app = parentWithApp?.app;
       if (app) {
         log.debug("got app from parent");
         this._app = app;
@@ -164,7 +168,7 @@ export class Live2DModelComponent extends LitElement {
 
     try {
       // Ensure Cubism Core is present before importing cubism4
-      if (!(window as any).Live2DCubismCore) {
+      if (!window.Live2DCubismCore) {
         await new Promise<void>((resolve, reject) => {
           const s = document.createElement("script");
           s.src =
@@ -179,14 +183,14 @@ export class Live2DModelComponent extends LitElement {
       // Dynamically import Live2D to avoid bundling if unused
       // Configure ZipLoader if available so .zip URLs work
       await import("./zip-loader");
-      const mod: any = await import("pixi-live2d-display/cubism4");
+      const mod = await import("pixi-live2d-display/cubism4");
       const Live2DModel = mod.Live2DModel ?? mod.default ?? mod;
 
       // Retry mechanism with exponential backoff
       const attemptLoad = async (attempt: number): Promise<Live2DModelLike> => {
         try {
           // If URL is a Blob URL or remote .zip, Live2DModel.from should pick up our ZipLoader
-          return (await Live2DModel.from(url)) as any;
+          return await Live2DModel.from(url);
         } catch (err) {
           if (attempt >= 3) throw err;
           const delay = 300 * 2 ** attempt; // 300ms, 600ms, 1200ms
@@ -210,13 +214,13 @@ export class Live2DModelComponent extends LitElement {
       this._applyPlacement(model);
 
       // add to stage
-      this._app.stage.addChild(model as any);
+      this._app.stage.addChild(model);
       this._model = model;
       log.debug("added to stage");
       this.dispatchEvent(
         new CustomEvent("live2d-loaded", { bubbles: true, composed: true }),
       );
-    } catch (e: any) {
+    } catch (e) {
       log.error("Failed to load Live2D model", { error: e });
       this._error = "Failed to load Live2D model";
       this.dispatchEvent(
@@ -242,7 +246,7 @@ export class Live2DModelComponent extends LitElement {
     try {
       // Remove from stage first
       if (this._app.stage && this._model) {
-        this._app.stage.removeChild(this._model as any);
+        this._app.stage.removeChild(this._model);
         log.debug("model removed from stage");
       }
     } catch (e) {
@@ -272,8 +276,7 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private async _initMapper() {
-    const { IdleEyeFocus } = await import("./idle-eye-focus");
-    this._idle = new (IdleEyeFocus as any)({
+    this._idle = new IdleEyeFocus({
       blinkMin: 2.8,
       blinkMax: 5.8,
       blinkDuration: 0.12,
@@ -282,8 +285,7 @@ export class Live2DModelComponent extends LitElement {
       saccadeSpeed: 2.8,
       eyeRange: 0.12,
     });
-    const { AudioToAnimationMapper } = await import("./audio-mapper");
-    this._mapper = new (AudioToAnimationMapper as any)({
+    this._mapper = new AudioToAnimationMapper({
       inputNode: this.inputNode,
       outputNode: this.outputNode,
       attack: 0.5,
@@ -304,8 +306,7 @@ export class Live2DModelComponent extends LitElement {
       /* no-op, created in _initMapper */
     }
 
-    const appAny: any = this._app;
-    const ticker = appAny.ticker;
+    const ticker = this._app.ticker;
     if (!ticker) return; // shouldn't happen with PIXI
 
     const cb = () => {
@@ -314,8 +315,11 @@ export class Live2DModelComponent extends LitElement {
       last = now;
       this._mapper?.update();
       this._idle?.update(dt);
-      const m = this._model as any;
-      const internal = m?.internalModel;
+      const internal = this._model?.internalModel as {
+        coreModel?: {
+          setParameterValueById: (id: string, value: number) => void;
+        };
+      };
       const mouth = this._mapper?.mouthOpen ?? 0;
       // Set mouth parameter if available (Cubism standard parameter)
       try {
@@ -376,21 +380,19 @@ export class Live2DModelComponent extends LitElement {
   }
 
   private _stopLoop() {
-    const appAny: any = this._app;
-    const ticker = appAny?.ticker;
-    const cb: ((...args: any[]) => void) | undefined = (this as any)._loopCb;
-    if (ticker && cb) ticker.remove(cb);
-    (this as any)._loopCb = undefined;
+    const ticker = this._app?.ticker;
+    if (ticker && this._loopCb) ticker.remove(this._loopCb);
+    this._loopCb = undefined;
   }
 
-  private _applyPlacement(modelArg?: any) {
+  private _applyPlacement(modelArg?: Live2DModelLike) {
     if (!this.fitToCanvas) return;
-    const m: any = modelArg ?? this._model;
+    const m = modelArg ?? this._model;
     if (!m) return;
     const initialW = m.width || 1;
     const initialH = m.height || 1;
-    const cw = this.containerWidth || (this._app as any)?.screen?.width || 0;
-    const ch = this.containerHeight || (this._app as any)?.screen?.height || 0;
+    const cw = this.containerWidth || this._app?.screen?.width || 0;
+    const ch = this.containerHeight || this._app?.screen?.height || 0;
     if (!cw || !ch) return;
     try {
       m.anchor?.set?.(0.5, 0.5);

@@ -22,9 +22,6 @@ export class ChatView extends LitElement {
   private inputValue = "";
 
   @state()
-  private showScrollToBottom = false;
-
-  @state()
   private newMessageCount = 0;
 
   @state()

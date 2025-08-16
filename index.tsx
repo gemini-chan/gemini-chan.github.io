@@ -21,10 +21,7 @@ import "./live2d/live2d-gate";
 import "./settings-menu";
 import "./chat-view";
 import "./call-transcript";
-import type {
-  EnergyLevelChangedDetail,
-  EnergyMode,
-} from "./src/energy-bar-service";
+import type { EnergyLevelChangedDetail } from "./src/energy-bar-service";
 import { energyBarService } from "./src/energy-bar-service";
 import "./toast-notification";
 import "./controls-panel";
@@ -32,6 +29,12 @@ import "./tab-view";
 import "./call-history-view";
 import type { ToastNotification } from "./toast-notification";
 import type { CallSummary, Turn } from "./types";
+
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
 
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
@@ -134,9 +137,9 @@ abstract class BaseSessionManager {
         config: this.getConfig(),
       });
       return true;
-    } catch (e: any) {
+    } catch (e) {
       logger.error(`Error initializing ${this.getSessionName()}:`, e);
-      const msg = String(e?.message || e || "");
+      const msg = String((e as Error)?.message || e || "");
       this.updateError(`Failed to initialize ${this.getSessionName()}: ${msg}`);
       return false;
     }
@@ -173,8 +176,8 @@ abstract class BaseSessionManager {
     if (!this.session) return;
     try {
       this.session.sendRealtimeInput(input);
-    } catch (e: any) {
-      const msg = String(e?.message || e || "");
+    } catch (e) {
+      const msg = String((e as Error)?.message || e || "");
       this.updateError(`Failed to stream audio: ${msg}`);
     }
   }
@@ -357,9 +360,10 @@ export class GdmLiveAudio extends LitElement {
   @state() isCallActive = false;
   @state() status = "";
   @state() error = "";
-  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined = undefined;
-  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined = undefined;
-  @state() private _toastVisible = false;
+  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
+    undefined;
+  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
+    undefined;
   @state() showSettings = false;
   @state() toastMessage = "";
 
@@ -387,10 +391,10 @@ export class GdmLiveAudio extends LitElement {
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
-    (window as any).AudioContext || (window as any).webkitAudioContext
+    window.AudioContext || window.webkitAudioContext
   )({ sampleRate: 16000 });
   private outputAudioContext = new (
-    (window as any).AudioContext || (window as any).webkitAudioContext
+    window.AudioContext || window.webkitAudioContext
   )({ sampleRate: 24000 });
   @state() inputNode = this.inputAudioContext.createGain();
   @state() outputNode = this.outputAudioContext.createGain();
@@ -497,31 +501,31 @@ export class GdmLiveAudio extends LitElement {
       this.personaManager.getActivePersona().id,
     );
     this.initClient();
-    
+
     // Debug: Check initial TTS energy state
     logger.debug("Initial TTS energy state", {
       level: energyBarService.getCurrentEnergyLevel("tts"),
-      model: energyBarService.getCurrentModel("tts")
+      model: energyBarService.getCurrentModel("tts"),
     });
-    
+
     // Initial TTS greeting is now triggered in firstUpdated
   }
 
   private _triggerInitialTTSGreeting() {
     const ttsLevel = energyBarService.getCurrentEnergyLevel("tts");
     const personaName = this.personaManager.getActivePersona().name;
-    
+
     logger.debug("Triggering initial TTS greeting", { ttsLevel, personaName });
-    
+
     if (ttsLevel === 2) {
       const prompt = this.personaManager.getPromptForEnergyLevel(
         2,
         personaName,
         "tts",
       );
-      
+
       logger.debug("Generated initial TTS greeting", { prompt });
-      
+
       if (prompt) {
         this._appendTextMessage(prompt, "model");
         logger.debug("Injected initial greeting into chat");
@@ -690,24 +694,24 @@ export class GdmLiveAudio extends LitElement {
 
   private _appendTextMessage(text: string, speaker: "user" | "model") {
     // Append a message directly to the text transcript
-    logger.debug("Appending text message", { 
-      text, 
-      speaker, 
-      currentLength: this.textTranscript.length 
+    logger.debug("Appending text message", {
+      text,
+      speaker,
+      currentLength: this.textTranscript.length,
     });
-    
+
     this.textTranscript = [...this.textTranscript, { text, speaker }];
-    
-    logger.debug("Text message appended", { 
+
+    logger.debug("Text message appended", {
       newLength: this.textTranscript.length,
-      lastMessage: this.textTranscript[this.textTranscript.length - 1]
+      lastMessage: this.textTranscript[this.textTranscript.length - 1],
     });
-    
+
     // Force a re-render to ensure the UI updates
     this.requestUpdate("textTranscript");
   }
 
-  private _handleCallRateLimit(msg?: string) {
+  private _handleCallRateLimit(_msg?: string) {
     // Degrade only STS energy and notify UI
     energyBarService.handleRateLimitError("sts");
     if (this._callRateLimitNotified) return;
@@ -722,7 +726,7 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private _handleTextRateLimit(msg?: string) {
+  private _handleTextRateLimit(_msg?: string) {
     // Degrade only TTS energy on text rate-limit
     energyBarService.handleRateLimitError("tts");
     const toast = this.shadowRoot?.querySelector(
@@ -799,8 +803,8 @@ export class GdmLiveAudio extends LitElement {
             this.callSessionManager.sendRealtimeInput({
               media: createBlob(pcmData),
             });
-          } catch (e: any) {
-            const msg = String(e?.message || e || "");
+          } catch (e) {
+            const msg = String((e as Error)?.message || e || "");
             this.updateError(`Failed to stream audio: ${msg}`);
           }
         }
@@ -944,14 +948,22 @@ export class GdmLiveAudio extends LitElement {
 
     // Open settings menu and show toast prompting for API key
     this.showSettings = true;
-    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
-    globalToast?.show(this._getApiKeyPrompt(), 'info', 4000, { position: 'top-right' });
+    const globalToast = this.shadowRoot?.querySelector(
+      "#global-toast",
+    ) as ToastNotification;
+    globalToast?.show(this._getApiKeyPrompt(), "info", 4000, {
+      position: "top-right",
+    });
   }
 
   private async _handleApiKeySaved() {
     // Show success toast for API key saved
-    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
-    globalToast?.show("API key saved successfully! ✨", "success", 2500, { position: "top-right" });
+    const globalToast = this.shadowRoot?.querySelector(
+      "#global-toast",
+    ) as ToastNotification;
+    globalToast?.show("API key saved successfully! ✨", "success", 2500, {
+      position: "top-right",
+    });
 
     logger.info("API key saved, reinitializing client");
 
@@ -1133,24 +1145,12 @@ export class GdmLiveAudio extends LitElement {
     this.textSessionManager.sendMessage(message);
   }
 
-  private _showCuteToast() {
-    // Show the API key request message based on active persona
-    this.toastMessage = this._getApiKeyPrompt();
-    this.showToast = true;
-
-    // Auto-hide after 6 seconds to give time to read the message
-    setTimeout(() => {
-      this.showToast = false;
-      this.toastMessage = "";
-    }, 6000);
-  }
-
   private _scrollCallTranscriptToBottom() {
     // Find the call transcript component and scroll it to bottom
     const callTranscript = this.shadowRoot?.querySelector("call-transcript") as
       | (HTMLElement & { _scrollToBottom?: () => void })
       | null;
-    if (callTranscript && callTranscript._scrollToBottom) {
+    if (callTranscript?._scrollToBottom) {
       callTranscript._scrollToBottom();
       // Reset the scroll state
       this.showCallScrollToBottom = false;
@@ -1162,7 +1162,7 @@ export class GdmLiveAudio extends LitElement {
     const chatView = this.shadowRoot?.querySelector("chat-view") as
       | (HTMLElement & { _scrollToBottom?: () => void })
       | null;
-    if (chatView && chatView._scrollToBottom) {
+    if (chatView?._scrollToBottom) {
       chatView._scrollToBottom();
       this.showChatScrollToBottom = false;
       this.chatNewMessageCount = 0;
@@ -1220,9 +1220,9 @@ export class GdmLiveAudio extends LitElement {
     if (this.textSession) {
       try {
         this.textSessionManager.sendMessage(message);
-      } catch (error: any) {
+      } catch (error) {
         logger.error("Error sending message to text session:", error);
-        const msg = String(error?.message || error || "");
+        const msg = String((error as Error)?.message || error || "");
         this.updateError(`Failed to send message: ${msg}`);
 
         // Try to reinitialize the session and abort if still failing
@@ -1269,10 +1269,10 @@ export class GdmLiveAudio extends LitElement {
   private _onEnergyLevelChanged = (e: Event) => {
     const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
       .detail;
-    
+
     // Debug logging
     logger.debug(`Energy level changed`, { mode, level, reason });
-    
+
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
       // STS: show immersive prompts as directed; TTS: inject into chat or show as toast
@@ -1281,9 +1281,14 @@ export class GdmLiveAudio extends LitElement {
         personaName,
         mode,
       );
-      
-      logger.debug(`Generated prompt for energy level`, { mode, level, personaName, prompt });
-      
+
+      logger.debug(`Generated prompt for energy level`, {
+        mode,
+        level,
+        personaName,
+        prompt,
+      });
+
       if (prompt && mode === "sts") {
         this._appendCallNotice(prompt);
         logger.debug(`Appended STS call notice`, { prompt });

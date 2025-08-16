@@ -10,6 +10,16 @@ export class IdleEyeFocus {
   eyeX = 0;
   eyeY = 0;
 
+  private cfg: {
+    blinkMin: number;
+    blinkMax: number;
+    blinkDuration: number;
+    saccadeMin: number;
+    saccadeMax: number;
+    saccadeSpeed: number;
+    eyeRange: number;
+  };
+
   private blinkTimer = 0;
   private nextBlink = 1.5;
   private blinking = false;
@@ -22,7 +32,7 @@ export class IdleEyeFocus {
 
   // Config
   constructor(
-    private cfg: {
+    cfg: {
       blinkMin?: number; // seconds
       blinkMax?: number; // seconds
       blinkDuration?: number; // seconds for full close/open cycle
@@ -32,16 +42,19 @@ export class IdleEyeFocus {
       eyeRange?: number; // max |x| and |y|
     } = {},
   ) {
-    this.cfg.blinkMin ??= 3.0;
-    this.cfg.blinkMax ??= 6.0;
-    this.cfg.blinkDuration ??= 0.12; // brisk blink
-    this.cfg.saccadeMin ??= 1.2;
-    this.cfg.saccadeMax ??= 2.8;
-    this.cfg.saccadeSpeed ??= 2.5; // units/sec
-    this.cfg.eyeRange ??= 0.15;
+    const defaults = {
+      blinkMin: 3.0,
+      blinkMax: 6.0,
+      blinkDuration: 0.12, // brisk blink
+      saccadeMin: 1.2,
+      saccadeMax: 2.8,
+      saccadeSpeed: 2.5, // units/sec
+      eyeRange: 0.15,
+    };
+    this.cfg = Object.assign(defaults, cfg);
 
-    this.nextBlink = this.rand(this.cfg.blinkMin!, this.cfg.blinkMax!);
-    this.nextSaccade = this.rand(this.cfg.saccadeMin!, this.cfg.saccadeMax!);
+    this.nextBlink = this.rand(this.cfg.blinkMin, this.cfg.blinkMax);
+    this.nextSaccade = this.rand(this.cfg.saccadeMin, this.cfg.saccadeMax);
   }
 
   private rand(a: number, b: number) {
@@ -55,15 +68,15 @@ export class IdleEyeFocus {
       this.blinking = true;
       this.blinkProgress = 0;
       this.blinkTimer = 0;
-      this.nextBlink = this.rand(this.cfg.blinkMin!, this.cfg.blinkMax!);
+      this.nextBlink = this.rand(this.cfg.blinkMin, this.cfg.blinkMax);
     }
 
     if (this.blinking) {
-      this.blinkProgress += dt / this.cfg.blinkDuration!;
+      this.blinkProgress += dt / this.cfg.blinkDuration;
       const p = Math.min(1, this.blinkProgress);
       // Triangle: down then up
       const tri = p < 0.5 ? p * 2 : (1 - p) * 2;
-      this.eyeOpen = 0.2 + 0.8 * tri; // never fully shut; keep slight open
+      this.eyeOpen = 0.2 + 0.8 * tri; // never fully shut; keep slightly open
       if (p >= 1) this.blinking = false;
     } else {
       // Slowly ease to fully open when not blinking
@@ -74,12 +87,12 @@ export class IdleEyeFocus {
     this.saccadeTimer += dt;
     if (this.saccadeTimer >= this.nextSaccade) {
       this.saccadeTimer = 0;
-      this.nextSaccade = this.rand(this.cfg.saccadeMin!, this.cfg.saccadeMax!);
-      this.targetX = (Math.random() * 2 - 1) * this.cfg.eyeRange!;
-      this.targetY = (Math.random() * 2 - 1) * this.cfg.eyeRange!;
+      this.nextSaccade = this.rand(this.cfg.saccadeMin, this.cfg.saccadeMax);
+      this.targetX = (Math.random() * 2 - 1) * this.cfg.eyeRange;
+      this.targetY = (Math.random() * 2 - 1) * this.cfg.eyeRange;
     }
 
-    const speed = this.cfg.saccadeSpeed!;
+    const speed = this.cfg.saccadeSpeed;
     const dx = this.targetX - this.eyeX;
     const dy = this.targetY - this.eyeY;
     const dist = Math.hypot(dx, dy);

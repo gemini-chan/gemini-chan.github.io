@@ -72,7 +72,8 @@ describe("DebugLogger with ConfigurationManager", () => {
 
   it("should load default configuration correctly", () => {
     const logger = new DebugLogger();
-    const config = (logger as any).config;
+    // @ts-expect-error - testing private property
+    const config = logger.config;
 
     expect(config.enabled).to.be.true;
     expect(config.logLevel).to.equal("info");
@@ -87,7 +88,8 @@ describe("DebugLogger with ConfigurationManager", () => {
     window.location.search = "?debug=component-c,component-d";
 
     const logger = new DebugLogger();
-    const config = (logger as any).config;
+    // @ts-expect-error - testing private property
+    const config = logger.config;
 
     expect(config.enabled).to.be.true;
     expect(config.components).to.deep.equal({
@@ -111,7 +113,8 @@ describe("DebugLogger with ConfigurationManager", () => {
     );
 
     const logger = new DebugLogger();
-    const config = (logger as any).config;
+    // @ts-expect-error - testing private property
+    const config = logger.config;
 
     expect(config.enabled).to.be.true;
     expect(config.logLevel).to.equal("debug");
@@ -127,7 +130,8 @@ describe("DebugLogger with ConfigurationManager", () => {
     process.env.DEBUG_ENABLED = "false";
 
     const logger = new DebugLogger();
-    const config = (logger as any).config;
+    // @ts-expect-error - testing private property
+    const config = logger.config;
 
     expect(config.enabled).to.be.false;
   });
@@ -157,7 +161,8 @@ describe("DebugLogger", () => {
   });
 
   it("should initialize with custom configuration", () => {
-    const config = (logger as any).config;
+    // @ts-expect-error - testing private property
+    const config = logger.config;
     expect(config.logLevel).to.equal("info");
     expect(config.components).to.have.property("test-component", true);
   });

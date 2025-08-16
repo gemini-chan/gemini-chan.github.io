@@ -1,2 +1,2 @@
-npm run typecheck || exit 1
+npm run type || exit 1
 npx lint-staged

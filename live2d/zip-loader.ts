@@ -15,7 +15,7 @@ ZipLoader.createSettings = async (reader: JSZip) => {
     return createFakeSettings(filePaths);
   }
 
-  return defaultCreateSettings(reader as any);
+  return defaultCreateSettings(reader);
 };
 
 export function isSettingsFile(file: string): boolean {
@@ -27,7 +27,7 @@ export function isMocFile(file: string): boolean {
 }
 
 export function basename(path: string): string {
-  return path.split(/[\\/]/).pop()!;
+  return path.split(/[\\/]/).pop() ?? "";
 }
 
 // Synthesizes a settings file if one is not present in the ZIP
@@ -71,12 +71,12 @@ function createFakeSettings(files: string[]): ModelSettings {
           }
         : undefined,
     },
-  } as any);
+  });
 
-  (settings as any).name = modelName;
-  (settings as any)._objectURL = `example://${(settings as any).url}`;
+  const settingsWithName = settings as ModelSettings & { name: string };
+  settingsWithName.name = modelName;
 
-  return settings as unknown as ModelSettings;
+  return settingsWithName;
 }
 
 // Override the rest of the loader methods to use JSZip
@@ -98,7 +98,7 @@ ZipLoader.getFiles = (jsZip: JSZip, paths: string[]) =>
   Promise.all(
     paths.map(async (path) => {
       const fileName = path.slice(path.lastIndexOf("/") + 1);
-      const blob = await jsZip.file(path)!.async("blob");
+      const blob = await jsZip.file(path)?.async("blob");
       return new File([blob], fileName);
     }),
   );

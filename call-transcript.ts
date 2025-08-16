@@ -288,17 +288,6 @@ export class CallTranscript extends LitElement {
     }
   }
 
-  // Note: _scrollToBottom is intentionally unused in the current UI
-  // but kept here for potential future control-panel integration.
-  private _scrollToBottom() {
-    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-    if (transcriptEl) {
-      defaultAutoScroll.scrollToBottom(transcriptEl, true);
-      this.lastSeenMessageCount = this.transcript.length;
-      this._updateScrollToBottomState();
-    }
-  }
-
   private _formatTimestamp(timestamp?: Date): string {
     if (!timestamp) return "";
     return timestamp.toLocaleTimeString([], {
@@ -320,13 +309,15 @@ export class CallTranscript extends LitElement {
         <div class="header-content">
           <div class="call-indicator"></div>
           <span>
-            ${this.callState === "connecting"
-              ? "Connecting..."
-              : this.callState === "active"
-              ? "Call in Progress"
-              : this.callState === "ending"
-              ? "Ending call..."
-              : "Call"}
+            ${
+              this.callState === "connecting"
+                ? "Connecting..."
+                : this.callState === "active"
+                  ? "Call in Progress"
+                  : this.callState === "ending"
+                    ? "Ending call..."
+                    : "Call"
+            }
           </span>
         </div>
         <div class="header-controls">

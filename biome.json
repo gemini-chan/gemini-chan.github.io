@@ -19,11 +19,13 @@
     "includes": [
       "**",
       "!**/node_modules/**",
+      "!**/package-lock.json",
       "!**/.cache/**",
       "!**/public/assets/**",
       "!**/dist/**",
       "!**/.vscode/**",
-      "!**/.roo/**"
+      "!**/.roo/**",
+      "!**/coverage/**"
     ]
   },
   "linter": {
@@ -34,11 +36,13 @@
     "includes": [
       "**",
       "!**/node_modules/**",
+      "!**/package-lock.json",
       "!**/.cache/**",
       "!**/public/assets/**",
       "!**/dist/**",
       "!**/.vscode/**",
-      "!**/.roo/**"
+      "!**/.roo/**",
+      "!**/coverage/**"
     ]
   }
 }

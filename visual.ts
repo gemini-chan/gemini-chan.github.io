@@ -101,7 +101,10 @@ export class GdmLiveAudioVisuals extends LitElement {
   }
 
   firstUpdated() {
-    this.canvas = this.shadowRoot!.querySelector("canvas");
+    this.canvas = this.shadowRoot?.querySelector("canvas");
+    if (!this.canvas) {
+      return;
+    }
     this.canvas.width = 400;
     this.canvas.height = 400;
     this.canvasCtx = this.canvas.getContext("2d");
