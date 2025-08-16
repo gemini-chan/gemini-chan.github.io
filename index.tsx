@@ -1266,11 +1266,6 @@ export class GdmLiveAudio extends LitElement {
     this._triggerInitialTTSGreeting();
   }
 
-  protected firstUpdated() {
-    // Trigger initial TTS greeting once the UI is ready
-    this._triggerInitialTTSGreeting();
-  }
-
   private _onEnergyLevelChanged = (e: Event) => {
     const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
       .detail;
