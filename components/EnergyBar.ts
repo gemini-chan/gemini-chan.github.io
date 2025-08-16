@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import {
   type EnergyLevelChangedDetail,
   energyBarService,
-} from "./src/energy-bar-service";
+} from "@services/EnergyBarService";
 
 @customElement("energy-bar")
 export class EnergyBar extends LitElement {

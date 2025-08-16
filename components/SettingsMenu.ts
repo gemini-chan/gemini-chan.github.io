@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { type Persona, PersonaManager } from "./src/persona-manager";
+import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
 
 interface FieldConfig {
   storageKey: string;

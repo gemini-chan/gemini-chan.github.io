@@ -1,9 +1,13 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "../src/debug-logger";
+import { createComponentLogger } from "@services/DebugLogger";
 import { AudioToAnimationMapper } from "./audio-mapper";
 import { IdleEyeFocus } from "./idle-eye-focus";
-import type { Live2DModelLike, PixiApplicationLike } from "./types";
+import type {
+  Live2DModelLike,
+  PixiApplicationLike,
+  PixiDisplayObjectLike,
+} from "./types";
 
 const log = createComponentLogger("live2d-model");
 
@@ -42,6 +46,7 @@ export class Live2DModelComponent extends LitElement {
   private _mapper?: AudioToAnimationMapper;
   private _idle?: IdleEyeFocus;
   @state() private _loading: boolean = false;
+  @state() private _error: string | null = null;
 
   static styles = css`
     :host { display: contents; }
@@ -129,9 +134,9 @@ export class Live2DModelComponent extends LitElement {
   protected firstUpdated() {
     if (!this._app) {
       const parentWithApp = (this.parentElement ??
-        this.getRootNode()?.host) as LitElement & {
-        app?: PixiApplicationLike;
-      };
+        (this.getRootNode() as { host?: LitElement }).host) as
+        | (LitElement & { app?: PixiApplicationLike })
+        | undefined;
       const app = parentWithApp?.app;
       if (app) {
         log.debug("got app from parent");
@@ -184,7 +189,11 @@ export class Live2DModelComponent extends LitElement {
       // Configure ZipLoader if available so .zip URLs work
       await import("./zip-loader");
       const mod = await import("pixi-live2d-display/cubism4");
-      const Live2DModel = mod.Live2DModel ?? mod.default ?? mod;
+      const Live2DModel = (mod.Live2DModel ?? mod.default ?? mod) as unknown as {
+        from: (
+          url: string,
+        ) => Promise<Live2DModelLike & { internalModel?: unknown }>;
+      };
 
       // Retry mechanism with exponential backoff
       const attemptLoad = async (attempt: number): Promise<Live2DModelLike> => {
@@ -204,17 +213,23 @@ export class Live2DModelComponent extends LitElement {
 
       // basic transform
       try {
-        model.anchor?.set?.(this.anchor[0], this.anchor[1]);
+        (model.anchor as unknown as { set: (x: number, y: number) => void })?.set?.(
+          this.anchor[0],
+          this.anchor[1],
+        );
       } catch {}
       try {
-        model.scale?.set?.(this.scale, this.scale);
+        (model.scale as unknown as { set: (x: number, y: number) => void })?.set?.(
+          this.scale,
+          this.scale,
+        );
       } catch {}
 
       // Placement & scaling (Airi-aligned): bottom-center with fit-to-canvas using container size
       this._applyPlacement(model);
 
       // add to stage
-      this._app.stage.addChild(model);
+      this._app.stage.addChild(model as unknown as PixiDisplayObjectLike);
       this._model = model;
       log.debug("added to stage");
       this.dispatchEvent(
@@ -246,7 +261,9 @@ export class Live2DModelComponent extends LitElement {
     try {
       // Remove from stage first
       if (this._app.stage && this._model) {
-        this._app.stage.removeChild(this._model);
+        this._app.stage.removeChild(
+          this._model as unknown as PixiDisplayObjectLike,
+        );
         log.debug("model removed from stage");
       }
     } catch (e) {
@@ -306,7 +323,14 @@ export class Live2DModelComponent extends LitElement {
       /* no-op, created in _initMapper */
     }
 
-    const ticker = this._app.ticker;
+    const ticker = this._app.ticker as
+      | {
+          add: (cb: (delta: number) => void) => void;
+          remove: (cb: (delta: number) => void) => void;
+          start?: () => void;
+          stop?: () => void;
+        }
+      | undefined;
     if (!ticker) return; // shouldn't happen with PIXI
 
     const cb = () => {
@@ -381,7 +405,10 @@ export class Live2DModelComponent extends LitElement {
 
   private _stopLoop() {
     const ticker = this._app?.ticker;
-    if (ticker && this._loopCb) ticker.remove(this._loopCb);
+    if (ticker && this._loopCb)
+      (
+        ticker as { remove: (cb: (delta: number) => void) => void }
+      ).remove(this._loopCb);
     this._loopCb = undefined;
   }
 
@@ -395,7 +422,10 @@ export class Live2DModelComponent extends LitElement {
     const ch = this.containerHeight || this._app?.screen?.height || 0;
     if (!cw || !ch) return;
     try {
-      m.anchor?.set?.(0.5, 0.5);
+      (m.anchor as unknown as { set: (x: number, y: number) => void })?.set?.(
+        0.5,
+        0.5,
+      );
     } catch {}
     const fit = 0.95;
     const offsetFactor = 2.2;
@@ -403,10 +433,13 @@ export class Live2DModelComponent extends LitElement {
     const widthScale = ((cw * fit) / initialW) * offsetFactor;
     const s = Math.min(heightScale, widthScale) * (this.scale || 1.0);
     try {
-      m.scale?.set?.(s, s);
+      (m.scale as unknown as { set: (x: number, y: number) => void })?.set?.(s, s);
     } catch {}
     try {
-      m.position?.set?.(cw / 2 + (this.xOffset || 0), ch + (this.yOffset || 0));
+      (m.position as unknown as { set: (x: number, y: number) => void })?.set?.(
+        cw / 2 + (this.xOffset || 0),
+        ch + (this.yOffset || 0),
+      );
     } catch {}
   }
 }

@@ -2,7 +2,7 @@
  * Generic auto-scroll utility for transcript components
  * Provides smart scrolling behavior that respects user interaction
  */
-import { createComponentLogger } from "./src/debug-logger";
+import { createComponentLogger } from "@services/DebugLogger";
 
 const logger = createComponentLogger("transcript-auto-scroll");
 

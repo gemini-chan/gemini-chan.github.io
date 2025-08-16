@@ -1,7 +1,7 @@
 // src/debug-logger.test.ts
 
 import { expect } from "chai";
-import { DebugLogger } from "./debug-logger.js";
+import { DebugLogger } from "@services/DebugLogger";
 
 // Define globals for the test environment
 declare global {
@@ -72,8 +72,11 @@ describe("DebugLogger with ConfigurationManager", () => {
 
   it("should load default configuration correctly", () => {
     const logger = new DebugLogger();
-    // @ts-expect-error - testing private property
-    const config = logger.config;
+    const config = (logger as unknown as { config: {
+      enabled: boolean;
+      logLevel: string;
+      components: Record<string, boolean>
+    } }).config;
 
     expect(config.enabled).to.be.true;
     expect(config.logLevel).to.equal("info");
@@ -88,8 +91,10 @@ describe("DebugLogger with ConfigurationManager", () => {
     window.location.search = "?debug=component-c,component-d";
 
     const logger = new DebugLogger();
-    // @ts-expect-error - testing private property
-    const config = logger.config;
+    const config = (logger as unknown as { config: {
+      enabled: boolean;
+      components: Record<string, boolean>
+    } }).config;
 
     expect(config.enabled).to.be.true;
     expect(config.components).to.deep.equal({
@@ -113,8 +118,11 @@ describe("DebugLogger with ConfigurationManager", () => {
     );
 
     const logger = new DebugLogger();
-    // @ts-expect-error - testing private property
-    const config = logger.config;
+    const config = (logger as unknown as { config: {
+      enabled: boolean;
+      logLevel: string;
+      components: Record<string, boolean>
+    } }).config;
 
     expect(config.enabled).to.be.true;
     expect(config.logLevel).to.equal("debug");
@@ -130,8 +138,7 @@ describe("DebugLogger with ConfigurationManager", () => {
     process.env.DEBUG_ENABLED = "false";
 
     const logger = new DebugLogger();
-    // @ts-expect-error - testing private property
-    const config = logger.config;
+    const config = (logger as unknown as { config: { enabled: boolean } }).config;
 
     expect(config.enabled).to.be.false;
   });
@@ -161,8 +168,10 @@ describe("DebugLogger", () => {
   });
 
   it("should initialize with custom configuration", () => {
-    // @ts-expect-error - testing private property
-    const config = logger.config;
+    const config = (logger as unknown as { config: unknown }).config as {
+      logLevel: string;
+      components: Record<string, unknown>;
+    };
     expect(config.logLevel).to.equal("info");
     expect(config.components).to.have.property("test-component", true);
   });

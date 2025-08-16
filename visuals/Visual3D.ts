@@ -17,8 +17,8 @@ import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
 import { Analyser } from "./analyser";
-import { fs as backdropFS, vs as backdropVS } from "./backdrop-shader";
-import { vs as sphereVS } from "./sphere-shader";
+import { fs as backdropFS, vs as backdropVS } from "./BackdropShader";
+import { vs as sphereVS } from "./SphereShader";
 
 /**
  * 3D live audio visual.

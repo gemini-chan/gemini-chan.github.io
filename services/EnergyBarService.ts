@@ -1,4 +1,4 @@
-import { createComponentLogger } from "./debug-logger";
+import { createComponentLogger } from "@services/DebugLogger";
 
 export type STSEnergyLevel = 0 | 1 | 2 | 3;
 export type TTSEnergyLevel = 0 | 1 | 2;

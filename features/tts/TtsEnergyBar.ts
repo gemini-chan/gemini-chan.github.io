@@ -4,7 +4,7 @@ import {
   type EnergyLevelChangedDetail,
   energyBarService,
   type TTSEnergyLevel,
-} from "./src/energy-bar-service";
+} from "@services/EnergyBarService";
 
 @customElement("tts-energy-bar")
 export class TTSEnergyBar extends LitElement {

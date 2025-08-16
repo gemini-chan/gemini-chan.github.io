@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { createComponentLogger } from "../src/debug-logger";
+import { createComponentLogger } from "@services/DebugLogger";
 import type { PixiApplicationLike } from "./types";
 import "./live2d-canvas";
 import "./live2d-model";
