@@ -6,13 +6,12 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   return {
     define: {
-      "process.env.API_KEY": JSON.stringify(env.GEMINI_API_KEY),
+      // Note: This exposes the API key to the client.
+      // This is acceptable for a client-side only demo, but not for a production application.
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY),
       __DEBUG__: mode !== "production",
       __DEBUG_COMPONENTS__: JSON.stringify(
-        mode === "development"
-          ? process.env.DEBUG_COMPONENTS?.split(",") || []
-          : [],
+        mode === "development" ? env.DEBUG_COMPONENTS?.split(",") || [] : [],
       ),
     },
     resolve: {

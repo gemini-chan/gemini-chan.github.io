@@ -76,7 +76,7 @@ export class IdleEyeFocus {
       const p = Math.min(1, this.blinkProgress);
       // Triangle: down then up
       const tri = p < 0.5 ? p * 2 : (1 - p) * 2;
-      this.eyeOpen = 0.2 + 0.8 * tri; // never fully shut; keep slight open
+      this.eyeOpen = 0.2 + 0.8 * tri; // never fully shut; keep slightly open
       if (p >= 1) this.blinking = false;
     } else {
       // Slowly ease to fully open when not blinking
