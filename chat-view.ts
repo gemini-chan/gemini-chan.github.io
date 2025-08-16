@@ -27,6 +27,9 @@ export class ChatView extends LitElement {
   @state()
   private newMessageCount = 0;
 
+  @state()
+  private isChatActive = false;
+
   private lastSeenMessageCount = 0;
   private textareaRef: HTMLTextAreaElement | null = null;
 
@@ -311,6 +314,28 @@ export class ChatView extends LitElement {
     log.debug("Input value changed");
   }
 
+  private _handleFocus() {
+    this.isChatActive = true;
+    this._dispatchChatActiveChanged();
+  }
+
+  private _handleBlur() {
+    this.isChatActive = false;
+    this._dispatchChatActiveChanged();
+  }
+
+  private _dispatchChatActiveChanged() {
+    const detail = { isChatActive: this.isChatActive };
+    log.debug("Chat active changed", detail);
+    this.dispatchEvent(
+      new CustomEvent("chat-active-changed", {
+        detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
     // Reset height to recalculate
     textarea.style.height = "auto";
@@ -452,6 +477,21 @@ export class ChatView extends LitElement {
 
   render() {
     return html`
+      <div class="header">
+        <div class="header-title">
+          <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+            <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"/>
+          </svg>
+          <span>Chat</span>
+        </div>
+        <div class="header-actions">
+          <button class="reset-button" @click=${this._resetText} title="Clear conversation">
+            <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+              <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
       <div class="transcript-container">
         <div class="transcript">
           ${
@@ -482,9 +522,11 @@ export class ChatView extends LitElement {
         </div>
       </div>
       <div class="input-area">
-        <textarea 
-          .value=${this.inputValue} 
-          @input=${this._handleInput} 
+        <textarea
+          .value=${this.inputValue}
+          @input=${this._handleInput}
+          @focus=${this._handleFocus}
+          @blur=${this._handleBlur}
           @keydown=${(e: KeyboardEvent) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();

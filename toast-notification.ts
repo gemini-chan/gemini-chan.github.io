@@ -12,34 +12,77 @@ export class ToastNotification extends LitElement {
   @property({ type: String })
   type: "info" | "success" | "warning" | "error" = "info";
 
+  // Screen position for the toast
+  @property({ type: String, reflect: true })
+  position: "top-center" | "bottom-center" | "top-right" | "bottom-right" = "top-center";
+
+  // Visual variant (inline = lighter surface, used over Live2D center bottom)
+  @property({ type: String, reflect: true })
+  variant: "standard" | "inline" = "standard";
+
   @state()
   private _isAnimating = false;
 
+  private hideTimeout?: ReturnType<typeof setTimeout>;
+
   static styles = css`
     :host {
+      /* Theming hooks */
+      --toast-bg: var(--cp-surface);
+      --toast-bg-strong: var(--cp-surface-strong);
+      --toast-border: var(--cp-surface-border);
+      --toast-text: var(--cp-text);
+      --toast-shadow-info: var(--cp-glow-cyan);
+      --toast-shadow-warn: var(--cp-glow-magenta);
+
       position: fixed;
-      top: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 50;
+      z-index: 60;
       pointer-events: none;
     }
 
+    /* Positions */
+    :host([position="top-center"]) {
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    :host([position="bottom-center"]) {
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    :host([position="top-right"]) {
+      top: 24px;
+      right: 24px;
+    }
+    :host([position="bottom-right"]) {
+      bottom: 24px;
+      right: 24px;
+    }
+
     .toast {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font: 17px/1.2 system-ui;
-      box-shadow: var(--cp-glow-cyan);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font: 15px/1.3 system-ui;
+      color: var(--toast-text);
+      background: var(--toast-bg);
+      border: 1px solid var(--toast-border);
+      box-shadow: var(--toast-shadow-info);
       backdrop-filter: blur(8px);
-      opacity: 0;
-      transform: translateY(-20px);
-      transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-      max-width: 400px;
-      text-align: center;
+      max-width: 520px;
+      text-align: left;
       pointer-events: auto;
-      border: 1px solid var(--cp-surface-border);
-      color: var(--cp-text);
+
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    :host([position="bottom-center"]) .toast {
+      transform: translateY(10px);
     }
 
     .toast.visible {
@@ -47,48 +90,27 @@ export class ToastNotification extends LitElement {
       transform: translateY(0);
     }
 
-    .toast.info {
-      background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
-      color: #000;
-      font-weight: 600;
+    /* Type accents via glow */
+    .toast.info { box-shadow: var(--toast-shadow-info); }
+    .toast.success { box-shadow: var(--toast-shadow-info); }
+    .toast.warning { box-shadow: var(--toast-shadow-warn); }
+    .toast.error { box-shadow: var(--toast-shadow-warn); }
+
+    /* Inline variant used for bottom-center over Live2D */
+    :host([variant="inline"]) .toast {
+      font: 17px/1.2 system-ui;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--toast-bg-strong);
+      border: 1px solid var(--toast-border);
     }
 
-    .toast.warning {
-      background: linear-gradient(135deg, var(--cp-amber), var(--cp-red));
-      color: #000;
-      font-weight: 600;
-    }
-
-    .toast.success {
-      background: linear-gradient(135deg, var(--cp-green), var(--cp-cyan));
-      color: #000;
-      font-weight: 600;
-    }
-
-    .toast.error {
-      background: linear-gradient(135deg, var(--cp-red), var(--cp-purple));
-      color: #000;
-      font-weight: 600;
-    }
-
-    .toast-icon {
-      display: inline-block;
-      margin-right: 8px;
-      font-size: 18px;
-      vertical-align: middle;
-    }
-
-    .toast-message {
-      display: inline-block;
-      vertical-align: middle;
-    }
+    .toast-icon { display: inline-block; font-size: 18px; }
+    .toast-message { display: inline-block; }
   `;
 
   render() {
-    if (!this.message) {
-      return html``;
-    }
-
+    if (!this.message) return html``;
     return html`
       <div class="toast ${this.type} ${this.visible ? "visible" : ""}">
         <span class="toast-icon">${this._getIcon()}</span>
@@ -99,85 +121,55 @@ export class ToastNotification extends LitElement {
 
   private _getIcon(): string {
     switch (this.type) {
-      case "info":
-        return "ℹ️";
-      case "success":
-        return "✅";
-      case "warning":
-        return "⚠️";
-      case "error":
-        return "❌";
-      default:
-        return "ℹ️";
+      case "info": return "ℹ️";
+      case "success": return "✅";
+      case "warning": return "⚠️";
+      case "error": return "❌";
+      default: return "ℹ️";
     }
   }
 
   /**
-   * Show the toast with a message
-   * @param message - The message to display
-   * @param type - The type of toast (info, success, warning, error)
-   * @param duration - How long to show the toast in milliseconds (0 = manual hide)
+   * Show the toast with optional overrides
    */
   show(
     message: string,
     type: "info" | "success" | "warning" | "error" = "info",
     duration: number = 0,
+    opts?: { position?: "top-center" | "bottom-center" | "top-right" | "bottom-right"; variant?: "standard" | "inline" }
   ) {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+    }
     this.message = message;
     this.type = type;
+    if (opts?.position) this.position = opts.position;
+    if (opts?.variant) this.variant = opts.variant;
     this.visible = true;
     this._isAnimating = true;
 
-    // Auto-hide after duration if specified
     if (duration > 0) {
-      setTimeout(() => {
-        this.hide();
-      }, duration);
+      this.hideTimeout = setTimeout(() => this.hide(), duration);
     }
 
-    // Dispatch show event
-    this.dispatchEvent(
-      new CustomEvent("toast-show", {
-        detail: { message, type },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.dispatchEvent(new CustomEvent("toast-show", {
+      detail: { message, type },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
-  /**
-   * Hide the toast
-   */
   hide() {
     this.visible = false;
     this._isAnimating = true;
-
-    // Clear message after animation completes
     setTimeout(() => {
       this.message = "";
       this._isAnimating = false;
+      this.hideTimeout = undefined;
     }, 300);
-
-    // Dispatch hide event
-    this.dispatchEvent(
-      new CustomEvent("toast-hide", {
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.dispatchEvent(new CustomEvent("toast-hide", { bubbles: true, composed: true }));
   }
 
-  /**
-   * Check if the toast is currently visible
-   */
-  get isVisible(): boolean {
-    return this.visible;
-  }
-
-  /**
-   * Check if the toast is currently animating
-   */
-  get isAnimating(): boolean {
-    return this._isAnimating;
-  }
+  get isVisible(): boolean { return this.visible; }
+  get isAnimating(): boolean { return this._isAnimating; }
 }

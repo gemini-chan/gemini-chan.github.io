@@ -57,8 +57,8 @@ This document outlines the requirements for a dual-input mode that simulates a r
 
 #### 2.4.1. Acceptance Criteria
 - **WHEN** no call is active **THEN** only the chat window (texting interface) is visible
-- **WHEN** a call becomes active **THEN** the chat window is hidden and the call transcript window appears
-- **WHEN** a call ends **THEN** the call transcript window is hidden and the chat window reappears
+- **WHEN** a call becomes active **THEN** the entire tabbed interface (including the chat window and tabs) is hidden and the call transcript window appears
+- **WHEN** a call ends **THEN** the call transcript window is hidden and the tabbed interface reappears
 - **WHEN** the call transcript window is visible **THEN** it displays real-time transcription of the voice conversation
 
 ### 2.8. Smart Auto-scroll Transcript Behavior
@@ -132,6 +132,7 @@ This document outlines the requirements for a dual-input mode that simulates a r
 - **WHEN** a call is active **THEN** the Live2D model area remains unoccupied by transcript windows for better visibility
 - **WHEN** a call is active **THEN** the call transcript does not extend into the space under the Live2D model
 - **WHEN** switching between texting and calling modes **THEN** both transcript windows maintain consistent dimensions and positioning
+- **WHEN** a call is active **THEN** call progress/status UI (e.g., connecting/connected/active banners) must not overlap the center Live2D area and should appear in the right-side call transcript header instead.
 
 ### 2.10. Tabbed Chat Interface
 - **As a** user,

@@ -1,7 +1,7 @@
 # Implementation Plan: Toast Component Redesign
 
-## 🎯 **Current Priority**
-Redesign the toast notification component to fully integrate with the theme engine system, providing enhanced visual consistency and persona-aware styling.
+## 🎯 Current Priority
+Redesign the toast notification component to fully integrate with the theme engine system, providing enhanced visual consistency and persona-aware styling. Also unify all inline and global toasts under a single atomic component and remove legacy inline status blocks/timers.
 
 - [ ] 1. **Analyze Current Implementation and Dependencies**
   - [ ] 1.1. Audit current toast-notification.ts component structure and API

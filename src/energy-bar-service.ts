@@ -1,6 +1,8 @@
 import { createComponentLogger } from "./debug-logger";
 
-export type EnergyLevel = 0 | 1 | 2 | 3;
+export type STSEnergyLevel = 0 | 1 | 2 | 3;
+export type TTSEnergyLevel = 0 | 1 | 2;
+export type EnergyLevel = STSEnergyLevel | TTSEnergyLevel;
 export type EnergyMode = "sts" | "tts";
 
 export interface EnergyState {
@@ -17,19 +19,18 @@ export interface EnergyLevelChangedDetail extends EnergyState {
 const logger = createComponentLogger("energy-bar-system");
 
 // Mapping based on design spec (STS)
-const STS_MODEL_TIER_BY_LEVEL: Record<EnergyLevel, string | null> = {
+const STS_MODEL_TIER_BY_LEVEL: Record<STSEnergyLevel, string | null> = {
   3: "gemini-2.5-flash-exp-native-audio-thinking-dialog",
   2: "gemini-2.5-flash-preview-native-audio-dialog",
   1: "gemini-2.5-flash-live-preview",
   0: null,
 };
 
-// TTS mapping: keep a stable live preview model for 3/2/1; 0 = exhausted
-const TTS_MODEL_TIER_BY_LEVEL: Record<EnergyLevel, string | null> = {
-  3: "gemini-live-2.5-flash-preview",
-  2: "gemini-live-2.5-flash-preview",
-  1: "gemini-live-2.5-flash-preview",
-  0: null,
+// TTS mapping: simplified 3-level system with fallback model at level 1
+const TTS_MODEL_TIER_BY_LEVEL: Record<TTSEnergyLevel, string | null> = {
+  2: "gemini-live-2.5-flash-preview", // Primary stable model
+  1: "gemini-2.0-flash-live-001",     // Fallback model for degraded performance
+  0: null,                            // Exhausted state
 };
 
 /**
@@ -38,7 +39,7 @@ const TTS_MODEL_TIER_BY_LEVEL: Record<EnergyLevel, string | null> = {
  */
 export class EnergyBarService extends EventTarget {
   private static _instance: EnergyBarService | null = null;
-  private _levels: Record<EnergyMode, EnergyLevel> = { sts: 3, tts: 3 };
+  private _levels: Record<EnergyMode, EnergyLevel> = { sts: 3, tts: 2 };
 
   static get instance(): EnergyBarService {
     if (!EnergyBarService._instance)
@@ -61,9 +62,11 @@ export class EnergyBarService extends EventTarget {
     level: EnergyLevel,
     mode: EnergyMode = "sts",
   ): string | null {
-    return mode === "sts"
-      ? STS_MODEL_TIER_BY_LEVEL[level]
-      : TTS_MODEL_TIER_BY_LEVEL[level];
+    if (mode === "sts") {
+      return STS_MODEL_TIER_BY_LEVEL[level as STSEnergyLevel];
+    } else {
+      return TTS_MODEL_TIER_BY_LEVEL[level as TTSEnergyLevel];
+    }
   }
 
   /** Decrement level due to rate limit for a specific mode, logging and emitting change events. */
@@ -89,14 +92,16 @@ export class EnergyBarService extends EventTarget {
     );
   }
 
-  /** Reset the energy level to 3 for a mode and emit a change event. */
+  /** Reset the energy level to maximum for a mode and emit a change event. */
   resetEnergyLevel(
     reason: EnergyLevelChangedDetail["reason"] = "session-reset",
     mode: EnergyMode = "sts",
   ): void {
     const prev = this._levels[mode];
-    if (prev === 3) return;
-    this._levels[mode] = 3;
+    const maxLevel = mode === "sts" ? 3 : 2; // STS max: 3, TTS max: 2
+    if (prev === maxLevel) return;
+    
+    this._levels[mode] = maxLevel as EnergyLevel;
     const detail: EnergyLevelChangedDetail = {
       mode,
       level: this._levels[mode],
@@ -112,13 +117,14 @@ export class EnergyBarService extends EventTarget {
     );
   }
 
-  /** Set the energy level manually (clamped to 0..3) for a mode. */
+  /** Set the energy level manually (clamped to mode-specific range) for a mode. */
   setEnergyLevel(
     level: number,
     reason: EnergyLevelChangedDetail["reason"] = "manual",
     mode: EnergyMode = "sts",
   ): void {
-    const clamped = Math.max(0, Math.min(3, Math.floor(level))) as EnergyLevel;
+    const maxLevel = mode === "sts" ? 3 : 2; // STS max: 3, TTS max: 2
+    const clamped = Math.max(0, Math.min(maxLevel, Math.floor(level))) as EnergyLevel;
     const prev = this._levels[mode];
     if (clamped === prev) return;
 

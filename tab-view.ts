@@ -1,13 +1,26 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import "./tts-energy-bar";
 
 @customElement("tab-view")
 export class TabView extends LitElement {
   @property({ type: String }) activeTab: "chat" | "call-history" = "chat";
+  @property({ type: Boolean, reflect: true }) visible: boolean = true;
 
   static styles = css`
+    :host {
+      display: none;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    :host([visible]) {
+      display: block;
+    }
+
     .tabs {
       display: flex;
+      justify-content: space-between;
+      align-items: center;
       gap: 8px;
       padding: 8px 12px;
       border-bottom: 1px solid var(--cp-surface-border);
@@ -15,6 +28,17 @@ export class TabView extends LitElement {
       position: sticky;
       top: 0;
       z-index: 5;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .tab-indicators {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .tab {
       padding: 10px 16px;
@@ -53,17 +77,22 @@ export class TabView extends LitElement {
   render() {
     return html`
       <div class="tabs">
-        <div
-          class="tab ${this.activeTab === "chat" ? "active" : ""}"
-          @click=${() => this._switchTab("chat")}
-        >
-          Chat
+        <div class="tab-buttons">
+          <div
+            class="tab ${this.activeTab === "chat" ? "active" : ""}"
+            @click=${() => this._switchTab("chat")}
+          >
+            Chat
+          </div>
+          <div
+            class="tab ${this.activeTab === "call-history" ? "active" : ""}"
+            @click=${() => this._switchTab("call-history")}
+          >
+            Call History
+          </div>
         </div>
-        <div
-          class="tab ${this.activeTab === "call-history" ? "active" : ""}"
-          @click=${() => this._switchTab("call-history")}
-        >
-          Call History
+        <div class="tab-indicators">
+          <tts-energy-bar></tts-energy-bar>
         </div>
       </div>
     `;

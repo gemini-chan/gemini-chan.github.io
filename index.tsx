@@ -27,7 +27,6 @@ import type {
 } from "./src/energy-bar-service";
 import { energyBarService } from "./src/energy-bar-service";
 import "./toast-notification";
-import "./energy-bar";
 import "./controls-panel";
 import "./tab-view";
 import "./call-history-view";
@@ -358,13 +357,10 @@ export class GdmLiveAudio extends LitElement {
   @state() isCallActive = false;
   @state() status = "";
   @state() error = "";
-  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
-    undefined;
-  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
-    undefined;
+  private _statusHideTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  private _statusClearTimer: ReturnType<typeof setTimeout> | undefined = undefined;
   @state() private _toastVisible = false;
   @state() showSettings = false;
-  @state() showToast = false;
   @state() toastMessage = "";
 
   // Track pending user action for API key validation flow
@@ -408,7 +404,9 @@ export class GdmLiveAudio extends LitElement {
 
   // Scroll-to-bottom state for chat view
   @state() private showChatScrollToBottom = false;
+  @state() callState: "idle" | "connecting" | "active" | "ending" = "idle";
   @state() private chatNewMessageCount = 0;
+  @state() private isChatActive = false;
 
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
@@ -441,19 +439,7 @@ export class GdmLiveAudio extends LitElement {
       z-index: 1;
     }
 
-    .status-bar {
-      position: absolute;
-      top: 16px;
-      right: 24px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      pointer-events: auto;
-    }
 
-    .status-bar energy-bar {
-      opacity: 0.9;
-    }
 
     .main-container {
       z-index: 1;
@@ -461,6 +447,15 @@ export class GdmLiveAudio extends LitElement {
       flex-direction: column;
       height: 100%;
       overflow: hidden;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 200ms ease, visibility 200ms ease;
+    }
+
+    .main-container.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     #status {
@@ -502,6 +497,36 @@ export class GdmLiveAudio extends LitElement {
       this.personaManager.getActivePersona().id,
     );
     this.initClient();
+    
+    // Debug: Check initial TTS energy state
+    logger.debug("Initial TTS energy state", {
+      level: energyBarService.getCurrentEnergyLevel("tts"),
+      model: energyBarService.getCurrentModel("tts")
+    });
+    
+    // Initial TTS greeting is now triggered in firstUpdated
+  }
+
+  private _triggerInitialTTSGreeting() {
+    const ttsLevel = energyBarService.getCurrentEnergyLevel("tts");
+    const personaName = this.personaManager.getActivePersona().name;
+    
+    logger.debug("Triggering initial TTS greeting", { ttsLevel, personaName });
+    
+    if (ttsLevel === 2) {
+      const prompt = this.personaManager.getPromptForEnergyLevel(
+        2,
+        personaName,
+        "tts",
+      );
+      
+      logger.debug("Generated initial TTS greeting", { prompt });
+      
+      if (prompt) {
+        this._appendTextMessage(prompt, "model");
+        logger.debug("Injected initial greeting into chat");
+      }
+    }
   }
 
   private initSessionManagers() {
@@ -663,6 +688,25 @@ export class GdmLiveAudio extends LitElement {
     this.callTranscript = [...this.callTranscript, notice];
   }
 
+  private _appendTextMessage(text: string, speaker: "user" | "model") {
+    // Append a message directly to the text transcript
+    logger.debug("Appending text message", { 
+      text, 
+      speaker, 
+      currentLength: this.textTranscript.length 
+    });
+    
+    this.textTranscript = [...this.textTranscript, { text, speaker }];
+    
+    logger.debug("Text message appended", { 
+      newLength: this.textTranscript.length,
+      lastMessage: this.textTranscript[this.textTranscript.length - 1]
+    });
+    
+    // Force a re-render to ensure the UI updates
+    this.requestUpdate("textTranscript");
+  }
+
   private _handleCallRateLimit(msg?: string) {
     // Degrade only STS energy and notify UI
     energyBarService.handleRateLimitError("sts");
@@ -701,6 +745,7 @@ export class GdmLiveAudio extends LitElement {
     logger.debug("Call start. Existing callSession:", this.callSession);
     // Switch to calling mode
     this.activeMode = "calling";
+    this.callState = "connecting";
     this._updateActiveOutputNode();
 
     // Initialize or reinitialize call session; if initialization fails, show non-silent failure and abort
@@ -728,7 +773,8 @@ export class GdmLiveAudio extends LitElement {
         video: false,
       });
 
-      this.updateStatus("Call connected");
+      this.updateStatus("");
+      this.callState = "active";
 
       this.sourceNode = this.inputAudioContext.createMediaStreamSource(
         this.mediaStream,
@@ -785,7 +831,8 @@ export class GdmLiveAudio extends LitElement {
     if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
       return;
 
-    this.updateStatus("Ending call...");
+    this.updateStatus("");
+    this.callState = "ending";
 
     this.isCallActive = false;
 
@@ -826,7 +873,8 @@ export class GdmLiveAudio extends LitElement {
       }),
     );
 
-    this.updateStatus("Call ended");
+    this.updateStatus("");
+    this.callState = "idle";
     logger.debug("Call ended. callSession preserved:", this.callSession);
   }
 
@@ -896,40 +944,30 @@ export class GdmLiveAudio extends LitElement {
 
     // Open settings menu and show toast prompting for API key
     this.showSettings = true;
-    this.toastMessage = this._getApiKeyPrompt();
-    this.showToast = true;
+    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
+    globalToast?.show(this._getApiKeyPrompt(), 'info', 4000, { position: 'top-right' });
   }
 
-  private _handleApiKeySaved() {
+  private async _handleApiKeySaved() {
     // Show success toast for API key saved
-    const toast = this.shadowRoot?.querySelector(
-      "toast-notification",
-    ) as ToastNotification;
-    if (toast) {
-      toast.show("API key saved successfully! ✨", "info", 3000);
-    }
+    const globalToast = this.shadowRoot?.querySelector('#global-toast') as ToastNotification;
+    globalToast?.show("API key saved successfully! ✨", "success", 2500, { position: "top-right" });
 
     logger.info("API key saved, reinitializing client");
 
     // Reinitialize the client with the new API key
-    this.initClient();
+    await this.initClient();
 
     // Close settings menu and toast when API key is saved
     this.showSettings = false;
-    this.showToast = false;
-    this.toastMessage = "";
 
     // Execute the pending action if there is one
     if (this.pendingAction) {
       const action = this.pendingAction;
       this.pendingAction = null; // Clear the pending action
 
-      // Execute the action after a brief delay to ensure client is initialized
-      // The 100ms delay allows the client initialization to complete before
-      // attempting to use the new API key for the pending action
-      setTimeout(() => {
-        action();
-      }, 100);
+      // Execute the action now that the client is initialized
+      action();
     }
   }
 
@@ -1144,6 +1182,10 @@ export class GdmLiveAudio extends LitElement {
     this.chatNewMessageCount = newMessageCount;
   }
 
+  private _handleChatActiveChanged(e: CustomEvent) {
+    this.isChatActive = e.detail.isChatActive;
+  }
+
   private async _handleSendMessage(e: CustomEvent) {
     const message = e.detail;
     if (!message || !message.trim()) {
@@ -1219,24 +1261,36 @@ export class GdmLiveAudio extends LitElement {
     );
   }
 
+  protected firstUpdated() {
+    // Trigger initial TTS greeting once the UI is ready
+    this._triggerInitialTTSGreeting();
+  }
+
   private _onEnergyLevelChanged = (e: Event) => {
     const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
       .detail;
+    
+    // Debug logging
+    logger.debug(`Energy level changed`, { mode, level, reason });
+    
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
-      // STS: show immersive prompts as directed; TTS: currently quiet
+      // STS: show immersive prompts as directed; TTS: inject into chat or show as toast
       const prompt = this.personaManager.getPromptForEnergyLevel(
         level as 0 | 1 | 2 | 3,
         personaName,
         mode,
       );
+      
+      logger.debug(`Generated prompt for energy level`, { mode, level, personaName, prompt });
+      
       if (prompt && mode === "sts") {
         this._appendCallNotice(prompt);
-      } else if (prompt) {
-        const toast = this.shadowRoot?.querySelector(
-          "toast-notification",
-        ) as ToastNotification;
-        toast?.show(prompt, "warning", 4000);
+        logger.debug(`Appended STS call notice`, { prompt });
+      } else if (prompt && mode === "tts" && level < 2) {
+        // Only inject prompts for degraded/exhausted states.
+        this._appendTextMessage(prompt, "model");
+        logger.debug(`Appended TTS text message`, { prompt });
       }
     }
 
@@ -1265,16 +1319,11 @@ export class GdmLiveAudio extends LitElement {
         ></live2d-gate>
       </div>
       <div class="ui-grid">
-        ${
-          !this.isCallActive
-            ? html`<div class="status-bar">
-                <energy-bar></energy-bar>
-              </div>`
-            : ""
-        }
-        <div class="main-container">
+
+        <div class="main-container ${this.activeMode === "calling" ? "hidden" : ""}">
           <tab-view
             .activeTab=${this.activeTab}
+            .visible=${this.activeMode !== "calling"}
             @tab-switch=${this._handleTabSwitch}
           ></tab-view>
           ${
@@ -1286,6 +1335,7 @@ export class GdmLiveAudio extends LitElement {
                     @send-message=${this._handleSendMessage}
                     @reset-text=${this._resetTextContext}
                     @scroll-state-changed=${this._handleChatScrollStateChanged}
+                    @chat-active-changed=${this._handleChatActiveChanged}
                   >
                   </chat-view>
                 `
@@ -1317,6 +1367,7 @@ export class GdmLiveAudio extends LitElement {
           }
           <controls-panel
             .isCallActive=${this.isCallActive}
+            .isChatActive=${this.isChatActive}
             .showCallScrollToBottom=${this.showCallScrollToBottom}
             .callNewMessageCount=${this.callNewMessageCount}
             .showChatScrollToBottom=${this.showChatScrollToBottom}
@@ -1329,34 +1380,18 @@ export class GdmLiveAudio extends LitElement {
           >
           </controls-panel>
 
-          <div id="status">
-            ${
-              this.error || this.status
-                ? html`<div
-                    class="toast ${this._toastVisible ? "" : "hide"}"
-                  >
-                    ${this.error || this.status}
-                  </div>`
-                : ""
-            }
-          </div>
-
-          <toast-notification
-            .visible=${this.showToast}
-            .message=${this.toastMessage}
-            type="info"
-          >
-          </toast-notification>
+          <toast-notification id="inline-toast" position="bottom-center" variant="inline"></toast-notification>
+          <toast-notification id="global-toast" position="top-right"></toast-notification>
         </div>
 
         <call-transcript
           .transcript=${this.callTranscript}
           .visible=${this.activeMode === "calling"}
           .activePersonaName=${this.personaManager.getActivePersona().name}
+          .callState=${this.callState}
           @reset-call=${this._resetCallContext}
           @scroll-state-changed=${this._handleCallScrollStateChanged}
-        >
-        </call-transcript>
+        ></call-transcript>
       </div>
     `;
   }

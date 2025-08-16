@@ -1,20 +1,20 @@
-# Feature: Energy Bar System (Dual-Mode)
+# Feature: Energy Bar System (Dual-Session Indicators)
 
 ## 1. Introduction
-This document outlines the requirements for the Energy Bar System, which is designed to work in concert with the **Dual-Input Mode** feature (see `../dual-input-mode/requirements.md`). This system manages the AI's "energy" level by maintaining separate energy pools for the **STS (voice call)** and **TTS (text chat)** modes.
+This document outlines the requirements for the Energy Bar System, which is designed to work in concert with the **Dual-Input Mode** feature (see `../dual-input-mode/requirements.md`). This system manages the AI's "energy" level by maintaining separate energy pools for the **STS (voice call)** and **TTS (text chat)** sessions, with dedicated indicators for each mode.
 
-As rate limits for more powerful models are exhausted in a specific mode, the system will gracefully degrade to a less powerful model for that mode only, communicating the change to the user through a visual energy bar icon (for STS) and adjusted conversational prompts.
+As rate limits for more powerful models are exhausted in a specific session, the system will gracefully degrade to a less powerful model for that session only, communicating the change to the user through dedicated session-specific energy indicators and immersive conversational prompts.
 
 ## 2. Epics
 
 ### 2.1. Epic: Tiered Model State Management (Dual-Mode)
-This epic covers the logic for tracking the current model tier for both STS and TTS modes and managing the fallback to lower tiers when rate-limit failures occur in either mode.
+This epic covers the logic for tracking the current model tier for both STS and TTS modes and managing the fallback to lower tiers when rate-limit failures occur in either mode. The TTS mode uses a simplified 3-level system (2, 1, 0) to avoid redundant model switches, while STS maintains the full 4-level system (3, 2, 1, 0).
 
-#### 2.1.1. User Story: Track Independent Energy Levels
+#### 2.1.1. User Story: Track Independent Energy Levels with Mode-Specific Ranges
 - **Priority**: High
 - **As a** system,
-- **I want** to maintain separate energy level states (e.g., 3, 2, 1, 0) for the STS and TTS modes,
-- **so that** energy depletion in one mode does not affect the other.
+- **I want** to maintain separate energy level states for STS (3, 2, 1, 0) and TTS (2, 1, 0) modes,
+- **so that** energy depletion in one mode does not affect the other and TTS avoids unnecessary model reconnections.
 
 ##### Acceptance Criteria
 ```gherkin
@@ -22,7 +22,13 @@ Scenario: Initialize at full energy for both modes
   Given the application starts
   When the Energy Bar System is initialized
   Then the energy level for STS is set to 3
-  And the energy level for TTS is set to 3.
+  And the energy level for TTS is set to 2.
+
+Scenario: TTS energy levels are constrained to 2, 1, 0
+  Given the TTS mode is active
+  When energy levels are managed
+  Then the TTS energy level can only be 2, 1, or 0
+  And the TTS energy level never reaches 3.
 ```
 
 #### 2.1.2. User Story: Downgrade Energy Level on Mode-Specific Rate Limit
@@ -35,11 +41,11 @@ Scenario: Initialize at full energy for both modes
 ```gherkin
 Scenario: Downgrade STS energy on call rate limit
   Given the current STS energy level is 3
-  And the TTS energy level is 3
+  And the TTS energy level is 2
   And a rate limit error is detected during an STS call
   When the system processes the error
   Then the STS energy level is set to 2
-  And the TTS energy level remains 3.
+  And the TTS energy level remains 2.
 
 Scenario: Downgrade TTS energy on chat rate limit
   Given the current STS energy level is 3
@@ -48,6 +54,12 @@ Scenario: Downgrade TTS energy on chat rate limit
   When the system processes the error
   Then the TTS energy level is set to 1
   And the STS energy level remains 3.
+
+Scenario: TTS fallback model at energy level 1
+  Given the TTS energy level is 1
+  When the system needs to select a model for TTS
+  Then the system uses "gemini-2.0-flash-live-001" as the fallback model
+  And this provides stable TTS functionality at reduced capability.
 ```
 
 #### 2.1.3. User Story: Reset STS Energy Level on New Call Session
@@ -82,51 +94,82 @@ Scenario: Log an STS downgrade event
   And the log data includes the mode ('sts'), old level (3), new level (2), and reason ("rate-limit-exceeded").
 ```
 
-### 2.2. Epic: Energy Bar UI (STS Focus)
-This epic covers the UI component that visually represents the **STS energy level only**.
+### 2.2. Epic: Dual-Session Energy Indicators
+This epic covers the UI components that visually represent energy levels for both STS and TTS sessions, displayed contextually within their respective interfaces.
 
-#### 2.2.1. User Story: Display STS Energy Bar Icon
+#### 2.2.1. User Story: Display STS Energy Indicator in Call Interface ✅ IMPLEMENTED
 - **Priority**: High
 - **As a** user,
-- **I want** to see a battery-style icon in a status bar at the top-right of the main UI,
-- **so that** I am aware of the current energy level of the AI for the call.
+- **I want** to see a battery-style energy indicator within the call interface when I'm on a call,
+- **so that** I am aware of the current energy level of the AI during the voice conversation.
 
 ##### Acceptance Criteria
 ```gherkin
-Scenario: Display the energy bar for STS
-  Given I am in the main UI
-  When the application loads
-  Then the energy bar icon is visible in the top-right status bar and reflects the STS energy level.
+Scenario: Display STS energy indicator during call
+  Given I am in an active call
+  When the call interface is displayed
+  Then an STS energy indicator is visible in the call header area
+  And the indicator reflects the current STS energy level.
 
-Scenario: Hide energy bar during active call
-  Given the energy bar is visible in the status bar
-  When a call becomes active
-  Then the energy bar in the status bar is hidden.
+Scenario: Hide STS energy indicator when not calling
+  Given I am not in an active call
+  When the main interface is displayed
+  Then no STS energy indicator is visible anywhere in the UI.
 ```
 
-#### 2.2.2. User Story: Update Icon Based on STS Energy Level
+#### 2.2.2. User Story: Display TTS Energy Indicator in Chat Interface
 - **Priority**: High
 - **As a** user,
-- **I want** the energy bar icon to visually change as the STS energy level changes,
-- **so that** I can instantly understand the current state of the AI's calling capabilities.
+- **I want** to see a battery-style energy indicator within the chat interface when I'm texting,
+- **so that** I am aware of the current energy level of the AI during text conversations.
 
 ##### Acceptance Criteria
 ```gherkin
-Scenario: Full STS energy
-  Given the STS energy level is 3
-  When the UI updates
-  Then the battery icon shows 3 out of 3 bars filled and is green.
+Scenario: Display TTS energy indicator in chat header
+  Given I am viewing the chat interface
+  When the chat window is displayed
+  Then a TTS energy indicator is visible in the chat header area
+  And the indicator reflects the current TTS energy level.
 
-Scenario: Exhausted STS energy
-  Given the STS energy level is 0
-  When the UI updates
-  Then the battery icon shows 0 out of 3 bars filled and is red.
+Scenario: TTS energy indicator shows 2-level system
+  Given the TTS energy indicator is visible
+  When the TTS energy level is 2
+  Then the indicator shows 2 out of 2 bars filled and is green.
 
-Scenario: TTS energy change does not affect the UI
-  Given the STS energy level is 3
+Scenario: TTS energy indicator shows degraded state
+  Given the TTS energy indicator is visible
+  When the TTS energy level is 1
+  Then the indicator shows 1 out of 2 bars filled and is yellow.
+
+Scenario: TTS energy indicator shows exhausted state
+  Given the TTS energy indicator is visible
+  When the TTS energy level is 0
+  Then the indicator shows 0 out of 2 bars filled and is red.
+```
+
+#### 2.2.3. User Story: Independent Energy Indicator Updates
+- **Priority**: High
+- **As a** user,
+- **I want** each energy indicator to update independently based on its respective session,
+- **so that** I can clearly understand the energy state of each interaction mode separately.
+
+##### Acceptance Criteria
+```gherkin
+Scenario: STS energy change does not affect TTS indicator
+  Given both STS and TTS energy indicators are visible
+  And the STS energy level is 3
+  And the TTS energy level is 2
+  When the STS energy level drops to 2
+  Then the STS indicator updates to show 2 bars
+  And the TTS indicator remains unchanged showing 2 bars.
+
+Scenario: TTS energy change does not affect STS indicator
+  Given both STS and TTS energy indicators are visible
+  And the STS energy level is 3
   And the TTS energy level is 2
   When the TTS energy level drops to 1
-  Then the battery icon remains unchanged (showing 3 bars).
+  Then the TTS indicator updates to show 1 bar
+  And the STS indicator remains unchanged showing 3 bars.
 ```
 
 ### 2.3. Epic: Persona-Based Conversational Prompts (Mode-Aware)
@@ -157,3 +200,30 @@ Scenario: Exhausted STS energy prompt (sleepy mode)
   And any persona is selected
   When a user tries to start a call
   Then an immersive, persona-specific "sleepy" prompt is displayed indicating zero consciousness.
+```
+
+#### 2.3.2. User Story: Persona-Specific Chat Greetings and TTS Energy Prompts
+- **Priority**: High
+- **As a** user,
+- **I want** Gemini-chan to greet me with a persona-specific message when I start chatting at full TTS energy,
+- **so that** I feel welcomed and encouraged to start a conversation.
+
+##### Acceptance Criteria
+```gherkin
+Scenario: VTuber greeting at TTS energy level 2
+  Given the TTS energy level is 2
+  And the selected persona is 'VTuber'
+  When the chat window is displayed
+  Then a greeting like "Hey there! ✨ I'm Gemini-chan, and I'm super excited to chat with you!" is injected into the chat.
+
+Scenario: Assistant greeting at TTS energy level 2
+  Given the TTS energy level is 2
+  And the selected persona is 'Assistant'
+  When the chat window is displayed
+  Then a greeting like "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have." is injected into the chat.
+
+Scenario: TTS degraded energy prompts injected into chat
+  Given the TTS energy level is 1 or 0
+  And any persona is selected
+  When the energy level changes
+  Then a persona-specific degraded energy message is injected directly into the chat window as a model message.
