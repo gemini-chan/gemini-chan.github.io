@@ -9,7 +9,6 @@ const logger = createComponentLogger("call-transcript");
 interface Turn {
   text: string;
   author: "user" | "model";
-  timestamp?: Date;
   isSystemMessage?: boolean;
 }
 
@@ -182,11 +181,6 @@ export class CallTranscript extends LitElement {
       align-self: flex-start;
     }
 
-    .timestamp {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-top: 4px;
-    }
 
     .empty-state {
       display: flex;
@@ -300,14 +294,6 @@ export class CallTranscript extends LitElement {
     }
   }
 
-  private _formatTimestamp(timestamp?: Date): string {
-    if (!timestamp) return "";
-    return timestamp.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }
 
   private _resetCall() {
     this.dispatchEvent(
@@ -356,13 +342,6 @@ export class CallTranscript extends LitElement {
                 (turn) => html`
           <div class="turn ${turn.author}">
             ${turn.text}
-            ${
-              turn.timestamp && !turn.isSystemMessage
-                ? html`
-              <div class="timestamp">${this._formatTimestamp(turn.timestamp)}</div>
-            `
-                : ""
-            }
           </div>
         `,
               )

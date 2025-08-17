@@ -227,3 +227,22 @@ Scenario: TTS degraded energy prompts injected into chat
   And any persona is selected
   When the energy level changes
   Then a persona-specific degraded energy message is injected directly into the chat window as a model message.
+
+#### 2.3.3. User Story: Timeless System Messages in Chat
+- **Priority**: Medium
+- **As a** user,
+- **I want** system-generated messages, like energy level prompts, to be injected into the chat without a timestamp,
+- **so that** the transcript remains clean and focused on the conversational flow.
+
+##### Acceptance Criteria
+```gherkin
+Scenario: Energy prompt is injected without a timestamp
+  Given the TTS energy level changes from 2 to 1
+  When the system injects a degraded energy prompt into the chat
+  Then the injected message appears in the transcript without any timestamp.
+
+Scenario: Welcome greeting is injected without a timestamp
+  Given the chat window is opened for the first time
+  When the system injects a welcome greeting
+  Then the greeting message appears in the transcript without any timestamp.
+```

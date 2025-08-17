@@ -37,6 +37,7 @@
   - [x] 4.5.3. Ensure TTS level 2 greetings encourage user interaction and feel welcoming. (Ref: Req 2.3.2)
   - [x] 4.5.4. Ensure TTS level 1 and 0 prompts provide clear feedback about energy state changes in the chat. (Ref: Req 2.3.2)
 
+  - [ ] 4.5.5. Ensure that injected TTS prompts (greetings, energy state changes) do not include a timestamp. (Ref: Req 2.3.3)
 - [x] 5. **Implement Testing Strategy (Dual-Mode)**
   - [x] 5.1. Create unit tests for the `EnergyBarService` to verify state transitions and logging for both modes independently.
   - [x] 5.2. Create unit tests for the `Persona Service` to verify correct, mode-aware prompt selection.
