@@ -10,6 +10,7 @@ interface Turn {
   text: string;
   author: "user" | "model";
   timestamp?: Date;
+  isSystemMessage?: boolean;
 }
 
 @customElement("call-transcript")
@@ -356,7 +357,7 @@ export class CallTranscript extends LitElement {
           <div class="turn ${turn.author}">
             ${turn.text}
             ${
-              turn.timestamp
+              turn.timestamp && !turn.isSystemMessage
                 ? html`
               <div class="timestamp">${this._formatTimestamp(turn.timestamp)}</div>
             `
