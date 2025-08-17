@@ -298,17 +298,22 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getConfig(): Record<string, unknown> {
-    return {
+    const config = {
       responseModalities: [Modality.AUDIO],
       contextWindowCompression: { slidingWindow: {} },
-      // Affective dialog is not supported by basic tiers; omit to ensure compatibility
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
       systemInstruction: this.personaManager.getActivePersona().systemPrompt,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
+      // Conditionally enable affective dialog based on STS energy level
+      ...(energyBarService.isAffectiveDialogEnabled() && {
+        enableAffectiveDialog: true,
+      }),
     };
+
+    return config;
   }
 
   protected getCallbacks() {
