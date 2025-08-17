@@ -68,6 +68,16 @@ export class EnergyBarService extends EventTarget {
       return TTS_MODEL_TIER_BY_LEVEL[level as TTSEnergyLevel];
     }
   }
+  /**
+   * Determines if affective dialog should be enabled based on STS energy level.
+   * Affective dialog is enabled for STS energy levels 2 and 3.
+   * @returns {boolean} True if affective dialog should be enabled, otherwise false.
+   */
+  isAffectiveDialogEnabled(): boolean {
+    const stsLevel = this.getCurrentEnergyLevel("sts") as STSEnergyLevel;
+    return stsLevel === 3 || stsLevel === 2;
+  }
+
 
   /** Decrement level due to rate limit for a specific mode, logging and emitting change events. */
   handleRateLimitError(mode: EnergyMode = "sts"): void {

@@ -8,8 +8,8 @@ const logger = createComponentLogger("call-transcript");
 
 interface Turn {
   text: string;
-  author: "user" | "model";
-  timestamp?: Date;
+  speaker: "user" | "model";
+  isSystemMessage?: boolean;
 }
 
 @customElement("call-transcript")
@@ -181,11 +181,15 @@ export class CallTranscript extends LitElement {
       align-self: flex-start;
     }
 
-    .timestamp {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-top: 4px;
+    .turn.system {
+      background: var(--cp-surface-strong);
+      border-color: var(--cp-surface-border);
+      color: var(--cp-text-muted);
+      align-self: center;
+      font-style: italic;
+      font-size: 14px;
     }
+
 
     .empty-state {
       display: flex;
@@ -299,15 +303,6 @@ export class CallTranscript extends LitElement {
     }
   }
 
-  private _formatTimestamp(timestamp?: Date): string {
-    if (!timestamp) return "";
-    return timestamp.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }
-
   private _resetCall() {
     this.dispatchEvent(
       new CustomEvent("reset-call", { bubbles: true, composed: true }),
@@ -353,15 +348,8 @@ export class CallTranscript extends LitElement {
         `
             : this.transcript.map(
                 (turn) => html`
-          <div class="turn ${turn.author}">
+          <div class="turn ${turn.isSystemMessage ? "system" : turn.speaker}">
             ${turn.text}
-            ${
-              turn.timestamp
-                ? html`
-              <div class="timestamp">${this._formatTimestamp(turn.timestamp)}</div>
-            `
-                : ""
-            }
           </div>
         `,
               )

@@ -94,6 +94,35 @@ Scenario: Log an STS downgrade event
   And the log data includes the mode ('sts'), old level (3), new level (2), and reason ("rate-limit-exceeded").
 ```
 
+#### 2.1.5. User Story: Conditionally Enable Affective Dialog for High-Energy STS
+- **Priority**: High
+- **As a** system,
+- **I want** to enable the affective dialog feature for STS sessions when the energy level is 3 or 2,
+- **so that** the user experiences a more natural and emotionally resonant conversation when the AI is at its highest capacity.
+
+##### Acceptance Criteria
+```gherkin
+Scenario: Affective dialog is enabled at STS energy level 3
+  Given the STS energy level is 3
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to true in the API configuration.
+
+Scenario: Affective dialog is enabled at STS energy level 2
+  Given the STS energy level is 2
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to true in the API configuration.
+
+Scenario: Affective dialog is disabled at STS energy level 1
+  Given the STS energy level is 1
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to false in the API configuration.
+
+Scenario: Affective dialog is disabled at STS energy level 0
+  Given the STS energy level is 0
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to false in the API configuration.
+```
+
 ### 2.2. Epic: Dual-Session Energy Indicators
 This epic covers the UI components that visually represent energy levels for both STS and TTS sessions, displayed contextually within their respective interfaces.
 
@@ -227,3 +256,22 @@ Scenario: TTS degraded energy prompts injected into chat
   And any persona is selected
   When the energy level changes
   Then a persona-specific degraded energy message is injected directly into the chat window as a model message.
+
+#### 2.3.3. User Story: Timeless System Messages in Chat
+- **Priority**: Medium
+- **As a** user,
+- **I want** system-generated messages, like energy level prompts, to be injected into the chat without a timestamp,
+- **so that** the transcript remains clean and focused on the conversational flow.
+
+##### Acceptance Criteria
+```gherkin
+Scenario: Energy prompt is injected without a timestamp
+  Given the TTS energy level changes from 2 to 1
+  When the system injects a degraded energy prompt into the chat
+  Then the injected message appears in the transcript without any timestamp.
+
+Scenario: Welcome greeting is injected without a timestamp
+  Given the chat window is opened for the first time
+  When the system injects a welcome greeting
+  Then the greeting message appears in the transcript without any timestamp.
+```

@@ -275,7 +275,7 @@ class CallSessionManager extends BaseSessionManager {
     onRateLimit: (msg: string) => void = () => {},
     private updateCallTranscript: (
       text: string,
-      author: "user" | "model",
+      speaker: "user" | "model",
     ) => void,
     private personaManager: PersonaManager,
   ) {
@@ -298,17 +298,22 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getConfig(): Record<string, unknown> {
-    return {
+    const config = {
       responseModalities: [Modality.AUDIO],
       contextWindowCompression: { slidingWindow: {} },
-      // Affective dialog is not supported by basic tiers; omit to ensure compatibility
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
       systemInstruction: this.personaManager.getActivePersona().systemPrompt,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
+      // Conditionally enable affective dialog based on STS energy level
+      ...(energyBarService.isAffectiveDialogEnabled() && {
+        enableAffectiveDialog: true,
+      }),
     };
+
+    return config;
   }
 
   protected getCallbacks() {
@@ -689,7 +694,12 @@ export class GdmLiveAudio extends LitElement {
 
   private _appendCallNotice(text: string) {
     // Append a system-style notice to the call transcript to avoid silent failures
-    const notice = { text, speaker: "model" as const, timestamp: new Date() };
+    const notice = {
+      text,
+      speaker: "model" as const,
+      timestamp: new Date(),
+      isSystemMessage: true,
+    };
     this.callTranscript = [...this.callTranscript, notice];
   }
 
