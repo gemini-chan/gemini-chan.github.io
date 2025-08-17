@@ -8,7 +8,7 @@ const logger = createComponentLogger("call-transcript");
 
 interface Turn {
   text: string;
-  author: "user" | "model";
+  speaker: "user" | "model";
   isSystemMessage?: boolean;
 }
 
@@ -181,6 +181,15 @@ export class CallTranscript extends LitElement {
       align-self: flex-start;
     }
 
+    .turn.system {
+      background: var(--cp-surface-strong);
+      border-color: var(--cp-surface-border);
+      color: var(--cp-text-muted);
+      align-self: center;
+      font-style: italic;
+      font-size: 14px;
+    }
+
 
     .empty-state {
       display: flex;
@@ -294,7 +303,6 @@ export class CallTranscript extends LitElement {
     }
   }
 
-
   private _resetCall() {
     this.dispatchEvent(
       new CustomEvent("reset-call", { bubbles: true, composed: true }),
@@ -340,7 +348,7 @@ export class CallTranscript extends LitElement {
         `
             : this.transcript.map(
                 (turn) => html`
-          <div class="turn ${turn.author}">
+          <div class="turn ${turn.isSystemMessage ? "system" : turn.speaker}">
             ${turn.text}
           </div>
         `,

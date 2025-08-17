@@ -671,13 +671,13 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private updateCallTranscript(text: string, speaker: "user" | "model") {
-    logger.debug(`Received ${speaker} text:`, text);
+  private updateCallTranscript(text: string, author: "user" | "model") {
+    logger.debug(`Received ${author} text:`, text);
 
     // For audio transcription, we get incremental chunks that should be appended
     const lastTurn = this.callTranscript[this.callTranscript.length - 1];
 
-    if (lastTurn?.speaker === speaker) {
+    if (lastTurn?.speaker === author) {
       // Append to the existing turn by creating a new array
       // This ensures Lit detects the change
       const updatedTranscript = [...this.callTranscript];
@@ -688,13 +688,18 @@ export class GdmLiveAudio extends LitElement {
       this.callTranscript = updatedTranscript;
     } else {
       // Create a new turn for this author
-      this.callTranscript = [...this.callTranscript, { text, speaker }];
+      this.callTranscript = [...this.callTranscript, { text, speaker: author }];
     }
   }
 
   private _appendCallNotice(text: string) {
     // Append a system-style notice to the call transcript to avoid silent failures
-    const notice = { text, speaker: "model" as const, timestamp: new Date() };
+    const notice = {
+      text,
+      speaker: "model" as const,
+      timestamp: new Date(),
+      isSystemMessage: true,
+    };
     this.callTranscript = [...this.callTranscript, notice];
   }
 
