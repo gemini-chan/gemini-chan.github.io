@@ -275,7 +275,7 @@ class CallSessionManager extends BaseSessionManager {
     onRateLimit: (msg: string) => void = () => {},
     private updateCallTranscript: (
       text: string,
-      author: "user" | "model",
+      speaker: "user" | "model",
     ) => void,
     private personaManager: PersonaManager,
   ) {
@@ -671,13 +671,13 @@ export class GdmLiveAudio extends LitElement {
     }
   }
 
-  private updateCallTranscript(text: string, author: "user" | "model") {
-    logger.debug(`Received ${author} text:`, text);
+  private updateCallTranscript(text: string, speaker: "user" | "model") {
+    logger.debug(`Received ${speaker} text:`, text);
 
     // For audio transcription, we get incremental chunks that should be appended
     const lastTurn = this.callTranscript[this.callTranscript.length - 1];
 
-    if (lastTurn?.speaker === author) {
+    if (lastTurn?.speaker === speaker) {
       // Append to the existing turn by creating a new array
       // This ensures Lit detects the change
       const updatedTranscript = [...this.callTranscript];
@@ -688,7 +688,7 @@ export class GdmLiveAudio extends LitElement {
       this.callTranscript = updatedTranscript;
     } else {
       // Create a new turn for this author
-      this.callTranscript = [...this.callTranscript, { text, speaker: author }];
+      this.callTranscript = [...this.callTranscript, { text, speaker }];
     }
   }
 
