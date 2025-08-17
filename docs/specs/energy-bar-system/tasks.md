@@ -37,10 +37,14 @@
   - [x] 4.5.3. Ensure TTS level 2 greetings encourage user interaction and feel welcoming. (Ref: Req 2.3.2)
   - [x] 4.5.4. Ensure TTS level 1 and 0 prompts provide clear feedback about energy state changes in the chat. (Ref: Req 2.3.2)
 
-  - [ ] 4.5.5. Ensure that injected TTS prompts (greetings, energy state changes) do not include a timestamp. (Ref: Req 2.3.3)
+  - [x] 4.5.5. Ensure that injected TTS prompts (greetings, energy state changes) do not include a timestamp. (Ref: Req 2.3.3)
 - [x] 5. **Implement Testing Strategy (Dual-Mode)**
   - [x] 5.1. Create unit tests for the `EnergyBarService` to verify state transitions and logging for both modes independently.
   - [x] 5.2. Create unit tests for the `Persona Service` to verify correct, mode-aware prompt selection.
   - [x] 5.3. Create unit tests for the `UI Component` to verify it only responds to STS visual states.
   - [x] 5.4. Create integration tests for mode-specific `Rate Limit Detector` and `STS Session Connector` integrations.
   - [x] 5.5. Create an end-to-end test to simulate a full user session with energy level changes in both modes to verify isolation.
+- [ ] 6. **Implement Conditional Affective Dialog**
+  - [ ] 6.1. Update the `EnergyBarService` to expose a method that returns whether affective dialog should be enabled based on STS energy level. (Ref: Req 2.1.5)
+  - [ ] 6.2. Integrate the new `EnergyBarService` method into the call session management logic to conditionally set the `enable_affective_dialog` flag in the API configuration. (Ref: Req 2.1.5)
+  - [ ] 6.3. Add new unit tests to verify that the `enable_affective_dialog` flag is correctly set for STS energy levels 3, 2, 1, and 0. (Ref: Req 2.1.5)

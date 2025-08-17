@@ -94,6 +94,35 @@ Scenario: Log an STS downgrade event
   And the log data includes the mode ('sts'), old level (3), new level (2), and reason ("rate-limit-exceeded").
 ```
 
+#### 2.1.5. User Story: Conditionally Enable Affective Dialog for High-Energy STS
+- **Priority**: High
+- **As a** system,
+- **I want** to enable the affective dialog feature for STS sessions when the energy level is 3 or 2,
+- **so that** the user experiences a more natural and emotionally resonant conversation when the AI is at its highest capacity.
+
+##### Acceptance Criteria
+```gherkin
+Scenario: Affective dialog is enabled at STS energy level 3
+  Given the STS energy level is 3
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to true in the API configuration.
+
+Scenario: Affective dialog is enabled at STS energy level 2
+  Given the STS energy level is 2
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to true in the API configuration.
+
+Scenario: Affective dialog is disabled at STS energy level 1
+  Given the STS energy level is 1
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to false in the API configuration.
+
+Scenario: Affective dialog is disabled at STS energy level 0
+  Given the STS energy level is 0
+  When an STS session is active
+  Then the `enable_affective_dialog` flag is set to false in the API configuration.
+```
+
 ### 2.2. Epic: Dual-Session Energy Indicators
 This epic covers the UI components that visually represent energy levels for both STS and TTS sessions, displayed contextually within their respective interfaces.
 
