@@ -4,12 +4,16 @@
 
 This document outlines the technical design for the **Gemini Live API Session Management** feature. The goal is to create a robust, resilient connection manager that can handle the Gemini Live API's specific session and connection lifecycle. The proposed solution involves a client-side `SessionManager` that will handle session resumption and graceful connection termination, ensuring a seamless experience even with periodic network resets.
 
+**Energy Bar Integration:** The session management system must coordinate with the **Energy Bar System** (see `../energy-bar-system/design.md`) to handle model transitions based on energy levels. When energy levels change, the session manager must determine if the new model supports resumption and trigger fallback mechanisms when necessary.
+
 ### Architecture
 
 Key decisions:
 - Do not resume across page reloads. The resumption handle is only used within the current page lifecycle to simplify UX. The handle may be temporarily persisted per mode to facilitate resume within the same tab/session, but on explicit reset or reload it is not honored for resume.
 - Call-first resume flow: The UI attempts to resume call sessions first; on failure a new session is started with a clear toast. Text parity can be introduced later.
 - Transcript display is coupled to session action: fresh call clears the transcript, resumed call pre-populates with last summarized transcript.
+- Model compatibility checks: The session manager must verify handle compatibility with the current energy level's model before attempting resumption.
+- Separate storage keys: Text and Call sessions use different storage keys (`gdm:text-session-handle` and `gdm:call-session-handle`) to prevent conflicts.
 
 
 The proposed architecture extends the existing `BaseSessionManager` to handle session resumption and graceful connection termination. This approach reuses the existing session management infrastructure while adding the necessary resilience.
@@ -17,28 +21,37 @@ The proposed architecture extends the existing `BaseSessionManager` to handle se
 ```mermaid
 sequenceDiagram
     participant App as Application
+    participant EBS as EnergyBarService
     participant BSM as BaseSessionManager
     participant SS as SummarizationService
     participant CH as CallHistory
     participant GLA as Gemini Live API
 
     App->>BSM: initSession()
+    BSM->>EBS: getCurrentModel(mode)
+    EBS-->>BSM: return model name
+    BSM->>EBS: isModelResumable(level, mode)
+    EBS-->>BSM: return true/false
     BSM->>GLA: connect(sessionResumptionHandle=null)
     GLA-->>BSM: onmessage(sessionResumptionUpdate)
     BSM->>BSM: storeNewHandle(newHandle)
     
-    alt Connection Reset or Fallback
-        GLA-->>BSM: onmessage(goAway) or App detects fallback
+    alt Energy Level Drop (Rate Limit)
+        App->>EBS: handleRateLimitError(mode)
+        EBS-->>App: energy-level-changed event
+        App->>BSM: handleFallback(transcript)
         BSM->>SS: summarize(transcript)
         SS-->>BSM: return summary
         BSM->>BSM: reconnectSession(context=summary)
-        BSM->>GLA: connect(sessionResumptionHandle=storedHandle, context=summary)
-        GLA-->>BSM: onopen(), session resumed with context
+        BSM->>GLA: connect(sessionResumptionHandle=null, context=summary)
+        GLA-->>BSM: onopen(), new session with context
     end
     
-    alt Incompatible Token with Call History
-        GLA-->>BSM: connection error (invalid token)
-        BSM->>BSM: clear invalid handle
+    alt Energy Reset with Incompatible Handle
+        App->>EBS: resetEnergyLevel("session-reset", mode)
+        BSM->>EBS: shouldClearResumptionHandle(prevLevel, newLevel, mode)
+        EBS-->>BSM: return true
+        BSM->>BSM: clearResumptionHandle()
         BSM->>CH: getContextFromCallHistory()
         CH-->>BSM: return recent summary
         BSM->>GLA: connect(sessionResumptionHandle=null, context=summary)
@@ -64,16 +77,21 @@ sequenceDiagram
 ### Components and Interfaces
 
 #### 1. BaseSessionManager (Modified)
-*   **Responsibility:** Manages the session lifecycle, including session resumption, graceful disconnection, and context injection on fallback.
+*   **Responsibility:** Manages the session lifecycle, including session resumption, graceful disconnection, and context injection on fallback. Coordinates with EnergyBarService for model compatibility.
 *   **Interface (New and Modified Methods):**
-    *   `initSession(resumptionHandle?: string): Promise<boolean>`: Modified to accept an optional resumption handle.
+    *   `initSession(resumptionHandle?: string): Promise<boolean>`: Modified to accept an optional resumption handle and verify compatibility with current energy level.
     *   `reconnectSession(): Promise<void>`: A new method to handle reconnection logic.
     *   `handleFallback(transcript: Turn[]): Promise<string>`: A new method to summarize the transcript and return the context to be injected.
     *   `getContextFromCallHistory(): Promise<string | null>`: A new method to retrieve context from the most recent call summary.
+    *   `clearResumptionHandle(): void`: Clears stored resumption handle when incompatible with new energy level.
+    *   `getResumptionStorageKey(): string | null`: Abstract method for subclasses to provide mode-specific storage keys.
     *   The `onmessage` callback within `getCallbacks()` will be updated to parse `sessionResumptionUpdate` and `goAway` messages.
 
 #### 2. TextSessionManager & CallSessionManager (Subclasses)
 *   **Responsibility:** These classes will inherit the new session management capabilities from `BaseSessionManager` with minimal changes.
+*   **Mode-specific storage keys:**
+    *   TextSessionManager: `getResumptionStorageKey()` returns `"gdm:text-session-handle"`
+    *   CallSessionManager: `getResumptionStorageKey()` returns `"gdm:call-session-handle"`
 
 #### 3. SummarizationService (Existing)
 *   **Responsibility:** Summarizes a conversation transcript to reduce its length while preserving the context. This service is located at `features/summarization/SummarizationService.ts`.
@@ -98,6 +116,8 @@ The `SessionManager` will maintain an internal state object:
 | Invalid/Expired Token        | The `SessionManager` will catch the error on connection, clear the expired handle, and start a new session.   |
 | Network Failure on Reconnect | The `SessionManager` will implement an exponential backoff strategy for reconnection attempts.                |
 | Unexpected Disconnection     | If the connection is lost without a `GoAway` message, the `SessionManager` will immediately attempt to reconnect. |
+| Model Incompatibility        | When energy level changes make handle incompatible, clear handle and use fallback context injection.          |
+| Energy Level Exhausted       | If energy level is 0, refuse to create session and show appropriate user message.                             |
 
 ### Testing Strategy
 

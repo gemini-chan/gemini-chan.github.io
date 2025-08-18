@@ -12,7 +12,7 @@ The solution involves a central state management service (`EnergyBarService`) to
 
 ### Architecture
 
-The architecture uses an event-driven model where the `EnergyBarService` acts as the single source of truth for the AI's energy state, now tracked per-mode.
+The architecture uses an event-driven model where the `EnergyBarService` acts as the single source of truth for the AI's energy state, now tracked per-mode. The service integrates with the **Session Management** system (see `../gemini-live-api-session-management/design.md`) to coordinate model transitions and handle session resumption compatibility.
 
 ```mermaid
 graph TD
@@ -27,6 +27,11 @@ graph TD
         E{Application State}
     end
 
+    subgraph "Session Management"
+        J[BaseSessionManager]
+        K[SummarizationService]
+    end
+
     subgraph "UI & Persona"
         F[STS Energy Indicator - Call Interface]
         G[TTS Energy Indicator - Chat Interface]
@@ -38,6 +43,8 @@ graph TD
     B -- "Notifies of TTS Error" --> D;
     C -- "Notifies of New STS Session" --> D;
     D -- "Updates State (STS/TTS)" --> E;
+    D -- "Triggers Fallback" --> J;
+    J -- "Requests Summary" --> K;
     E -- "Notifies of STS Change" --> F;
     E -- "Notifies of TTS Change" --> G;
     E -- "Notifies of Change" --> H;
@@ -57,7 +64,7 @@ graph TD
 ### Components and Interfaces
 
 #### 1. EnergyBarService
-*   **Responsibility:** Manages the energy level state for both STS and TTS modes, including initialization, decrementing, and resetting.
+*   **Responsibility:** Manages the energy level state for both STS and TTS modes, including initialization, decrementing, and resetting. Coordinates with SessionManager for model transitions.
 *   **Interface:**
     *   `getCurrentEnergyLevel(mode: 'sts' | 'tts'): number`
     *   `getCurrentModel(mode: 'sts' | 'tts'): string | null`
@@ -65,8 +72,10 @@ graph TD
     *   `handleRateLimitError(mode: 'sts' | 'tts'): void`
     *   `resetEnergyLevel(reason: string, mode: 'sts' | 'tts'): void`
     *   `setEnergyLevel(level: number, reason: string, mode: 'sts' | 'tts'): void`
+    *   `isModelResumable(level: number, mode: 'sts' | 'tts'): boolean` - Determines if the model at this level supports session resumption
+    *   `shouldClearResumptionHandle(prevLevel: number, newLevel: number, mode: 'sts' | 'tts'): boolean` - Checks if resumption handle should be cleared due to model incompatibility
 *   **Events:**
-    *   `energy-level-changed`: Dispatched with detail `{ mode, level, prevLevel, reason, modelTier }`.
+    *   `energy-level-changed`: Dispatched with detail `{ mode, level, prevLevel, reason, modelTier, requiresFallback }`.
 
 #### 2. STS Energy Indicator
 *   **Responsibility:** Displays the battery-style icon within the call interface during active calls. Shows STS energy levels (0-3) with appropriate colors and animations.
@@ -99,13 +108,13 @@ The application state now stores two independent energy pools with different lev
 
 **Model Tier Mapping:**
 *   **STS Mode (Calling):**
-    *   **Level 3:** `gemini-2.5-flash-exp-native-audio-thinking-dialog`
-    *   **Level 2:** `gemini-2.5-flash-preview-native-audio-dialog`
-    *   **Level 1:** `gemini-2.5-flash-live-preview`
+    *   **Level 3:** `gemini-2.5-flash-exp-native-audio-thinking-dialog` (supports resumption)
+    *   **Level 2:** `gemini-2.5-flash-preview-native-audio-dialog` (supports resumption)
+    *   **Level 1:** `gemini-2.5-flash-live-preview` (NO resumption support - requires fallback)
     *   **Level 0:** No model / Exhausted state
 *   **TTS Mode (Chat):**
-    *   **Level 2:** `gemini-live-2.5-flash-preview` (stable primary model)
-    *   **Level 1:** `gemini-2.0-flash-live-001` (fallback model for degraded performance)
+    *   **Level 2:** `gemini-live-2.5-flash-preview` (stable primary model, supports resumption)
+    *   **Level 1:** `gemini-2.0-flash-live-001` (fallback model, NO resumption support)
     *   **Level 0:** No model / Exhausted state
 
 **TTS Energy Level Design Rationale:**
@@ -126,6 +135,8 @@ As defined in the `dual-input-mode` requirements, the STS flow has specific imme
 | UI fails to render icon           | `UI Component`      | Log the error; the feature will fail gracefully (icon will not be visible).|
 | Persona prompt not found          | `Persona Service`   | Log a warning and return a default, generic prompt for that energy level.|
 | Basic model tier for STS          | `CallSessionManager`| Omit `enableAffectiveDialog` from the request config to ensure compatibility. |
+| Model change to non-resumable     | `BaseSessionManager`| Trigger `handleFallback` to summarize and re-inject context.            |
+| Incompatible resumption handle    | `BaseSessionManager`| Clear handle and start fresh session, optionally using call history context.|
 
 ### Testing Strategy
 

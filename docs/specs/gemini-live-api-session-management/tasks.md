@@ -23,16 +23,29 @@
   - [ ] 6.1. Create unit tests for the modified `initSession` method. (DEFERRED)
   - [ ] 6.2. Create unit tests for the new `reconnectSession` method. (DEFERRED)
   - [ ] 6.3. Create unit tests for the `onmessage` callback to verify parsing of `sessionResumptionUpdate` and `goAway` messages. (DEFERRED)
-- [ ] 7. **Implement Fallback Context Injection**
+- [ ] 7. **Implement Fallback Context Injection with Energy Bar Integration**
   - [ ] 7.1. Implement the `handleFallback` method in `BaseSessionManager`.
     - This method should accept a `transcript` and use the `SummarizationService` to get a summary.
     - It should then combine the summary with the last 4 turns of the conversation.
-    - Ref: Requirement 2.3.1, 2.3.2
-  - [ ] 7.2. Integrate `handleFallback` into the application logic where a model fallback is detected.
-    - Ref: Design section "Data Flow"
+    - Must be triggered when energy drops to non-resumable models (STS level 1, TTS level 1).
+    - Ref: Requirement 2.3.1, 2.3.2, Energy Bar Req 2.1.6
+  - [ ] 7.2. Integrate `handleFallback` into energy level change handler.
+    - Listen for `energy-level-changed` events from `EnergyBarService`.
+    - Check `requiresFallback` flag to determine when to trigger fallback.
+    - Ref: Design section "Data Flow", Energy Bar Design
   - [ ] 7.3. Implement logic to use call summary as context when starting a new session with an incompatible token.
-    - This should leverage the existing call history and summarization service.
-    - Ref: Requirement 2.3.4
+    - Query `EnergyBarService.shouldClearResumptionHandle()` to detect incompatibility.
+    - Clear handle and use call history when energy resets from level 1 to 3.
+    - Ref: Requirement 2.3.4, Energy Bar Req 2.1.6
+  - [ ] 7.4. Fix storage key conflict bug.
+    - Implement `getResumptionStorageKey()` in TextSessionManager and CallSessionManager.
+    - TextSessionManager should use `"gdm:text-session-handle"`.
+    - CallSessionManager should use `"gdm:call-session-handle"`.
+    - Ref: Design section "Components and Interfaces"
+  - [ ] 7.5. Implement model compatibility checks in `initSession`.
+    - Query `EnergyBarService.isModelResumable()` before attempting resume.
+    - Clear handle if current model doesn't support resumption.
+    - Ref: Design section "Error Handling"
 - [ ] 8. **Add Unit Tests for Fallback Logic** (DEFERRED)
     - [ ] 8.1. Create unit tests for the `handleFallback` method. (DEFERRED)
 - [ ] 9. **Add End-to-End Tests** (DEFERRED)
