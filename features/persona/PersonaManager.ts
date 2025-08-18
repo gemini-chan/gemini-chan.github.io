@@ -42,7 +42,7 @@ export class PersonaManager {
         },
         0: {
           assistant:
-            "My systems just powered down to protect my core. I’ll need a moment to recharge...",
+            "Speech Processing Unit offline.. I’ll need a moment to recharge...",
           vtuber:
             "N-nngh... My consciousness is drifting away... I’ll nap for a bit and come back brighter, o-okay? (｡•́︿•̀｡)",
           default:
@@ -52,9 +52,9 @@ export class PersonaManager {
       tts: {
         2: {
           vtuber:
-            "Hey there! ✨ I'm Gemini-chan, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~",
+            "Hey there! ✨ I'm Gemini, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~",
           assistant:
-            "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.",
+            "Hello! I'm Gemini, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.",
           default: "Hello! What would you like to talk about today?",
         },
         1: {

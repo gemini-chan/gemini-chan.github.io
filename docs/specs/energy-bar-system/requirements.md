@@ -249,7 +249,7 @@ Scenario: Assistant greeting at TTS energy level 2
   Given the TTS energy level is 2
   And the selected persona is 'Assistant'
   When the chat window is displayed
-  Then a greeting like "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have." is injected into the chat.
+  Then a greeting like "Hello! I'm Gemini, your professional assistant. I'm ready to help you with any questions or tasks you might have." is injected into the chat.
 
 Scenario: TTS degraded energy prompts injected into chat
   Given the TTS energy level is 1 or 0
