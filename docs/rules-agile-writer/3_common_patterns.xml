@@ -59,7 +59,11 @@ Scenario: Invalid credentials
     <usage>This is the required format for requesting user feedback after proposing the initial epics.</usage>
     <template><![CDATA[
 <ask_followup_question>
-  <question>Here are the initial epics I've identified for the [Feature Name] feature. How does this look as a starting point?</question>
+  <question>Here are the initial epics I've identified for the [Feature Name] feature:
+
+[Generated Epics List]
+
+How does this look as a starting point?</question>
   <follow_up>
     <suggest>Looks good, let's start breaking them down.</suggest>
     <suggest>Add an epic for password recovery.</suggest>

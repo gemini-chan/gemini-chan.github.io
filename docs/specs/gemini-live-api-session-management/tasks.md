@@ -1,0 +1,26 @@
+# Implementation Plan: Gemini Live API Session Management
+
+- [x] 1. **Modify `BaseSessionManager` to Handle Session State**
+  - [x] 1.1. Add `currentHandle`, `isConnected`, and `lastMessageTimestamp` properties to the `BaseSessionManager` class.
+    - Ref: Design section "Data Models"
+- [x] 2. **Update `initSession` for Resumption**
+  - [x] 2.1. Modify the `initSession` method in `BaseSessionManager` to accept an optional `resumptionHandle` parameter.
+    - Ref: Design section "Components and Interfaces"
+- [x] 3. **Implement Session Resumption Logic**
+  - [x] 3.1. Update the `onmessage` callback in `getCallbacks()` to parse `sessionResumptionUpdate` messages and store the `newHandle`.
+    - Ref: Requirement 2.1.1
+- [x] 4. **Implement Graceful Reconnection**
+  - [x] 4.1. Create a new `reconnectSession` method in `BaseSessionManager` to handle the logic of reconnecting with the stored `currentHandle`.
+    - Ref: Design section "Components and Interfaces"
+  - [x] 4.2. Update the `onmessage` callback in `getCallbacks()` to detect `goAway` messages and trigger the `reconnectSession` method.
+    - Ref: Requirement 2.2.1
+- [x] 5. **Implement Error Handling**
+  - [x] 5.1. Add logic to `initSession` to handle invalid/expired token errors by clearing the handle and starting a new session.
+    - Ref: Design section "Error Handling"
+  - [x] 5.2. Implement an exponential backoff strategy in `reconnectSession` for network failures.
+    - Ref: Design section "Error Handling"
+- [ ] 6. **Add Unit Tests**
+  - [ ] 6.1. Create unit tests for the modified `initSession` method.
+  - [ ] 6.2. Create unit tests for the new `reconnectSession` method.
+  - [ ] 6.3. Create unit tests for the `onmessage` callback to verify parsing of `sessionResumptionUpdate` and `goAway` messages.
+    - Ref: Design section "Testing Strategy"
