@@ -39,13 +39,24 @@
     - Ref: Requirement 2.3.4, Energy Bar Req 2.1.6
   - [ ] 7.4. Fix storage key conflict bug.
     - Implement `getResumptionStorageKey()` in TextSessionManager and CallSessionManager.
-    - TextSessionManager should use `"gdm:text-session-handle"`.
+    - TextSessionManager should use `"gdm:text-session-handle"` (currently incorrectly using `"gdm:call-session-handle"`).
     - CallSessionManager should use `"gdm:call-session-handle"`.
-    - Ref: Design section "Components and Interfaces"
+    - Update localStorage access in both managers to use their respective keys.
+    - Ref: Design section "Components and Interfaces", Dual-Input Mode requirements
   - [ ] 7.5. Implement model compatibility checks in `initSession`.
     - Query `EnergyBarService.isModelResumable()` before attempting resume.
     - Clear handle if current model doesn't support resumption.
     - Ref: Design section "Error Handling"
+  - [ ] 7.6. Implement TTS session persistence and resumption.
+    - Ensure TextSessionManager attempts resume on reconnection just like CallSessionManager.
+    - Maintain persistent text transcript across reconnections.
+    - Handle TTS energy fallback (level 2 to 1) with context summarization.
+    - Ref: Requirement 2.3.5, Dual-Input Mode Req 2.3
+  - [ ] 7.7. Add TTS-specific fallback handling.
+    - When TTS energy drops to level 1, trigger handleFallback.
+    - Summarize text transcript and re-inject while keeping full transcript visible.
+    - Show toast notification for TTS reconnection events.
+    - Ref: Requirement 2.3.1, 2.3.2 (TTS scenarios)
 - [ ] 8. **Add Unit Tests for Fallback Logic** (DEFERRED)
     - [ ] 8.1. Create unit tests for the `handleFallback` method. (DEFERRED)
 - [ ] 9. **Add End-to-End Tests** (DEFERRED)

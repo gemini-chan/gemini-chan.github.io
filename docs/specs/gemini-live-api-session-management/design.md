@@ -10,10 +10,11 @@ This document outlines the technical design for the **Gemini Live API Session Ma
 
 Key decisions:
 - Do not resume across page reloads. The resumption handle is only used within the current page lifecycle to simplify UX. The handle may be temporarily persisted per mode to facilitate resume within the same tab/session, but on explicit reset or reload it is not honored for resume.
-- Call-first resume flow: The UI attempts to resume call sessions first; on failure a new session is started with a clear toast. Text parity can be introduced later.
-- Transcript display is coupled to session action: fresh call clears the transcript, resumed call pre-populates with last summarized transcript.
+- Dual-mode resume flow: Both TTS (text chat) and STS (call) sessions attempt resume first; on failure a new session is started with a clear toast.
+- Transcript display is coupled to session action: fresh call clears the transcript, resumed call pre-populates with last summarized transcript. Text chat maintains persistent transcript as per dual-input-mode requirements.
 - Model compatibility checks: The session manager must verify handle compatibility with the current energy level's model before attempting resumption.
 - Separate storage keys: Text and Call sessions use different storage keys (`gdm:text-session-handle` and `gdm:call-session-handle`) to prevent conflicts.
+- TTS Persistence: Text sessions maintain their context across the application lifecycle as defined in dual-input-mode specs.
 
 
 The proposed architecture extends the existing `BaseSessionManager` to handle session resumption and graceful connection termination. This approach reuses the existing session management infrastructure while adding the necessary resilience.
@@ -60,12 +61,13 @@ sequenceDiagram
 ```
 
 **Data Flow:**
-1.  The Application calls `initSession()` on a `BaseSessionManager` subclass.
+1.  The Application calls `initSession()` on a `BaseSessionManager` subclass (either TextSessionManager or CallSessionManager).
 2.  The manager connects to the Gemini Live API.
 3.  The API provides a `sessionResumptionUpdate` handle, which is stored.
 4.  On connection reset or model fallback, the `BaseSessionManager` calls the `SummarizationService`.
 5.  The summarization service returns a shortened context string.
 6.  The `BaseSessionManager` reconnects, providing the resumption handle and the summarized context.
+7.  For TTS sessions, the full transcript remains visible in the chat interface even after summarization.
 
 **Alternative Data Flow (New Session with Call Summary):**
 1.  The Application attempts to start a new session with a resumption handle from an incompatible energy level.
@@ -88,10 +90,16 @@ sequenceDiagram
     *   The `onmessage` callback within `getCallbacks()` will be updated to parse `sessionResumptionUpdate` and `goAway` messages.
 
 #### 2. TextSessionManager & CallSessionManager (Subclasses)
-*   **Responsibility:** These classes will inherit the new session management capabilities from `BaseSessionManager` with minimal changes.
+*   **Responsibility:** These classes will inherit the new session management capabilities from `BaseSessionManager` with mode-specific behaviors.
 *   **Mode-specific storage keys:**
     *   TextSessionManager: `getResumptionStorageKey()` returns `"gdm:text-session-handle"`
     *   CallSessionManager: `getResumptionStorageKey()` returns `"gdm:call-session-handle"`
+*   **Context management:**
+    *   TextSessionManager: Maintains persistent transcript across session resumptions (as per dual-input-mode requirements)
+    *   CallSessionManager: Creates ephemeral sessions with fresh context for each call
+*   **Energy integration:**
+    *   TextSessionManager: Uses TTS energy levels (2, 1, 0) with fallback at level 1
+    *   CallSessionManager: Uses STS energy levels (3, 2, 1, 0) with fallback at level 1
 
 #### 3. SummarizationService (Existing)
 *   **Responsibility:** Summarizes a conversation transcript to reduce its length while preserving the context. This service is located at `features/summarization/SummarizationService.ts`.

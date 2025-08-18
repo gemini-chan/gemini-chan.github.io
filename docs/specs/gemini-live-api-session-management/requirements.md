@@ -7,16 +7,17 @@ This feature manages session lifecycle for Gemini Live API, including resumption
 
 Constraints and decisions:
 - No resume on page reload: Resuming across reloads is explicitly out of scope to avoid UX ambiguity and complexity. Resume is only attempted within the same page lifecycle.
-- Per-mode behavior: Call sessions attempt resume first; if resume fails, a new session is started and the user is notified via toast. Text-session parity can be added later.
-- Transcript UX: New call -> empty transcript; resumed call -> previously summarized transcript is pre-populated.
-- Model compatibility: Resumption handles from higher energy models (3, 2) are incompatible with lower energy models (1) due to different model capabilities.
+- Per-mode behavior: Both Call (STS) and Text (TTS) sessions attempt resume first; if resume fails, a new session is started and the user is notified via toast.
+- Transcript UX: New call -> empty transcript; resumed call -> previously summarized transcript is pre-populated. Text chat maintains persistent transcript across resumptions.
+- Model compatibility: Resumption handles from higher energy models (3, 2 for STS; 2 for TTS) are incompatible with lower energy models (1) due to different model capabilities.
+- TTS Context Preservation: As per dual-input-mode requirements, text conversations are preserved independently and persist across the application lifecycle.
 
 This document outlines the requirements for managing persistent connections (sessions) in the Gemini Live API. The goal is to handle the unique challenges of the API, such as time limits and connection terminations, to provide a stable and seamless user experience. While `contextWindowCompression` is implemented, sessions still drop, indicating that the primary issue is related to the underlying connection lifecycle.
 
 ## 2. Epics
 
 ### 2.1. Epic: Seamless Session Resumption
-This epic focuses on maintaining a continuous session even when the server connection is periodically reset. This will be achieved by implementing a session resumption mechanism using tokens provided by the server.
+This epic focuses on maintaining a continuous session even when the server connection is periodically reset. This will be achieved by implementing a session resumption mechanism using tokens provided by the server. This applies to both STS (voice call) and TTS (text chat) sessions as defined in the dual-input-mode feature (see `../dual-input-mode/requirements.md`).
 
 ### 2.2. Epic: Graceful Connection Handling
 This epic covers the client's ability to react to server-sent messages, such as `GoAway`, to proactively manage the connection lifecycle and gracefully handle disconnections before they occur.
@@ -26,10 +27,11 @@ This epic addresses the scenario where a session cannot be resumed, particularly
 
 #### 2.3.1. User Story: Re-inject Transcript on Fallback
 - **Priority**: High
-- **As a** user in a voice session,
+- **As a** user in a voice or text session,
 - **I want** the system to automatically re-inject the conversation transcript when my session falls back to a non-resumable model,
 - **so that** the context of the conversation is maintained seamlessly.
 - **Energy Bar Dependency**: Triggered when STS energy drops from level 2 to 1, or TTS energy drops from 2 to 1.
+- **Dual-Input Mode Integration**: TTS sessions preserve their persistent context through fallback, while STS sessions maintain ephemeral context.
 
 ##### Acceptance Criteria (Gherkin Syntax)
 ```gherkin
@@ -42,17 +44,25 @@ Scenario: Fallback to a non-resumable model
 
 #### 2.3.2. User Story: Summarize Transcript on Fallback
 - **Priority**: High
-- **As a** user in a voice session,
+- **As a** user in a voice or text session,
 - **I want** the system to summarize the transcript before re-injecting it on fallback,
 - **so that** I don't lose the conversational context due to model limitations.
+- **Mode-Specific Behavior**: TTS sessions maintain full persistent transcript history; STS sessions use ephemeral summaries.
 
 ##### Acceptance Criteria (Gherkin Syntax)
 ```gherkin
-Scenario: Always summarize transcript on fallback
+Scenario: Always summarize transcript on fallback (STS)
   Given I am in a voice session
   When the session falls back to a non-resumable model
   Then the system uses the summarization service to process the transcript
   And the summarized transcript, along with the last 4 turns of the conversation (2 user, 2 assistant), is injected as context into the new session.
+
+Scenario: Always summarize transcript on fallback (TTS)
+  Given I am in a text chat session
+  When the session falls back to a non-resumable model (TTS level 2 to 1)
+  Then the system uses the summarization service to process the transcript
+  And the summarized transcript is injected as context into the new session
+  And the full text transcript remains visible in the chat interface.
 ```
 
 #### 2.3.3. User Story: Conditionally Summarize Transcript on Fallback
@@ -84,6 +94,28 @@ Scenario: Summarize a long transcript on fallback
 - **I want** the system to use a previous call summary as context when resuming with an incompatible token,
 - **so that** I can start a high-quality session even when falling back from a lower energy level.
 - **Energy Bar Integration**: This occurs when STS energy resets to 3 but a resumption handle from level 1 exists.
+
+#### 2.3.5. User Story: Maintain TTS Session Persistence
+- **Priority**: High
+- **As a** user in a text chat session,
+- **I want** my text conversation to be preserved and resumed seamlessly across connection resets and energy level changes,
+- **so that** I maintain continuity in my text-based interactions as defined in the dual-input-mode requirements.
+
+##### Acceptance Criteria (Gherkin Syntax)
+```gherkin
+Scenario: TTS session persists across reconnection
+  Given I have an active TTS session with conversation history
+  When the connection is reset due to GoAway or network issues
+  Then the system automatically resumes the TTS session with the stored handle
+  And my previous text conversation context is maintained.
+
+Scenario: TTS session handles energy fallback
+  Given I have a TTS session at energy level 2
+  When the energy drops to level 1 (non-resumable model)
+  Then the system triggers handleFallback for TTS mode
+  And the text transcript is summarized and re-injected
+  And the full conversation remains visible in the chat interface.
+```
 
 ##### Acceptance Criteria (Gherkin Syntax)
 ```gherkin
