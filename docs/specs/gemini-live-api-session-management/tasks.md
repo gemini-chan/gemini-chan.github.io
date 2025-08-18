@@ -19,8 +19,18 @@
     - Ref: Design section "Error Handling"
   - [x] 5.2. Implement an exponential backoff strategy in `reconnectSession` for network failures.
     - Ref: Design section "Error Handling"
-- [ ] 6. **Add Unit Tests**
-  - [ ] 6.1. Create unit tests for the modified `initSession` method.
-  - [ ] 6.2. Create unit tests for the new `reconnectSession` method.
-  - [ ] 6.3. Create unit tests for the `onmessage` callback to verify parsing of `sessionResumptionUpdate` and `goAway` messages.
-    - Ref: Design section "Testing Strategy"
+- [ ] 6. **Add Unit Tests** (DEFERRED)
+  - [ ] 6.1. Create unit tests for the modified `initSession` method. (DEFERRED)
+  - [ ] 6.2. Create unit tests for the new `reconnectSession` method. (DEFERRED)
+  - [ ] 6.3. Create unit tests for the `onmessage` callback to verify parsing of `sessionResumptionUpdate` and `goAway` messages. (DEFERRED)
+- [ ] 7. **Implement Fallback Context Injection**
+  - [ ] 7.1. Implement the `handleFallback` method in `BaseSessionManager`.
+    - This method should accept a `transcript` and use the `SummarizationService` to get a summary.
+    - It should then combine the summary with the last 4 turns of the conversation.
+    - Ref: Requirement 2.3.1, 2.3.2
+  - [ ] 7.2. Integrate `handleFallback` into the application logic where a model fallback is detected.
+    - Ref: Design section "Data Flow"
+- [ ] 8. **Add Unit Tests for Fallback Logic** (DEFERRED)
+    - [ ] 8.1. Create unit tests for the `handleFallback` method. (DEFERRED)
+- [ ] 9. **Add End-to-End Tests** (DEFERRED)
+    - [ ] 9.1. Create E2E tests to simulate a session with a fallback and verify context injection. (DEFERRED)

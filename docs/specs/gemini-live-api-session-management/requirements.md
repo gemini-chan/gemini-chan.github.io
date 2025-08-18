@@ -17,6 +17,63 @@ This epic focuses on maintaining a continuous session even when the server conne
 
 ### 2.2. Epic: Graceful Connection Handling
 This epic covers the client's ability to react to server-sent messages, such as `GoAway`, to proactively manage the connection lifecycle and gracefully handle disconnections before they occur.
+
+### 2.3. Epic: Fallback Context Injection
+This epic addresses the scenario where a session cannot be resumed, particularly when falling back to a model that does not support session resumption.
+
+#### 2.3.1. User Story: Re-inject Transcript on Fallback
+- **Priority**: High
+- **As a** user in a voice session,
+- **I want** the system to automatically re-inject the conversation transcript when my session falls back to a non-resumable model,
+- **so that** the context of the conversation is maintained seamlessly.
+
+##### Acceptance Criteria (Gherkin Syntax)
+```gherkin
+Scenario: Fallback to a non-resumable model
+  Given I am in a voice session with a resumable model
+  And my energy level drops, triggering a fallback to a non-resumable model
+  When the new session is established
+  Then the entire transcript of the previous session is injected as context.
+```
+
+#### 2.3.2. User Story: Summarize Transcript on Fallback
+- **Priority**: High
+- **As a** user in a voice session,
+- **I want** the system to summarize the transcript before re-injecting it on fallback,
+- **so that** I don't lose the conversational context due to model limitations.
+
+##### Acceptance Criteria (Gherkin Syntax)
+```gherkin
+Scenario: Always summarize transcript on fallback
+  Given I am in a voice session
+  When the session falls back to a non-resumable model
+  Then the system uses the summarization service to process the transcript
+  And the summarized transcript, along with the last 4 turns of the conversation (2 user, 2 assistant), is injected as context into the new session.
+```
+
+#### 2.3.3. User Story: Conditionally Summarize Transcript on Fallback
+- **Priority**: Low
+- **As a** developer,
+- **I want** the system to trigger the summarization service only when the transcript is long enough to require it,
+- **so that** we can conserve resources and avoid unnecessary processing.
+
+##### Acceptance Criteria (Gherkin Syntax)
+```gherkin
+Scenario: Conditionally summarize a transcript on fallback
+  Given a tokenizer is available to measure transcript length
+  And I am in a voice session
+  And the session transcript is short enough to fit within the model's context window
+  When the session falls back to a non-resumable model
+  Then the system injects the full transcript without summarization.
+
+Scenario: Summarize a long transcript on fallback
+  Given a tokenizer is available to measure transcript length
+  And I am in a voice session
+  And the session transcript is too long to fit within the model's context window
+  When the session falls back to a non-resumable model
+  Then the system uses the summarization service to shorten the transcript.
+```
+
 #### 2.1.1. User Story: Obtain Session Resumption Token
 - **Priority**: High
 - **As a** developer using the Gemini Live API,

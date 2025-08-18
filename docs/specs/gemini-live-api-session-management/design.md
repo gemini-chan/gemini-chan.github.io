@@ -18,36 +18,49 @@ The proposed architecture extends the existing `BaseSessionManager` to handle se
 sequenceDiagram
     participant App as Application
     participant BSM as BaseSessionManager
+    participant SS as SummarizationService
     participant GLA as Gemini Live API
 
     App->>BSM: initSession()
     BSM->>GLA: connect(sessionResumptionHandle=null)
     GLA-->>BSM: onmessage(sessionResumptionUpdate)
     BSM->>BSM: storeNewHandle(newHandle)
-    GLA-->>BSM: onmessage(goAway)
-    BSM->>BSM: reconnectSession()
-    BSM->>GLA: connect(sessionResumptionHandle=storedHandle)
-    GLA-->>BSM: onopen(), session resumed
+    
+    alt Connection Reset or Fallback
+        GLA-->>BSM: onmessage(goAway) or App detects fallback
+        BSM->>SS: summarize(transcript)
+        SS-->>BSM: return summary
+        BSM->>BSM: reconnectSession(context=summary)
+        BSM->>GLA: connect(sessionResumptionHandle=storedHandle, context=summary)
+        GLA-->>BSM: onopen(), session resumed with context
+    end
 ```
 
 **Data Flow:**
-1.  The Application calls `initSession()` on a `BaseSessionManager` subclass (`TextSessionManager` or `CallSessionManager`).
-2.  The manager connects to the Gemini Live API. On the first connection, the resumption handle is null.
-3.  The API sends a `sessionResumptionUpdate` message with a new handle, which the manager stores.
-4.  Before the connection terminates, the API sends a `GoAway` message.
-5.  The `BaseSessionManager` detects this message and triggers a reconnection using the stored handle.
+1.  The Application calls `initSession()` on a `BaseSessionManager` subclass.
+2.  The manager connects to the Gemini Live API.
+3.  The API provides a `sessionResumptionUpdate` handle, which is stored.
+4.  On connection reset or model fallback, the `BaseSessionManager` calls the `SummarizationService`.
+5.  The summarization service returns a shortened context string.
+6.  The `BaseSessionManager` reconnects, providing the resumption handle and the summarized context.
 
 ### Components and Interfaces
 
 #### 1. BaseSessionManager (Modified)
-*   **Responsibility:** Manages the session lifecycle, including session resumption and graceful disconnection.
+*   **Responsibility:** Manages the session lifecycle, including session resumption, graceful disconnection, and context injection on fallback.
 *   **Interface (New and Modified Methods):**
     *   `initSession(resumptionHandle?: string): Promise<boolean>`: Modified to accept an optional resumption handle.
     *   `reconnectSession(): Promise<void>`: A new method to handle reconnection logic.
+    *   `handleFallback(transcript: Turn[]): Promise<string>`: A new method to summarize the transcript and return the context to be injected.
     *   The `onmessage` callback within `getCallbacks()` will be updated to parse `sessionResumptionUpdate` and `goAway` messages.
 
 #### 2. TextSessionManager & CallSessionManager (Subclasses)
 *   **Responsibility:** These classes will inherit the new session management capabilities from `BaseSessionManager` with minimal changes.
+
+#### 3. SummarizationService (Existing)
+*   **Responsibility:** Summarizes a conversation transcript to reduce its length while preserving the context. This service is located at `features/summarization/SummarizationService.ts`.
+*   **Interface:**
+    *   `summarize(transcript: Turn[]): Promise<string>`: Takes a transcript and returns a summarized string. This service will eventually be updated to only summarize long transcripts once a tokenizer is available.
 
 ### Data Models
 
