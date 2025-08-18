@@ -74,6 +74,22 @@ Scenario: Summarize a long transcript on fallback
   Then the system uses the summarization service to shorten the transcript.
 ```
 
+#### 2.3.4. User Story: Resume with Call Summary Context
+- **Priority**: High
+- **As a** user starting a new voice session,
+- **I want** the system to use a previous call summary as context when resuming with an incompatible token,
+- **so that** I can start a high-quality session even when falling back from a lower energy level.
+
+##### Acceptance Criteria (Gherkin Syntax)
+```gherkin
+Scenario: Start high-energy session with call summary context
+  Given I have a session resumption token from an energy level 1 STS session
+  And I have a recent call summary in my call history
+  When I attempt to start a new call session at energy level 3
+  Then the system uses the latest call summary as context for the new session
+  And the session starts successfully with the enriched context.
+```
+
 #### 2.1.1. User Story: Obtain Session Resumption Token
 - **Priority**: High
 - **As a** developer using the Gemini Live API,

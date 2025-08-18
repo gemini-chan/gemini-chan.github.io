@@ -30,6 +30,9 @@
     - Ref: Requirement 2.3.1, 2.3.2
   - [ ] 7.2. Integrate `handleFallback` into the application logic where a model fallback is detected.
     - Ref: Design section "Data Flow"
+  - [ ] 7.3. Implement logic to use call summary as context when starting a new session with an incompatible token.
+    - This should leverage the existing call history and summarization service.
+    - Ref: Requirement 2.3.4
 - [ ] 8. **Add Unit Tests for Fallback Logic** (DEFERRED)
     - [ ] 8.1. Create unit tests for the `handleFallback` method. (DEFERRED)
 - [ ] 9. **Add End-to-End Tests** (DEFERRED)

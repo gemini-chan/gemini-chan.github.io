@@ -19,6 +19,7 @@ sequenceDiagram
     participant App as Application
     participant BSM as BaseSessionManager
     participant SS as SummarizationService
+    participant CH as CallHistory
     participant GLA as Gemini Live API
 
     App->>BSM: initSession()
@@ -34,6 +35,15 @@ sequenceDiagram
         BSM->>GLA: connect(sessionResumptionHandle=storedHandle, context=summary)
         GLA-->>BSM: onopen(), session resumed with context
     end
+    
+    alt Incompatible Token with Call History
+        GLA-->>BSM: connection error (invalid token)
+        BSM->>BSM: clear invalid handle
+        BSM->>CH: getContextFromCallHistory()
+        CH-->>BSM: return recent summary
+        BSM->>GLA: connect(sessionResumptionHandle=null, context=summary)
+        GLA-->>BSM: onopen(), new session with context
+    end
 ```
 
 **Data Flow:**
@@ -44,6 +54,13 @@ sequenceDiagram
 5.  The summarization service returns a shortened context string.
 6.  The `BaseSessionManager` reconnects, providing the resumption handle and the summarized context.
 
+**Alternative Data Flow (New Session with Call Summary):**
+1.  The Application attempts to start a new session with a resumption handle from an incompatible energy level.
+2.  The connection fails due to token incompatibility.
+3.  The `BaseSessionManager` clears the invalid handle and starts a fresh session.
+4.  If a recent call summary exists, it is retrieved from the call history.
+5.  The call summary is used as initial context for the new session.
+
 ### Components and Interfaces
 
 #### 1. BaseSessionManager (Modified)
@@ -52,6 +69,7 @@ sequenceDiagram
     *   `initSession(resumptionHandle?: string): Promise<boolean>`: Modified to accept an optional resumption handle.
     *   `reconnectSession(): Promise<void>`: A new method to handle reconnection logic.
     *   `handleFallback(transcript: Turn[]): Promise<string>`: A new method to summarize the transcript and return the context to be injected.
+    *   `getContextFromCallHistory(): Promise<string | null>`: A new method to retrieve context from the most recent call summary.
     *   The `onmessage` callback within `getCallbacks()` will be updated to parse `sessionResumptionUpdate` and `goAway` messages.
 
 #### 2. TextSessionManager & CallSessionManager (Subclasses)
