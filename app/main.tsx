@@ -422,7 +422,7 @@ abstract class BaseSessionManager {
     try {
       summary = await summarizationService.summarize(transcript);
     } catch (error) {
-      logger.error("Failed to summarize transcript:", error);
+      logger.error("Failed to summarize transcript:", error, { transcriptSnippet: transcript.map(t => t.text).join(' ').slice(0, 100) });
       // Fallback to a simpler context if summarization fails
       summary = "Could not summarize previous conversation.";
     }
