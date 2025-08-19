@@ -53,9 +53,11 @@
         </step>
         <step>
           <title>Verify and Review Changes</title>
-          <action>Check for changes in the working directory or the last commit, then review them.</action>
+          <action>Check for changes in the working directory or the last commit, then review them against the code review checklist.</action>
           <details>
-            First, check the git status. If there are changes in the working tree, review them using `git_diff_all`. If the working tree is clean, it's possible the agent committed its work directly. In that case, review the last commit by diffing against HEAD~1 using `git_diff`. This two-step verification ensures that all work is reviewed, whether it's in the working directory or already committed.
+            First, check the git status. If there are changes in the working tree, review them using `git_diff_all`. If the working tree is clean, it's possible the agent committed its work directly. In that case, review the last commit by diffing against HEAD~1 using `git_diff`. This two-step verification ensures that all work is reviewed.
+
+            During the review, you must validate the changes against all categories in the `<code_review_checklist>` found in `2_best_practices.xml`, including `specification_compliance`, `code_quality`, and the new `code_hygiene` section.
           </details>
           <tools>
             <tool>use_mcp_tool (devtools.git_status)</tool>
