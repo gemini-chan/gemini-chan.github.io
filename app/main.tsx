@@ -14,7 +14,7 @@ import {
 import { createComponentLogger } from "@services/DebugLogger";
 import { createBlob, decode, decodeAudioData } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
@@ -36,11 +36,34 @@ declare global {
   }
 }
 
+interface ExtendedLiveServerMessage extends LiveServerMessage {
+  sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
+  goAway?: { timeLeft: string };
+  serverContent?: LiveServerMessage["serverContent"] & {
+    sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
+    goAway?: { timeLeft: string };
+    generationComplete?: boolean;
+  };
+}
+
 // Session Manager Architecture Pattern
 abstract class BaseSessionManager {
-  protected nextStartTime: number = 0;
+  // Resumption handle API
+  public getResumptionHandle(): string | null {
+    return this.currentHandle;
+  }
+  // Session state and reconnection management
+  protected currentHandle: string | null = null;
+  protected isConnected = false;
+  protected lastMessageTimestamp = 0;
+  private reconnecting = false;
+  private reconnectAttempts = 0;
+  private reconnectTimer: number | null = null;
+  private intentionalClose = false;
+  protected nextStartTime = 0;
   protected sources = new Set<AudioBufferSourceNode>();
   protected session: Session | null = null;
+  protected fallbackPrompt: string | null = null;
 
   constructor(
     protected outputAudioContext: AudioContext,
@@ -48,7 +71,8 @@ abstract class BaseSessionManager {
     protected client: GoogleGenAI,
     protected updateStatus: (msg: string) => void,
     protected updateError: (msg: string) => void,
-    protected onRateLimit: (msg: string) => void = () => {},
+    protected onRateLimit: (msg: string) => void,
+    protected hostElement: HTMLElement,
   ) {}
 
   // Common audio processing logic
@@ -86,22 +110,80 @@ abstract class BaseSessionManager {
   protected getCallbacks() {
     return {
       onopen: () => {
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
         this.updateStatus(`${this.getSessionName()} opened`);
       },
       onmessage: async (message: LiveServerMessage) => {
-        const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData;
+        // Update last activity timestamp
+        this.lastMessageTimestamp = Date.now();
 
+        const extendedMessage = message as ExtendedLiveServerMessage;
+        // Session resumption update handling
+        const resumptionUpdate =
+          extendedMessage.sessionResumptionUpdate ||
+          extendedMessage.serverContent?.sessionResumptionUpdate;
+        if (resumptionUpdate?.resumable && resumptionUpdate?.newHandle) {
+          this.currentHandle = resumptionUpdate.newHandle as string;
+          // Optionally persist the handle if needed by the app.
+          try {
+            const storageKey = this.getResumptionStorageKey();
+            if (storageKey) {
+              localStorage.setItem(storageKey, this.currentHandle);
+            }
+          } catch (e) {
+            console.warn(
+              `Failed to persist session handle to localStorage for ${this.getSessionName()}:`,
+              e,
+            );
+          }
+          this.updateStatus(
+            `${this.getSessionName()}: received resumption handle`,
+          );
+        }
+
+        // GoAway handling (pre-termination notice)
+        const goAway =
+          extendedMessage.goAway || extendedMessage.serverContent?.goAway;
+        if (goAway?.timeLeft) {
+          const timeLeftMs = Number.parseInt(goAway.timeLeft, 10) || 0;
+          // Schedule a reconnect slightly before the server aborts the connection
+          const guard = 250; // ms safety margin
+          const delay = Math.max(timeLeftMs - guard, 0);
+          if (!this.reconnecting) {
+            this.updateStatus(`${this.getSessionName()}: reconnecting soon...`);
+            this.hostElement.dispatchEvent(
+              new CustomEvent("reconnecting", {
+                bubbles: true,
+                composed: true,
+              }),
+            );
+            window.setTimeout(() => {
+              this.reconnectSession();
+            }, delay);
+          }
+        }
+
+        // Generation complete acknowledgement
+        const genComplete = extendedMessage.serverContent?.generationComplete;
+        if (genComplete) {
+          // Hook for post-turn actions; for now, surface a status update
+          this.updateStatus(`${this.getSessionName()}: generation complete`);
+        }
+
+        // Audio handling
+        const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData;
         if (audio) {
           await this.handleAudioMessage(audio);
         }
 
+        // Interruption handling
         const interrupted = message.serverContent?.interrupted;
         if (interrupted) {
           this.handleInterruption();
         }
       },
       onerror: (e: ErrorEvent) => {
-        // Surface rate-limit hints in error messages
         const msg = e.message || "";
         const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
         if (isRateLimited) {
@@ -110,7 +192,6 @@ abstract class BaseSessionManager {
         this.updateError(`${this.getSessionName()} error: ${e.message}`);
       },
       onclose: (e: CloseEvent) => {
-        // Check for rate-limit in close reason
         const msg = e.reason || "";
         const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
         if (isRateLimited) {
@@ -118,6 +199,13 @@ abstract class BaseSessionManager {
         }
         this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
         this.session = null;
+        this.isConnected = false;
+        // If not an intentional close, attempt to reconnect when possible
+        if (!this.intentionalClose) {
+          this.reconnectSession();
+        }
+        // Reset the flag after handling
+        this.intentionalClose = false;
       },
     };
   }
@@ -126,31 +214,143 @@ abstract class BaseSessionManager {
   protected abstract getModel(): string;
   protected abstract getConfig(): Record<string, unknown>;
   protected abstract getSessionName(): string;
+  protected abstract getResumptionStorageKey(): string | null;
 
-  public async initSession(): Promise<boolean> {
-    await this.closeSession();
-
+  private async _connect(handle: string | null): Promise<Error | null> {
     try {
+      const baseConfig = this.getConfig() || {};
+      const configWithResumption: Record<string, unknown> & {
+        sessionResumption?: { handle: string | null };
+      } = {
+        ...baseConfig,
+        sessionResumption: { handle },
+      };
+
       this.session = await this.client.live.connect({
         model: this.getModel(),
         callbacks: this.getCallbacks(),
-        config: this.getConfig(),
+        config: configWithResumption,
       });
-      return true;
+
+      this.isConnected = true;
+      return null;
     } catch (e) {
-      logger.error(`Error initializing ${this.getSessionName()}:`, e);
-      const msg = String((e as Error)?.message || e || "");
-      this.updateError(`Failed to initialize ${this.getSessionName()}: ${msg}`);
-      return false;
+      const error = e as Error;
+      logger.error(`Error connecting ${this.getSessionName()}:`, error);
+      const msg = String(error?.message || error || "");
+      this.updateError(`Failed to connect ${this.getSessionName()}: ${msg}`);
+      return error;
     }
+  }
+
+  public async initSession(resumptionHandle?: string | null): Promise<boolean> {
+    // Load persisted handle if none provided and none stored in memory
+    if (resumptionHandle == null && this.currentHandle == null) {
+      try {
+        const storageKey = this.getResumptionStorageKey();
+        if (storageKey) {
+          this.currentHandle = localStorage.getItem(storageKey);
+        }
+      } catch (e) {
+        console.warn(
+          `Failed to read session handle from localStorage for ${this.getSessionName()}:`,
+          e,
+        );
+      }
+    }
+    // Merge resumption handle preference: explicit arg > stored handle > null
+    const handleToUse = resumptionHandle ?? this.currentHandle ?? null;
+
+    // Guard to prevent auto-reconnect in onclose during intentional re-init
+    this.intentionalClose = true;
+    await this.closeSession();
+    this.intentionalClose = false;
+
+    this.updateStatus(
+      handleToUse
+        ? `${this.getSessionName()}: resuming session...`
+        : `${this.getSessionName()}: starting session...`,
+    );
+
+    const error = await this._connect(handleToUse);
+    if (!error) {
+      return true;
+    }
+
+    // If we attempted with a handle and it failed due to invalid/expired handle, clear and retry once
+    const msg = String(error.message || error || "");
+    const looksLikeInvalidHandle =
+      /invalid session resumption handle|expired session resumption handle/i.test(
+        msg,
+      );
+    if (handleToUse && looksLikeInvalidHandle) {
+      this.updateStatus(
+        `${this.getSessionName()}: handle invalid — starting new session`,
+      );
+      this.clearResumptionHandle();
+      const retryError = await this._connect(null);
+      return !retryError;
+    }
+    return false;
+  }
+
+  /**
+   * Attempt to reconnect the session using the latest resumption handle, with
+   * exponential backoff and jitter. Ensures only a single reconnect loop runs.
+   */
+  public async reconnectSession(): Promise<void> {
+    if (this.reconnecting) return;
+    this.reconnecting = true;
+
+    const maxDelay = 15000; // 15s cap
+    const baseDelay = 300; // 300ms base
+
+    const attemptReconnect = async () => {
+      // If we already have a live session, end the loop
+      if (this.session) {
+        this.reconnecting = false;
+        return;
+      }
+
+      const attempt = this.reconnectAttempts++;
+      const backoff = Math.min(maxDelay, baseDelay * 2 ** attempt);
+      const jitter = Math.random() * 0.2 + 0.9; // 0.9x - 1.1x
+      const delay = Math.floor(backoff * jitter);
+
+      this.updateStatus(
+        `${this.getSessionName()}: reconnecting (attempt ${attempt + 1})...`,
+      );
+
+      const ok = await this.initSession(this.currentHandle);
+      if (ok && this.session) {
+        this.updateStatus(`${this.getSessionName()}: session resumed`);
+        this.hostElement.dispatchEvent(
+          new CustomEvent("reconnected", {
+            bubbles: true,
+            composed: true,
+          }),
+        );
+        this.reconnectAttempts = 0;
+        this.reconnecting = false;
+        return;
+      }
+
+      // Schedule next attempt
+      this.reconnectTimer = window.setTimeout(attemptReconnect, delay);
+    };
+
+    attemptReconnect();
   }
 
   public async closeSession(): Promise<void> {
     if (this.session) {
       try {
+        this.intentionalClose = true;
         this.session.close();
       } catch (e) {
         logger.warn(`Error closing ${this.getSessionName()}:`, e);
+      } finally {
+        this.intentionalClose = false;
       }
       this.session = null;
     }
@@ -189,18 +389,78 @@ abstract class BaseSessionManager {
   public get sessionInstance(): Session | null {
     return this.session;
   }
+
+  /**
+   * Clear any stored session resumption handle so the next init starts fresh.
+   */
+  public clearResumptionHandle(): void {
+    this.currentHandle = null;
+    try {
+      const storageKey = this.getResumptionStorageKey();
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
+      }
+    } catch (e) {
+      console.warn(
+        `Failed to remove session handle from localStorage for ${this.getSessionName()}:`,
+        e,
+      );
+    }
+  }
+
+  /**
+   * Handle fallback when energy drops to non-resumable models (STS level 1, TTS level 1).
+   * This method summarizes the transcript and combines it with the last 4 turns.
+   * @param transcript - The conversation transcript to process
+   * @param summarizationService - The service to use for summarization
+   */
+  public async handleFallback(
+    transcript: Turn[],
+    summarizationService: SummarizationService,
+  ): Promise<void> {
+    let summary = "";
+    try {
+      summary = await summarizationService.summarize(transcript);
+    } catch (error) {
+      logger.error("Failed to summarize transcript:", error, { transcriptSnippet: transcript.map(t => t.text).join(' ').slice(0, 100) });
+      // Fallback to a simpler context if summarization fails
+      summary = "Could not summarize previous conversation.";
+    }
+
+    const lastFourTurns = transcript.slice(-4);
+
+    const contextParts: string[] = [
+      `Summary of previous conversation: ${summary}`,
+    ];
+    for (const turn of lastFourTurns) {
+      contextParts.push(`${turn.speaker}: ${turn.text}`);
+    }
+
+    this.fallbackPrompt = contextParts.join("\n");
+  }
+
+  protected getSystemInstruction(
+    basePrompt: string,
+    fallbackPrompt: string | null,
+  ): string {
+    return fallbackPrompt ? `${basePrompt}\n\n${fallbackPrompt}` : basePrompt;
+  }
 }
 
 class TextSessionManager extends BaseSessionManager {
+  protected getResumptionStorageKey(): string | null {
+    return "gdm:text-session-handle";
+  }
   constructor(
     outputAudioContext: AudioContext,
     outputNode: GainNode,
     client: GoogleGenAI,
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
-    onRateLimit: (msg: string) => void = () => {},
+    onRateLimit: (msg: string) => void,
     private updateTranscript: (text: string) => void,
     private personaManager: PersonaManager,
+    hostElement: HTMLElement,
   ) {
     super(
       outputAudioContext,
@@ -209,6 +469,7 @@ class TextSessionManager extends BaseSessionManager {
       updateStatus,
       updateError,
       onRateLimit,
+      hostElement,
     );
   }
 
@@ -217,7 +478,12 @@ class TextSessionManager extends BaseSessionManager {
     return {
       ...base,
       onmessage: async (message: LiveServerMessage) => {
-        // Handle text response for transcript
+        // Always delegate to base to handle resumption/goAway/generationComplete/audio/interruption
+        if (typeof base.onmessage === "function") {
+          await base.onmessage(message);
+        }
+
+        // Handle text response for transcript (after base processing)
         const modelTurn = message.serverContent?.modelTurn;
         if (modelTurn) {
           const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
@@ -225,17 +491,6 @@ class TextSessionManager extends BaseSessionManager {
           if (text) {
             this.updateTranscript(text);
           }
-        }
-
-        // Handle audio response
-        const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData;
-        if (audio) {
-          await this.handleAudioMessage(audio);
-        }
-
-        const interrupted = message.serverContent?.interrupted;
-        if (interrupted) {
-          this.handleInterruption();
         }
       },
     };
@@ -250,10 +505,16 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getConfig(): Record<string, unknown> {
+    const basePrompt = this.personaManager.getActivePersona().systemPrompt;
+    const systemInstruction = this.getSystemInstruction(
+      basePrompt,
+      this.fallbackPrompt,
+    );
+
     return {
       responseModalities: [Modality.AUDIO],
       contextWindowCompression: { slidingWindow: {} },
-      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
+      systemInstruction,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -263,21 +524,29 @@ class TextSessionManager extends BaseSessionManager {
   protected getSessionName(): string {
     return "Text session";
   }
+  public override reconnectSession(): Promise<void> {
+    // Do nothing. Reconnect is disabled for TTS sessions.
+    return Promise.resolve();
+  }
 }
 
 class CallSessionManager extends BaseSessionManager {
+  protected getResumptionStorageKey(): string | null {
+    return "gdm:call-session-handle";
+  }
   constructor(
     outputAudioContext: AudioContext,
     outputNode: GainNode,
     client: GoogleGenAI,
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
-    onRateLimit: (msg: string) => void = () => {},
+    onRateLimit: (msg: string) => void,
     private updateCallTranscript: (
       text: string,
       speaker: "user" | "model",
     ) => void,
     private personaManager: PersonaManager,
+    hostElement: HTMLElement,
   ) {
     super(
       outputAudioContext,
@@ -286,6 +555,7 @@ class CallSessionManager extends BaseSessionManager {
       updateStatus,
       updateError,
       onRateLimit,
+      hostElement,
     );
   }
 
@@ -298,12 +568,18 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getConfig(): Record<string, unknown> {
+    const basePrompt = this.personaManager.getActivePersona().systemPrompt;
+    const systemInstruction = this.getSystemInstruction(
+      basePrompt,
+      this.fallbackPrompt,
+    );
+
     const config = {
       responseModalities: [Modality.AUDIO],
       contextWindowCompression: { slidingWindow: {} },
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
-      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
+      systemInstruction,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -321,6 +597,11 @@ class CallSessionManager extends BaseSessionManager {
     return {
       ...base,
       onmessage: async (message: LiveServerMessage) => {
+        // Always delegate to base to handle resumption/goAway/generationComplete/audio/interruption
+        if (typeof base.onmessage === "function") {
+          await base.onmessage(message);
+        }
+
         // Handle audio transcription for call transcript (model responses)
         if (message.serverContent?.outputTranscription?.text) {
           this.updateCallTranscript(
@@ -336,17 +617,6 @@ class CallSessionManager extends BaseSessionManager {
             "user",
           );
         }
-
-        // Handle audio response
-        const audio = message.serverContent?.modelTurn?.parts[0]?.inlineData;
-        if (audio) {
-          await this.handleAudioMessage(audio);
-        }
-
-        const interrupted = message.serverContent?.interrupted;
-        if (interrupted) {
-          this.handleInterruption();
-        }
       },
     };
   }
@@ -354,6 +624,7 @@ class CallSessionManager extends BaseSessionManager {
   protected getSessionName(): string {
     return "Call session";
   }
+
 }
 
 type ActiveMode = "texting" | "calling" | null;
@@ -377,7 +648,7 @@ export class GdmLiveAudio extends LitElement {
   private pendingAction: (() => void) | null = null;
 
   // Track current API key for smart change detection
-  private currentApiKey: string = "";
+  private currentApiKey = "";
 
   // Dual-context state management
   @state() activeMode: ActiveMode = null;
@@ -407,6 +678,9 @@ export class GdmLiveAudio extends LitElement {
 
   // Rate-limit UX state for calls
   private _callRateLimitNotified = false;
+  // Reconnection toast state to avoid spamming
+  private _callReconnectingNotified = false;
+  private _textReconnectingNotified = false;
 
   // Scroll-to-bottom state for call transcript
   @state() private showCallScrollToBottom = false;
@@ -551,6 +825,7 @@ export class GdmLiveAudio extends LitElement {
         this._handleTextRateLimit.bind(this),
         this.updateTextTranscript.bind(this),
         this.personaManager,
+        this,
       );
       this.callSessionManager = new CallSessionManager(
         this.outputAudioContext,
@@ -561,6 +836,7 @@ export class GdmLiveAudio extends LitElement {
         this._handleCallRateLimit.bind(this),
         this.updateCallTranscript.bind(this),
         this.personaManager,
+        this,
       );
       this.summarizationService = new SummarizationService(this.client);
     }
@@ -763,7 +1039,7 @@ export class GdmLiveAudio extends LitElement {
     this.callState = "connecting";
     this._updateActiveOutputNode();
 
-    // Initialize or reinitialize call session; if initialization fails, show non-silent failure and abort
+    const isResuming = this.callSessionManager.getResumptionHandle() !== null;
     const ok = await this._initCallSession();
     if (!ok || !this.callSession) {
       // If energy is exhausted, reflect a different UX than rate limit
@@ -777,6 +1053,23 @@ export class GdmLiveAudio extends LitElement {
         );
       }
       return;
+    }
+
+    // After successful session init, show toast
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification#inline-toast",
+    ) as ToastNotification;
+    if (isResuming) {
+      toast?.show("Resumed previous call session", "success", 1200, {
+        position: "bottom-right",
+        variant: "standard",
+      });
+    } else {
+      this.callTranscript = []; // Clear transcript only for new sessions
+      toast?.show("Started a new call session", "success", 1500, {
+        position: "bottom-right",
+        variant: "standard",
+      });
     }
 
     this.inputAudioContext.resume();
@@ -860,7 +1153,9 @@ export class GdmLiveAudio extends LitElement {
     this.sourceNode = null;
 
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach((track) => track.stop());
+      for (const track of this.mediaStream.getTracks()) {
+        track.stop();
+      }
       this.mediaStream = null;
     }
 
@@ -908,6 +1203,14 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _resetCallContext() {
+    // Also clear the persisted resumption handle so the next call starts fresh
+    try {
+      this.callSessionManager?.clearResumptionHandle();
+    } catch (e) {
+      logger.warn("Failed to clear call session resumption handle:", e);
+    }
+    // Reset reconnection toast guard
+    this._callReconnectingNotified = false;
     logger.debug("Resetting call context. Closing session.");
     // Close existing call session using session manager
     if (this.callSessionManager) {
@@ -930,6 +1233,8 @@ export class GdmLiveAudio extends LitElement {
       this._initCallSession();
     }
     this.updateStatus("Call conversation cleared.");
+    // Reuse the existing call-start toasts when the next call starts (resume-first flow).
+    // No additional toast here to avoid redundancy.
   }
 
   private _toggleSettings() {
@@ -945,12 +1250,12 @@ export class GdmLiveAudio extends LitElement {
     const activePersona = this.personaManager.getActivePersona();
     if (activePersona.name === "Assistant") {
       return "Please provide your API key from AI Studio to proceed with the task.";
-    } else if (activePersona.name === "VTuber") {
-      return "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
-    } else {
-      // Generic prompt for custom personas
-      return "Please provide your API key from AI Studio to continue.";
     }
+    if (activePersona.name === "VTuber") {
+      return "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    }
+    // Generic prompt for custom personas
+    return "Please provide your API key from AI Studio to continue.";
   }
 
   private _showApiKeyPrompt(pendingAction?: () => void) {
@@ -1079,10 +1384,21 @@ export class GdmLiveAudio extends LitElement {
 
       // Disconnect the active TextSessionManager to apply the new system prompt
       if (this.textSessionManager) {
-        this.textSessionManager.closeSession();
+        await this.textSessionManager.closeSession();
+        this.textSessionManager.clearResumptionHandle(); // Clear session token
         this.textSession = null;
       }
+      // Also disconnect the call session to ensure it picks up the new persona
+      if (this.callSessionManager) {
+        await this.callSessionManager.closeSession();
+        this.callSessionManager.clearResumptionHandle(); // Clear session token
+        this.callSession = null;
+      }
       this.textTranscript = [];
+
+      // Reset energy levels to full for the new persona
+      energyBarService.resetEnergyLevel("session-reset", "sts");
+      energyBarService.resetEnergyLevel("session-reset", "tts");
 
       const toast = this.shadowRoot?.querySelector(
         "toast-notification",
@@ -1258,6 +1574,8 @@ export class GdmLiveAudio extends LitElement {
       "persona-changed",
       this._handlePersonaChanged.bind(this),
     );
+    this.addEventListener("reconnecting", this._handleReconnecting);
+    this.addEventListener("reconnected", this._handleReconnected);
   }
 
   disconnectedCallback() {
@@ -1270,6 +1588,8 @@ export class GdmLiveAudio extends LitElement {
       "persona-changed",
       this._handlePersonaChanged.bind(this),
     );
+    this.removeEventListener("reconnecting", this._handleReconnecting);
+    this.removeEventListener("reconnected", this._handleReconnected);
   }
 
   protected firstUpdated() {
@@ -1277,12 +1597,53 @@ export class GdmLiveAudio extends LitElement {
     this._triggerInitialTTSGreeting();
   }
 
+  private _handleReconnecting = () => {
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification#inline-toast",
+    ) as ToastNotification;
+    if (this.activeMode === "calling" && !this._callReconnectingNotified) {
+      this._callReconnectingNotified = true;
+      toast?.show("Reconnecting call…", "info", 2000, {
+        position: "bottom-right",
+        variant: "standard",
+      });
+    } else if (
+      this.activeMode === "texting" &&
+      !this._textReconnectingNotified
+    ) {
+      this._textReconnectingNotified = true;
+      toast?.show("Reconnecting chat…", "info", 2000, {
+        position: "bottom-center",
+        variant: "inline",
+      });
+    }
+  };
+
+  private _handleReconnected = () => {
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification#inline-toast",
+    ) as ToastNotification;
+    if (this.activeMode === "calling") {
+      toast?.show("Call reconnected", "success", 1200, {
+        position: "bottom-right",
+        variant: "standard",
+      });
+      this._callReconnectingNotified = false;
+    } else if (this.activeMode === "texting") {
+      toast?.show("Chat reconnected", "success", 1200, {
+        position: "bottom-center",
+        variant: "inline",
+      });
+      this._textReconnectingNotified = false;
+    }
+  };
+
   private _onEnergyLevelChanged = (e: Event) => {
     const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
       .detail;
 
     // Debug logging
-    logger.debug(`Energy level changed`, { mode, level, reason });
+    logger.debug("Energy level changed", { mode, level, reason });
 
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
@@ -1293,7 +1654,7 @@ export class GdmLiveAudio extends LitElement {
         mode,
       );
 
-      logger.debug(`Generated prompt for energy level`, {
+      logger.debug("Generated prompt for energy level", {
         mode,
         level,
         personaName,
@@ -1302,11 +1663,33 @@ export class GdmLiveAudio extends LitElement {
 
       if (prompt && mode === "sts") {
         this._appendCallNotice(prompt);
-        logger.debug(`Appended STS call notice`, { prompt });
+        logger.debug("Appended STS call notice", { prompt });
       } else if (prompt && mode === "tts" && level < 2) {
         // Only inject prompts for degraded/exhausted states.
         this._appendTextMessage(prompt, "model");
-        logger.debug(`Appended TTS text message`, { prompt });
+        logger.debug("Appended TTS text message", { prompt });
+      }
+    }
+
+    // Handle fallback when energy drops to non-resumable models (STS level 1, TTS level 1)
+    if ((mode === "sts" && level === 1) || (mode === "tts" && level === 1)) {
+      // Trigger fallback handling
+      logger.debug("Triggering fallback for", { mode, level });
+      
+      // For STS (call session), handle fallback if we're in a call
+      if (mode === "sts" && this.activeMode === "calling" && this.callTranscript.length > 0) {
+        this.callSessionManager.handleFallback(this.callTranscript, this.summarizationService)
+          .catch(error => {
+            logger.error("Error handling fallback for call session", error);
+          });
+      }
+      
+      // For TTS (text session), handle fallback if we have text transcript
+      if (mode === "tts" && this.textTranscript.length > 0) {
+        this.textSessionManager.handleFallback(this.textTranscript, this.summarizationService)
+          .catch(error => {
+            logger.error("Error handling fallback for text session", error);
+          });
       }
     }
 

@@ -1,11 +1,11 @@
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import "@features/tts/TtsEnergyBar";
 
 @customElement("tab-view")
 export class TabView extends LitElement {
   @property({ type: String }) activeTab: "chat" | "call-history" = "chat";
-  @property({ type: Boolean, reflect: true }) visible: boolean = true;
+  @property({ type: Boolean, reflect: true }) visible = true;
 
   static styles = css`
     :host {

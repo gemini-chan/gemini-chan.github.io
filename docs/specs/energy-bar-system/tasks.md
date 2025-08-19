@@ -48,3 +48,10 @@
   - [x] 6.1. Update the `EnergyBarService` to expose a method that returns whether affective dialog should be enabled based on STS energy level. (Ref: Req 2.1.5)
   - [x] 6.2. Integrate the new `EnergyBarService` method into the call session management logic to conditionally set the `enable_affective_dialog` flag in the API configuration. (Ref: Req 2.1.5)
   - [ ] 6.3. Add new unit tests to verify that the `enable_affective_dialog` flag is correctly set for STS energy levels 3, 2, 1, and 0. (Ref: Req 2.1.5)
+
+- [ ] 7. **Implement Session Management Integration**
+  - [ ] 7.1. Add `isModelResumable(level, mode)` method to `EnergyBarService` to determine resumption capability. (Ref: Design "Components and Interfaces", Session Management integration)
+  - [ ] 7.2. Add `shouldClearResumptionHandle(prevLevel, newLevel, mode)` method to check handle compatibility. (Ref: Req 2.1.6, Design "Components and Interfaces")
+  - [ ] 7.3. Update `energy-level-changed` event to include `requiresFallback` flag when dropping to non-resumable model. (Ref: Design "Components and Interfaces")
+  - [ ] 7.4. Implement handle clearing in session managers when energy resets with incompatible handle. (Ref: Req 2.1.6)
+  - [ ] 7.5. Add integration tests for energy level changes triggering session fallback mechanisms. (Ref: Req 2.1.6)

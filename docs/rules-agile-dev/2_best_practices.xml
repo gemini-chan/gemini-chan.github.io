@@ -34,6 +34,12 @@
       <item>Are there appropriate tests for the new functionality?</item>
       <item>Does the code handle potential errors and edge cases gracefully?</item>
     </category>
+    <category name="code_hygiene">
+      <item>Are there any placeholder comments (e.g., "TODO", "FIXME", "In a real implementation...") that are not linked to a task?</item>
+      <item>Is there any commented-out code? Dead code should be removed, not commented out.</item>
+      <item>Are there any unused variables, imports, or functions?</item>
+      <item>Does the code formatting adhere to the project's standards (e.g., as defined in `biome.json`)?</item>
+    </category>
   </code_review_checklist>
 
   <common_pitfalls>

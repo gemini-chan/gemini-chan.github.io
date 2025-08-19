@@ -10,6 +10,8 @@ As rate limits for more powerful models are exhausted in a specific session, the
 ### 2.1. Epic: Tiered Model State Management (Dual-Mode)
 This epic covers the logic for tracking the current model tier for both STS and TTS modes and managing the fallback to lower tiers when rate-limit failures occur in either mode. The TTS mode uses a simplified 3-level system (2, 1, 0) to avoid redundant model switches, while STS maintains the full 4-level system (3, 2, 1, 0).
 
+**Integration with Session Management:** This epic must coordinate with the **Gemini Live API Session Management** feature (see `../gemini-live-api-session-management/requirements.md`) to handle model transitions that affect session resumption capabilities.
+
 #### 2.1.1. User Story: Track Independent Energy Levels with Mode-Specific Ranges
 - **Priority**: High
 - **As a** system,
@@ -99,6 +101,29 @@ Scenario: Log an STS downgrade event
 - **As a** system,
 - **I want** to enable the affective dialog feature for STS sessions when the energy level is 3 or 2,
 - **so that** the user experiences a more natural and emotionally resonant conversation when the AI is at its highest capacity.
+
+#### 2.1.6. User Story: Trigger Session Fallback on Model Change
+- **Priority**: High
+- **As a** system,
+- **I want** to trigger session fallback mechanisms when energy level changes cause a model switch,
+- **so that** conversation context is preserved even when moving to a non-resumable model.
+- **Cross-reference**: Session Management Epic 2.3 (Fallback Context Injection)
+
+##### Acceptance Criteria
+```gherkin
+Scenario: Trigger fallback when STS energy drops to non-resumable model
+  Given the STS energy level is 2
+  And an active call session exists with a resumption handle
+  When the energy level drops to 1 (non-resumable model)
+  Then the system triggers the handleFallback mechanism
+  And the conversation transcript is summarized and re-injected.
+
+Scenario: Clear incompatible resumption handles on energy reset
+  Given the STS energy level was 1 with a stored resumption handle
+  When a new call session starts and energy resets to 3
+  Then the old resumption handle is cleared
+  And a fresh session is initialized without attempting resume.
+```
 
 ##### Acceptance Criteria
 ```gherkin
@@ -249,7 +274,7 @@ Scenario: Assistant greeting at TTS energy level 2
   Given the TTS energy level is 2
   And the selected persona is 'Assistant'
   When the chat window is displayed
-  Then a greeting like "Hello! I'm Gemini-san, your professional assistant. I'm ready to help you with any questions or tasks you might have." is injected into the chat.
+  Then a greeting like "Hello! I'm Gemini, your professional assistant. I'm ready to help you with any questions or tasks you might have." is injected into the chat.
 
 Scenario: TTS degraded energy prompts injected into chat
   Given the TTS energy level is 1 or 0

@@ -65,9 +65,9 @@ describe("DebugLogger with ConfigurationManager", () => {
     });
     process.env = originalProcessEnv;
     // @ts-ignore
-    delete globalThis.__DEBUG__;
+    globalThis.__DEBUG__ = undefined;
     // @ts-ignore
-    delete globalThis.__DEBUG_COMPONENTS__;
+    globalThis.__DEBUG_COMPONENTS__ = undefined;
   });
 
   it("should load default configuration correctly", () => {

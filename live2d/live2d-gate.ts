@@ -1,5 +1,5 @@
 import { createComponentLogger } from "@services/DebugLogger";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "./live2d-visual";
 
@@ -11,7 +11,7 @@ const log = createComponentLogger("live2d-gate");
  */
 @customElement("live2d-gate")
 export class Live2DGate extends LitElement {
-  @property({ type: String }) modelUrl: string = "";
+  @property({ type: String }) modelUrl = "";
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
 

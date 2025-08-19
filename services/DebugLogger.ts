@@ -92,17 +92,14 @@ class ConfigurationManager {
       prefix: true,
     };
 
-    this.sources
-      .slice()
-      .reverse()
-      .forEach((source) => {
-        const config = source.load();
-        const { components, ...rest } = config;
-        Object.assign(defaultConfig, rest);
-        if (components) {
-          Object.assign(defaultConfig.components, components);
-        }
-      });
+    for (const source of this.sources.slice().reverse()) {
+      const config = source.load();
+      const { components, ...rest } = config;
+      Object.assign(defaultConfig, rest);
+      if (components) {
+        Object.assign(defaultConfig.components, components);
+      }
+    }
     return defaultConfig;
   }
 
@@ -111,11 +108,11 @@ class ConfigurationManager {
    * @param config - The partial configuration to save.
    */
   saveConfig(config: Partial<DebugLoggerConfig>): void {
-    this.sources.forEach((source) => {
+    for (const source of this.sources) {
       if (source.save) {
         source.save(config);
       }
-    });
+    }
   }
 }
 /**
@@ -166,9 +163,9 @@ export class DebugLogger {
           if (debugParam === "*") {
             config.components["*"] = true;
           } else if (debugParam) {
-            debugParam.split(",").forEach((comp) => {
+            for (const comp of debugParam.split(",")) {
               if (config.components) config.components[comp] = true;
-            });
+            }
           }
         }
         return config;
@@ -227,9 +224,9 @@ export class DebugLogger {
           if (debugComponents === "*") {
             config.components["*"] = true;
           } else {
-            debugComponents.split(",").forEach((comp) => {
+            for (const comp of debugComponents.split(",")) {
               if (config.components) config.components[comp.trim()] = true;
-            });
+            }
           }
         }
 

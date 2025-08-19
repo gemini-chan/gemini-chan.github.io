@@ -7,7 +7,7 @@
 // tslint:disable:ban-malformed-import-paths
 // tslint:disable:no-new-decorators
 
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import * as THREE from "three";
 import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
@@ -16,9 +16,9 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
-import { Analyser } from "./analyser";
 import { fs as backdropFS, vs as backdropVS } from "./BackdropShader";
 import { vs as sphereVS } from "./SphereShader";
+import { Analyser } from "./analyser";
 
 /**
  * 3D live audio visual.

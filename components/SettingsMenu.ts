@@ -1,5 +1,5 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 interface FieldConfig {
@@ -132,7 +132,7 @@ export class SettingsMenu extends LitElement {
     localStorage.getItem("circuitry-enabled") !== "false";
 
   @state()
-  private _circuitrySpeed: number = parseInt(
+  private _circuitrySpeed: number = Number.parseInt(
     localStorage.getItem("circuitry-speed") || "15",
   );
 
@@ -149,7 +149,7 @@ export class SettingsMenu extends LitElement {
   private _editingPersona: Persona | null = null;
 
   @state()
-  private _showDeleteConfirmation: boolean = false;
+  private _showDeleteConfirmation = false;
 
   private personaManager: PersonaManager;
 
@@ -1718,7 +1718,7 @@ export class SettingsMenu extends LitElement {
 
   private _onCircuitrySpeedChange(e: Event) {
     const range = e.target as HTMLInputElement;
-    this._circuitrySpeed = parseInt(range.value);
+    this._circuitrySpeed = Number.parseInt(range.value);
     localStorage.setItem("circuitry-speed", this._circuitrySpeed.toString());
     this._applyCircuitrySettings();
   }

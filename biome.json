@@ -2,47 +2,26 @@
   "$schema": "https://biomejs.dev/schemas/2.1.4/schema.json",
   "files": {
     "ignoreUnknown": false,
-    "includes": [
-      "**/*.ts",
-      "**/*.tsx",
-      "**/*.js",
-      "**/*.jsx",
-      "**/*.json",
-      "**/*.css",
-      "**/*.md"
+    "ignore": [
+      "**/node_modules/**",
+      "**/package-lock.json",
+      "**/.cache/**",
+      "**/public/assets/**",
+      "**/dist/**",
+      "**/.vscode/**",
+      "**/.roo/**",
+      "**/coverage/**"
     ]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
-    "indentWidth": 2,
-    "includes": [
-      "**",
-      "!**/node_modules/**",
-      "!**/package-lock.json",
-      "!**/.cache/**",
-      "!**/public/assets/**",
-      "!**/dist/**",
-      "!**/.vscode/**",
-      "!**/.roo/**",
-      "!**/coverage/**"
-    ]
+    "indentWidth": 2
   },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true
-    },
-    "includes": [
-      "**",
-      "!**/node_modules/**",
-      "!**/package-lock.json",
-      "!**/.cache/**",
-      "!**/public/assets/**",
-      "!**/dist/**",
-      "!**/.vscode/**",
-      "!**/.roo/**",
-      "!**/coverage/**"
-    ]
+    }
   }
 }

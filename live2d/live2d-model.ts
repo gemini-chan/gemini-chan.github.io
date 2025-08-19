@@ -1,5 +1,5 @@
 import { createComponentLogger } from "@services/DebugLogger";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { AudioToAnimationMapper } from "./audio-mapper";
 import { IdleEyeFocus } from "./idle-eye-focus";
@@ -23,14 +23,14 @@ export class Live2DModelComponent extends LitElement {
   @property({ attribute: false }) app?: PixiApplicationLike;
   private _model?: Live2DModelLike & { internalModel?: unknown };
 
-  @property({ type: String }) url: string = "";
+  @property({ type: String }) url = "";
   @property({ type: Number }) scale = 1.0;
   @property({ type: Array }) anchor: [number, number] = [0.5, 0.5];
-  @property({ type: Boolean }) fitToCanvas: boolean = true;
-  @property({ type: Number }) containerWidth: number = 0;
-  @property({ type: Number }) containerHeight: number = 0;
-  @property({ type: Number }) xOffset: number = 0;
-  @property({ type: Number }) yOffset: number = -80;
+  @property({ type: Boolean }) fitToCanvas = true;
+  @property({ type: Number }) containerWidth = 0;
+  @property({ type: Number }) containerHeight = 0;
+  @property({ type: Number }) xOffset = 0;
+  @property({ type: Number }) yOffset = -80;
 
   // Guarded restart for animation loop after errors
   private _loopRestartDelay = 1000; // ms
@@ -45,7 +45,7 @@ export class Live2DModelComponent extends LitElement {
 
   private _mapper?: AudioToAnimationMapper;
   private _idle?: IdleEyeFocus;
-  @state() private _loading: boolean = false;
+  @state() private _loading = false;
   @state() private _error: string | null = null;
 
   static styles = css`
