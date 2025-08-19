@@ -14,7 +14,7 @@ import {
 import { createComponentLogger } from "@services/DebugLogger";
 import { createBlob, decode, decodeAudioData } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
@@ -54,13 +54,13 @@ abstract class BaseSessionManager {
   }
   // Session state and reconnection management
   protected currentHandle: string | null = null;
-  protected isConnected: boolean = false;
-  protected lastMessageTimestamp: number = 0;
-  private reconnecting: boolean = false;
-  private reconnectAttempts: number = 0;
+  protected isConnected = false;
+  protected lastMessageTimestamp = 0;
+  private reconnecting = false;
+  private reconnectAttempts = 0;
   private reconnectTimer: number | null = null;
-  private intentionalClose: boolean = false;
-  protected nextStartTime: number = 0;
+  private intentionalClose = false;
+  protected nextStartTime = 0;
   protected sources = new Set<AudioBufferSourceNode>();
   protected session: Session | null = null;
 
@@ -70,7 +70,7 @@ abstract class BaseSessionManager {
     protected client: GoogleGenAI,
     protected updateStatus: (msg: string) => void,
     protected updateError: (msg: string) => void,
-    protected onRateLimit: (msg: string) => void = () => {},
+    protected onRateLimit: (msg: string) => void,
     protected hostElement: HTMLElement,
   ) {}
 
@@ -131,7 +131,10 @@ abstract class BaseSessionManager {
               localStorage.setItem(storageKey, this.currentHandle);
             }
           } catch (e) {
-            console.warn('Failed to persist session handle to localStorage for ' + this.getSessionName() + ':', e);
+            console.warn(
+              `Failed to persist session handle to localStorage for ${this.getSessionName()}:`,
+              e,
+            );
           }
           this.updateStatus(
             `${this.getSessionName()}: received resumption handle`,
@@ -141,8 +144,8 @@ abstract class BaseSessionManager {
         // GoAway handling (pre-termination notice)
         const goAway =
           extendedMessage.goAway || extendedMessage.serverContent?.goAway;
-        if (goAway && goAway.timeLeft) {
-          const timeLeftMs = parseInt(goAway.timeLeft, 10) || 0;
+        if (goAway?.timeLeft) {
+          const timeLeftMs = Number.parseInt(goAway.timeLeft, 10) || 0;
           // Schedule a reconnect slightly before the server aborts the connection
           const guard = 250; // ms safety margin
           const delay = Math.max(timeLeftMs - guard, 0);
@@ -215,7 +218,9 @@ abstract class BaseSessionManager {
   private async _connect(handle: string | null): Promise<Error | null> {
     try {
       const baseConfig = this.getConfig() || {};
-      const configWithResumption: Record<string, unknown> & { sessionResumption?: { handle: string | null } } = {
+      const configWithResumption: Record<string, unknown> & {
+        sessionResumption?: { handle: string | null };
+      } = {
         ...baseConfig,
         sessionResumption: { handle },
       };
@@ -246,7 +251,10 @@ abstract class BaseSessionManager {
           this.currentHandle = localStorage.getItem(storageKey);
         }
       } catch (e) {
-        console.warn('Failed to read session handle from localStorage for ' + this.getSessionName() + ':', e);
+        console.warn(
+          `Failed to read session handle from localStorage for ${this.getSessionName()}:`,
+          e,
+        );
       }
     }
     // Merge resumption handle preference: explicit arg > stored handle > null
@@ -327,10 +335,7 @@ abstract class BaseSessionManager {
       }
 
       // Schedule next attempt
-      this.reconnectTimer = window.setTimeout(
-        attemptReconnect,
-        delay,
-      ) as unknown as number;
+      this.reconnectTimer = window.setTimeout(attemptReconnect, delay);
     };
 
     attemptReconnect();
@@ -395,7 +400,10 @@ abstract class BaseSessionManager {
         localStorage.removeItem(storageKey);
       }
     } catch (e) {
-      console.warn('Failed to remove session handle from localStorage for ' + this.getSessionName() + ':', e);
+      console.warn(
+        `Failed to remove session handle from localStorage for ${this.getSessionName()}:`,
+        e,
+      );
     }
   }
 }
@@ -410,7 +418,7 @@ class TextSessionManager extends BaseSessionManager {
     client: GoogleGenAI,
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
-    onRateLimit: (msg: string) => void = () => {},
+    onRateLimit: (msg: string) => void,
     private updateTranscript: (text: string) => void,
     private personaManager: PersonaManager,
     hostElement: HTMLElement,
@@ -483,7 +491,7 @@ class CallSessionManager extends BaseSessionManager {
     client: GoogleGenAI,
     updateStatus: (msg: string) => void,
     updateError: (msg: string) => void,
-    onRateLimit: (msg: string) => void = () => {},
+    onRateLimit: (msg: string) => void,
     private updateCallTranscript: (
       text: string,
       speaker: "user" | "model",
@@ -584,7 +592,7 @@ export class GdmLiveAudio extends LitElement {
   private pendingAction: (() => void) | null = null;
 
   // Track current API key for smart change detection
-  private currentApiKey: string = "";
+  private currentApiKey = "";
 
   // Dual-context state management
   @state() activeMode: ActiveMode = null;
@@ -1089,7 +1097,9 @@ export class GdmLiveAudio extends LitElement {
     this.sourceNode = null;
 
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach((track) => track.stop());
+      for (const track of this.mediaStream.getTracks()) {
+        track.stop();
+      }
       this.mediaStream = null;
     }
 
@@ -1140,7 +1150,9 @@ export class GdmLiveAudio extends LitElement {
     // Also clear the persisted resumption handle so the next call starts fresh
     try {
       this.callSessionManager?.clearResumptionHandle();
-    } catch {}
+    } catch (e) {
+      logger.warn("Failed to clear call session resumption handle:", e);
+    }
     // Reset reconnection toast guard
     this._callReconnectingNotified = false;
     logger.debug("Resetting call context. Closing session.");
@@ -1182,12 +1194,12 @@ export class GdmLiveAudio extends LitElement {
     const activePersona = this.personaManager.getActivePersona();
     if (activePersona.name === "Assistant") {
       return "Please provide your API key from AI Studio to proceed with the task.";
-    } else if (activePersona.name === "VTuber") {
-      return "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
-    } else {
-      // Generic prompt for custom personas
-      return "Please provide your API key from AI Studio to continue.";
     }
+    if (activePersona.name === "VTuber") {
+      return "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
+    }
+    // Generic prompt for custom personas
+    return "Please provide your API key from AI Studio to continue.";
   }
 
   private _showApiKeyPrompt(pendingAction?: () => void) {
@@ -1539,7 +1551,10 @@ export class GdmLiveAudio extends LitElement {
         position: "bottom-right",
         variant: "standard",
       });
-    } else if (this.activeMode === "texting" && !this._textReconnectingNotified) {
+    } else if (
+      this.activeMode === "texting" &&
+      !this._textReconnectingNotified
+    ) {
       this._textReconnectingNotified = true;
       toast?.show("Reconnecting chat…", "info", 2000, {
         position: "bottom-center",
@@ -1572,7 +1587,7 @@ export class GdmLiveAudio extends LitElement {
       .detail;
 
     // Debug logging
-    logger.debug(`Energy level changed`, { mode, level, reason });
+    logger.debug("Energy level changed", { mode, level, reason });
 
     if (level < 3) {
       const personaName = this.personaManager.getActivePersona().name;
@@ -1583,7 +1598,7 @@ export class GdmLiveAudio extends LitElement {
         mode,
       );
 
-      logger.debug(`Generated prompt for energy level`, {
+      logger.debug("Generated prompt for energy level", {
         mode,
         level,
         personaName,
@@ -1592,11 +1607,11 @@ export class GdmLiveAudio extends LitElement {
 
       if (prompt && mode === "sts") {
         this._appendCallNotice(prompt);
-        logger.debug(`Appended STS call notice`, { prompt });
+        logger.debug("Appended STS call notice", { prompt });
       } else if (prompt && mode === "tts" && level < 2) {
         // Only inject prompts for degraded/exhausted states.
         this._appendTextMessage(prompt, "model");
-        logger.debug(`Appended TTS text message`, { prompt });
+        logger.debug("Appended TTS text message", { prompt });
       }
     }
 

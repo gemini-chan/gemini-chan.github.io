@@ -1,9 +1,9 @@
 import {
   type EnergyLevelChangedDetail,
-  energyBarService,
   type TTSEnergyLevel,
+  energyBarService,
 } from "@services/EnergyBarService";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("tts-energy-bar")
@@ -12,7 +12,7 @@ export class TTSEnergyBar extends LitElement {
     energyBarService.getCurrentEnergyLevel("tts") as TTSEnergyLevel;
 
   @state() private _animating = false;
-  @state() private _changedIndex: number = -1;
+  @state() private _changedIndex = -1;
   @state() private _changeKind: "fill" | "drain" | null = null;
 
   static styles = css`

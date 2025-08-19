@@ -1,4 +1,4 @@
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("toast-notification")
@@ -141,7 +141,7 @@ export class ToastNotification extends LitElement {
   show(
     message: string,
     type: "info" | "success" | "warning" | "error" = "info",
-    duration: number = 0,
+    duration = 0,
     opts?: {
       position?: "top-center" | "bottom-center" | "top-right" | "bottom-right";
       variant?: "standard" | "inline";

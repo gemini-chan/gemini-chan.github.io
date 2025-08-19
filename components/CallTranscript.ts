@@ -1,6 +1,6 @@
 import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
 import { createComponentLogger } from "@services/DebugLogger";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import "@components/EnergyBar";
 
@@ -18,10 +18,10 @@ export class CallTranscript extends LitElement {
   transcript: Turn[] = [];
 
   @property({ type: Boolean })
-  visible: boolean = false;
+  visible = false;
 
   @property({ type: String })
-  activePersonaName: string = "VTuber";
+  activePersonaName = "VTuber";
 
   @property({ type: String })
   callState: "idle" | "connecting" | "active" | "ending" = "idle";

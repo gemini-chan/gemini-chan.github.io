@@ -18,12 +18,12 @@
   --cp-surface-border: rgba(0, 229, 255, 0.25);
   --cp-surface-border-2: rgba(255, 0, 229, 0.2);
 
-  --cp-glow-cyan:
-    0 0 0 1px rgba(0, 229, 255, 0.15), 0 0 12px rgba(0, 229, 255, 0.25);
-  --cp-glow-magenta:
-    0 0 0 1px rgba(255, 0, 229, 0.15), 0 0 12px rgba(255, 0, 229, 0.25);
-  --cp-glow-purple:
-    0 0 0 1px rgba(124, 77, 255, 0.15), 0 0 12px rgba(124, 77, 255, 0.25);
+  --cp-glow-cyan: 0 0 0 1px rgba(0, 229, 255, 0.15), 0 0 12px
+    rgba(0, 229, 255, 0.25);
+  --cp-glow-magenta: 0 0 0 1px rgba(255, 0, 229, 0.15), 0 0 12px
+    rgba(255, 0, 229, 0.25);
+  --cp-glow-purple: 0 0 0 1px rgba(124, 77, 255, 0.15), 0 0 12px
+    rgba(124, 77, 255, 0.25);
   /* Default circuitry settings */
   --circuit-enabled: 1;
   --circuit-speed: 15s;
@@ -44,8 +44,11 @@ body {
 body {
   position: relative;
   color: var(--cp-text);
-  background:
-    radial-gradient(1200px 800px at 20% 10%, var(--cp-bg-3), transparent 60%),
+  background: radial-gradient(
+      1200px 800px at 20% 10%,
+      var(--cp-bg-3),
+      transparent 60%
+    ),
     radial-gradient(
       900px 900px at 80% 20%,
       rgba(255, 0, 229, 0.12),
@@ -65,8 +68,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background:
-    repeating-linear-gradient(
+  background: repeating-linear-gradient(
       to bottom,
       rgba(255, 255, 255, 0.035) 0px,
       rgba(255, 255, 255, 0.035) 1px,
@@ -103,8 +105,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: -1;
-  background-image:
-    linear-gradient(
+  background-image: linear-gradient(
       90deg,
       transparent 0 47%,
       var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
@@ -116,12 +117,9 @@ body::after {
       var(--circuit-color, rgba(0, 229, 255, 0.25)) 49% 51%,
       transparent 53% 100%
     );
-  background-size:
-    var(--circuit-size, 60px) var(--circuit-size, 60px),
+  background-size: var(--circuit-size, 60px) var(--circuit-size, 60px),
     var(--circuit-size, 60px) var(--circuit-size, 60px);
-  background-position:
-    0 0,
-    0 0;
+  background-position: 0 0, 0 0;
   animation: circuit-move var(--circuit-speed, 15s) linear infinite;
   opacity: var(--circuit-opacity, 1);
   display: var(--circuit-display, block);
@@ -137,8 +135,7 @@ live2d-gate::before {
   z-index: -1; /* Same as circuitry grid */
   display: var(--circuit-display, block);
 
-  background-image:
-    radial-gradient(
+  background-image: radial-gradient(
       circle at 20px 20px,
       var(--circuit-node-color, rgba(0, 229, 255, 0.4)) 2px,
       transparent 3px
@@ -148,37 +145,28 @@ live2d-gate::before {
       var(--circuit-node-color, rgba(0, 229, 255, 0.3)) 1.5px,
       transparent 2.5px
     );
-  background-size:
-    var(--circuit-size, 60px) var(--circuit-size, 60px),
+  background-size: var(--circuit-size, 60px) var(--circuit-size, 60px),
     var(--circuit-size, 60px) var(--circuit-size, 60px);
-  background-position:
-    0 0,
-    30px 30px;
+  background-position: 0 0, 30px 30px;
   animation: circuit-move-nodes var(--circuit-speed, 15s) linear infinite;
 }
 
 @keyframes circuit-move {
   0% {
-    background-position:
-      0 0,
-      0 0;
+    background-position: 0 0, 0 0;
   }
   100% {
-    background-position:
-      var(--circuit-size, 60px) var(--circuit-size, 60px),
+    background-position: var(--circuit-size, 60px) var(--circuit-size, 60px),
       var(--circuit-size, 60px) var(--circuit-size, 60px);
   }
 }
 
 @keyframes circuit-move-nodes {
   from {
-    background-position:
-      0 0,
-      30px 30px;
+    background-position: 0 0, 30px 30px;
   }
   to {
-    background-position:
-      var(--circuit-size, 60px) var(--circuit-size, 60px),
+    background-position: var(--circuit-size, 60px) var(--circuit-size, 60px),
       calc(30px + var(--circuit-size, 60px))
       calc(30px + var(--circuit-size, 60px));
   }
@@ -214,8 +202,11 @@ html[data-theme="matrix"] body::after {
 /* Theme overrides */
 html[data-theme="cyberpunk"] body {
   color: var(--cp-text);
-  background:
-    radial-gradient(1200px 800px at 20% 10%, var(--cp-bg-3), transparent 60%),
+  background: radial-gradient(
+      1200px 800px at 20% 10%,
+      var(--cp-bg-3),
+      transparent 60%
+    ),
     radial-gradient(
       900px 900px at 80% 20%,
       rgba(255, 0, 229, 0.12),
@@ -248,17 +239,16 @@ html[data-theme="dystopia"] {
   --cp-surface-border: rgba(35, 213, 255, 0.28);
   --cp-surface-border-2: rgba(106, 76, 255, 0.22);
 
-  --cp-glow-cyan:
-    0 0 0 1px rgba(35, 213, 255, 0.18), 0 0 14px rgba(35, 213, 255, 0.28);
-  --cp-glow-magenta:
-    0 0 0 1px rgba(180, 0, 255, 0.16), 0 0 14px rgba(180, 0, 255, 0.26);
-  --cp-glow-purple:
-    0 0 0 1px rgba(106, 76, 255, 0.16), 0 0 14px rgba(106, 76, 255, 0.26);
+  --cp-glow-cyan: 0 0 0 1px rgba(35, 213, 255, 0.18), 0 0 14px
+    rgba(35, 213, 255, 0.28);
+  --cp-glow-magenta: 0 0 0 1px rgba(180, 0, 255, 0.16), 0 0 14px
+    rgba(180, 0, 255, 0.26);
+  --cp-glow-purple: 0 0 0 1px rgba(106, 76, 255, 0.16), 0 0 14px
+    rgba(106, 76, 255, 0.26);
 }
 html[data-theme="dystopia"] body {
   color: var(--cp-text);
-  background:
-    radial-gradient(
+  background: radial-gradient(
       1200px 800px at 20% 10%,
       rgba(35, 213, 255, 0.08),
       transparent 60%
@@ -290,16 +280,15 @@ html[data-theme="tron"] {
   --cp-surface-border: rgba(0, 240, 255, 0.3);
   --cp-surface-border-2: rgba(0, 240, 255, 0.2);
 
-  --cp-glow-cyan:
-    0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
-  --cp-glow-magenta:
-    0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
-  --cp-glow-purple:
-    0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
+  --cp-glow-cyan: 0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px
+    rgba(0, 240, 255, 0.35);
+  --cp-glow-magenta: 0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px
+    rgba(0, 240, 255, 0.35);
+  --cp-glow-purple: 0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px
+    rgba(0, 240, 255, 0.35);
 }
 html[data-theme="tron"] body {
-  background:
-    radial-gradient(
+  background: radial-gradient(
       1100px 800px at 25% 15%,
       rgba(0, 240, 255, 0.12),
       transparent 60%
@@ -331,16 +320,15 @@ html[data-theme="synthwave"] {
   --cp-surface-border: rgba(255, 0, 168, 0.28);
   --cp-surface-border-2: rgba(169, 109, 255, 0.22);
 
-  --cp-glow-cyan:
-    0 0 0 1px rgba(0, 245, 255, 0.15), 0 0 14px rgba(0, 245, 255, 0.28);
-  --cp-glow-magenta:
-    0 0 0 1px rgba(255, 0, 168, 0.15), 0 0 14px rgba(255, 0, 168, 0.28);
-  --cp-glow-purple:
-    0 0 0 1px rgba(169, 109, 255, 0.15), 0 0 14px rgba(169, 109, 255, 0.28);
+  --cp-glow-cyan: 0 0 0 1px rgba(0, 245, 255, 0.15), 0 0 14px
+    rgba(0, 245, 255, 0.28);
+  --cp-glow-magenta: 0 0 0 1px rgba(255, 0, 168, 0.15), 0 0 14px
+    rgba(255, 0, 168, 0.28);
+  --cp-glow-purple: 0 0 0 1px rgba(169, 109, 255, 0.15), 0 0 14px
+    rgba(169, 109, 255, 0.28);
 }
 html[data-theme="synthwave"] body {
-  background:
-    radial-gradient(
+  background: radial-gradient(
       1000px 900px at 15% 80%,
       rgba(255, 0, 168, 0.14),
       transparent 60%
@@ -372,16 +360,15 @@ html[data-theme="matrix"] {
   --cp-surface-border: rgba(57, 255, 20, 0.35);
   --cp-surface-border-2: rgba(57, 255, 20, 0.22);
 
-  --cp-glow-cyan:
-    0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
-  --cp-glow-magenta:
-    0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
-  --cp-glow-purple:
-    0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
+  --cp-glow-cyan: 0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px
+    rgba(57, 255, 20, 0.35);
+  --cp-glow-magenta: 0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px
+    rgba(57, 255, 20, 0.35);
+  --cp-glow-purple: 0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px
+    rgba(57, 255, 20, 0.35);
 }
 html[data-theme="matrix"] body {
-  background:
-    radial-gradient(
+  background: radial-gradient(
       1200px 900px at 10% 20%,
       rgba(57, 255, 20, 0.12),
       transparent 60%
@@ -413,17 +400,15 @@ html[data-theme="noir"] {
   --cp-surface-border: rgba(255, 0, 0, 0.3);
   --cp-surface-border-2: rgba(255, 0, 0, 0.2);
 
-  --cp-glow-cyan:
-    0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
-  --cp-glow-magenta:
-    0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
-  --cp-glow-purple:
-    0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
+  --cp-glow-cyan: 0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
+  --cp-glow-magenta: 0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px
+    rgba(255, 0, 0, 0.35);
+  --cp-glow-purple: 0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px
+    rgba(255, 0, 0, 0.35);
 }
 html[data-theme="noir"] body {
   color: var(--cp-text);
-  background:
-    radial-gradient(
+  background: radial-gradient(
       1400px 900px at 50% 10%,
       rgba(255, 0, 0, 0.15),
       transparent 70%

@@ -1,6 +1,6 @@
 import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
 import { createComponentLogger } from "@services/DebugLogger";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 interface Turn {
@@ -16,7 +16,7 @@ export class ChatView extends LitElement {
   transcript: Turn[] = [];
 
   @property({ type: Boolean })
-  visible: boolean = true;
+  visible = true;
 
   @state()
   private inputValue = "";

@@ -1,5 +1,5 @@
 import { createComponentLogger } from "@services/DebugLogger";
-import { css, html, LitElement } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import type { PixiApplicationLike } from "./types";
 
@@ -10,7 +10,7 @@ export class Live2DCanvas extends LitElement {
   private _container?: HTMLDivElement;
   private _app?: PixiApplicationLike;
 
-  @state() private _error: string = "";
+  @state() private _error = "";
 
   // Expose app via event for child components to hook into
   get app() {

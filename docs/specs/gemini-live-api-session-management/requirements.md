@@ -117,26 +117,6 @@ Scenario: TTS session handles energy fallback
   And the full conversation remains visible in the chat interface.
 ```
 
-##### Acceptance Criteria (Gherkin Syntax)
-```gherkin
-Scenario: Start high-energy session with call summary context
-  Given I have a session resumption token from an energy level 1 STS session
-  And I have a recent call summary in my call history
-  When I attempt to start a new call session at energy level 3
-  Then the system detects the incompatible handle (level 1 vs level 3 model)
-  And the system clears the incompatible resumption handle
-  And the system uses the latest call summary as context for the new session
-  And the session starts successfully with the enriched context.
-
-Scenario: Handle energy-triggered model fallback
-  Given I am in an STS call session at energy level 2
-  And the model supports session resumption
-  When a rate limit causes energy to drop to level 1
-  Then the system triggers handleFallback mechanism
-  And the transcript is summarized using SummarizationService
-  And the summarized context is injected into the new session.
-```
-
 #### 2.1.1. User Story: Obtain Session Resumption Token
 - **Priority**: High
 - **As a** developer using the Gemini Live API,
@@ -171,8 +151,29 @@ Scenario: Invalid or expired token
   When I try to resume a session with an invalid or expired token
   Then the server rejects the connection and provides a clear error message.
 ```
+
 ### 2.2. Epic: Graceful Connection Handling
 This epic covers the client's ability to react to server-sent messages, such as `GoAway`, to proactively manage the connection lifecycle and gracefully handle disconnections before they occur.
+
+##### Acceptance Criteria (Gherkin Syntax)
+```gherkin
+Scenario: Start high-energy session with call summary context
+  Given I have a session resumption token from an energy level 1 STS session
+  And I have a recent call summary in my call history
+  When I attempt to start a new call session at energy level 3
+  Then the system detects the incompatible handle (level 1 vs level 3 model)
+  And the system clears the incompatible resumption handle
+  And the system uses the latest call summary as context for the new session
+  And the session starts successfully with the enriched context.
+
+Scenario: Handle energy-triggered model fallback
+  Given I am in an STS call session at energy level 2
+  And the model supports session resumption
+  When a rate limit causes energy to drop to level 1
+  Then the system triggers handleFallback mechanism
+  And the transcript is summarized using SummarizationService
+  And the summarized context is injected into the new session.
+```
 
 #### 2.2.1. User Story: Proactively Handle Imminent Disconnection
 - **Priority**: High

@@ -64,9 +64,8 @@ export class EnergyBarService extends EventTarget {
   ): string | null {
     if (mode === "sts") {
       return STS_MODEL_TIER_BY_LEVEL[level as STSEnergyLevel];
-    } else {
-      return TTS_MODEL_TIER_BY_LEVEL[level as TTSEnergyLevel];
     }
+    return TTS_MODEL_TIER_BY_LEVEL[level as TTSEnergyLevel];
   }
   /**
    * Determines if affective dialog should be enabled based on STS energy level.
@@ -77,7 +76,6 @@ export class EnergyBarService extends EventTarget {
     const stsLevel = this.getCurrentEnergyLevel("sts") as STSEnergyLevel;
     return stsLevel === 3 || stsLevel === 2;
   }
-
 
   /** Decrement level due to rate limit for a specific mode, logging and emitting change events. */
   handleRateLimitError(mode: EnergyMode = "sts"): void {
