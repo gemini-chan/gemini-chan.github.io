@@ -130,7 +130,9 @@ abstract class BaseSessionManager {
             if (storageKey) {
               localStorage.setItem(storageKey, this.currentHandle);
             }
-          } catch {}
+          } catch (e) {
+            console.warn('Failed to persist session handle to localStorage for ' + this.getSessionName() + ':', e);
+          }
           this.updateStatus(
             `${this.getSessionName()}: received resumption handle`,
           );
@@ -139,8 +141,8 @@ abstract class BaseSessionManager {
         // GoAway handling (pre-termination notice)
         const goAway =
           extendedMessage.goAway || extendedMessage.serverContent?.goAway;
-        if (goAway && goAway.timeLeft != null) {
-          const timeLeftMs = Number(goAway.timeLeft);
+        if (goAway && goAway.timeLeft) {
+          const timeLeftMs = parseInt(goAway.timeLeft, 10) || 0;
           // Schedule a reconnect slightly before the server aborts the connection
           const guard = 250; // ms safety margin
           const delay = Math.max(timeLeftMs - guard, 0);
@@ -213,10 +215,10 @@ abstract class BaseSessionManager {
   private async _connect(handle: string | null): Promise<Error | null> {
     try {
       const baseConfig = this.getConfig() || {};
-      const configWithResumption: Record<string, unknown> = {
+      const configWithResumption: Record<string, unknown> & { sessionResumption?: { handle: string | null } } = {
         ...baseConfig,
         sessionResumption: { handle },
-      } as any;
+      };
 
       this.session = await this.client.live.connect({
         model: this.getModel(),
@@ -243,7 +245,9 @@ abstract class BaseSessionManager {
         if (storageKey) {
           this.currentHandle = localStorage.getItem(storageKey);
         }
-      } catch {}
+      } catch (e) {
+        console.warn('Failed to read session handle from localStorage for ' + this.getSessionName() + ':', e);
+      }
     }
     // Merge resumption handle preference: explicit arg > stored handle > null
     const handleToUse = resumptionHandle ?? this.currentHandle ?? null;
@@ -390,7 +394,9 @@ abstract class BaseSessionManager {
       if (storageKey) {
         localStorage.removeItem(storageKey);
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to remove session handle from localStorage for ' + this.getSessionName() + ':', e);
+    }
   }
 }
 
