@@ -418,7 +418,15 @@ abstract class BaseSessionManager {
     transcript: Turn[],
     summarizationService: SummarizationService,
   ): Promise<void> {
-    const summary = await summarizationService.summarize(transcript);
+    let summary = "";
+    try {
+      summary = await summarizationService.summarize(transcript);
+    } catch (error) {
+      logger.error("Failed to summarize transcript:", error);
+      // Fallback to a simpler context if summarization fails
+      summary = "Could not summarize previous conversation.";
+    }
+
     const lastFourTurns = transcript.slice(-4);
 
     const contextParts: string[] = [
@@ -429,6 +437,13 @@ abstract class BaseSessionManager {
     }
 
     this.fallbackPrompt = contextParts.join("\n");
+  }
+
+  protected getSystemInstruction(
+    basePrompt: string,
+    fallbackPrompt: string | null,
+  ): string {
+    return fallbackPrompt ? `${basePrompt}\n\n${fallbackPrompt}` : basePrompt;
   }
 }
 
@@ -491,9 +506,10 @@ class TextSessionManager extends BaseSessionManager {
 
   protected getConfig(): Record<string, unknown> {
     const basePrompt = this.personaManager.getActivePersona().systemPrompt;
-    const systemInstruction = this.fallbackPrompt
-      ? `${basePrompt}\n\n${this.fallbackPrompt}`
-      : basePrompt;
+    const systemInstruction = this.getSystemInstruction(
+      basePrompt,
+      this.fallbackPrompt,
+    );
 
     return {
       responseModalities: [Modality.AUDIO],
@@ -549,9 +565,10 @@ class CallSessionManager extends BaseSessionManager {
 
   protected getConfig(): Record<string, unknown> {
     const basePrompt = this.personaManager.getActivePersona().systemPrompt;
-    const systemInstruction = this.fallbackPrompt
-      ? `${basePrompt}\n\n${this.fallbackPrompt}`
-      : basePrompt;
+    const systemInstruction = this.getSystemInstruction(
+      basePrompt,
+      this.fallbackPrompt,
+    );
 
     const config = {
       responseModalities: [Modality.AUDIO],
