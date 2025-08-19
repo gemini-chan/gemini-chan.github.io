@@ -210,7 +210,7 @@ abstract class BaseSessionManager {
   protected abstract getSessionName(): string;
   protected abstract getResumptionStorageKey(): string | null;
 
-  private async _connect(handle: string | null): Promise<boolean> {
+  private async _connect(handle: string | null): Promise<Error | null> {
     try {
       const baseConfig = this.getConfig() || {};
       const configWithResumption: Record<string, unknown> = {
@@ -225,12 +225,13 @@ abstract class BaseSessionManager {
       });
 
       this.isConnected = true;
-      return true;
+      return null;
     } catch (e) {
-      logger.error(`Error connecting ${this.getSessionName()}:`, e);
-      const msg = String((e as Error)?.message || e || "");
+      const error = e as Error;
+      logger.error(`Error connecting ${this.getSessionName()}:`, error);
+      const msg = String(error?.message || error || "");
       this.updateError(`Failed to connect ${this.getSessionName()}: ${msg}`);
-      return false;
+      return error;
     }
   }
 
@@ -252,43 +253,32 @@ abstract class BaseSessionManager {
     await this.closeSession();
     this.intentionalClose = false;
 
-    try {
-      const baseConfig = this.getConfig() || {};
-      const configWithResumption: Record<string, unknown> = {
-        ...baseConfig,
-        // Pass the handle to resume an existing session, or null to start a new one.
-        sessionResumption: { handle: handleToUse },
-      } as any;
+    this.updateStatus(
+      handleToUse
+        ? `${this.getSessionName()}: resuming session...`
+        : `${this.getSessionName()}: starting session...`,
+    );
 
-      this.updateStatus(
-        handleToUse
-          ? `${this.getSessionName()}: resuming session...`
-          : `${this.getSessionName()}: starting session...`,
-      );
-
-      const ok = await this._connect(handleToUse);
-      if (ok) {
-        return true;
-      }
-    } catch (e) {
-      logger.error(`Error initializing ${this.getSessionName()}:`, e);
-      const msg = String((e as Error)?.message || e || "");
-      this.updateError(`Failed to initialize ${this.getSessionName()}: ${msg}`);
-
-      // If we attempted with a handle and it failed due to invalid/expired handle, clear and retry once
-      const looksLikeInvalidHandle =
-        /invalid session resumption handle|expired session resumption handle/i.test(
-          msg,
-        );
-      if (handleToUse && looksLikeInvalidHandle) {
-        this.updateStatus(
-          `${this.getSessionName()}: handle invalid — starting new session`,
-        );
-        this.currentHandle = null;
-        return await this._connect(null);
-      }
-      return false;
+    const error = await this._connect(handleToUse);
+    if (!error) {
+      return true;
     }
+
+    // If we attempted with a handle and it failed due to invalid/expired handle, clear and retry once
+    const msg = String(error.message || error || "");
+    const looksLikeInvalidHandle =
+      /invalid session resumption handle|expired session resumption handle/i.test(
+        msg,
+      );
+    if (handleToUse && looksLikeInvalidHandle) {
+      this.updateStatus(
+        `${this.getSessionName()}: handle invalid — starting new session`,
+      );
+      this.clearResumptionHandle();
+      const retryError = await this._connect(null);
+      return !retryError;
+    }
+    return false;
   }
 
   /**
