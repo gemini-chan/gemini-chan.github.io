@@ -139,7 +139,7 @@ abstract class BaseSessionManager {
         // GoAway handling (pre-termination notice)
         const goAway =
           extendedMessage.goAway || extendedMessage.serverContent?.goAway;
-        if (goAway && goAway.timeLeft) {
+        if (goAway && goAway.timeLeft != null) {
           const timeLeftMs = Number(goAway.timeLeft);
           // Schedule a reconnect slightly before the server aborts the connection
           const guard = 250; // ms safety margin
