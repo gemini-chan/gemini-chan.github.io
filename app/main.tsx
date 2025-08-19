@@ -1320,13 +1320,13 @@ export class GdmLiveAudio extends LitElement {
 
       // Disconnect the active TextSessionManager to apply the new system prompt
       if (this.textSessionManager) {
-        this.textSessionManager.closeSession();
+        await this.textSessionManager.closeSession();
         this.textSessionManager.clearResumptionHandle(); // Clear session token
         this.textSession = null;
       }
       // Also disconnect the call session to ensure it picks up the new persona
       if (this.callSessionManager) {
-        this.callSessionManager.closeSession();
+        await this.callSessionManager.closeSession();
         this.callSessionManager.clearResumptionHandle(); // Clear session token
         this.callSession = null;
       }
