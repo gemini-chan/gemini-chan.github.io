@@ -524,6 +524,10 @@ class TextSessionManager extends BaseSessionManager {
   protected getSessionName(): string {
     return "Text session";
   }
+  public override reconnectSession(): Promise<void> {
+    // Do nothing. Reconnect is disabled for TTS sessions.
+    return Promise.resolve();
+  }
 }
 
 class CallSessionManager extends BaseSessionManager {

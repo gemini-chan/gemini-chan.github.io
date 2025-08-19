@@ -14,7 +14,7 @@ Key decisions:
 - Transcript display is coupled to session action: fresh call clears the transcript, resumed call pre-populates with last summarized transcript. Text chat maintains persistent transcript as per dual-input-mode requirements.
 - Model compatibility checks: The session manager must verify handle compatibility with the current energy level's model before attempting resumption.
 - Separate storage keys: Text and Call sessions use different storage keys (`gdm:text-session-handle` and `gdm:call-session-handle`) to prevent conflicts.
-- TTS Persistence: Text sessions maintain their context across the application lifecycle as defined in dual-input-mode specs.
+- TTS Persistence: Text sessions maintain their context across the application lifecycle as defined in dual-input-mode specs. **Note:** The TTS reconnect feature is currently broken and has been temporarily disabled.
 
 
 The proposed architecture extends the existing `BaseSessionManager` to handle session resumption and graceful connection termination. This approach reuses the existing session management infrastructure while adding the necessary resilience.
