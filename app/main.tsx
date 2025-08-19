@@ -63,6 +63,7 @@ abstract class BaseSessionManager {
   protected nextStartTime = 0;
   protected sources = new Set<AudioBufferSourceNode>();
   protected session: Session | null = null;
+  protected fallbackPrompt: string | null = null;
 
   constructor(
     protected outputAudioContext: AudioContext,
@@ -406,6 +407,29 @@ abstract class BaseSessionManager {
       );
     }
   }
+
+  /**
+   * Handle fallback when energy drops to non-resumable models (STS level 1, TTS level 1).
+   * This method summarizes the transcript and combines it with the last 4 turns.
+   * @param transcript - The conversation transcript to process
+   * @param summarizationService - The service to use for summarization
+   */
+  public async handleFallback(
+    transcript: Turn[],
+    summarizationService: SummarizationService,
+  ): Promise<void> {
+    const summary = await summarizationService.summarize(transcript);
+    const lastFourTurns = transcript.slice(-4);
+
+    const contextParts: string[] = [
+      `Summary of previous conversation: ${summary}`,
+    ];
+    for (const turn of lastFourTurns) {
+      contextParts.push(`${turn.speaker}: ${turn.text}`);
+    }
+
+    this.fallbackPrompt = contextParts.join("\n");
+  }
 }
 
 class TextSessionManager extends BaseSessionManager {
@@ -466,10 +490,15 @@ class TextSessionManager extends BaseSessionManager {
   }
 
   protected getConfig(): Record<string, unknown> {
+    const basePrompt = this.personaManager.getActivePersona().systemPrompt;
+    const systemInstruction = this.fallbackPrompt
+      ? `${basePrompt}\n\n${this.fallbackPrompt}`
+      : basePrompt;
+
     return {
       responseModalities: [Modality.AUDIO],
       contextWindowCompression: { slidingWindow: {} },
-      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
+      systemInstruction,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -519,12 +548,17 @@ class CallSessionManager extends BaseSessionManager {
   }
 
   protected getConfig(): Record<string, unknown> {
+    const basePrompt = this.personaManager.getActivePersona().systemPrompt;
+    const systemInstruction = this.fallbackPrompt
+      ? `${basePrompt}\n\n${this.fallbackPrompt}`
+      : basePrompt;
+
     const config = {
       responseModalities: [Modality.AUDIO],
       contextWindowCompression: { slidingWindow: {} },
       outputAudioTranscription: {}, // Enable transcription of model's audio output
       inputAudioTranscription: {}, // Enable transcription of user's audio input
-      systemInstruction: this.personaManager.getActivePersona().systemPrompt,
+      systemInstruction,
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
@@ -569,6 +603,7 @@ class CallSessionManager extends BaseSessionManager {
   protected getSessionName(): string {
     return "Call session";
   }
+
 }
 
 type ActiveMode = "texting" | "calling" | null;
@@ -1612,6 +1647,28 @@ export class GdmLiveAudio extends LitElement {
         // Only inject prompts for degraded/exhausted states.
         this._appendTextMessage(prompt, "model");
         logger.debug("Appended TTS text message", { prompt });
+      }
+    }
+
+    // Handle fallback when energy drops to non-resumable models (STS level 1, TTS level 1)
+    if ((mode === "sts" && level === 1) || (mode === "tts" && level === 1)) {
+      // Trigger fallback handling
+      logger.debug("Triggering fallback for", { mode, level });
+      
+      // For STS (call session), handle fallback if we're in a call
+      if (mode === "sts" && this.activeMode === "calling" && this.callTranscript.length > 0) {
+        this.callSessionManager.handleFallback(this.callTranscript, this.summarizationService)
+          .catch(error => {
+            logger.error("Error handling fallback for call session", error);
+          });
+      }
+      
+      // For TTS (text session), handle fallback if we have text transcript
+      if (mode === "tts" && this.textTranscript.length > 0) {
+        this.textSessionManager.handleFallback(this.textTranscript, this.summarizationService)
+          .catch(error => {
+            logger.error("Error handling fallback for text session", error);
+          });
       }
     }
 
