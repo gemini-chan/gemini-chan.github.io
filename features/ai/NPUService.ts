@@ -45,8 +45,8 @@ export class NPUService {
       // Step 2: Format memories into context string
       const memoryContext = this.formatMemoriesForContext(retrievedMemories);
 
-      // Step 3: Create enhanced prompt using NPU (gemini-2.5-flash)
-      const enhancedPrompt = await this.formulateEnhancedPrompt(
+      // Step 3: Synchronously formulate the enhanced prompt
+      const enhancedPrompt = this.formulateEnhancedPrompt(
         userMessage,
         memoryContext,
         conversationContext,
@@ -92,11 +92,11 @@ export class NPUService {
    * Creates an enhanced prompt by combining the user's original message with memory context.
    * Preserves the original message exactly while adding relevant context.
    */
-  private async formulateEnhancedPrompt(
+  private formulateEnhancedPrompt(
     userMessage: string,
     memoryContext: string,
     conversationContext?: string,
-  ): Promise<string> {
+  ): string {
     // If no memory context, return original message as-is
     if (!memoryContext.trim()) {
       return userMessage;
