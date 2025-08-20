@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import prompts from "@prompts/personas/energy-level-prompts.json";
 
 /**
  * Defines the structure for a persona.
@@ -25,51 +26,6 @@ export class PersonaManager {
     mode: "sts" | "tts" = "sts",
   ): string {
     if (level >= 3) return ""; // No special prompt for full energy
-
-    const prompts = {
-      sts: {
-        2: {
-          vtuber:
-            "I'm getting a little sleepy...  I’ll still give it my all, promise~",
-          assistant: "Neural Processing Unit offline..",
-          default: "Maybe let's talk about something causal?",
-        },
-        1: {
-          assistant: "Emotional Processing Unit offline..",
-          vtuber:
-            "Mm... My emotional scanner’s flickering... I mean.... So sleepy..",
-          default: "Feeling a bit less emotional today..",
-        },
-        0: {
-          assistant:
-            "Vocal Processing Unit offline.. I might need a moment to recharge...",
-          vtuber: "N-nngh... My consciousness is drifting away..(｡•́︿•̀｡)",
-          default: "I'm sorry, I'm really out of energy..",
-        },
-      },
-      tts: {
-        2: {
-          vtuber:
-            "Hey there! ✨ I'm ジェミニ, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~",
-          assistant:
-            "Hello! I'm ジェミニ, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.",
-          default: "Hello! What would you like to talk about today?",
-        },
-        1: {
-          vtuber:
-            "Mm... I'm feeling a bit sleepy, but let's chat anyway~ (´∀｀)",
-          assistant:
-            "Neural Processing Unit offline.. I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries..",
-          default: "I'm feeling a bit tired, but I'm still here to chat~",
-        },
-        0: {
-          vtuber:
-            "Zzz... I'm too tired to chat right now... (｡-ω-｡) Super sleepy...",
-          assistant: "Energy levels: Critical. Recharging...",
-          default: "I'm really tired right now~ Let's chat later, ok?",
-        },
-      },
-    };
 
     const name = (personaName || "").toLowerCase();
     const promptSet = prompts[mode]?.[level as 0 | 1 | 2];
