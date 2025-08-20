@@ -8,6 +8,7 @@ class MockVectorStore extends VectorStore {
   private memories: Memory[] = [];
 
   constructor() {
+    // Call parent constructor with a dummy persona ID
     super("test-persona");
   }
 
@@ -29,13 +30,29 @@ class MockVectorStore extends VectorStore {
   }
 }
 
+// Mock GoogleGenAI client
+const mockGenAI = {
+  models: {
+    generateContent: async () => ({
+      text: JSON.stringify([
+        {
+          fact_key: "user_name",
+          fact_value: "Alex",
+          confidence_score: 0.99,
+          permanence_score: "permanent",
+        },
+      ]),
+    }),
+  },
+} as any;
+
 describe("MemoryService", () => {
   let memoryService: MemoryService;
   let mockVectorStore: MockVectorStore;
 
   beforeEach(() => {
     mockVectorStore = new MockVectorStore();
-    memoryService = new MemoryService(mockVectorStore);
+    memoryService = new MemoryService(mockVectorStore, mockGenAI);
   });
 
   it("should be created successfully", () => {

@@ -792,7 +792,7 @@ export class GdmLiveAudio extends LitElement {
     this.vectorStore = new VectorStore(
       this.personaManager.getActivePersona().id,
     );
-    this.memoryService = new MemoryService(this.vectorStore);
+    // MemoryService will be initialized after the GoogleGenAI client is created
     this.initClient();
 
     // Debug: Check initial TTS energy state
@@ -889,6 +889,9 @@ export class GdmLiveAudio extends LitElement {
 
     // Track the current API key for smart change detection
     this.currentApiKey = apiKey;
+
+    // Initialize MemoryService with the GoogleGenAI client
+    this.memoryService = new MemoryService(this.vectorStore, this.client);
 
     // Initialize session managers after client is ready
     this.initSessionManagers();
