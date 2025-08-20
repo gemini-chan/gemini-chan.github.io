@@ -177,7 +177,7 @@ export class VectorStore {
     try {
       const request = {
         model: this.embeddingModel,
-        content: text,
+        contents: [text],
         taskType: taskType,
         outputDimensionality: 768, // Optimized for storage and performance
       };
@@ -229,7 +229,7 @@ export class VectorStore {
     try {
       const request = {
         model: this.embeddingModel,
-        content: texts,
+        contents: texts,
         taskType: taskType,
         outputDimensionality: 768,
       };
