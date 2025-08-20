@@ -47,6 +47,7 @@ To get started with development:
 - Animated character expressions and lip-sync capabilities
 - Settings menu for API key management
 - Audio processing with PCM encoding for live streaming
+- Persistent conversation memory using an NPU-VPU architecture and vector store
 
 ## Visualization Options
 - **Live2D** (Current target) - Simpler 2D character animation system

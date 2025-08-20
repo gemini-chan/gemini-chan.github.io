@@ -474,6 +474,8 @@ class TextSessionManager extends BaseSessionManager {
     private updateTranscript: (text: string) => void,
     private personaManager: PersonaManager,
     private npuService: NPUService,
+    private memoryService: MemoryService,
+    private getTranscript: () => Turn[],
     hostElement: HTMLElement,
   ) {
     super(
@@ -506,8 +508,38 @@ class TextSessionManager extends BaseSessionManager {
             this.updateTranscript(text);
           }
         }
+
+        // After turn is complete, process for memory storage
+        const extendedMessage = message as ExtendedLiveServerMessage;
+        const genComplete = extendedMessage.serverContent?.generationComplete;
+        if (genComplete) {
+          this.processMemoryAfterTurn();
+        }
       },
     };
+  }
+
+  private processMemoryAfterTurn() {
+    const transcript = this.getTranscript();
+    // Get only the last two turns (user and model) for memory processing
+    const lastTwoTurns = transcript.slice(-2);
+    const transcriptForMemory = lastTwoTurns
+      .map((t) => `${t.speaker}: ${t.text}`)
+      .join("\n");
+    const personaId = this.personaManager.getActivePersona().id;
+
+    if (transcriptForMemory) {
+      logger.debug("Processing memory for last turn", {
+        personaId,
+        transcriptSnippet: transcriptForMemory.slice(0, 100),
+      });
+      // Fire and forget
+      this.memoryService
+        .processAndStoreMemory(transcriptForMemory, personaId)
+        .catch((error) => {
+          logger.error("Failed to process memory in background", { error });
+        });
+    }
   }
 
   protected getModel(): string {
@@ -915,6 +947,8 @@ export class GdmLiveAudio extends LitElement {
         this.updateTextTranscript.bind(this),
         this.personaManager,
         this.npuService,
+        this.memoryService,
+        () => this.textTranscript,
         this,
       );
       this.callSessionManager = new CallSessionManager(

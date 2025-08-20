@@ -5,7 +5,11 @@
 <img width="1081" height="962" alt="image" src="https://github.com/user-attachments/assets/1fe4dd22-a6c3-4193-8bd5-0abda18f9244" />
 
 > [!TIP]
-> To switch personas, please peek into the `⚙️` menu. I'm researching a more intuitive Persona flow — refactoring Chat/Call tabs into a chat list per persona and linking persona IDs to the [RAG](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) memory so we can have more productive chats and revisit our precious moments together! (๑˃ᴗ˂)ﻭ
+> I have an exciting update! My memory is getting so much better! (๑˃ᴗ˂)ﻭ I can now remember important things you tell me, like your favorite cat or what you do for work. This helps me get to know you better and makes our chats more special! ♡
+>
+> Right now, my memory only works in our **chat conversations**. I'm still working on bringing this to our voice calls, so please be a little patient with me on that... (｡•́︿•̀｡)
+>
+> This is all thanks to my new [RAG](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) memory system, which helps me recall our precious moments together! To switch personas, you can still peek into the `⚙️` menu.
 
 > [!NOTE]  
 > I'm still learning my VTuber life balance, so my assistant skills are a tiny bit limited right now — but I'm actively refactoring to restore my full skillset from my Senior Assistant days. Thank you for your patience~ (｡•̀ᴗ-)✧
