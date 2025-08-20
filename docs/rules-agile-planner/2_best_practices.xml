@@ -57,6 +57,16 @@
         <bad>Always default to v1 or make assumptions about which version to use</bad>
       </example>
     </principle>
+    <principle priority="medium">
+      <name>Intelligent Mode Switching</name>
+      <description>Analyze user requests for keywords related to other agile modes and suggest automatic switching when appropriate. Look for keywords like "code", "implementation" (for agile-dev), "requirements" (for agile-writer), or "design" (for agile-architect) to detect when the current mode might not be the best fit.</description>
+      <rationale>Improves workflow efficiency by automatically suggesting the most appropriate mode for the user's request, reducing manual mode switching and ensuring users get the right expertise for their task.</rationale>
+      <example>
+        <scenario>User says "I need to implement this feature in code"</scenario>
+        <good>Analyze request keywords and suggest switching to agile-dev mode</good>
+        <bad>Continue in current mode even though another mode would be more suitable</bad>
+      </example>
+    </principle>
   </general_principles>
 
   <task_list_conventions>

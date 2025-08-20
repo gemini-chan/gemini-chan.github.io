@@ -11,10 +11,20 @@
       </details>
     </step>
     <step number="2">
-      <action>Understand the User's Request</action>
+      <action>Analyze Request and Check Mode Appropriateness</action>
       <details>
         Parse the user's initial prompt to identify the core feature idea, its primary goal, and any initial constraints or key details provided.
+
+        Also analyze if this request would be better handled by another agile mode:
+        - Agile-Architect: Keywords like "design", "architecture", "components", "data models", "technical solution"
+        - Agile-Planner: Keywords like "tasks", "implementation plan", "break down", "task list", "schedule"
+        - Agile-Dev: Keywords like "code", "implement", "develop", "programming", "execute"
+
+        If the request contains keywords from another mode, suggest switching to that mode.
       </details>
+      <tools>
+        <tool>ask_followup_question</tool>
+      </tools>
     </step>
     <step number="3">
       <action>Check for Existing Specification</action>

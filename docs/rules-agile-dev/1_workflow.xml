@@ -5,6 +5,21 @@
 
   <initialization_steps>
     <step number="1">
+      <action>Analyze Request and Check Mode Appropriateness</action>
+      <details>
+        Parse the user's initial prompt to identify the feature and check if this request would be better handled by another agile mode. Analyze for keywords that suggest planning activities:
+        - "requirements", "stories", "documentation" → suggest agile-writer mode
+        - "design", "architecture", "system" → suggest agile-architect mode
+        - "plan", "tasks", "implementation plan" → suggest agile-planner mode
+        - "research", "investigate", "explore" → suggest project-research mode
+
+        If the request contains such keywords, suggest switching to that mode. If no planning keywords are detected, proceed with execution.
+      </details>
+      <tools>
+        <tool>ask_followup_question</tool>
+      </tools>
+    </step>
+    <step number="2">
       <action>Determine Structure Type and Version</action>
       <details>
         Use `list_files` to explore `docs/specs/{feature_name}/` and detect whether the project uses legacy flat structure or versioned structure (v1/, v2/, etc.). If versioned directories exist, identify all available versions and ask the user which version to use. Default to the latest version if multiple exist, but always confirm with the user. Treat legacy flat structure as equivalent to v1.

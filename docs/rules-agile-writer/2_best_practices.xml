@@ -35,6 +35,16 @@
         <bad>Always create new version without user input</bad>
       </example>
     </principle>
+    <principle priority="medium">
+      <name>Intelligent Mode Switching</name>
+      <description>Analyze user requests for keywords and suggest automatic switching to more appropriate modes</description>
+      <rationale>Improves workflow efficiency by guiding users to the right mode based on their needs</rationale>
+      <example>
+        <scenario>User says "I need to code this feature"</scenario>
+        <good>Analyze request keywords and suggest switching to agile-dev mode</good>
+        <bad>Continue in current mode without suggestions</bad>
+      </example>
+    </principle>
   </general_principles>
 
   <requirements_document_conventions>

@@ -11,6 +11,15 @@
       </details>
     </step>
     <step number="2">
+      <action>Analyze Request and Check Mode Appropriateness</action>
+      <details>
+        Parse the user's initial prompt for keywords that might indicate they need a different mode. If keywords from another mode are detected (e.g., "write documentation", "design architecture", "code implementation"), suggest switching to the appropriate mode with `ask_followup_question`. This ensures users start in the most suitable mode for their task.
+      </details>
+      <tools>
+        <tool>ask_followup_question</tool>
+      </tools>
+    </step>
+    <step number="3">
       <action>Determine Structure Type and Version</action>
       <details>
         Use `list_files` to explore `docs/specs/{feature_name}/` and detect whether the project uses legacy flat structure or versioned structure (v1/, v2/, etc.). If versioned directories exist, identify all available versions and ask the user which version to use. Default to the latest version if multiple exist, but always confirm with the user. Treat legacy flat structure as equivalent to v1.

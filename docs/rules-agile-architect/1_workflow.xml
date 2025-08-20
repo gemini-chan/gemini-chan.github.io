@@ -5,9 +5,16 @@
 
   <initialization_steps>
     <step number="1">
-      <action>Identify the target feature and structure type</action>
+      <action>Analyze Request and Check Mode Appropriateness</action>
       <details>
-        Parse the user's request to determine the `{feature_name}`. Check for both legacy structure (`docs/specs/{feature_name}/requirements.md`) and versioned structure (`docs/specs/{feature_name}/v{version}/`).
+        Parse the user's request to determine the `{feature_name}` and analyze if this request would be better handled by another agile mode:
+        - Agile-Writer: Keywords like "requirements", "stories", "user stories", "acceptance criteria"
+        - Agile-Planner: Keywords like "tasks", "implementation plan", "break down", "task list", "schedule"
+        - Agile-Dev: Keywords like "code", "implement", "develop", "programming", "execute"
+
+        If the request contains keywords from another mode, suggest switching to that mode.
+
+        Also check for both legacy structure (`docs/specs/{feature_name}/requirements.md`) and versioned structure (`docs/specs/{feature_name}/v{version}/`).
         If versioned structure exists, identify the latest version and ask user if they want to use it or create a new version.
       </details>
       <tools>
