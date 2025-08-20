@@ -52,7 +52,7 @@ export abstract class BaseAIService {
     text: string,
     model: string = "gemini-embedding-001",
     taskType: string = "SEMANTIC_SIMILARITY",
-    outputDimensionality: number = 768,
+    outputDimensionality: number = 3072,
   ): Promise<number[]> {
     try {
       // Check if the client supports embeddings

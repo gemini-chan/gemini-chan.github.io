@@ -89,7 +89,7 @@ export class VectorStore {
       const contentToEmbed = `${memory.fact_key}: ${memory.fact_value}`;
       const vector = this.aiClient
         ? await this.generateDocumentEmbedding(contentToEmbed)
-        : new Array(768).fill(0); // Fallback to zero vector
+        : new Array(3072).fill(0); // Fallback to zero vector
 
       const memoryWithVector: Memory = {
         ...memory,
@@ -163,7 +163,7 @@ export class VectorStore {
       logger.warn(
         "No AI client available for embedding generation, returning zero vector",
       );
-      return new Array(768).fill(0);
+      return new Array(3072).fill(0);
     }
 
     // Check if the client supports embeddings
@@ -171,7 +171,7 @@ export class VectorStore {
       logger.warn(
         "AI client does not support embeddings, returning zero vector",
       );
-      return new Array(768).fill(0);
+      return new Array(3072).fill(0);
     }
 
     try {
@@ -179,7 +179,7 @@ export class VectorStore {
         model: this.embeddingModel,
         contents: [text],
         taskType: taskType,
-        outputDimensionality: 768, // Optimized for storage and performance
+        outputDimensionality: 3072, // Optimized for storage and performance
       };
 
       const response = await this.aiClient.models.embedContent(request);
@@ -188,7 +188,7 @@ export class VectorStore {
         logger.warn("Invalid embedding response, returning zero vector", {
           response: response,
         });
-        return new Array(768).fill(0);
+        return new Array(3072).fill(0);
       }
 
       logger.debug("Generated embedding", {
@@ -205,7 +205,7 @@ export class VectorStore {
         taskType,
       });
       // Return zero vector as fallback
-      return new Array(768).fill(0);
+      return new Array(3072).fill(0);
     }
   }
 
@@ -223,7 +223,7 @@ export class VectorStore {
       logger.warn(
         "No AI client available for batch embedding generation, returning zero vectors",
       );
-      return texts.map(() => new Array(768).fill(0));
+      return texts.map(() => new Array(3072).fill(0));
     }
 
     try {
@@ -231,7 +231,7 @@ export class VectorStore {
         model: this.embeddingModel,
         contents: texts,
         taskType: taskType,
-        outputDimensionality: 768,
+        outputDimensionality: 3072,
       };
 
       const response = await this.aiClient.models.embedContent(request);
@@ -244,11 +244,11 @@ export class VectorStore {
             textCount: texts.length,
           },
         );
-        return texts.map(() => new Array(768).fill(0));
+        return texts.map(() => new Array(3072).fill(0));
       }
 
       const embeddings = response.embeddings.map(
-        (emb) => emb.values || new Array(768).fill(0),
+        (emb) => emb.values || new Array(3072).fill(0),
       );
 
       logger.debug("Generated batch embeddings", {
@@ -265,7 +265,7 @@ export class VectorStore {
         taskType,
       });
       // Return zero vectors as fallback
-      return texts.map(() => new Array(768).fill(0));
+      return texts.map(() => new Array(3072).fill(0));
     }
   }
 
