@@ -937,8 +937,9 @@ export class GdmLiveAudio extends LitElement {
     this.vectorStore = new VectorStore(
       this.personaManager.getActivePersona().id,
     );
-    // Note: We'll set the AI client after initialization since GoogleGenAI may not fully support embeddings yet
-    // For now, we'll rely on the fallback implementation in VectorStore
+
+    // Initialize VectorStore with AI client for embeddings
+    this.vectorStore.setAIClient(this.client, "gemini-embedding-001");
 
     // Initialize MemoryService with the GoogleGenAI client
     this.memoryService = new MemoryService(this.vectorStore, this.client);

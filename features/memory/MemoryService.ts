@@ -166,12 +166,26 @@ ${transcript}`;
    * @param topK The number of top memories to retrieve (default: 5)
    * @returns Array of relevant Memory objects
    */
+  // Cache for memory search results to improve performance
+  private searchCache = new Map<string, { result: Memory[], timestamp: number }>();
+  private readonly CACHE_TTL = 30000; // 30 seconds
+
   async retrieveRelevantMemories(
     query: string,
     sessionId: string,
     topK: number = 5,
   ): Promise<Memory[]> {
     try {
+      // Check cache first
+      const cacheKey = `${sessionId}:${query.toLowerCase().trim()}`;
+      const cached = this.searchCache.get(cacheKey);
+      const now = Date.now();
+
+      if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+        logger.debug("Using cached memory results", { query, sessionId });
+        return cached.result.slice(0, topK);
+      }
+
       logger.debug("Retrieving relevant memories", {
         query,
         sessionId,
@@ -188,10 +202,24 @@ ${transcript}`;
       // Limit to topK results
       const limitedMemories = relevantMemories.slice(0, topK);
 
+      // Cache the result
+      this.searchCache.set(cacheKey, {
+        result: limitedMemories,
+        timestamp: now,
+      });
+
+      // Clean up old cache entries
+      for (const [key, value] of this.searchCache.entries()) {
+        if (now - value.timestamp > this.CACHE_TTL) {
+          this.searchCache.delete(key);
+        }
+      }
+
       logger.debug("Retrieved memories", {
         query,
         sessionId,
         memoryCount: limitedMemories.length,
+        cached: false,
       });
 
       return limitedMemories;

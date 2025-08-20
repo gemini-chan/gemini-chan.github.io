@@ -32,16 +32,26 @@ export class VectorStore {
 
   async init(): Promise<void> {
     const storeName = this.getStoreName();
-    this.db = await openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(storeName)) {
-          db.createObjectStore(storeName, {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-        }
-      },
-    });
+    try {
+      this.db = await openDB(DB_NAME, DB_VERSION, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains(storeName)) {
+            const store = db.createObjectStore(storeName, {
+              keyPath: "id",
+              autoIncrement: true,
+            });
+            // Create index for efficient querying
+            store.createIndex("personaId", "personaId", { unique: false });
+            store.createIndex("timestamp", "timestamp", { unique: false });
+            logger.debug(`Created IndexedDB store: ${storeName}`);
+          }
+        },
+      });
+      logger.debug(`Initialized VectorStore database: ${DB_NAME} v${DB_VERSION}`);
+    } catch (error) {
+      logger.error("Failed to initialize IndexedDB:", { error, storeName });
+      throw new Error(`VectorStore initialization failed: ${error.message}`);
+    }
   }
 
   async switchPersona(newPersonaId: string): Promise<void> {
@@ -73,10 +83,10 @@ export class VectorStore {
     }
 
     try {
-      // Generate embedding for the memory content
+      // Generate embedding for the memory content using document task type
       const contentToEmbed = `${memory.fact_key}: ${memory.fact_value}`;
       const vector = this.aiClient
-        ? await this.generateEmbedding(contentToEmbed)
+        ? await this.generateDocumentEmbedding(contentToEmbed)
         : new Array(768).fill(0); // Fallback to zero vector
 
       const memoryWithVector: Memory = {
@@ -120,11 +130,33 @@ export class VectorStore {
   }
 
   /**
-   * Generate embedding for the given text using the AI client
-   * @param text The text to embed
+   * Generate embedding for query text using the AI client
+   * @param text The query text to embed
    * @returns The embedding vector
    */
-  private async generateEmbedding(text: string): Promise<number[]> {
+  private async generateQueryEmbedding(text: string): Promise<number[]> {
+    return this.generateEmbeddingWithTaskType(text, "RETRIEVAL_QUERY");
+  }
+
+  /**
+   * Generate embedding for document text using the AI client
+   * @param text The document text to embed
+   * @returns The embedding vector
+   */
+  private async generateDocumentEmbedding(text: string): Promise<number[]> {
+    return this.generateEmbeddingWithTaskType(text, "RETRIEVAL_DOCUMENT");
+  }
+
+  /**
+   * Generate embedding for the given text using the AI client with specified task type
+   * @param text The text to embed
+   * @param taskType The task type for optimization (e.g., 'RETRIEVAL_QUERY', 'RETRIEVAL_DOCUMENT')
+   * @returns The embedding vector
+   */
+  private async generateEmbeddingWithTaskType(
+    text: string,
+    taskType: string,
+  ): Promise<number[]> {
     if (!this.aiClient) {
       logger.warn(
         "No AI client available for embedding generation, returning zero vector",
@@ -144,19 +176,89 @@ export class VectorStore {
       const request = {
         model: this.embeddingModel,
         content: text,
-        taskType: "SEMANTIC_SIMILARITY",
-        outputDimensionality: 768,
+        taskType: taskType,
+        outputDimensionality: 768, // Optimized for storage and performance
       };
 
       const response = await this.aiClient.models.embedContent(request);
+
+      if (!response.embedding || !response.embedding.values) {
+        logger.warn("Invalid embedding response, returning zero vector", {
+          response: response,
+        });
+        return new Array(768).fill(0);
+      }
+
+      logger.debug("Generated embedding", {
+        textLength: text.length,
+        embeddingDimensions: response.embedding.values.length,
+        taskType,
+      });
+
       return response.embedding.values;
     } catch (error) {
       logger.error("Failed to generate embedding", {
         error,
         textLength: text.length,
+        taskType,
       });
       // Return zero vector as fallback
       return new Array(768).fill(0);
+    }
+  }
+
+  /**
+   * Generate embeddings for multiple texts in batch for better performance
+   * @param texts Array of texts to embed
+   * @param taskType The task type for optimization
+   * @returns Array of embedding vectors
+   */
+  private async generateBatchEmbeddings(
+    texts: string[],
+    taskType: string,
+  ): Promise<number[][]> {
+    if (!this.aiClient || !isEmbeddingClient(this.aiClient)) {
+      logger.warn(
+        "No AI client available for batch embedding generation, returning zero vectors",
+      );
+      return texts.map(() => new Array(768).fill(0));
+    }
+
+    try {
+      const request = {
+        model: this.embeddingModel,
+        contents: texts, // Batch processing as per API docs
+        taskType: taskType,
+        outputDimensionality: 768,
+      };
+
+      const response = await this.aiClient.models.embedContent(request);
+
+      if (!response.embeddings || !Array.isArray(response.embeddings)) {
+        logger.warn("Invalid batch embedding response, returning zero vectors", {
+          response: response,
+          textCount: texts.length,
+        });
+        return texts.map(() => new Array(768).fill(0));
+      }
+
+      const embeddings = response.embeddings.map((emb) => emb.values || new Array(768).fill(0));
+
+      logger.debug("Generated batch embeddings", {
+        textCount: texts.length,
+        embeddingDimensions: embeddings[0]?.length || 0,
+        taskType,
+      });
+
+      return embeddings;
+    } catch (error) {
+      logger.error("Failed to generate batch embeddings", {
+        error,
+        textCount: texts.length,
+        taskType,
+      });
+      // Return zero vectors as fallback
+      return texts.map(() => new Array(768).fill(0));
     }
   }
 
@@ -188,15 +290,23 @@ export class VectorStore {
     query: string,
     threshold: number = 0.8,
   ): Promise<Memory[]> {
-    if (!this.db) {
-      await this.init();
-    }
-
     try {
-      // Generate embedding for the query
-      const queryVector = await this.generateEmbedding(query);
+      // Ensure database is initialized
+      if (!this.db) {
+        await this.init();
+      }
+
+      // Generate embedding for the query using query task type
+      const queryVector = await this.generateQueryEmbedding(query);
 
       const storeName = this.getStoreName();
+
+      // Check if object store exists
+      if (!this.db!.objectStoreNames.contains(storeName)) {
+        logger.warn(`Object store ${storeName} does not exist, creating it`);
+        await this.init();
+      }
+
       const tx = this.db!.transaction(storeName, "readonly");
       const store = tx.objectStore(storeName);
       const allMemories = await store.getAll();
@@ -213,11 +323,25 @@ export class VectorStore {
       });
 
       // Filter by threshold and sort by similarity
-      return memoriesWithSimilarity
+      const results = memoriesWithSimilarity
         .filter((memory) => memory.similarity >= threshold)
         .sort((a, b) => b.similarity - a.similarity);
+
+      logger.debug("Memory search completed", {
+        query,
+        totalMemories: allMemories.length,
+        relevantResults: results.length,
+        threshold,
+      });
+
+      return results;
     } catch (error) {
-      logger.error("Failed to search memories", { error, query, threshold });
+      logger.error("Failed to search memories", {
+        error: error.message || error,
+        query,
+        threshold,
+        storeName: this.getStoreName(),
+      });
       return [];
     }
   }
