@@ -304,6 +304,14 @@ When working with specifications, always check for existing versions and default
 
 - **Dual-Input Mode**: A system that supports separate interaction modes for voice calls and text chat, each with independent sessions and energy management.
 
+- **Orchestrator**: The backstage crew (aka PersonaManager + VectorStore). They gather memories with RAG, keep persona vibe consistent, and coordinate who speaks when.
+
+- **NPU (Neural Processing Unit)**: The "thinky brain" (e.g., gemini-2.5-flash). It analyzes situations and writes the perfect system prompt for the voice.
+
+- **VPU (Vocal Processing Unit)**: The "talky voice" (the external model chosen by the energy bar). It performs the final, in-character reply for users.
+
+- **RAG (Retrieval-Augmented Generation)**: A technique that enhances AI responses by retrieving relevant information from a knowledge base before generating a response, used in Gemini-chan's memory system.
+
 ## Decision Matrix for Common Scenarios
 
 | Scenario | Decision | Reasoning |
