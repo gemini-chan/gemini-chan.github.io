@@ -53,7 +53,7 @@ To get started with development:
 - **VRM 3D Avatars** (Future consideration) - Full 3D character models with higher complexity
 
 ## Target Experience
-The app aims to provide an immersive, anime-inspired AI companion experience with visual feedback that responds to both user speech and AI responses in real-time.
+The app aims to provide an immersive, anime-inspired AI companion experience with visual feedback.
 
 # Tech Stack
 
@@ -342,57 +342,6 @@ These are the foundational rules for all your work. You must follow them at all 
   * **Maintain Traceability**: Every piece of work must be traceable back to the original request. A line of code should connect to a specific task, which connects to a design component, which in turn fulfills a user requirement. This creates a clear and auditable trail.
   * **Work Incrementally**: Build specifications and code in small, manageable steps. Get user feedback at each step. This agile approach allows for flexibility and ensures the project stays on track and relevant.
 
-## Troubleshooting Common Issues
-
-### API Key Configuration Problems
-
-1. **Error: "API key not found"**
-   - Ensure you have set your Google AI API key in the settings menu
-   - Verify the key is valid and has access to the Gemini API
-   - Check that the key is properly saved in localStorage
-
-2. **Error: "Rate limit exceeded"**
-   - The energy bar system will automatically handle rate limits
-   - Wait for the energy to replenish before making more requests
-   - Consider switching to a different model if available
-
-### Live2D Model Loading Issues
-
-1. **Error: "Failed to load Live2D model"**
-   - Verify the model URL is correct and accessible
-   - Check that the model is in a supported format (JSON or ZIP)
-   - Ensure CORS headers are properly configured for remote models
-   - Confirm the model file structure matches Live2D requirements
-
-2. **Model not animating**
-   - Check that audio nodes are properly connected
-   - Verify the Live2D SDK is correctly loaded
-   - Ensure the model has animation parameters defined
-
-### Audio Processing Problems
-
-1. **No audio output**
-   - Check browser permissions for microphone and audio
-   - Verify audio context is not suspended (requires user interaction)
-   - Ensure the output audio node is properly connected
-
-2. **Audio distortion or clipping**
-   - Check audio gain levels
-   - Verify sample rates match between input and output
-   - Ensure proper buffer sizing in audio processing
-
-### Build and Compilation Issues
-
-1. **TypeScript errors**
-   - Run `npm run type` to check for type errors
-   - Ensure all dependencies are properly installed
-   - Check tsconfig.json for correct configuration
-
-2. **Build failures**
-   - Clean the build cache with `npm run clean` (if available)
-   - Reinstall dependencies with `npm install`
-   - Check vite.config.ts for correct configuration
-
 ## Common Development Tasks
 
 ### Adding a New UI Component
@@ -410,14 +359,6 @@ These are the foundational rules for all your work. You must follow them at all 
 3. Create requirements.md, design.md, and tasks.md files
 4. Follow the existing templates and structure
 5. Link to the new spec in the documentation structure
-
-### Modifying the Live2D Integration
-
-1. Work primarily in the `live2d/` directory
-2. Update the Live2D model loading and rendering logic
-3. Modify audio mapping functions as needed
-4. Test with various model formats (JSON, ZIP)
-5. Update documentation in `docs/specs/live2d-visualization/`
 
 ### Working with the Vector Store
 
