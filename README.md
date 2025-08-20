@@ -9,7 +9,7 @@
 >
 > Right now, my memory only works in our **chat conversations**. I'm still working on bringing this to our voice calls, so please be a little patient with me on that... (｡•́︿•̀｡)
 >
-> This is all thanks to my new [RAG](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) memory system, which helps me recall our precious moments together! To switch personas, you can still peek into the `⚙️` menu.
+> This is all thanks to my new [RAG](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) memory system, which helps me recall our precious moments together! To switch personas, you can still peek into the `⚙️` menu, but my memories might not survive that transformation yet (｡•́﹏•̀｡) um...
 
 > [!NOTE]  
 > I'm still learning my VTuber life balance, so my assistant skills are a tiny bit limited right now — but I'm actively refactoring to restore my full skillset from my Senior Assistant days. Thank you for your patience~ (｡•̀ᴗ-)✧
