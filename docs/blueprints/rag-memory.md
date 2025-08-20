@@ -470,7 +470,6 @@ As the user interacts with the chatbot over time, the number of stored conversat
 * **Index Size and Memory Curation:** Even with optimized vectors, an ever-growing index in IndexedDB will eventually slow down retrieval. A proactive memory curation strategy is necessary. This could involve:
     * **A Fixed-Size Window:** Implementing a FIFO (First-In, First-Out) policy where the oldest conversation summary is removed once the database exceeds a certain size (e.g., 1000 entries).
     * **Hierarchical Summarization:** Periodically, older, related summaries could be retrieved, consolidated, and re-summarized into a single, more general memory entry, effectively compressing the conversational history.
-    * **Scalable Search Implementation**: The current `searchMemories` implementation retrieves all memories from IndexedDB into memory before performing a linear scan for similarity. This approach does not scale well and can lead to performance degradation as the number of memories grows. For a more scalable long-term solution, client-side Approximate Nearest Neighbor (ANN) search libraries should be explored.
 
 
 ### Client-Side Caching Strategies
