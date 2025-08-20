@@ -117,7 +117,7 @@
           <commit_message>
             feat({feature_name}): {task_name}
 
-Co-authored-by: zen-ai-roo-gemini-2.5-pro-high/qwen-coder-3-plus <219738659+roomote[bot]@users.noreply.github.com>
+Co-authored-by: sonic <219738659+roomote[bot]@users.noreply.github.com>
           </commit_message>
         </step>
         <step>

@@ -167,7 +167,10 @@ ${transcript}`;
    * @returns Array of relevant Memory objects
    */
   // Cache for memory search results to improve performance
-  private searchCache = new Map<string, { result: Memory[], timestamp: number }>();
+  private searchCache = new Map<
+    string,
+    { result: Memory[]; timestamp: number }
+  >();
   private readonly CACHE_TTL = 30000; // 30 seconds
 
   async retrieveRelevantMemories(
@@ -181,7 +184,7 @@ ${transcript}`;
       const cached = this.searchCache.get(cacheKey);
       const now = Date.now();
 
-      if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+      if (cached && now - cached.timestamp < this.CACHE_TTL) {
         logger.debug("Using cached memory results", { query, sessionId });
         return cached.result.slice(0, topK);
       }

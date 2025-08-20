@@ -43,10 +43,8 @@ export class PersonaManager {
         0: {
           assistant:
             "Vocal Processing Unit offline.. I might need a moment to recharge...",
-          vtuber:
-            "N-nngh... My consciousness is drifting away..(｡•́︿•̀｡)",
-          default:
-            "I'm sorry, I'm really out of energy..",
+          vtuber: "N-nngh... My consciousness is drifting away..(｡•́︿•̀｡)",
+          default: "I'm sorry, I'm really out of energy..",
         },
       },
       tts: {

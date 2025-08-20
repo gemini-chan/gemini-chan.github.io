@@ -1,8 +1,8 @@
+import type { Memory } from "@features/memory/Memory";
+import type { MemoryService } from "@features/memory/MemoryService";
 import { createComponentLogger } from "@services/DebugLogger";
 import type { AIClient } from "./BaseAIService";
 import { isEmbeddingClient } from "./EmbeddingClient";
-import type { Memory } from "@features/memory/Memory";
-import { MemoryService } from "@features/memory/MemoryService";
 
 const logger = createComponentLogger("NPUService");
 
@@ -29,11 +29,12 @@ export class NPUService {
   ): Promise<RAGPrompt> {
     try {
       // Step 1: Retrieve relevant memories for the user's message
-      const retrievedMemories = await this.memoryService.retrieveRelevantMemories(
-        userMessage,
-        personaId,
-        5, // Get top 5 relevant memories
-      );
+      const retrievedMemories =
+        await this.memoryService.retrieveRelevantMemories(
+          userMessage,
+          personaId,
+          5, // Get top 5 relevant memories
+        );
 
       logger.debug("Retrieved memories for RAG prompt", {
         userMessage,
@@ -57,7 +58,11 @@ export class NPUService {
         memoryContext,
       };
     } catch (error) {
-      logger.error("Failed to create RAG prompt", { error, userMessage, personaId });
+      logger.error("Failed to create RAG prompt", {
+        error,
+        userMessage,
+        personaId,
+      });
 
       // Return original message if RAG fails
       return {
@@ -119,5 +124,4 @@ export class NPUService {
 
     return enhancedPrompt;
   }
-
 }

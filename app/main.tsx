@@ -14,7 +14,7 @@ import {
 import { createComponentLogger } from "@services/DebugLogger";
 import { createBlob, decode, decodeAudioData } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, type PropertyValues } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
@@ -28,8 +28,8 @@ import "@components/ControlsPanel";
 import "@components/TabView";
 import "@components/CallHistoryView";
 import type { ToastNotification } from "@components/ToastNotification";
-import { MemoryService } from "@features/memory/MemoryService";
 import { NPUService } from "@features/ai/NPUService";
+import { MemoryService } from "@features/memory/MemoryService";
 import type { CallSummary, Turn } from "@shared/types";
 
 declare global {
@@ -570,7 +570,6 @@ class TextSessionManager extends BaseSessionManager {
 
       // Step 3: Send the enhanced prompt to VPU (the session)
       this.session.sendClientContent({ turns: ragPrompt.enhancedPrompt });
-
     } catch (error) {
       logger.error("Failed to send message with memory", {
         error,
@@ -749,6 +748,40 @@ export class GdmLiveAudio extends LitElement {
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
   private callOutputNode = this.outputAudioContext.createGain();
+
+  /**
+   * Optimize re-renders by only updating when necessary
+   */
+  protected shouldUpdate(changedProperties: PropertyValues<this>): boolean {
+    if (!this.hasUpdated) return true;
+
+    const criticalProps = [
+      "activeMode",
+      "isCallActive",
+      "callState",
+      "activeTab",
+    ];
+    for (const prop of criticalProps) {
+      if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
+    }
+
+    // Optimize transcript updates
+    if (changedProperties.has("textTranscript")) {
+      const oldT = changedProperties.get("textTranscript") as Turn[];
+      const lastOld = oldT?.[oldT.length - 1];
+      const lastNew = this.textTranscript?.[this.textTranscript.length - 1];
+      if (
+        !lastOld ||
+        !lastNew ||
+        lastOld.text !== lastNew.text ||
+        lastOld.speaker !== lastNew.speaker
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   private mediaStream: MediaStream;
   private sourceNode: MediaStreamAudioSourceNode;
@@ -1618,7 +1651,9 @@ export class GdmLiveAudio extends LitElement {
       try {
         await this.textSessionManager.sendMessageWithMemory(message);
       } catch (error) {
-        logger.error("Error sending message with memory to text session:", { error });
+        logger.error("Error sending message with memory to text session:", {
+          error,
+        });
         const msg = String((error as Error)?.message || error || "");
         this.updateError(`Failed to send message: ${msg}`);
 

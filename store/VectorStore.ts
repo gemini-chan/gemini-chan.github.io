@@ -14,12 +14,12 @@ export class VectorStore {
   private personaId: string;
   private db: IDBPDatabase | null = null;
   private aiClient: AIClient | null = null;
-  private embeddingModel: string = "gemini-embedding-001";
+  private embeddingModel = "gemini-embedding-001";
 
   constructor(
     personaId: string,
     aiClient?: AIClient,
-    embeddingModel: string = "gemini-embedding-001",
+    embeddingModel = "gemini-embedding-001",
   ) {
     this.personaId = personaId;
     this.aiClient = aiClient || null;
@@ -47,7 +47,9 @@ export class VectorStore {
           }
         },
       });
-      logger.debug(`Initialized VectorStore database: ${DB_NAME} v${DB_VERSION}`);
+      logger.debug(
+        `Initialized VectorStore database: ${DB_NAME} v${DB_VERSION}`,
+      );
     } catch (error) {
       logger.error("Failed to initialize IndexedDB:", { error, storeName });
       throw new Error(`VectorStore initialization failed: ${error.message}`);
@@ -65,10 +67,7 @@ export class VectorStore {
    * @param client The AI client that supports embeddings
    * @param embeddingModel The embedding model to use
    */
-  setAIClient(
-    client: AIClient,
-    embeddingModel: string = "gemini-embedding-001",
-  ): void {
+  setAIClient(client: AIClient, embeddingModel = "gemini-embedding-001"): void {
     this.aiClient = client;
     this.embeddingModel = embeddingModel;
   }
@@ -95,7 +94,7 @@ export class VectorStore {
       };
 
       const storeName = this.getStoreName();
-      const tx = this.db!.transaction(storeName, "readwrite");
+      const tx = this.db?.transaction(storeName, "readwrite");
       const store = tx.objectStore(storeName);
 
       // Check for duplicates based on fact_key and fact_value
@@ -227,7 +226,7 @@ export class VectorStore {
     try {
       const request = {
         model: this.embeddingModel,
-        contents: texts, // Batch processing as per API docs
+        content: texts[0], // Batch processing as per API docs
         taskType: taskType,
         outputDimensionality: 768,
       };
@@ -235,14 +234,19 @@ export class VectorStore {
       const response = await this.aiClient.models.embedContent(request);
 
       if (!response.embeddings || !Array.isArray(response.embeddings)) {
-        logger.warn("Invalid batch embedding response, returning zero vectors", {
-          response: response,
-          textCount: texts.length,
-        });
+        logger.warn(
+          "Invalid batch embedding response, returning zero vectors",
+          {
+            response: response,
+            textCount: texts.length,
+          },
+        );
         return texts.map(() => new Array(768).fill(0));
       }
 
-      const embeddings = response.embeddings.map((emb) => emb.values || new Array(768).fill(0));
+      const embeddings = response.embeddings.map(
+        (emb) => emb.values || new Array(768).fill(0),
+      );
 
       logger.debug("Generated batch embeddings", {
         textCount: texts.length,
@@ -272,7 +276,7 @@ export class VectorStore {
     }
 
     const storeName = this.getStoreName();
-    const tx = this.db!.transaction(storeName, "readonly");
+    const tx = this.db?.transaction(storeName, "readonly");
     const store = tx.objectStore(storeName);
     const memories = await store.getAll();
     await tx.done;
@@ -286,10 +290,7 @@ export class VectorStore {
    * @param threshold Similarity threshold (0-1)
    * @returns Array of similar memories
    */
-  async searchMemories(
-    query: string,
-    threshold: number = 0.8,
-  ): Promise<Memory[]> {
+  async searchMemories(query: string, threshold = 0.8): Promise<Memory[]> {
     try {
       // Ensure database is initialized
       if (!this.db) {
@@ -302,12 +303,12 @@ export class VectorStore {
       const storeName = this.getStoreName();
 
       // Check if object store exists
-      if (!this.db!.objectStoreNames.contains(storeName)) {
+      if (!this.db?.objectStoreNames.contains(storeName)) {
         logger.warn(`Object store ${storeName} does not exist, creating it`);
         await this.init();
       }
 
-      const tx = this.db!.transaction(storeName, "readonly");
+      const tx = this.db?.transaction(storeName, "readonly");
       const store = tx.objectStore(storeName);
       const allMemories = await store.getAll();
       await tx.done;

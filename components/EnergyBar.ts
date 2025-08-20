@@ -2,7 +2,7 @@ import {
   type EnergyLevelChangedDetail,
   energyBarService,
 } from "@services/EnergyBarService";
-import { LitElement, css, html } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("energy-bar")
