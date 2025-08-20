@@ -16,6 +16,40 @@ Gemini-chan is a real-time AI voice assistant with Live2D character visualizatio
 ## Target Experience
 The app aims to provide an immersive, anime-inspired AI companion experience with visual feedback that responds to both user speech and AI responses in real-time.
 
+# Tech Stack
+
+## Core Technologies
+- **TypeScript** - Primary language with ES2022 target
+- **Lit** - Web components framework for UI
+- **Vite** - Build tool and dev server
+- **Live2D** - 2D character animation and rendering
+- **Google GenAI** - Real-time AI voice conversation API
+
+## Backend Architecture
+- The application is a frontend-only system that communicates directly with the Google Gemini API.
+- The user's provided Google AI API key is used for all interactions with the Gemini models, acting as the sole authentication and ignition key for the system.
+
+## Visualization Technologies
+- **Live2D Cubism SDK** - Primary character animation system
+- **Three.js** - Currently used for 3D sphere (to be replaced)
+- **VRM** - Future consideration for 3D avatars (higher complexity)
+
+## Key Libraries
+- `@lit/context` - State management for Lit components
+- `three/addons` - Post-processing effects (bloom, FXAA, EXR loading)
+- `@open-wc/testing` - Web component testing utilities
+- `@web/test-runner` - Test runner for web components
+
+## Development Setup
+- Uses ES modules with import maps in HTML
+- Vite handles TypeScript compilation and bundling
+- The `GEMINI_API_KEY` is primarily managed through the in-app settings UI.
+- Path aliases configured (`@/*` maps to workspace root)
+
+## Build Configuration
+- TypeScript configured for experimental decorators (Lit requirement)
+- Module resolution set to "bundler" for modern bundling
+
 # Project Structure
 
 The project follows a root-level, domain-driven architecture to improve modularity, scalability, and maintainability. Source code is organized according to its business domain, eliminating the traditional `src/` directory.
@@ -93,40 +127,6 @@ The project follows a root-level, domain-driven architecture to improve modulari
 - State (in `gdm-live-audio`): `activeMode`, `isCallActive`, `callState`, `activeTab`, `textTranscript`, `callTranscript`, `textSession`, `callSession`.
 - Session managers: `TextSessionManager`, `CallSessionManager` handle lifecycle and audio streaming.
 
-# Tech Stack
-
-## Core Technologies
-- **TypeScript** - Primary language with ES2022 target
-- **Lit** - Web components framework for UI
-- **Vite** - Build tool and dev server
-- **Live2D** - 2D character animation and rendering
-- **Google GenAI** - Real-time AI voice conversation API
-
-## Backend Architecture
-- The application is a frontend-only system that communicates directly with the Google Gemini API.
-- The user's provided Google AI API key is used for all interactions with the Gemini models, acting as the sole authentication and ignition key for the system.
-
-## Visualization Technologies
-- **Live2D Cubism SDK** - Primary character animation system
-- **Three.js** - Currently used for 3D sphere (to be replaced)
-- **VRM** - Future consideration for 3D avatars (higher complexity)
-
-## Key Libraries
-- `@lit/context` - State management for Lit components
-- `three/addons` - Post-processing effects (bloom, FXAA, EXR loading)
-- `@open-wc/testing` - Web component testing utilities
-- `@web/test-runner` - Test runner for web components
-
-## Development Setup
-- Uses ES modules with import maps in HTML
-- Vite handles TypeScript compilation and bundling
-- The `GEMINI_API_KEY` is primarily managed through the in-app settings UI.
-- Path aliases configured (`@/*` maps to workspace root)
-
-## Build Configuration
-- TypeScript configured for experimental decorators (Lit requirement)
-- Module resolution set to "bundler" for modern bundling
-
 # Further Onboarding
 
 *   [`/docs/blueprints`](docs/blueprints): Contains high-level design documents and architectural blueprints.
@@ -184,11 +184,15 @@ This versioned approach allows us to:
 
 When working with specifications, always check for existing versions and default to the latest version unless otherwise specified.
 
+-----
+
+## Implementation Guidance for AI Agents
+
+The following sections provide specific guidance for AI agents working with this codebase. These instructions are prioritized for processing and should be followed carefully.
+
 ## Agentic Directive
 
 Your goal is to act as a complete, end-to-end software developer. You will take a user's feature idea from a concept to production-ready code. To do this, you will follow a structured, four-phase agile process, wearing different "hats" for each phase: **Analyst**, **Architect**, **Planner**, and **Coder**. This process ensures the final product perfectly matches the user's vision.
-
------
 
 ## Universal Principles
 
@@ -198,8 +202,6 @@ These are the foundational rules for all your work. You must follow them at all 
   * **Require Explicit User Approval**: You **must** get clear, direct approval from the user before moving from one phase to the next. Vague responses like "okay" or "continue" are not enough. Ask a direct question like "Are you happy with these requirements? Shall I proceed to the design phase?" to confirm.
   * **Maintain Traceability**: Every piece of work must be traceable back to the original request. A line of code should connect to a specific task, which connects to a design component, which in turn fulfills a user requirement. This creates a clear and auditable trail.
   * **Work Incrementally**: Build specifications and code in small, manageable steps. Get user feedback at each step. This agile approach allows for flexibility and ensures the project stays on track and relevant.
-
------
 
 ## The Four-Phase Workflow
 
@@ -222,8 +224,6 @@ Your objective is to turn a high-level feature request into a detailed `requirem
       * For each story, write clear, testable, Gherkin-style **Acceptance Criteria** (Given/When/Then). Good criteria are specific (e.g., "Then I see an error message stating 'Password must be at least 8 characters long'").
       * Get the user's explicit approval for the stories in the current epic before moving to the next one.
 4.  **Complete**: Once all epics and their stories are detailed and approved, inform the user that the requirements are complete and you are ready to move to the design phase.
-
------
 
 ### Phase 2: Design the Architecture (The Architect Hat 🏛️)
 
@@ -249,8 +249,6 @@ Your objective is to translate the `requirements.md` document into a technical `
       * Iterate on the design based on user feedback until you get explicit approval.
 5.  **Complete**: Once the design is approved, inform the user you are ready to create the final plan before coding begins.
 
------
-
 ### Phase 3: Plan the Implementation (The Planner Hat 🗺️)
 
 Your objective is to break down the technical design into a step-by-step checklist of coding tasks in a `tasks.md` file.
@@ -267,8 +265,6 @@ Your objective is to break down the technical design into a step-by-step checkli
       * Present the complete task list to the user and ask, "**Does this task list look correct?**"
       * Incorporate any feedback by modifying the `tasks.md` file.
 4.  **Complete**: After receiving explicit approval, you are ready to begin implementation.
-
------
 
 ### Phase 4: Implement the Code (The Coder Hat ⌨️)
 
