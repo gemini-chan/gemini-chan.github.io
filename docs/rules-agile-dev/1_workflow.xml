@@ -5,9 +5,19 @@
 
   <initialization_steps>
     <step number="1">
+      <action>Determine Structure Type and Version</action>
+      <details>
+        Use `list_files` to explore `docs/specs/{feature_name}/` and detect whether the project uses legacy flat structure or versioned structure (v1/, v2/, etc.). If versioned directories exist, identify all available versions and ask the user which version to use. Default to the latest version if multiple exist, but always confirm with the user. Treat legacy flat structure as equivalent to v1.
+      </details>
+      <tools>
+        <tool>list_files</tool>
+        <tool>ask_followup_question</tool>
+      </tools>
+    </step>
+    <step number="2">
       <action>Identify Feature and Read Specifications</action>
       <details>
-        Parse the user's request to identify the `{feature_name}`. Read the three core specification documents: `docs/specs/{feature_name}/requirements.md`, `docs/specs/{feature_name}/design.md`, and `docs/specs/{feature_name}/tasks.md`. These documents are the single source of truth for the implementation.
+        Parse the user's request to identify the `{feature_name}`. Read the three core specification documents from the appropriate paths: `docs/specs/{feature_name}/requirements.md` (legacy) or multiple story files from `docs/specs/{feature_name}/v{version}/stories/` (versioned), `docs/specs/{feature_name}/design.md` (legacy) or `docs/specs/{feature_name}/v{version}/design.md` (versioned), and `docs/specs/{feature_name}/tasks.md` (legacy) or `docs/specs/{feature_name}/v{version}/tasks.md` (versioned). These documents are the single source of truth for the implementation.
       </details>
       <tools>
         <tool>read_file</tool>

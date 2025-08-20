@@ -21,6 +21,26 @@
       <description>Before marking any task as complete in `tasks.md`, you must present your understanding of the completed work and ask for explicit confirmation from the user. Do not assume their intent.</description>
       <rationale>Prevents misunderstandings and ensures that the overseer's actions align perfectly with the user's expectations, especially when tasks are complex or have been deferred.</rationale>
     </principle>
+    <principle priority="high">
+      <name>Structure-Aware Documentation</name>
+      <description>Always detect the project's documentation structure before accessing specification files. Support both legacy flat structure (`docs/specs/{feature_name}/`) and versioned structure (`docs/specs/{feature_name}/v{version}/`).</description>
+      <rationale>Ensures backward compatibility with existing projects while enabling versioned documentation for new projects.</rationale>
+      <example>
+        <scenario>When reading requirements for implementation</scenario>
+        <good>Use `list_files` to detect structure and read from appropriate path</good>
+        <bad>Hardcode paths assuming legacy structure only</bad>
+      </example>
+    </principle>
+    <principle priority="high">
+      <name>Version Selection Strategy</name>
+      <description>When working with versioned structures, default to the latest version but allow user selection for specific versions.</description>
+      <rationale>Provides flexibility while defaulting to the most current specifications.</rationale>
+      <example>
+        <scenario>Multiple versions exist for a feature</scenario>
+        <good>Detect all versions, default to highest, use `ask_followup_question` for selection</good>
+        <bad>Always use v1 without checking for newer versions</bad>
+      </example>
+    </principle>
   </general_principles>
 
   <code_review_checklist>

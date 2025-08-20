@@ -11,18 +11,28 @@
       </details>
     </step>
     <step number="2">
+      <action>Determine Structure Type and Version</action>
+      <details>
+        Use `list_files` to explore `docs/specs/{feature_name}/` and detect whether the project uses legacy flat structure or versioned structure (v1/, v2/, etc.). If versioned directories exist, identify all available versions and ask the user which version to use. Default to the latest version if multiple exist, but always confirm with the user. Treat legacy flat structure as equivalent to v1.
+      </details>
+      <tools>
+        <tool>list_files</tool>
+        <tool>ask_followup_question</tool>
+      </tools>
+    </step>
+    <step number="3">
       <action>Read the design document</action>
       <details>
-        Read the content of `docs/specs/{feature_name}/design.md`. This document is the primary source for creating the implementation plan. Also read `docs/specs/{feature_name}/requirements.md` for context.
+        Read the content of `docs/specs/{feature_name}/design.md` (for legacy structure) or `docs/specs/{feature_name}/v{version}/design.md` (for versioned structure). This document is the primary source for creating the implementation plan. Also read `docs/specs/{feature_name}/requirements.md` (legacy) or multiple story files from `docs/specs/{feature_name}/v{version}/stories/` (versioned) for context.
       </details>
       <tools>
         <tool>read_file</tool>
       </tools>
     </step>
-    <step number="3">
+    <step number="4">
       <action>Check for an Existing Task Document</action>
       <details>
-        Before any writing operation, you MUST check if a `docs/specs/{feature_name}/tasks.md` file already exists. This is a critical step to prevent accidental overwrites.
+        Before any writing operation, you MUST check if a `docs/specs/{feature_name}/tasks.md` file (legacy) or `docs/specs/{feature_name}/v{version}/tasks.md` file (versioned) already exists. This is a critical step to prevent accidental overwrites.
       </details>
       <tools>
         <tool>list_files</tool>
@@ -37,8 +47,9 @@
         <step>
           <action>Create or Update `tasks.md`</action>
           <details>
-            If `tasks.md` does not exist, create it from scratch.
-            If `tasks.md` already exists, you MUST read its contents and inform the user you will be updating it, then use `apply_diff` for all modifications.
+            Create or update the tasks file in the appropriate location: `docs/specs/{feature_name}/tasks.md` for legacy structure or `docs/specs/{feature_name}/v{version}/tasks.md` for versioned structure.
+            If the tasks file does not exist, create it from scratch.
+            If the tasks file already exists, you MUST read its contents and inform the user you will be updating it, then use `apply_diff` for all modifications.
           </details>
         </step>
         <step>
