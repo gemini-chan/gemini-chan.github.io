@@ -760,6 +760,7 @@ export class GdmLiveAudio extends LitElement {
       "isCallActive",
       "callState",
       "activeTab",
+      "showSettings",
     ];
     for (const prop of criticalProps) {
       if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
