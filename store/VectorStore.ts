@@ -33,7 +33,7 @@ export class VectorStore {
   async init(): Promise<void> {
     const storeName = this.getStoreName();
     try {
-      this.db = await openDB(DB_NAME, DB_VERSION, {
+      this.db = await openDB(DB_NAME, DB_VERSION + 1, {
         upgrade(db) {
           if (!db.objectStoreNames.contains(storeName)) {
             const store = db.createObjectStore(storeName, {
@@ -226,7 +226,7 @@ export class VectorStore {
     try {
       const request = {
         model: this.embeddingModel,
-        content: texts[0], // Batch processing as per API docs
+        content: texts,
         taskType: taskType,
         outputDimensionality: 768,
       };
