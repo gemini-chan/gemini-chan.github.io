@@ -2,6 +2,7 @@ import { type AIClient, BaseAIService } from "@features/ai/BaseAIService";
 import { createComponentLogger } from "@services/DebugLogger";
 import type { VectorStore } from "@store/VectorStore";
 import type { Memory } from "./Memory";
+import memoryExtractionPrompt from "@prompts/memory-extraction.prompt.md?raw";
 
 const logger = createComponentLogger("MemoryService");
 const MODEL_NAME = "gemini-2.5-flash-lite";
@@ -97,23 +98,8 @@ export class MemoryService extends BaseAIService implements IMemoryService {
    */
   private async loadExtractionPrompt(transcript: string): Promise<string> {
     try {
-      // In a real implementation, we would load the prompt from the file system
-      // For now, we'll return a simplified prompt
-      return `You are a fact extraction expert. Your task is to analyze conversation transcripts and identify important, foundational pieces of information that should be remembered.
-      
-Instructions:
-1. Analyze the conversation and extract key facts about the user
-2. Return ONLY a JSON array with the extracted facts
-3. Each fact should have the following structure:
-{
-  "fact_key": "descriptive_key_name",
-  "fact_value": "the actual fact",
-  "confidence_score": 0.0-1.0,
-  "permanence_score": "permanent|temporary|contextual"
-}
-
-Conversation to analyze:
-${transcript}`;
+      // Dynamically load prompt from file and inject the transcript
+      return memoryExtractionPrompt.replace("{conversation}", transcript);
     } catch (error) {
       logger.error("Failed to load extraction prompt", { error });
       // Return a fallback prompt
