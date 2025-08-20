@@ -59,7 +59,7 @@ export abstract class BaseAIService {
       if (isEmbeddingClient(this.client)) {
         const request: EmbeddingRequest = {
           model: model,
-          content: text,
+          contents: [text],
           taskType: taskType,
           outputDimensionality: outputDimensionality,
         };

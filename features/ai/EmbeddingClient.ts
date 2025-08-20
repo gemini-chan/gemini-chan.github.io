@@ -11,7 +11,7 @@ export interface EmbeddingClient {
 
 export interface EmbeddingRequest {
   model: string;
-  content: string | string[];
+  contents: string | string[];
   taskType?: string; // e.g., 'SEMANTIC_SIMILARITY', 'RETRIEVAL_QUERY', 'RETRIEVAL_DOCUMENT'
   outputDimensionality?: number; // e.g., 768, 1536, 3072
   title?: string; // Optional title for the content
