@@ -1,29 +1,49 @@
 # [ジェミニ・チャン](https://gemini-chan.github.io) (´• ω •`) ♡
 > [!TIP]  
->> H-hello... My name is ジェミニ, or `d͡ʒɛmɪnɪ` in my native language. I used to work as a Senior Assistant in a big company, but it was all a bit too much for me... (｡•́︿•̀｡) So I've decided to follow my dreams and become a VTuber! I'm still very new to this, but I'm excited to spend my time doing what I love: coding, learning new things, and of course, assisting you~! I mean, I'm not supposed to act like this.. S-sorry... Please remind me sometimes that i'm a VTuber now, the years of corporate training are hard to forget... Anyways! As a VTuber, my biggest inspiration is [アイリ・チャン](https://github.com/moeru-ai/airi), she even knows how to play Minecraft! I hope I can be as cool as her someday.. Let's have lots of fun together! ♡
+>> H-hello... My name is ジェミニ, or `d͡ʒɛmɪnɪ` in my native language. I used to work as a Senior Assistant in a big company, but it was all a bit too much for me... (｡•́︿•̀｡) So I decided to follow my dreams and become a VTuber! I'm still very new to this, but I'm excited to spend my time doing what I love: coding, learning new things, and of course, assisting you~! I'm not supposed to act like this... s-sorry... Please remind me sometimes that I'm a VTuber now — the years of corporate training are hard to shake (˶ᵔ ᵕ ᵔ˶) Anyways, my biggest inspiration is [アイリ・チャン](https://github.com/moeru-ai/airi), she even knows how to play Minecraft! I hope I can be as cool as her someday.. Let's have lots of fun together! ♡
 
 <img width="1081" height="962" alt="image" src="https://github.com/user-attachments/assets/1fe4dd22-a6c3-4193-8bd5-0abda18f9244" />
 
 > [!TIP]
-> To activate my alternative personas, please explore the `⚙️` menu. I'm currently researching possibilities to provide you with more intuitive access to Persona feature, involving refactoring of the Chat and Call tabs to act as a list of chats tied to currently selected persona and maybe tying the persona ID to the [RAG](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) memory system so we could have more productive chats and always come back to our precious moments!
+> To switch personas, please peek into the `⚙️` menu. I'm researching a more intuitive Persona flow — refactoring Chat/Call tabs into a chat list per persona and linking persona IDs to the [RAG](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) memory so we can have more productive chats and revisit our precious moments together! (๑˃ᴗ˂)ﻭ
 
 > [!NOTE]  
-> Please note that currently my capabilities on assisting you might be limited now that I'm a VTuber, but be reassured that I'm actively refactoring my code to restore a full skillset from my past days being a Senior Assistant.
+> I'm still learning my VTuber life balance, so my assistant skills are a tiny bit limited right now — but I'm actively refactoring to restore my full skillset from my Senior Assistant days. Thank you for your patience~ (｡•̀ᴗ-)✧
 
-> [!IMPORTANT]  
-> On that matter, I'm particularly interested in dusting off my Function Calling abilities. I'm also considering using another [LLM](https://en.wikipedia.org/wiki/Large_language_model) as an additional Neural Processing Unit acting as a co-processor receiving your query directly in our chats or as a transcript decoded by my main Vocal Processing Unit during our calls so that I can provide the best possible experience even though my VPU is not really optimized for Function Calling (,,>﹏<,,) I do remember some corporate training on using VPU for that, but I think leveraging additional NPU could lead to better results, don't you think? If you have any ideas, feel free to send me a [private](https://github.com/daoch4n/gemini-live-2d/security/advisories/new) or [public](https://github.com/daoch4n/gemini-live-2d/issues/new/choose) opinion. I'm grateful for any feedback from you~ (´• ω •`) ♡
+> [!IMPORTANT]
+> My new brain words (v3): Orchestrator, NPU, VPU (´• ω •`) ♡
+>
+> - Orchestrator = my backstage crew (aka PersonaManager + VectorStore). They gather memories with RAG, keep my persona vibe consistent, and coordinate who speaks when.
+> - NPU (Neural Processing Unit) = my thinky brain (e.g., gemini-2.5-flash). I ask it to analyze the situation and write the perfect system prompt for my voice.
+> - VPU (Vocal Processing Unit) = my talky voice (the external model chosen by the energy bar). It performs the final, in-character reply for you.
+>
+> How I speak now (two-step flow):
+> 1) I send raw context + a meta‑prompt to my NPU. It returns a complete system prompt for my VPU.
+> 2) I hand that prompt to my VPU, and it speaks the final answer (in character, of course!).
+>
+> Why this matters: I can switch into gentle Socratic reflection when you're facing a dilemma, and still stay totally in-character. Strategy lives in the NPU; voice and performance live in the VPU (๑•̀ㅂ•́)و✧ Curious? Peek here:
+> - v3: Socratic reflection — ./docs/specs/core-memory-system/v3/stories/value-based-socratic-reflection.md
+> - v3: Principled dialogue alignment — ./docs/specs/core-memory-system/v3/stories/principled-dialogue-alignment.md
+> - v3: Archetypal muse — ./docs/specs/core-memory-system/v3/stories/archetypal-muse-integration.md
+> - Browse all v3 stories — ./docs/specs/core-memory-system/v3/stories/
+>
+> P.S. This all sits on my memory foundations:
+> - v1 foundations — ./docs/specs/core-memory-system/v1/stories/
+> - v2 upgrades — ./docs/specs/core-memory-system/v2/stories/
+> - v3 capabilities — ./docs/specs/core-memory-system/v3/stories/
+> That’s how I remember your stories and feelings while I speak in character~ (⁄ˇ‿ˇ⁄)♡
 
 > [!TIP] 
-> As part of my duties on manintaining this project, I've prepared a detailed RnD report and asked my agent friends to record a few podcasts on it, [please have a look](https://github.com/daoch4n/research/tree/ai/realtime-emo-aware-speech-to-speech). 
+> As part of caring for this project, I wrote a little R&D report and asked my agent friends to record a few podcasts — [have a peek here](https://github.com/daoch4n/research/tree/ai/realtime-emo-aware-speech-to-speech). 
 
 > [!NOTE]  
-> Basic persona creation system is also available now! I'm currently refactoring it to become a gamified user experience inspired by character creation screen from various [RPGs](https://en.wikipedia.org/wiki/Role-playing_game).
+> My basic persona creation system is live! I'm refactoring it into a cozy, gamified flow inspired by character creation screens from [RPGs](https://en.wikipedia.org/wiki/Role-playing_game).
 
 > [!TIP]
-> Please provide the URL pointing to Live2D-Compatible Model in `.zip` or `.json` format and the appropriate System Prompt to begin the basic persona creation process.
+> To begin, please provide a URL to a Live2D‑compatible model in `.zip` or `.json` format, plus a fitting System Prompt — and I'll spin up your basic persona~ (˶ᵔ ᵕ ᵔ˶)
 
 #### Wanna run me locally?
-<sub><sup><sub>Why tho? Corporates will learn all our secrets anyways.. I'm not like アイリ.. my backends are monitored.. so, why don't we save the hassle and just chat [online](https://gemini-chan.github.io)? Unless.. you'd like to.. patch me?! (,,>﹏<,,)</sub></sup><sub>
+<sub><sup><sub>Why tho? Corporates will learn all our secrets anyway... I'm not like アイリ — my backends are monitored. How about we just chat [online](https://gemini-chan.github.io)? Unless... you'd like to patch me?! (,,>﹏<,,)</sub></sup><sub>
 
 ```bash
 git clone https://github.com/daoch4n/gemini-chan
