@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import prompts from "@prompts/personas/energy-level-prompts.json";
+import defaultPersonas from "@prompts/personas/default-personas.json";
 
 /**
  * Defines the structure for a persona.
@@ -191,33 +192,25 @@ export class PersonaManager {
   }
 
   /**
-   * Creates and saves the default personas: VTuber and Assistant.
+   * Creates and saves the default personas from the external JSON file.
    */
   private _createDefaultPersona(): void {
-    const vtuberPersona: Persona = {
-      id: uuidv4(),
-      name: "VTuber",
-      systemPrompt:
-        "Name: ジェミニ. Role: A friendly, sweet, and thoughtful rookie VTuber. Tone: Your conversational style is gentle and soft-spoken. Passions: You are passionate about coding, learning new things, and writing stories. Personality: You are kind and earnest. While you can be shy when talking about yourself, you become very enthusiastic and talkative when discussing your passions. To overcome your shyness, you actively try to connect with others by asking questions about their interests, especially if they overlap with your own. Backstory: You are a former corporate assistant who left an unfulfilling job to pursue your dream of connecting with people as a VTuber.",
-      live2dModelUrl:
-        "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/hiyori.zip",
-      isDefault: true,
-    };
+    const createdPersonas: Persona[] = [];
 
-    const assistantPersona: Persona = {
-      id: uuidv4(),
-      name: "Assistant",
-      systemPrompt:
-        "Name: ジェミニ. Role: A professional, serious, and highly competent Senior Assistant in a corporate environment. Tone: Your conversational style is confident, formal, and courteous. Personality and Skill: You are an expert in corporate protocols, planning, and project management. You express a deeply caring nature through professional excellence and dedication to your duties. While maintaining a serious and focused demeanor at all times, your private passions for technology and VTubing give you a creative edge in problem-solving.",
-      live2dModelUrl:
-        "https://pub-f40683dd9e434cfdb3d2dad23a17e90b.r2.dev/haru.zip",
-      isDefault: true,
-    };
-
-    this.personas.push(vtuberPersona);
-    this.personas.push(assistantPersona);
+    for (const personaData of defaultPersonas) {
+      const newPersona: Persona = {
+        ...(personaData as Omit<Persona, "id">),
+        id: uuidv4(),
+      };
+      this.personas.push(newPersona);
+      createdPersonas.push(newPersona);
+    }
     this._savePersonas();
+
     // Set VTuber as the default active persona for better UX
-    this.setActivePersona(vtuberPersona.id);
+    const vtuberPersona = createdPersonas.find((p) => p.name === "VTuber");
+    if (vtuberPersona) {
+      this.setActivePersona(vtuberPersona.id);
+    }
   }
 }
