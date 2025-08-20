@@ -1,13 +1,11 @@
-import type { GoogleGenAI } from "@google/genai";
+import { type AIClient, BaseAIService } from "@features/ai/BaseAIService";
 import type { Turn } from "@shared/types";
 
 const MODEL_NAME = "gemini-2.5-flash-lite";
 
-export class SummarizationService {
-  private genAI: GoogleGenAI;
-
-  constructor(client: GoogleGenAI) {
-    this.genAI = client;
+export class SummarizationService extends BaseAIService {
+  constructor(client: AIClient) {
+    super(client, MODEL_NAME);
   }
 
   async summarize(transcript: Turn[]): Promise<string> {
@@ -17,11 +15,7 @@ export class SummarizationService {
 
     try {
       const prompt = this.createPrompt(transcript);
-      const result = await this.genAI.models.generateContent({
-        model: MODEL_NAME,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
-      return result.text;
+      return await this.callAIModel(prompt);
     } catch (error) {
       console.error("Error summarizing transcript:", error);
       return "";

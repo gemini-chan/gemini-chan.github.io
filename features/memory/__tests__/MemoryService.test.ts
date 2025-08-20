@@ -30,8 +30,8 @@ class MockVectorStore extends VectorStore {
   }
 }
 
-// Mock GoogleGenAI client
-const mockGenAI = {
+// Mock AI Client
+const mockAIClient = {
   models: {
     generateContent: async () => ({
       text: JSON.stringify([
@@ -52,7 +52,7 @@ describe("MemoryService", () => {
 
   beforeEach(() => {
     mockVectorStore = new MockVectorStore();
-    memoryService = new MemoryService(mockVectorStore, mockGenAI);
+    memoryService = new MemoryService(mockVectorStore, mockAIClient);
   });
 
   it("should be created successfully", () => {

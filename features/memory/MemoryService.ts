@@ -1,4 +1,4 @@
-import type { GoogleGenAI } from "@google/genai";
+import { type AIClient, BaseAIService } from "@features/ai/BaseAIService";
 import { createComponentLogger } from "@services/DebugLogger";
 import type { VectorStore } from "@store/VectorStore";
 import type { Memory } from "./Memory";
@@ -10,13 +10,12 @@ export interface IMemoryService {
   processAndStoreMemory(transcript: string, sessionId: string): Promise<void>;
 }
 
-export class MemoryService implements IMemoryService {
+export class MemoryService extends BaseAIService implements IMemoryService {
   private vectorStore: VectorStore;
-  private genAI: GoogleGenAI;
 
-  constructor(vectorStore: VectorStore, client: GoogleGenAI) {
+  constructor(vectorStore: VectorStore, client: AIClient) {
+    super(client, MODEL_NAME);
     this.vectorStore = vectorStore;
-    this.genAI = client;
   }
 
   /**
@@ -72,13 +71,10 @@ export class MemoryService implements IMemoryService {
       const prompt = await this.loadExtractionPrompt(transcript);
 
       // Call the AI model to extract facts
-      const result = await this.genAI.models.generateContent({
-        model: MODEL_NAME,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+      const responseText = await this.callAIModel(prompt);
 
       // Parse and validate the response
-      const facts = this.parseExtractionResponse(result.text);
+      const facts = this.parseExtractionResponse(responseText);
       return facts;
     } catch (error) {
       logger.error("Failed to extract facts from transcript", {
@@ -128,10 +124,9 @@ ${transcript}`;
   private parseExtractionResponse(responseText: string): Memory[] {
     try {
       // Try to parse the response as JSON
-      const facts = JSON.parse(responseText) as Memory[];
+      const facts = this.parseJsonResponse<Memory[]>(responseText);
 
-      // Validate that it's an array of objects with required fields
-      if (Array.isArray(facts)) {
+      if (facts && Array.isArray(facts)) {
         return facts.filter(
           (fact) =>
             fact.fact_key &&
