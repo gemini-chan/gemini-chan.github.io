@@ -2,6 +2,45 @@
 
 Gemini-chan is a real-time AI voice assistant with Live2D character visualization. The application creates an interactive VTuber-style character that users can talk to using Google's Gemini AI with live audio capabilities.
 
+## Quick Start for Developers
+
+To get started with development:
+
+1. **Prerequisites**:
+   - Node.js v18 or higher
+   - A Google AI API key for Gemini API access
+
+2. **Installation**:
+   ```bash
+   git clone https://github.com/daoch4n/gemini-chan
+   cd gemini-chan
+   npm install
+   ```
+
+3. **Development Server**:
+   ```bash
+   npm run dev
+   ```
+   This starts the Vite development server with hot reloading.
+
+4. **Type Checking**:
+   ```bash
+   npm run type
+   ```
+   Runs TypeScript type checking without emitting files.
+
+5. **Testing**:
+   ```bash
+   npm run test
+   ```
+   Runs the web component test suite.
+
+6. **Building**:
+   ```bash
+   npm run build
+   ```
+   Creates a production build in the `dist/` directory.
+
 ## Key Features
 - Real-time voice conversation with Google Gemini AI
 - Live2D character visualization that responds to audio input/output
@@ -49,6 +88,66 @@ The app aims to provide an immersive, anime-inspired AI companion experience wit
 ## Build Configuration
 - TypeScript configured for experimental decorators (Lit requirement)
 - Module resolution set to "bundler" for modern bundling
+
+# Project Architecture
+
+The following diagram illustrates the main components and their relationships in the Gemini-chan application:
+
+```mermaid
+graph TD
+    A[gdm-live-audio - Main Application Component] --> B[Live2D Visualization]
+    A --> C[Session Management]
+    A --> D[Persona System]
+    A --> E[Memory System]
+    A --> F[UI Components]
+    
+    C --> C1[TextSessionManager]
+    C --> C2[CallSessionManager]
+    C1 --> G[Google GenAI Client]
+    C2 --> G
+    
+    D --> D1[PersonaManager]
+    D1 --> H[localStorage]
+    
+    E --> E1[VectorStore]
+    E1 --> I[IndexedDB]
+    
+    F --> F1[SettingsMenu]
+    F --> F2[ChatView]
+    F --> F3[CallTranscript]
+    F --> F4[CallHistoryView]
+    F --> F5[ControlsPanel]
+    F --> F6[ToastNotification]
+    
+    G --> J[Gemini API]
+```
+
+## Key Architectural Patterns
+
+1. **Web Components**: The application is built using Lit-based web components with a central `gdm-live-audio` component that orchestrates the entire application.
+
+2. **Dual Session Management**: Separate session managers for text (TTS) and voice (STS) interactions, each with independent energy management.
+
+3. **Persona System**: A centralized persona management system that controls character personality, Live2D models, and system prompts.
+
+4. **Memory System**: A vector-based memory store for persistent conversation context across sessions.
+
+5. **Event-Driven Communication**: Components communicate through custom events for loose coupling and better maintainability.
+
+## Testing Strategy
+
+The project uses a comprehensive testing approach:
+
+1. **Unit Testing**: Individual component and service testing using @open-wc/testing and @web/test-runner
+2. **Integration Testing**: Testing component interactions and data flow
+3. **End-to-End Testing**: Full application workflow testing
+
+To run tests:
+```bash
+npm run test
+```
+
+Tests are organized by feature and component, with each test file typically corresponding to a component or service file.
 
 # Project Structure
 
@@ -231,6 +330,91 @@ These are the foundational rules for all your work. You must follow them at all 
   * **Require Explicit User Approval**: You **must** get clear, direct approval from the user before moving from one phase to the next. Vague responses like "okay" or "continue" are not enough. Ask a direct question like "Are you happy with these requirements? Shall I proceed to the design phase?" to confirm.
   * **Maintain Traceability**: Every piece of work must be traceable back to the original request. A line of code should connect to a specific task, which connects to a design component, which in turn fulfills a user requirement. This creates a clear and auditable trail.
   * **Work Incrementally**: Build specifications and code in small, manageable steps. Get user feedback at each step. This agile approach allows for flexibility and ensures the project stays on track and relevant.
+
+## Troubleshooting Common Issues
+
+### API Key Configuration Problems
+
+1. **Error: "API key not found"**
+   - Ensure you have set your Google AI API key in the settings menu
+   - Verify the key is valid and has access to the Gemini API
+   - Check that the key is properly saved in localStorage
+
+2. **Error: "Rate limit exceeded"**
+   - The energy bar system will automatically handle rate limits
+   - Wait for the energy to replenish before making more requests
+   - Consider switching to a different model if available
+
+### Live2D Model Loading Issues
+
+1. **Error: "Failed to load Live2D model"**
+   - Verify the model URL is correct and accessible
+   - Check that the model is in a supported format (JSON or ZIP)
+   - Ensure CORS headers are properly configured for remote models
+   - Confirm the model file structure matches Live2D requirements
+
+2. **Model not animating**
+   - Check that audio nodes are properly connected
+   - Verify the Live2D SDK is correctly loaded
+   - Ensure the model has animation parameters defined
+
+### Audio Processing Problems
+
+1. **No audio output**
+   - Check browser permissions for microphone and audio
+   - Verify audio context is not suspended (requires user interaction)
+   - Ensure the output audio node is properly connected
+
+2. **Audio distortion or clipping**
+   - Check audio gain levels
+   - Verify sample rates match between input and output
+   - Ensure proper buffer sizing in audio processing
+
+### Build and Compilation Issues
+
+1. **TypeScript errors**
+   - Run `npm run type` to check for type errors
+   - Ensure all dependencies are properly installed
+   - Check tsconfig.json for correct configuration
+
+2. **Build failures**
+   - Clean the build cache with `npm run clean` (if available)
+   - Reinstall dependencies with `npm install`
+   - Check vite.config.ts for correct configuration
+
+## Common Development Tasks
+
+### Adding a New UI Component
+
+1. Create a new file in the `components/` directory
+2. Use LitElement with proper decorators (@customElement, @property, @state)
+3. Implement the component's template and styles
+4. Register the component in main.tsx
+5. Add unit tests in the component's test file
+
+### Creating a New Feature Specification
+
+1. Create a new directory in `docs/specs/` with the feature name
+2. Create a versioned subdirectory (e.g., `v1/`)
+3. Create requirements.md, design.md, and tasks.md files
+4. Follow the existing templates and structure
+5. Link to the new spec in the documentation structure
+
+### Modifying the Live2D Integration
+
+1. Work primarily in the `live2d/` directory
+2. Update the Live2D model loading and rendering logic
+3. Modify audio mapping functions as needed
+4. Test with various model formats (JSON, ZIP)
+5. Update documentation in `docs/specs/live2d-visualization/`
+
+### Working with the Vector Store
+
+1. Use the VectorStore class in `store/VectorStore.ts`
+2. Implement embedding generation for new data types
+3. Add appropriate indexing and search methods
+4. Handle persistence with IndexedDB
+5. Update memory-related specifications in `docs/specs/core-memory-system/`
 
 ## The Four-Phase Workflow
 
