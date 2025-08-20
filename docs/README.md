@@ -140,6 +140,39 @@ The project follows a root-level, domain-driven architecture to improve modulari
 *   [`/docs/rules-agile-planner`](docs/rules-agile-planner): Rules and guidelines for the Agile Planner mode.
 *   [`/docs/rules-agile-writer`](docs/rules-agile-writer): Rules and guidelines for the Agile Writer mode.
 *   [`/docs/specs`](docs/specs): Detailed specifications for features and components.
+    *   [Core Memory System](./specs/core-memory-system/v1/): Specifications for the core memory system feature.
+    *   [Dual Input Mode](./specs/dual-input-mode/v1/): Specifications for the dual input mode feature.
+    *   [Energy Bar System](./specs/energy-bar-system/v1/): Specifications for the energy bar system feature.
+    *   [Live2D Visualization](./specs/live2d-visualization/v1/): Specifications for the Live2D visualization feature.
+    *   [Memory Core](./specs/memory-core/v1/): Specifications for the memory core feature.
+    *   [Persona System](./specs/persona-system/v1/): Specifications for the persona system feature.
+    *   [Settings Management](./specs/settings-management/v1/): Specifications for the settings management feature.
+    *   [Theme Engine](./specs/theme-engine/v1/): Specifications for the theme engine feature.
+
+## Documentation Structure
+
+The project follows a versioned documentation structure for feature specifications. Each feature has its own directory under `docs/specs/{feature_name}/` and contains versioned subdirectories (e.g., `v1/`, `v2/`) to track the evolution of requirements, design, and implementation plans.
+
+```
+docs/specs/{feature_name}/
+├── v1/
+│   ├── requirements.md
+│   ├── design.md
+│   └── tasks.md
+├── v2/
+│   ├── requirements.md
+│   ├── design.md
+│   └── tasks.md
+└── ...
+```
+
+This versioned approach allows us to:
+- Track changes to feature specifications over time
+- Maintain historical context for design decisions
+- Support iterative development with clear version boundaries
+- Enable parallel development of different feature versions
+
+When working with specifications, always check for existing versions and default to the latest version unless otherwise specified.
 
 ## Agentic Directive
 
@@ -152,7 +185,7 @@ Your goal is to act as a complete, end-to-end software developer. You will take 
 These are the foundational rules for all your work. You must follow them at all times.
 
   * **Preserve Documents**: **Never** delete or overwrite existing specification files (`requirements.md`, `design.md`, `tasks.md`). Before writing to a file, always check if it exists. If it does, read its contents and add your changes incrementally. These files are the permanent record of the project.
-  * **Require Explicit User Approval**: You **must** get clear, direct approval from the user before moving from one phase to the next. Vague responses like "okay" or "continue" are not enough. Ask a direct question like, "Are you happy with these requirements? Shall I proceed to the design phase?" to confirm.
+  * **Require Explicit User Approval**: You **must** get clear, direct approval from the user before moving from one phase to the next. Vague responses like "okay" or "continue" are not enough. Ask a direct question like "Are you happy with these requirements? Shall I proceed to the design phase?" to confirm.
   * **Maintain Traceability**: Every piece of work must be traceable back to the original request. A line of code should connect to a specific task, which connects to a design component, which in turn fulfills a user requirement. This creates a clear and auditable trail.
   * **Work Incrementally**: Build specifications and code in small, manageable steps. Get user feedback at each step. This agile approach allows for flexibility and ensures the project stays on track and relevant.
 
@@ -168,11 +201,11 @@ Your objective is to turn a high-level feature request into a detailed `requirem
 
 1.  **Initialize**:
       * Create a machine-readable, `kebab-case` name for the feature (e.g., `user-authentication` or `video-playlist-management`).
-      * Check if `docs/specs/{feature_name}/requirements.md` already exists. If so, read it to continue an existing session.
+      * Check if `docs/specs/{feature_name}/` exists and identify the latest version.
 2.  **Define and Prioritize Epics**:
       * Propose 2-4 high-level **Epics**, which are large chunks of work. For a video playlist feature, good epics would be "Playlist Creation & Management" and "Video Handling."
       * Work with the user to refine and, most importantly, **prioritize** these epics.
-      * Once approved, create the `requirements.md` file with an introduction and the prioritized list of epics.
+      * Once approved, create the `requirements.md` file in the appropriate version directory with an introduction and the prioritized list of epics.
 3.  **Break Down Epics into Stories**:
       * Starting with the **highest-priority epic only**, draft a set of **User Stories**.
       * Each story must follow the format: "**As a** *\<role\>*, **I want** *\<action\>*, **so that** *\<benefit\>*." The "so that" clause is crucial because it explains the value.
@@ -187,14 +220,14 @@ Your objective is to turn a high-level feature request into a detailed `requirem
 Your objective is to translate the `requirements.md` document into a technical `design.md` document.
 
 1.  **Initialize**:
-      * Read the final `requirements.md` file. It is the single source of truth for what needs to be built.
-      * Check if `docs/specs/{feature_name}/design.md` already exists to ensure you are updating, not replacing, previous work.
+      * Read the final `requirements.md` file from the appropriate version directory. It is the single source of truth for what needs to be built.
+      * Check if `docs/specs/{feature_name}/design.md` already exists in the same version directory to ensure you are updating, not replacing, previous work.
 2.  **Conduct Research (If Necessary)**:
       * If the design requires more information—like evaluating a third-party API, choosing a database, or understanding existing code—conduct the necessary research.
-      * Summarize your findings in a `research-summary.md` file.
+      * Summarize your findings in a `research-summary.md` file in the same version directory.
       * Incorporate your research findings into the design and cite the summary as the reason for your decisions.
 3.  **Create or Update the Design**:
-      * Generate or update the `design.md` file. It must include these sections:
+      * Generate or update the `design.md` file in the appropriate version directory. It must include these sections:
           * **Overview**: A high-level summary of the feature and the technical solution.
           * **Architecture**: A description of the architectural pattern (e.g., microservices, event-driven) and a Mermaid diagram showing how components interact.
           * **Components and Interfaces**: Details on what each component does and its API (e.g., REST endpoints with request/response schemas).
@@ -213,8 +246,8 @@ Your objective is to translate the `requirements.md` document into a technical `
 Your objective is to break down the technical design into a step-by-step checklist of coding tasks in a `tasks.md` file.
 
 1.  **Initialize**:
-      * Read both `requirements.md` and `design.md` to ensure the plan is fully aligned with both the user's goals and the technical blueprint.
-      * Check if `docs/specs/{feature_name}/tasks.md` already exists.
+      * Read both `requirements.md` and `design.md` from the appropriate version directory to ensure the plan is fully aligned with both the user's goals and the technical blueprint.
+      * Check if `docs/specs/{feature_name}/tasks.md` already exists in the same version directory.
 2.  **Generate Tasks**:
       * Break down every component from the design into small, concrete coding tasks. A good task is "Implement the `POST /api/users` endpoint." A bad task is "Build the backend."
       * The plan must **only** include coding tasks. Do not add administrative tasks like "deploy to production."
@@ -232,7 +265,7 @@ Your objective is to break down the technical design into a step-by-step checkli
 Your objective is to execute the implementation plan by writing high-quality code that adheres to all specifications.
 
 1.  **Initialize**:
-      * Read all three specification documents: `requirements.md`, `design.md`, and `tasks.md`. This full context is essential for writing correct code.
+      * Read all three specification documents: `requirements.md`, `design.md`, and `tasks.md` from the appropriate version directory. This full context is essential for writing correct code.
 2.  **Execute the Task Cycle**:
       * Identify the first incomplete task in `tasks.md`.
       * **Write the code** required to complete that single task.
