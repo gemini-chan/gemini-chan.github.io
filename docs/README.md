@@ -135,19 +135,29 @@ The project follows a root-level, domain-driven architecture to improve modulari
 *   [`/docs/manuals`](docs/manuals): Detailed manuals and guides for specific technologies or processes.
     *   [Session management with Live API](./manuals/session-management-with-live-api.md)
 *   [`/docs/research`](docs/research): Research notes and findings on various topics.
-*   [`/docs/rules-agile-architect`](docs/rules-agile-architect): Rules and guidelines for the Agile Architect mode.
-*   [`/docs/rules-agile-dev`](docs/rules-agile-dev): Rules and guidelines for the Agile Dev mode.
-*   [`/docs/rules-agile-planner`](docs/rules-agile-planner): Rules and guidelines for the Agile Planner mode.
-*   [`/docs/rules-agile-writer`](docs/rules-agile-writer): Rules and guidelines for the Agile Writer mode.
+*   [`/docs/rules`](docs/rules): Rules and guidelines for development modes.
+    *   [`Agile Architect`](docs/rules/agile/architect): Rules and guidelines for the Agile Architect mode.
+    *   [`Agile Dev`](docs/rules/agile/dev): Rules and guidelines for the Agile Dev mode.
+    *   [`Agile Planner`](docs/rules/agile/planner): Rules and guidelines for the Agile Planner mode.
+    *   [`Agile Writer`](docs/rules/agile/writer): Rules and guidelines for the Agile Writer mode.
 *   [`/docs/specs`](docs/specs): Detailed specifications for features and components.
-    *   [Core Memory System](./specs/core-memory-system/v1/): Specifications for the core memory system feature.
-    *   [Dual Input Mode](./specs/dual-input-mode/v1/): Specifications for the dual input mode feature.
-    *   [Energy Bar System](./specs/energy-bar-system/v1/): Specifications for the energy bar system feature.
-    *   [Live2D Visualization](./specs/live2d-visualization/v1/): Specifications for the Live2D visualization feature.
-    *   [Memory Core](./specs/memory-core/v1/): Specifications for the memory core feature.
-    *   [Persona System](./specs/persona-system/v1/): Specifications for the persona system feature.
-    *   [Settings Management](./specs/settings-management/v1/): Specifications for the settings management feature.
-    *   [Theme Engine](./specs/theme-engine/v1/): Specifications for the theme engine feature.
+    *   [Core Memory System](./specs/core-memory-system/): Specifications for the core memory system feature.
+        *   [v1](./specs/core-memory-system/v1/), [v2](./specs/core-memory-system/v2/), [v3](./specs/core-memory-system/v3/)
+    *   [Dual Input Mode](./specs/dual-input-mode/): Specifications for the dual input mode feature.
+        *   [v1](./specs/dual-input-mode/v1/)
+    *   [Energy Bar System](./specs/energy-bar-system/): Specifications for the energy bar system feature.
+        *   [v1](./specs/energy-bar-system/v1/)
+    *   [Live2D Visualization](./specs/live2d-visualization/): Specifications for the Live2D visualization feature.
+        *   [v1](./specs/live2d-visualization/v1/)
+    *   [Memory Core](./specs/memory-core/): Specifications for the memory core feature.
+        *   [v1](./specs/memory-core/v1/)
+    *   [Persona System](./specs/persona-system/): Specifications for the persona system feature.
+        *   [v1](./specs/persona-system/v1/)
+    *   [Settings Management](./specs/settings-management/): Specifications for the settings management feature.
+        *   [v1](./specs/settings-management/v1/)
+    *   [Theme Engine](./specs/theme-engine/): Specifications for the theme engine feature.
+        *   [v1](./specs/theme-engine/v1/)
+    *   [Archive](./specs/.archive/): Archived specifications that are no longer actively developed.
 
 ## Documentation Structure
 
