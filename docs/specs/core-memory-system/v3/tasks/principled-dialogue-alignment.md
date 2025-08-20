@@ -13,7 +13,7 @@ This document outlines the technical tasks required to implement User Story 10, 
 
 
 * **Dependencies:** This story assumes the completion of the v1 (factual recall) and v2 (emotional resonance) memory layers. The NPU service depends on a stable conversation ingestion pipeline.
-* **Definition of Done:** The story is considered complete when: 1) All tasks are implemented and unit/integration tests pass with >90% code coverage. 2) The end-to-end test suite (Task 4.2) passes successfully. 3) A manual QA session confirms that at least three different personas (e.g., Nurturing, Pragmatic, Cynical) correctly reference a seeded user value in a scripted scenario. 4) A performance review confirms the asynchronous NPU pipeline does not introduce noticeable latency to the user's experience.experience.experience.chat experience.
+* **Definition of Done:** The story is considered complete when: 1) All tasks are implemented and unit/integration tests pass with >90% code coverage. 2) The end-to-end test suite (Task 4.2) passes successfully. 3) A manual QA session confirms that at least three different personas (e.g., Nurturing, Pragmatic, Cynical) correctly reference a seeded user value in a scripted scenario. 4) A performance review confirms the asynchronous NPU pipeline does not introduce noticeable latency to the user's chat experience.
 
 
 ### 1. Backend: VectorStore Enhancements
