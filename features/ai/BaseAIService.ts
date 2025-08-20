@@ -66,7 +66,7 @@ export abstract class BaseAIService {
 
         const response: EmbeddingResponse =
           await this.client.models.embedContent(request);
-        return response.embedding.values;
+        return response.embeddings[0].values;
       } else {
         logger.warn(
           "Client does not support embeddings, returning empty vector",
