@@ -56,7 +56,7 @@ describe("BaseAIService - Embeddings", () => {
   it("should return fallback embedding when client does not support embeddings", async () => {
     const embedding =
       await testServiceWithoutEmbeddings.createEmbedding("Test text");
-    expect(embedding).to.have.lengthOf(768);
+    expect(embedding).to.have.lengthOf(3072);
     expect(embedding.every((v) => v === 0)).to.be.true;
   });
 });
