@@ -91,8 +91,8 @@ While the core functionality is operational and has passed initial validation, t
     *   **Test Coverage:** The test suite in `features/memory/__tests__/MemoryService.test.ts` contains only placeholder tests. It **must** be expanded to include comprehensive unit and integration tests covering fact extraction, parsing, error handling, and the de-duplication logic.
 
 *   **Known Limitation: Persona-Specific Memory:**
-    *   **Description:** Manual testing has revealed that memories are currently tied to a specific `personaId`. When the user switches personas, the memory context is lost, and the new persona does not have access to facts learned by the previous one.
-    *   **Impact:** This breaks the user's expectation of a continuous relationship with the AI assistant.
+    *   **Description:** Manual testing has revealed that memories are currently tied to a specific `personaId`. When the user switches personas, the memory context is lost, and the new persona does not have access to facts learned by the previous one. However, it has been validated that memory for a *single persona* **is** persistent across sessions (i.e., if you close and reopen the tab, a persona will still have its memories). The issue is confined to the act of switching between different personas.
+    *   **Impact:** This breaks the user's expectation of a continuous relationship with the AI assistant as a whole, even though individual persona relationships are maintained.
     *   **Resolution:** A new user story, "[Shared Memory Across Personas](stories/shared-memory-across-personas.md)," has been created to address this in a future sprint.
 
 **Conclusion:** The current implementation serves as a successful proof-of-concept. However, it should be considered an alpha release. The remaining tasks and known limitations are essential for ensuring the system is robust, accurate, and maintainable before being shipped to a wider user base.
