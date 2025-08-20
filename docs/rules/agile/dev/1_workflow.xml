@@ -107,7 +107,7 @@
           <title>Approve, Update Task Status, and Commit</title>
           <action>Get user approval, update tasks.md, and then commit the changes.</action>
           <details>
-            If the work is satisfactory, present a summary to the user and ask for explicit approval. After receiving confirmation, update the task's status to "done" in `tasks.md`. Immediately after updating the task file, commit all changes with a message that includes the task name and co-author attribution. This ensures the task status is part of the same commit as the code changes. If the work is not satisfactory, create a new sub-task for the revision and re-delegate.
+            If the work is satisfactory, present a summary to the user and ask for explicit approval. After receiving confirmation, update the task's status to "done" in `tasks.md`. Immediately after updating the task file, commit all changes with a message that includes the task name. This ensures the task status is part of the same commit as the code changes. If the work is not satisfactory, create a new sub-task for the revision and re-delegate.
           </details>
           <tools>
             <tool>ask_followup_question</tool>
@@ -116,8 +116,6 @@
           </tools>
           <commit_message>
             feat({feature_name}): {task_name}
-
-Co-authored-by: sonic <219738659+roomote[bot]@users.noreply.github.com>
           </commit_message>
         </step>
         <step>
