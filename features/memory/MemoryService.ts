@@ -8,6 +8,11 @@ const MODEL_NAME = "gemini-2.5-flash-lite";
 
 export interface IMemoryService {
   processAndStoreMemory(transcript: string, sessionId: string): Promise<void>;
+  retrieveRelevantMemories(
+    query: string,
+    sessionId: string,
+    topK?: number,
+  ): Promise<Memory[]>;
 }
 
 export class MemoryService extends BaseAIService implements IMemoryService {
@@ -151,6 +156,53 @@ ${transcript}`;
         responseText,
       });
       return [];
+    }
+  }
+
+  /**
+   * Retrieve relevant memories for a given query using semantic search
+   * @param query The search query to find relevant memories for
+   * @param sessionId The user session ID
+   * @param topK The number of top memories to retrieve (default: 5)
+   * @returns Array of relevant Memory objects
+   */
+  async retrieveRelevantMemories(
+    query: string,
+    sessionId: string,
+    topK: number = 5,
+  ): Promise<Memory[]> {
+    try {
+      logger.debug("Retrieving relevant memories", {
+        query,
+        sessionId,
+        topK,
+      });
+
+      // Use the vector store to perform semantic search
+      // Note: searchMemories uses similarity threshold (0.8 default), not topK
+      const relevantMemories = await this.vectorStore.searchMemories(
+        query,
+        0.7, // Lower threshold to get more results, then we'll limit with slice
+      );
+
+      // Limit to topK results
+      const limitedMemories = relevantMemories.slice(0, topK);
+
+      logger.debug("Retrieved memories", {
+        query,
+        sessionId,
+        memoryCount: limitedMemories.length,
+      });
+
+      return limitedMemories;
+    } catch (error) {
+      logger.error("Failed to retrieve relevant memories", {
+        error,
+        query,
+        sessionId,
+        topK,
+      });
+      return []; // Return empty array on failure
     }
   }
 }

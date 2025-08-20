@@ -29,6 +29,7 @@ import "@components/TabView";
 import "@components/CallHistoryView";
 import type { ToastNotification } from "@components/ToastNotification";
 import { MemoryService } from "@features/memory/MemoryService";
+import { NPUService } from "@features/ai/NPUService";
 import type { CallSummary, Turn } from "@shared/types";
 
 declare global {
@@ -472,6 +473,7 @@ class TextSessionManager extends BaseSessionManager {
     onRateLimit: (msg: string) => void,
     private updateTranscript: (text: string) => void,
     private personaManager: PersonaManager,
+    private npuService: NPUService,
     hostElement: HTMLElement,
   ) {
     super(
@@ -539,6 +541,45 @@ class TextSessionManager extends BaseSessionManager {
   public override reconnectSession(): Promise<void> {
     // Do nothing. Reconnect is disabled for TTS sessions.
     return Promise.resolve();
+  }
+
+  /**
+   * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
+   * then VPU (the session) responds with the enhanced context.
+   */
+  public async sendMessageWithMemory(message: string): Promise<void> {
+    if (!this.session) {
+      throw new Error("Text session not available");
+    }
+
+    try {
+      // Step 1: Get persona ID for memory retrieval
+      const personaId = this.personaManager.getActivePersona().id;
+
+      // Step 2: NPU creates RAG-augmented prompt
+      const ragPrompt = await this.npuService.createRAGPrompt(
+        message,
+        personaId,
+      );
+
+      logger.debug("NPU created RAG prompt", {
+        originalMessage: message,
+        enhancedPromptLength: ragPrompt.enhancedPrompt.length,
+        memoryCount: ragPrompt.retrievedMemories.length,
+      });
+
+      // Step 3: Send the enhanced prompt to VPU (the session)
+      this.session.sendClientContent({ turns: ragPrompt.enhancedPrompt });
+
+    } catch (error) {
+      logger.error("Failed to send message with memory", {
+        error,
+        message,
+      });
+
+      // Fallback: send original message if RAG fails
+      this.session.sendClientContent({ turns: message });
+    }
   }
 }
 
@@ -677,6 +718,7 @@ export class GdmLiveAudio extends LitElement {
   private personaManager: PersonaManager;
   private vectorStore: VectorStore;
   private memoryService: MemoryService;
+  private npuService: NPUService;
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
@@ -838,6 +880,7 @@ export class GdmLiveAudio extends LitElement {
         this._handleTextRateLimit.bind(this),
         this.updateTextTranscript.bind(this),
         this.personaManager,
+        this.npuService,
         this,
       );
       this.callSessionManager = new CallSessionManager(
@@ -899,6 +942,9 @@ export class GdmLiveAudio extends LitElement {
 
     // Initialize MemoryService with the GoogleGenAI client
     this.memoryService = new MemoryService(this.vectorStore, this.client);
+
+    // Initialize NPU Service for memory-augmented prompt formulation
+    this.npuService = new NPUService(this.client, this.memoryService);
 
     // Initialize session managers after client is ready
     this.initSessionManagers();
@@ -1566,12 +1612,12 @@ export class GdmLiveAudio extends LitElement {
       }
     }
 
-    // Send message to text session using session manager
+    // Send message to text session using NPU-VPU flow (memory-augmented)
     if (this.textSession) {
       try {
-        this.textSessionManager.sendMessage(message);
+        await this.textSessionManager.sendMessageWithMemory(message);
       } catch (error) {
-        logger.error("Error sending message to text session:", { error });
+        logger.error("Error sending message with memory to text session:", { error });
         const msg = String((error as Error)?.message || error || "");
         this.updateError(`Failed to send message: ${msg}`);
 
