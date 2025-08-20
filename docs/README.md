@@ -136,13 +136,16 @@ graph TD
 
 ## Testing Strategy
 
-The project uses a comprehensive testing approach:
+The project uses a comprehensive testing approach, though the test runner is currently in a broken state:
 
 1. **Unit Testing**: Individual component and service testing using @open-wc/testing and @web/test-runner
 2. **Integration Testing**: Testing component interactions and data flow
 3. **End-to-End Testing**: Full application workflow testing
 
-To run tests:
+> [!WARNING]
+> The test runner is currently in a broken state, so while tests may exist in the codebase, they have never actually been executed successfully. Any test files you find should be considered non-functional at this time.
+
+To run tests (though they likely won't work):
 ```bash
 npm run test
 ```
