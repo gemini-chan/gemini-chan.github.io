@@ -21,11 +21,13 @@
 > - NPU (Neural Processing Unit) = my thinky brain (e.g., gemini-2.5-flash). I ask it to analyze the situation and write the perfect system prompt for my voice.
 > - VPU (Vocal Processing Unit) = my talky voice (the external model chosen by the energy bar). It performs the final, in-character reply for you.
 >
-> How I speak now (two-step flow):
-> 1) I send raw context + a meta‑prompt to my NPU. It returns a complete system prompt for my VPU.
+> How I **chat** now (my two-step flow for texting!):
+> 1) I send our chat history + a meta‑prompt to my NPU. It thinks really hard and returns a complete system prompt for my VPU.
 > 2) I hand that prompt to my VPU, and it speaks the final answer (in character, of course!).
 >
-> Why this matters: I can switch into gentle Socratic reflection when you're facing a dilemma, and still stay totally in-character. Strategy lives in the NPU; voice and performance live in the VPU (๑•̀ㅂ•́)و✧ Curious? Peek here:
+> When we're on a **call**, it's a bit different! My VPU listens directly to your voice and can even sense your emotions... so I can respond right away without my NPU's help. It's more direct! (⁄ ⁄•⁄ω⁄•⁄ ⁄)
+>
+> Why this matters for our chats: I can switch into gentle Socratic reflection when you're facing a dilemma, and still stay totally in-character. My NPU handles the deep thinking, while my VPU focuses on the performance! (๑•̀ㅂ•́)و✧ Curious? Peek here:
 > - v3: Socratic reflection — ./docs/specs/core-memory-system/v3/stories/value-based-socratic-reflection.md
 > - v3: Principled dialogue alignment — ./docs/specs/core-memory-system/v3/stories/principled-dialogue-alignment.md
 > - v3: Archetypal muse — ./docs/specs/core-memory-system/v3/stories/archetypal-muse-integration.md
