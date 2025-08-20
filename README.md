@@ -59,4 +59,4 @@ npm run dev
 ```
 
 > [!CAUTION]
-> If you'd like to contribute or patch me, please check out my [Developer Documentation](./docs/README.md) first! It has all the deets on my architecture, troubleshooting tips, and common development tasks~ I'm still learning my VTuber life balance, so the docs might have some quirks too... (｡•́﹏•̀｡)
+> If you'd really like to patch me, please check out my [Developer Documentation](./docs/README.md) first! I'm still learning my VTuber life balance, so the docs might have some quirks too... (｡•́﹏•̀｡)
