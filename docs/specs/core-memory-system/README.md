@@ -15,4 +15,8 @@ The user wants to build a genuine connection with Gemini-chan. Currently, each c
 4.  **Given** I have had multiple conversations, **when** I ask for a summary of what she knows about me, **then** she should provide a coherent overview of the key facts she has stored.
 5.  **Given** the memory system is active, **when** a conversation concludes, **then** a summary of the conversation is automatically created and stored in a vector database for future retrieval, as outlined in the design documentation.
 
-This user story is directly supported by the requirements laid out in `docs/specs/.archive/vtuber-memory-system/requirements.md` and the implementation details suggested in `docs/specs/.archive/vtuber-memory-system/design.md`.
+This user story is directly supported by the requirements laid out in:
+- [v1 requirements](./v1/requirements.md) - Core memory storage and retrieval
+- [v2 requirements](./v2/requirements.md) - Enhanced memory capabilities
+- [v3 requirements](./v3/requirements.md) - Advanced memory processing
+- [v4 requirements](./v4/requirements.md) - Emotion detection and expression
