@@ -1,6 +1,8 @@
 export interface Turn {
   speaker: "user" | "model";
   text: string;
+  isSystemMessage?: boolean;
+  timestamp?: Date;
 }
 
 export interface CallHistoryItem {

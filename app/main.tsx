@@ -798,33 +798,32 @@ export class GdmLiveAudio extends LitElement {
       if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
     }
 
-    // Optimize transcript updates
-    if (changedProperties.has("textTranscript")) {
-      const oldT = changedProperties.get("textTranscript") as Turn[];
-      const lastOld = oldT?.[oldT.length - 1];
-      const lastNew = this.textTranscript?.[this.textTranscript.length - 1];
-      if (
-        !lastOld ||
-        !lastNew ||
-        lastOld.text !== lastNew.text ||
-        lastOld.speaker !== lastNew.speaker
-      ) {
-        return true;
-      }
-    }
+    // More robust transcript update check
+    const checkTranscript = (
+      propName: "textTranscript" | "callTranscript",
+    ): boolean => {
+      if (changedProperties.has(propName)) {
+        const oldT = (changedProperties.get(propName) as Turn[]) || [];
+        const newT = this[propName] || [];
+        if (oldT.length !== newT.length) return true;
 
-    if (changedProperties.has("callTranscript")) {
-      const oldT = changedProperties.get("callTranscript") as Turn[];
-      const lastOld = oldT?.[oldT.length - 1];
-      const lastNew = this.callTranscript?.[this.callTranscript.length - 1];
-      if (
-        !lastOld ||
-        !lastNew ||
-        lastOld.text !== lastNew.text ||
-        lastOld.speaker !== lastNew.speaker
-      ) {
-        return true;
+        const lastOld = oldT[oldT.length - 1];
+        const lastNew = newT[newT.length - 1];
+        if (
+          !lastOld ||
+          !lastNew ||
+          lastOld.text !== lastNew.text ||
+          lastOld.speaker !== lastNew.speaker ||
+          lastOld.isSystemMessage !== lastNew.isSystemMessage
+        ) {
+          return true;
+        }
       }
+      return false;
+    };
+
+    if (checkTranscript("textTranscript") || checkTranscript("callTranscript")) {
+      return true;
     }
 
     return false;
