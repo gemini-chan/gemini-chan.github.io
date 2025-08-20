@@ -15,6 +15,7 @@ export class VectorStore {
   private db: IDBPDatabase | null = null;
   private aiClient: AIClient | null = null;
   private embeddingModel = "gemini-embedding-001";
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(
     personaId: string,
@@ -24,6 +25,7 @@ export class VectorStore {
     this.personaId = personaId;
     this.aiClient = aiClient || null;
     this.embeddingModel = embeddingModel;
+    this.initializationPromise = this.init();
   }
 
   private getStoreName(): string {
@@ -31,6 +33,9 @@ export class VectorStore {
   }
 
   async init(): Promise<void> {
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
     const storeName = this.getStoreName();
     try {
       this.db = await openDB(DB_NAME, DB_VERSION + 1, {
@@ -58,8 +63,8 @@ export class VectorStore {
 
   async switchPersona(newPersonaId: string): Promise<void> {
     this.personaId = newPersonaId;
-    // No need to close the current DB connection, just ensure the new store exists.
-    await this.init();
+    this.initializationPromise = this.init();
+    await this.initializationPromise;
   }
 
   /**
@@ -77,9 +82,7 @@ export class VectorStore {
    * @param memory The memory object to save
    */
   async saveMemory(memory: Omit<Memory, "vector">): Promise<void> {
-    if (!this.db) {
-      await this.init();
-    }
+    await this.initializationPromise;
 
     try {
       // Generate embedding for the memory content using document task type
@@ -271,9 +274,7 @@ export class VectorStore {
    * @returns Array of memory objects
    */
   async getAllMemories(): Promise<Memory[]> {
-    if (!this.db) {
-      await this.init();
-    }
+    await this.initializationPromise;
 
     const storeName = this.getStoreName();
     const tx = this.db?.transaction(storeName, "readonly");
@@ -292,10 +293,7 @@ export class VectorStore {
    */
   async searchMemories(query: string, threshold = 0.8): Promise<Memory[]> {
     try {
-      // Ensure database is initialized
-      if (!this.db) {
-        await this.init();
-      }
+      await this.initializationPromise;
 
       // Generate embedding for the query using query task type
       const queryVector = await this.generateQueryEmbedding(query);
