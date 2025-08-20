@@ -910,9 +910,6 @@ export class GdmLiveAudio extends LitElement {
   constructor() {
     super();
     this.personaManager = new PersonaManager();
-    this.vectorStore = new VectorStore(
-      this.personaManager.getActivePersona().id,
-    );
     // MemoryService will be initialized after the GoogleGenAI client is created
     this.initClient();
 
