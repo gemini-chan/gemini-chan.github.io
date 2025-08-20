@@ -184,6 +184,35 @@ This versioned approach allows us to:
 
 When working with specifications, always check for existing versions and default to the latest version unless otherwise specified.
 
+## Glossary of Key Terms
+
+- **Persona**: A distinct AI character with specific traits, behaviors, and memories that defines how Gemini-chan interacts with users. Personas can be switched to change the AI's personality and response style.
+
+- **Session**: A continuous interaction period between a user and Gemini-chan. There are two types:
+  - **STS (Speech-to-Speech)**: Live, ephemeral voice calls
+  - **TTS (Text-to-Speech)**: Persistent text-based chat
+
+- **Memory**: Information about users and conversations that is stored persistently and can be retrieved to make future interactions more contextual and personalized.
+
+- **Energy Bar**: A visual indicator showing the AI's remaining capacity for processing requests. Different Gemini models have different rate limits, and the energy bar helps manage user expectations.
+
+- **Live2D**: A 2D character animation technology that provides expressive, real-time character visualization that responds to audio input/output.
+
+- **Vector Store**: A database system that stores memory embeddings for semantic search and retrieval, enabling contextual memory functionality.
+
+- **Dual-Input Mode**: A system that supports separate interaction modes for voice calls and text chat, each with independent sessions and energy management.
+
+## Decision Matrix for Common Scenarios
+
+| Scenario | Decision | Reasoning |
+|----------|----------|-----------|
+| Creating new functionality | Start with a new feature specification in `/docs/specs/` | Ensures proper documentation and follows the established workflow |
+| Extending existing features | Add new versions (v2, v3) rather than modifying existing ones | Preserves historical context and enables parallel development |
+| Conflicting requirements | Prioritize user stories and work with the user to resolve conflicts | Maintains focus on user value and prevents scope creep |
+| Missing information for implementation | Conduct research and create a `research-summary.md` | Ensures informed design decisions before coding begins |
+| Performance issues with memory retrieval | Implement timeout mechanisms and graceful degradation | Maintains user experience even when systems are slow |
+| API rate limits | Implement energy bar system with model switching | Provides clear feedback and optimizes resource usage |
+
 -----
 
 ## Implementation Guidance for AI Agents
