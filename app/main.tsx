@@ -236,7 +236,7 @@ abstract class BaseSessionManager {
       return null;
     } catch (e) {
       const error = e as Error;
-      logger.error(`Error connecting ${this.getSessionName()}:`, error);
+      logger.error(`Error connecting ${this.getSessionName()}:`, { error });
       const msg = String(error?.message || error || "");
       this.updateError(`Failed to connect ${this.getSessionName()}: ${msg}`);
       return error;
@@ -363,7 +363,7 @@ abstract class BaseSessionManager {
       } catch (error) {
         logger.error(
           `Error sending message to ${this.getSessionName()}:`,
-          error,
+          { error },
         );
         this.updateError(`Failed to send message: ${error.message}`);
       }
@@ -422,7 +422,7 @@ abstract class BaseSessionManager {
     try {
       summary = await summarizationService.summarize(transcript);
     } catch (error) {
-      logger.error("Failed to summarize transcript:", error, { transcriptSnippet: transcript.map(t => t.text).join(' ').slice(0, 100) });
+      logger.error("Failed to summarize transcript:", { error, transcriptSnippet: transcript.map(t => t.text).join(' ').slice(0, 100) });
       // Fallback to a simpler context if summarization fails
       summary = "Could not summarize previous conversation.";
     }
@@ -1353,7 +1353,7 @@ export class GdmLiveAudio extends LitElement {
 
   private _handleModelUrlError(e: CustomEvent) {
     const errorMessage = e.detail?.error || "Live2D URL validation failed";
-    logger.error("[Model URL Error]", errorMessage);
+    logger.error("[Model URL Error]", { errorMessage });
 
     // Show error toast notification
     const toast = this.shadowRoot?.querySelector(
@@ -1366,7 +1366,7 @@ export class GdmLiveAudio extends LitElement {
 
   private _handleLive2dError(e: CustomEvent) {
     const errorMessage = e.detail?.error || "Failed to load Live2D model";
-    logger.error("[Live2D Error]", errorMessage);
+    logger.error("[Live2D Error]", { errorMessage });
 
     // Show error toast notification
     const toast = this.shadowRoot?.querySelector(
@@ -1548,7 +1548,7 @@ export class GdmLiveAudio extends LitElement {
       try {
         this.textSessionManager.sendMessage(message);
       } catch (error) {
-        logger.error("Error sending message to text session:", error);
+        logger.error("Error sending message to text session:", { error });
         const msg = String((error as Error)?.message || error || "");
         this.updateError(`Failed to send message: ${msg}`);
 
@@ -1680,7 +1680,7 @@ export class GdmLiveAudio extends LitElement {
       if (mode === "sts" && this.activeMode === "calling" && this.callTranscript.length > 0) {
         this.callSessionManager.handleFallback(this.callTranscript, this.summarizationService)
           .catch(error => {
-            logger.error("Error handling fallback for call session", error);
+            logger.error("Error handling fallback for call session", { error });
           });
       }
       
@@ -1688,7 +1688,7 @@ export class GdmLiveAudio extends LitElement {
       if (mode === "tts" && this.textTranscript.length > 0) {
         this.textSessionManager.handleFallback(this.textTranscript, this.summarizationService)
           .catch(error => {
-            logger.error("Error handling fallback for text session", error);
+            logger.error("Error handling fallback for text session", { error });
           });
       }
     }

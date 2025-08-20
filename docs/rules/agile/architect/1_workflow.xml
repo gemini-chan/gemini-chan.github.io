@@ -5,24 +5,43 @@
 
   <initialization_steps>
     <step number="1">
-      <action>Identify the target feature</action>
+      <action>Analyze Request and Check Mode Appropriateness</action>
       <details>
-        Parse the user's request to determine the `{feature_name}`. This is essential for locating the correct spec file at `docs/specs/{feature_name}/requirements.md`.
+        Parse the user's request to determine the `{feature_name}` and analyze if this request would be better handled by another agile mode:
+        - Agile-Writer: Keywords like "requirements", "stories", "user stories", "acceptance criteria"
+        - Agile-Planner: Keywords like "tasks", "implementation plan", "break down", "task list", "schedule"
+        - Agile-Dev: Keywords like "code", "implement", "develop", "programming", "execute"
+
+        If the request contains keywords from another mode, suggest switching to that mode.
+
+        Also check for both legacy structure (`docs/specs/{feature_name}/requirements.md`) and versioned structure (`docs/specs/{feature_name}/v{version}/`).
+        If versioned structure exists, identify the latest version and ask user if they want to use it or create a new version.
       </details>
+      <tools>
+        <tool>list_files</tool>
+        <tool>ask_followup_question</tool>
+      </tools>
     </step>
     <step number="2">
       <action>Read the requirements document</action>
       <details>
-        Read the content of `docs/specs/{feature_name}/requirements.md`. This document is the foundation for the entire design process.
+        Read the content of the requirements document from the appropriate location:
+        - Legacy: `docs/specs/{feature_name}/requirements.md`
+        - Versioned: `docs/specs/{feature_name}/v{version}/stories/` (may need to read multiple story files)
+        This document is the foundation for the entire design process.
       </details>
       <tools>
         <tool>read_file</tool>
+        <tool>list_files</tool>
       </tools>
     </step>
     <step number="3">
       <action>Check for an Existing Design Document</action>
       <details>
-        Before any writing operation, you MUST check if a `docs/specs/{feature_name}/design.md` file already exists. This is a critical step to prevent accidental overwrites.
+        Check if a design document already exists in the appropriate location:
+        - Legacy: `docs/specs/{feature_name}/design.md`
+        - Versioned: `docs/specs/{feature_name}/v{version}/design.md`
+        This is a critical step to prevent accidental overwrites.
       </details>
       <tools>
         <tool>list_files</tool>
@@ -37,8 +56,10 @@
         <step>
           <action>Create or Update `design.md`</action>
           <details>
-            If `design.md` does not exist, create it from scratch.
-            If `design.md` already exists, you MUST read its contents and inform the user you will be updating it, then use `apply_diff` for all modifications.
+            Create or update the design document in the appropriate location:
+            - Legacy: `docs/specs/{feature_name}/design.md`
+            - Versioned: `docs/specs/{feature_name}/v{version}/design.md`
+            If the document already exists, you MUST read its contents and inform the user you will be updating it, then use `apply_diff` for all modifications.
           </details>
         </step>
         <step>

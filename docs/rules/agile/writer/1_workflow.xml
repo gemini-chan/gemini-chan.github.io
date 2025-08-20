@@ -11,19 +11,34 @@
       </details>
     </step>
     <step number="2">
-      <action>Understand the User's Request</action>
+      <action>Analyze Request and Check Mode Appropriateness</action>
       <details>
         Parse the user's initial prompt to identify the core feature idea, its primary goal, and any initial constraints or key details provided.
+
+        Also analyze if this request would be better handled by another agile mode:
+        - Agile-Architect: Keywords like "design", "architecture", "components", "data models", "technical solution"
+        - Agile-Planner: Keywords like "tasks", "implementation plan", "break down", "task list", "schedule"
+        - Agile-Dev: Keywords like "code", "implement", "develop", "programming", "execute"
+
+        If the request contains keywords from another mode, suggest switching to that mode.
       </details>
+      <tools>
+        <tool>ask_followup_question</tool>
+      </tools>
     </step>
     <step number="3">
-      <action>Check for Existing Specification</action>
+      <action>Determine Specification Structure and Version</action>
       <details>
-        Check if a `docs/specs/{feature_name}/requirements.md` file already exists. If not, create it.
+        First, check for an existing documentation structure for `{feature_name}`.
+        - Use `list_files` to check for a versioned structure (e.g., `docs/specs/{feature_name}/v1/`).
+        - If versioned directories exist, identify the latest version. Ask the user if they want to work on the latest version or create a new one.
+        - If no versioned structure exists, check for a legacy flat structure (e.g., `docs/specs/{feature_name}/requirements.md`).
+        - If a legacy structure is found, inform the user and ask if they want to use it or create a new versioned structure.
+        - If no structure exists, ask the user whether to create a legacy (flat) or a new versioned structure (defaulting to v1).
       </details>
       <tools>
         <tool>list_files</tool>
-        <tool>write_to_file</tool>
+        <tool>ask_followup_question</tool>
       </tools>
     </step>
   </initialization_steps>
@@ -63,9 +78,13 @@
         <step>
           <title>Draft User Stories for Epic</title>
           <action>Generate a set of user stories for the selected epic, including priority and Gherkin-style acceptance criteria.</action>
-          <details>Append these stories to the `requirements.md` file under the corresponding epic.</details>
+          <details>
+            For versioned structure: Create individual story files in `docs/specs/{feature_name}/v{version}/stories/{story_name}.md`.
+            For legacy structure: Append these stories to the `requirements.md` file under the corresponding epic.
+          </details>
           <tools>
             <tool>insert_content</tool>
+            <tool>write_to_file</tool>
           </tools>
         </step>
         <step>
