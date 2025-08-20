@@ -27,24 +27,14 @@
       </tools>
     </step>
     <step number="3">
-      <action>Check for Existing Specification</action>
+      <action>Determine Specification Structure and Version</action>
       <details>
-        Check if a `docs/specs/{feature_name}/requirements.md` file already exists (legacy structure).
-        Also check for versioned structure: `docs/specs/{feature_name}/v{version}/`.
-        If versioned structure exists, use that; otherwise fall back to legacy structure.
-        If neither exists, ask user about preferred structure and version.
-      </details>
-      <tools>
-        <tool>list_files</tool>
-        <tool>write_to_file</tool>
-      </tools>
-    </step>
-    <step number="4">
-      <action>Determine Structure Type and Version</action>
-      <details>
-        If existing versioned structure found, identify the latest version and ask user if they want to use it or create a new version.
-        If no existing structure, ask user whether to use legacy structure (flat) or versioned structure.
-        For versioned structure, determine the next version number (v1, v2, etc.).
+        First, check for an existing documentation structure for `{feature_name}`.
+        - Use `list_files` to check for a versioned structure (e.g., `docs/specs/{feature_name}/v1/`).
+        - If versioned directories exist, identify the latest version. Ask the user if they want to work on the latest version or create a new one.
+        - If no versioned structure exists, check for a legacy flat structure (e.g., `docs/specs/{feature_name}/requirements.md`).
+        - If a legacy structure is found, inform the user and ask if they want to use it or create a new versioned structure.
+        - If no structure exists, ask the user whether to create a legacy (flat) or a new versioned structure (defaulting to v1).
       </details>
       <tools>
         <tool>list_files</tool>
