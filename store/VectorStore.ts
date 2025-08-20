@@ -53,7 +53,7 @@ export class VectorStore {
         },
       });
       logger.debug(
-        `Initialized VectorStore database: ${DB_NAME} v${DB_VERSION}`,
+        `Initialized VectorStore database: ${DB_NAME} v${DB_VERSION + 1}`,
       );
     } catch (error) {
       logger.error("Failed to initialize IndexedDB:", { error, storeName });
