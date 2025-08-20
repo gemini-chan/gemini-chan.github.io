@@ -25,7 +25,7 @@ export interface Embedding {
 }
 
 export interface EmbeddingResponse {
-  embedding: Embedding;
+  embedding?: Embedding;
   embeddings: Embedding[];
 }
 

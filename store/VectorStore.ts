@@ -184,7 +184,9 @@ export class VectorStore {
 
       const response = await this.aiClient.models.embedContent(request);
 
-      if (!response.embedding || !response.embedding.values) {
+      const embedding = response.embeddings?.[0];
+
+      if (!embedding || !embedding.values) {
         logger.warn("Invalid embedding response, returning zero vector", {
           response: response,
         });
@@ -193,11 +195,11 @@ export class VectorStore {
 
       logger.debug("Generated embedding", {
         textLength: text.length,
-        embeddingDimensions: response.embedding.values.length,
+        embeddingDimensions: embedding.values.length,
         taskType,
       });
 
-      return response.embedding.values;
+      return embedding.values;
     } catch (error) {
       logger.error("Failed to generate embedding", {
         error,
