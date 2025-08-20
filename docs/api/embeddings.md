@@ -11,7 +11,7 @@ To learn more about the available embedding model variants, see the Model versio
 Use the embedContent method to generate text embeddings:
 
 ```javascript
-import { GoogleGenAI } from " @google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 async function main() {
     const ai = new GoogleGenAI({});
