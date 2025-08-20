@@ -14,7 +14,7 @@ import {
 import { createComponentLogger } from "@services/DebugLogger";
 import { createBlob, decode, decodeAudioData } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
-import { LitElement, css, html } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
@@ -28,7 +28,14 @@ import "@components/ControlsPanel";
 import "@components/TabView";
 import "@components/CallHistoryView";
 import type { ToastNotification } from "@components/ToastNotification";
+import { MemoryService } from "@features/memory/MemoryService";
 import type { CallSummary, Turn } from "@shared/types";
+
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
 
 declare global {
   interface Window {
@@ -361,10 +368,9 @@ abstract class BaseSessionManager {
       try {
         this.session.sendClientContent({ turns: message });
       } catch (error) {
-        logger.error(
-          `Error sending message to ${this.getSessionName()}:`,
-          { error },
-        );
+        logger.error(`Error sending message to ${this.getSessionName()}:`, {
+          error,
+        });
         this.updateError(`Failed to send message: ${error.message}`);
       }
     }
@@ -422,7 +428,13 @@ abstract class BaseSessionManager {
     try {
       summary = await summarizationService.summarize(transcript);
     } catch (error) {
-      logger.error("Failed to summarize transcript:", { error, transcriptSnippet: transcript.map(t => t.text).join(' ').slice(0, 100) });
+      logger.error("Failed to summarize transcript:", {
+        error,
+        transcriptSnippet: transcript
+          .map((t) => t.text)
+          .join(" ")
+          .slice(0, 100),
+      });
       // Fallback to a simpler context if summarization fails
       summary = "Could not summarize previous conversation.";
     }
@@ -624,7 +636,6 @@ class CallSessionManager extends BaseSessionManager {
   protected getSessionName(): string {
     return "Call session";
   }
-
 }
 
 type ActiveMode = "texting" | "calling" | null;
@@ -665,6 +676,7 @@ export class GdmLiveAudio extends LitElement {
   private summarizationService: SummarizationService;
   private personaManager: PersonaManager;
   private vectorStore: VectorStore;
+  private memoryService: MemoryService;
 
   private client: GoogleGenAI;
   private inputAudioContext = new (
@@ -780,6 +792,7 @@ export class GdmLiveAudio extends LitElement {
     this.vectorStore = new VectorStore(
       this.personaManager.getActivePersona().id,
     );
+    this.memoryService = new MemoryService(this.vectorStore);
     this.initClient();
 
     // Debug: Check initial TTS energy state
@@ -1675,19 +1688,25 @@ export class GdmLiveAudio extends LitElement {
     if ((mode === "sts" && level === 1) || (mode === "tts" && level === 1)) {
       // Trigger fallback handling
       logger.debug("Triggering fallback for", { mode, level });
-      
+
       // For STS (call session), handle fallback if we're in a call
-      if (mode === "sts" && this.activeMode === "calling" && this.callTranscript.length > 0) {
-        this.callSessionManager.handleFallback(this.callTranscript, this.summarizationService)
-          .catch(error => {
+      if (
+        mode === "sts" &&
+        this.activeMode === "calling" &&
+        this.callTranscript.length > 0
+      ) {
+        this.callSessionManager
+          .handleFallback(this.callTranscript, this.summarizationService)
+          .catch((error) => {
             logger.error("Error handling fallback for call session", { error });
           });
       }
-      
+
       // For TTS (text session), handle fallback if we have text transcript
       if (mode === "tts" && this.textTranscript.length > 0) {
-        this.textSessionManager.handleFallback(this.textTranscript, this.summarizationService)
-          .catch(error => {
+        this.textSessionManager
+          .handleFallback(this.textTranscript, this.summarizationService)
+          .catch((error) => {
             logger.error("Error handling fallback for text session", { error });
           });
       }

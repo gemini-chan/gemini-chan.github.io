@@ -24,14 +24,14 @@ This document outlines the technical tasks required to implement the first user 
 
 
 
-* [ ] **Task 1.1: Design and Refine the Memory Extraction Prompt.**
+* [x] **Task 1.1: Design and Refine the Memory Extraction Prompt.**
     * **Objective:** To create a highly reliable system prompt that instructs the Gemini model to act as a "fact extractor" and consistently return structured data.
     * **Details:**
         * The prompt will be engineered to be highly specific, instructing the model to analyze a conversation transcript and output an array of JSON objects. Each object will represent a single extracted fact.
         * The prompt will strictly define the JSON schema. For example: [{ "fact_key": "user_name", "fact_value": "Alex", "confidence_score": 0.99, "permanence_score": "permanent" }, { "fact_key": "user_hobby", "fact_value": "hiking", "confidence_score": 0.85, "permanence_score": "permanent" }]. This rigidity is crucial for reliable parsing.
         * We will incorporate "few-shot" examples directly into the prompt to train the model on the desired behavior. This includes providing examples of what to do and what *not* to do (e.g., ignoring conversational pleasantries like "how are you?"). This helps the model distinguish between meaningful data and noise.
         * To improve organization and maintainability, we will create a new root-level directory named prompts. The memory extraction prompt will be stored there as prompts/memory-extraction.prompt.md. This approach decouples the prompt logic from the application code, allowing for easier A/B testing and iteration by non-developers in the future.
-* [ ] **Task 1.2: Architect and Define the MemoryService.ts Module.**
+* [x] **Task 1.2: Architect and Define the MemoryService.ts Module.**
     * **Objective:** To establish a clean, maintainable, and testable service that encapsulates all memory-related operations, acting as the single source of truth for this feature.
     * **Details:**
         * Create the new feature directory and file at features/memory/MemoryService.ts.
