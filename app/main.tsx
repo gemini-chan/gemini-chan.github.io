@@ -813,6 +813,20 @@ export class GdmLiveAudio extends LitElement {
       }
     }
 
+    if (changedProperties.has("callTranscript")) {
+      const oldT = changedProperties.get("callTranscript") as Turn[];
+      const lastOld = oldT?.[oldT.length - 1];
+      const lastNew = this.callTranscript?.[this.callTranscript.length - 1];
+      if (
+        !lastOld ||
+        !lastNew ||
+        lastOld.text !== lastNew.text ||
+        lastOld.speaker !== lastNew.speaker
+      ) {
+        return true;
+      }
+    }
+
     return false;
   }
 
