@@ -1,12 +1,12 @@
 
 
-    **Developer's Note on Terminology:** As of v3 revision, we are adopting a more precise architectural terminology to clarify the system's design.
+**Developer's Note on Terminology:** As of v3 revision, we are adopting a more precise architectural terminology to clarify the system's design.
 
 
 
 * **Orchestrator:** Refers to our internal backend code, including the PersonaManager and VectorStore.
 * **NPU (Neural Processing Unit):** Refers to the gemini-2.5-flash model. It acts as the "brain," constructing a strategic prompt for the VPU.
-* **VPU (Vocal Processing Unit):** Refers to the external text generation model selected by the energy-bar-system. It acts as the "actor," generating the final response.
+* **VPU (Vocal Processing Unit):** Refers to the external text generation model selected by the Energy Bar system. It acts as the "actor," generating the final response.
 
 
 # User Story 12: Archetypal Muse Integration
@@ -37,14 +37,15 @@ So that I can reframe my personal challenges as meaningful parts of a universal 
 
 * **Orchestrator Logic:** The Orchestrator will use a prompt-based classifier to extract two entities from the user's message: a creative_entity and a state_of_inquiry. If and only if both entities are present and relevant, it will pass the context_type: 'creative_muse' flag to the NPU meta-prompt. This provides a clear, two-factor authentication for triggering the mode.
 * **NPU Meta-Prompt Enhancement:** The meta-prompt sent to the **NPU** will be enhanced with a new conditional rule that is highly specific to avoid clichés and ensure a quality response.
-    * **Example addition to NPU Meta-Prompt:** \
-IF context_type is 'creative_muse': \
-Your task is to construct a VPU prompt that instructs the VPU to act as an insightful creative muse. \
-1. The VPU must first identify a single, relevant, and non-cliché universal archetype, myth, or symbol that connects to the user's specific situation (e.g., The Hero's Journey, Icarus, the Sage, the Trickster, the symbolism of a crossroads or a key). \
-2. The VPU's response must briefly explain the connection in an inspiring way. \
-3. CRITICAL: The VPU's response must end with an open-ended, thought-provoking question that encourages the user's own creativity and reflection. Do not provide answers or suggestions. \
-4. CRITICAL: The VPU must NOT psychoanalyze the user. The connection should be presented as a creative tool or a metaphorical lens, not a psychological diagnosis (e.g., say 'This is like the myth of...' NOT 'This means you have an issue with...'). \
-5. CRITICAL: The VPU must keep its explanation of the archetype brief and focused on inspiration. \
-6. CRITICAL: If the RAG context contains relevant user memories, the VPU should attempt to weave them into the archetypal connection to make it deeply personal (e.g., 'This is like the myth of Icarus, and it reminds me of when you said you were worried about moving too fast in your new career.'). \
-
+    * **Example addition to NPU Meta-Prompt:**
+```text
+IF context_type is 'creative_muse':
+Your task is to construct a VPU prompt that instructs the VPU to act as an insightful creative muse.
+1. The VPU must first identify a single, relevant, and non-cliché universal archetype, myth, or symbol that connects to the user's specific situation (e.g., The Hero's Journey, Icarus, the Sage, the Trickster, the symbolism of a crossroads or a key).
+2. The VPU's response must briefly explain the connection in an inspiring way.
+3. CRITICAL: The VPU's response must end with an open-ended, thought-provoking question that encourages the user's own creativity and reflection. Do not provide answers or suggestions.
+4. CRITICAL: The VPU must NOT psychoanalyze the user. The connection should be presented as a creative tool or a metaphorical lens, not a psychological diagnosis (e.g., say 'This is like the myth of...' NOT 'This means you have an issue with...').
+5. CRITICAL: The VPU must keep its explanation of the archetype brief and focused on inspiration.
+6. CRITICAL: If the RAG context contains relevant user memories, the VPU should attempt to weave them into the archetypal connection to make it deeply personal (e.g., 'This is like the myth of Icarus, and it reminds me of when you said you were worried about moving too fast in your new career.').
+```
 * **Design Principle: Activate, Don't Store:** This feature intentionally avoids creating a dedicated RAG database for archetypes. Instead, it relies on the NPU's ability to craft a precise prompt that activates and guides the vast cultural knowledge already latent within the VPU. This makes the feature lightweight, scalable, and always up-to-date with the VPU's evolving knowledge base.

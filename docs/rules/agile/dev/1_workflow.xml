@@ -29,7 +29,7 @@
         <tool>ask_followup_question</tool>
       </tools>
     </step>
-    <step number="2">
+    <step number="3">
       <action>Identify Feature and Read Specifications</action>
       <details>
         Parse the user's request to identify the `{feature_name}`. Read the three core specification documents from the appropriate paths: `docs/specs/{feature_name}/requirements.md` (legacy) or multiple story files from `docs/specs/{feature_name}/v{version}/stories/` (versioned), `docs/specs/{feature_name}/design.md` (legacy) or `docs/specs/{feature_name}/v{version}/design.md` (versioned), and `docs/specs/{feature_name}/tasks.md` (legacy) or `docs/specs/{feature_name}/v{version}/tasks.md` (versioned). These documents are the single source of truth for the implementation.
@@ -38,7 +38,7 @@
         <tool>read_file</tool>
       </tools>
     </step>
-    <step number="2">
+    <step number="4">
       <action>Initialize Task Tracking</action>
       <details>
         Parse the `tasks.md` file and load the list of tasks into an internal checklist. The first task is marked as "in progress".

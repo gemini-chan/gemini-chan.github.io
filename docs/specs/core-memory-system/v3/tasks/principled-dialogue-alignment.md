@@ -1,6 +1,6 @@
 
 
-    **Developer's Note on Terminology:** As of v3 revision, we are adopting a more precise architectural terminology to clarify the system's design.
+**Developer's Note on Terminology:** As of v3 revision, we are adopting a more precise architectural terminology to clarify the system's design.
 
 
 # Tasks: Principled Dialogue Alignment (Story 10)
@@ -13,7 +13,7 @@ This document outlines the technical tasks required to implement User Story 10, 
 
 
 * **Dependencies:** This story assumes the completion of the v1 (factual recall) and v2 (emotional resonance) memory layers. The NPU service depends on a stable conversation ingestion pipeline.
-* **Definition of Done:** The story is considered complete when: 1) All tasks are implemented and unit/integration tests pass with >90% code coverage. 2) The end-to-end test suite (Task 4.2) passes successfully. 3) A manual QA session confirms that at least three different personas (e.g., Nurturing, Pragmatic, Cynical) correctly reference a seeded user value in a scripted scenario. 4) A performance review confirms the asynchronous NPU pipeline does not introduce noticeable latency to the user's chat experience.
+* **Definition of Done:** The story is considered complete when: 1) All tasks are implemented and unit/integration tests pass with >90% code coverage. 2) The end-to-end test suite (Task 4.2) passes successfully. 3) A manual QA session confirms that at least three different personas (e.g., Nurturing, Pragmatic, Cynical) correctly reference a seeded user value in a scripted scenario. 4) A performance review confirms the asynchronous NPU pipeline does not introduce noticeable latency to the user's experience.experience.experience.chat experience.
 
 
 ### 1. Backend: VectorStore Enhancements
@@ -71,8 +71,7 @@ This document outlines the technical tasks required to implement User Story 10, 
 
 * **Description:** Modify the PersonaManager's RAG process to perform a two-part retrieval:
     1. **Conversational Context:** Retrieve the top 3 most relevant conversation snippets based on the current user input, as is currently done.
-    2. Value Context: Separately, retrieve the top 2 user values that are most semantically relevant to the current input, weighted by their conviction_score. \
-The results of both queries will then be combined and passed to the prompt synthesis stage.
+    2. Value Context: Separately, retrieve the top 2 user values that are most semantically relevant to the current input, weighted by their conviction_score. The results of both queries will then be combined and passed to the prompt synthesis stage.
 * **File(s) Affected:** features/persona/PersonaManager.ts
 
 

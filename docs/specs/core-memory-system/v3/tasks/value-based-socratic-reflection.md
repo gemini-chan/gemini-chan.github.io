@@ -12,13 +12,13 @@ This document outlines the technical tasks required to implement User Story 11, 
 
 
 
-* **Description:** Modify the primary conversation handling logic within the PersonaManager to execute the new two-step NPU->VPU call sequence for every user message.
+* **Description:** Modify the primary conversation handling logic within the PersonaManager to execute the new two-step NPU → VPU call sequence for every user message.
 * **Action Items:**
     1. The function will first perform the standard RAG query to gather all necessary context (persona, memories, values, history).
     2. It will then call a new method, constructNpuMetaPrompt(), to assemble the prompt for the NPU.
     3. It will make the first API call to the NPU (gemini-2.5-flash) with this meta-prompt.
     4. It will receive the VPU prompt as a string from the NPU.
-    5. It will make the second API call to the VPU (model selected by energy-bar-system) with the NPU-generated prompt to get the final user-facing response.
+    5. It will make the second API call to the VPU (model selected by Energy Bar system) with the NPU-generated prompt to get the final user-facing response.
 * **File(s) Affected:** features/persona/PersonaManager.ts
 
 
