@@ -1,13 +1,17 @@
-import type { GoogleGenAI } from "@google/genai";
 import { createComponentLogger } from "@services/DebugLogger";
-
-const logger = createComponentLogger("BaseAIService");
+import {
+  type EmbeddingRequest,
+  type EmbeddingResponse,
+  isEmbeddingClient,
+} from "./EmbeddingClient";
 
 export interface AIClient {
   models: {
     generateContent: (request: any) => Promise<{ text: string }>;
   };
 }
+
+const logger = createComponentLogger("BaseAIService");
 
 export abstract class BaseAIService {
   protected client: AIClient;
@@ -33,6 +37,59 @@ export abstract class BaseAIService {
     } catch (error) {
       logger.error("Failed to call AI model", { error });
       throw error;
+    }
+  }
+
+  /**
+   * Generate embeddings for the given text using the embedding model
+   * @param text The text to embed
+   * @param model The embedding model to use
+   * @param taskType The task type for the embedding
+   * @param outputDimensionality The output dimensionality for the embedding
+   * @returns The embedding vector
+   */
+  protected async generateEmbedding(
+    text: string,
+    model: string = "gemini-embedding-001",
+    taskType: string = "SEMANTIC_SIMILARITY",
+    outputDimensionality: number = 768,
+  ): Promise<number[]> {
+    try {
+      // Check if the client supports embeddings
+      if (isEmbeddingClient(this.client)) {
+        const request: EmbeddingRequest = {
+          model: model,
+          content: text,
+          taskType: taskType,
+          outputDimensionality: outputDimensionality,
+        };
+
+        const response: EmbeddingResponse =
+          await this.client.models.embedContent(request);
+        return response.embedding.values;
+      } else {
+        logger.warn(
+          "Client does not support embeddings, returning empty vector",
+          {
+            model,
+            textLength: text.length,
+            taskType,
+            outputDimensionality,
+          },
+        );
+        // Return a zero vector of appropriate size as fallback
+        return new Array(outputDimensionality).fill(0);
+      }
+    } catch (error) {
+      logger.error("Failed to generate embedding", {
+        error,
+        model,
+        textLength: text.length,
+        taskType,
+        outputDimensionality,
+      });
+      // Return a zero vector as fallback
+      return new Array(outputDimensionality).fill(0);
     }
   }
 

@@ -65,7 +65,7 @@ export class MemoryService extends BaseAIService implements IMemoryService {
   private async extractFacts(
     transcript: string,
     sessionId: string,
-  ): Promise<Memory[]> {
+  ): Promise<Omit<Memory, "personaId" | "timestamp" | "conversation_turn">[]> {
     try {
       // Load the memory extraction prompt
       const prompt = await this.loadExtractionPrompt(transcript);
@@ -121,10 +121,15 @@ ${transcript}`;
    * @param responseText The raw response text from the AI model
    * @returns Array of validated Memory objects
    */
-  private parseExtractionResponse(responseText: string): Memory[] {
+  private parseExtractionResponse(
+    responseText: string,
+  ): Omit<Memory, "personaId" | "timestamp" | "conversation_turn">[] {
     try {
       // Try to parse the response as JSON
-      const facts = this.parseJsonResponse<Memory[]>(responseText);
+      const facts =
+        this.parseJsonResponse<
+          Omit<Memory, "personaId" | "timestamp" | "conversation_turn">[]
+        >(responseText);
 
       if (facts && Array.isArray(facts)) {
         return facts.filter(

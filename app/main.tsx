@@ -890,6 +890,13 @@ export class GdmLiveAudio extends LitElement {
     // Track the current API key for smart change detection
     this.currentApiKey = apiKey;
 
+    // Initialize VectorStore with the GoogleGenAI client for embedding support
+    this.vectorStore = new VectorStore(
+      this.personaManager.getActivePersona().id,
+    );
+    // Note: We'll set the AI client after initialization since GoogleGenAI may not fully support embeddings yet
+    // For now, we'll rely on the fallback implementation in VectorStore
+
     // Initialize MemoryService with the GoogleGenAI client
     this.memoryService = new MemoryService(this.vectorStore, this.client);
 
