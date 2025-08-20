@@ -37,7 +37,7 @@ describe('NPU-VPU Integration', () => {
     npuService = new NPUService(mockAIClient as any, mockMemoryService as any);
   });
 
-  it('should create RAG-augmented prompts with memory context', async () => {
+  it('should preserve original message and add memory context', async () => {
     const userMessage = "What is your favorite hiking trail?";
     const personaId = "test-persona";
 
@@ -48,7 +48,8 @@ describe('NPU-VPU Integration', () => {
     expect(result).to.have.property('memoryContext');
     expect(result.retrievedMemories).to.have.lengthOf(1);
     expect(result.memoryContext).to.include('hiking');
-    expect(result.enhancedPrompt).to.be.a('string');
+    expect(result.enhancedPrompt).to.include(userMessage); // Original message preserved
+    expect(result.enhancedPrompt).to.include('RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS');
   });
 
   it('should handle cases with no relevant memories', async () => {

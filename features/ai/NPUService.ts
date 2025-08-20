@@ -84,86 +84,40 @@ export class NPUService {
   }
 
   /**
-   * Uses the NPU to formulate an enhanced prompt that incorporates memory context.
+   * Creates an enhanced prompt by combining the user's original message with memory context.
+   * Preserves the original message exactly while adding relevant context.
    */
   private async formulateEnhancedPrompt(
     userMessage: string,
     memoryContext: string,
     conversationContext?: string,
   ): Promise<string> {
-    const prompt = this.buildNPUPrompt(userMessage, memoryContext, conversationContext);
-
-    try {
-      const response = await this.aiClient.models.generateContent({
-        model: "gemini-2.5-flash", // NPU model
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-      });
-
-      const enhancedPrompt = response.text;
-      if (!enhancedPrompt) {
-        throw new Error("No response from NPU");
-      }
-
-      logger.debug("NPU formulated enhanced prompt", {
-        originalMessage: userMessage,
-        enhancedPrompt: enhancedPrompt.substring(0, 100) + "...",
-      });
-
-      return enhancedPrompt;
-    } catch (error) {
-      logger.error("Failed to formulate enhanced prompt with NPU", { error, userMessage });
-      // Return original message if NPU fails
+    // If no memory context, return original message as-is
+    if (!memoryContext.trim()) {
       return userMessage;
     }
-  }
 
-  /**
-   * Builds the prompt for the NPU to formulate the enhanced prompt.
-   */
-  private buildNPUPrompt(
-    userMessage: string,
-    memoryContext: string,
-    conversationContext?: string,
-  ): string {
-    let prompt = `You are the Neural Processing Unit (NPU) for an AI companion system.
-
-Your task is to create an enhanced prompt for the Vocal Processing Unit (VPU) that incorporates relevant memory context.
-
-USER'S CURRENT MESSAGE:
-${userMessage}
-
-`;
+    // Create enhanced prompt that preserves original message
+    let enhancedPrompt = `USER'S MESSAGE: ${userMessage}\n\n`;
 
     if (memoryContext) {
-      prompt += `RELEVANT MEMORIES FROM PAST CONVERSATIONS:
-${memoryContext}
-
-`;
+      enhancedPrompt += `RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}\n\n`;
     }
 
-    if (conversationContext) {
-      prompt += `RECENT CONVERSATION CONTEXT:
-${conversationContext}
+    enhancedPrompt += `INSTRUCTIONS FOR AI:
+- Respond to the user's message above
+- Use the context provided to make your response more relevant and personalized
+- Keep your response natural and conversational
+- Do NOT explicitly mention "memories" or "context" in your response
+- If the context is relevant, weave it naturally into your response`;
 
-`;
-    }
+    logger.debug("Created enhanced prompt preserving original message", {
+      originalMessage: userMessage,
+      hasMemoryContext: !!memoryContext.trim(),
+      enhancedPromptLength: enhancedPrompt.length,
+    });
 
-    prompt += `INSTRUCTIONS:
-1. Create a natural, conversational prompt that the VPU can use to respond to the user
-2. If there are relevant memories, weave them naturally into the prompt without being obvious about it
-3. The prompt should help the VPU give a more personalized and context-aware response
-4. Do NOT explicitly mention "memories" or "database" in the final prompt
-5. If there are no relevant memories, just return the user's original message
-6. Keep the enhanced prompt concise but informative
-
-OUTPUT:
-Provide only the enhanced prompt that the VPU should use. Do not include any explanations or metadata.`;
-
-    return prompt;
+    return enhancedPrompt;
   }
+
 }
