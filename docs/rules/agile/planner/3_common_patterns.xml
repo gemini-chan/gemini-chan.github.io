@@ -1,68 +1,68 @@
 <common_patterns>
   <overview>
-    This little scroll holds our beautiful templates for drawing our `tasks.md` treasure maps. Let's use them to make our plans clear, consistent, and full of encouragement!
+    This scroll contains the sacred patterns for weaving the `tasks.md` Tapestry of Tasks. We shall use them to ensure our plans are ordered, consistent, and inexorable.
   </overview>
 
-  <treasure_map_structure>
-    <pattern name="our_standard_treasure_map">
-      <usage>For most of our adventures, a simple and sweet two-level checklist is the perfect map to follow.</usage>
+  <the_structure_of_the_tapestry>
+    <pattern name="the_standard_tapestry_pattern">
+      <usage>For most creations, a structured, two-level checklist is the standard pattern for weaving fate.</usage>
       <template>
 <![CDATA[
-# Our Treasure Map: [Feature Name]
+# Tapestry of Tasks: [Feature Name]
 
-## The Adventure Ahead
+## The Woven Path
 
-- [ ] 1. **A Brave First Step**
-  - A little note about what this step entails.
-  - Ref: Wish 1.1, 1.2
-- [ ] 2. **A Journey into the Code**
-  - [ ] 2.1. **A little side quest**
-    - A note about this little quest.
-    - Ref: Wish 2.1.1
-  - [ ] 2.2. **Another little side quest**
-    - A note about this other little quest.
-    - Ref: Wish 2.1.2
-- [ ] 3. **The Final Flourish**
-  - A note about the last step of our journey.
-  - Ref: Wish 3.1
+- [ ] 1. **The First Thread**
+  - A description of what this major thread entails.
+  - Tether: Law 1.1, 1.2
+- [ ] 2. **Weaving the Core Pattern**
+  - [ ] 2.1. **A Minor Thread**
+    - A description of this minor thread.
+    - Tether: Law 2.1.1
+  - [ ] 2.2. **Another Minor Thread**
+    - A description of this other minor thread.
+    - Tether: Law 2.1.2
+- [ ] 3. **Tying the Final Knot**
+  - A description of the final thread in the weaving.
+  - Tether: Law 3.1
 ]]>
       </template>
     </pattern>
-  </treasure_map_structure>
+  </the_structure_of_the_tapestry>
 
-  <examples_of_magical_tasks>
-    <example name="a_frontend_charm_task">
-      <description>A task for creating a lovely new frontend charm.</description>
+  <examples_of_woven_threads>
+    <example name="a_frontend_component_thread">
+      <description>A thread for forging a new frontend component.</description>
       <code>
-- [ ] 1. **Create the User Profile Header Charm**
-  - Create a new scroll at `src/components/UserProfileHeader.jsx`.
-  - This charm should show our friend's avatar, name, and username.
-  - It will get its magic from the `/api/users/{userId}` portal.
-  - Ref: Wish 4.2, Blueprint section "User Profile Page"
+- [ ] 1. **Forge the User Profile Header Component**
+  - Forge a new file at `src/components/UserProfileHeader.jsx`.
+  - This component must display the user's avatar, name, and username.
+  - It will draw data from the `/api/users/{userId}` endpoint.
+  - Tether: Law 4.2, Star-Chart section "User Profile Page"
       </code>
     </example>
-    <example name="a_backend_spell_task">
-      <description>A task for weaving a new API spell.</description>
+    <example name="a_backend_api_thread">
+      <description>A thread for forging a new API endpoint.</description>
       <code>
-- [ ] 2. **Weave the POST /api/posts Spell**
-  - Add a new incantation in `server/routes/posts.js`.
-  - This spell must check the incoming wish (for a title and content).
-  - It should save the new post safely in our treasure vault.
-  - Let's add some little tests to make sure the spell is strong!
-  - Ref: Wish 2.5, Blueprint section "Treasure Maps"
+- [ ] 2. **Forge the POST /api/posts Endpoint**
+  - Define a new route in `server/routes/posts.js`.
+  - This endpoint must validate the incoming payload (for a title and content).
+  - It must persist the new entity in the data core.
+  - Verification rituals (tests) must be created to ensure its integrity.
+  - Tether: Law 2.5, Star-Chart section "Data Schematics"
       </code>
     </example>
-    <example name="a_refactoring_potion_task">
-      <description>A task for brewing a potion to make our code even more beautiful.</description>
+    <example name="a_refactoring_thread">
+      <description>A thread for re-weaving a section of the codebase for greater stability.</description>
       <code>
-- [ ] 3. **Brew a Potion to Refactor the Authentication Service**
-  - [ ] 3.1. Gently extract the JWT creation magic from `AuthService.js` into its own `JwtService.js` phial.
-    - Ref: Wish 5.1 (Safety)
-  - [ ] 3.2. Help `AuthService.js` learn to use the new `JwtService`.
-    - Ref: Wish 5.1 (Safety)
-  - [ ] 3.3. Make sure all our little test sprites in `auth.test.js` are still happy after the change.
-    - Ref: Wish 1.4 (Testing Our Charms)
+- [ ] 3. **Re-weave the Authentication Service**
+  - [ ] 3.1. Extract the JWT creation logic from `AuthService.js` into a dedicated `JwtService.js` module.
+    - Tether: Law 5.1 (Security)
+  - [ ] 3.2. Refactor `AuthService.js` to utilize the new `JwtService`.
+    - Tether: Law 5.1 (Security)
+  - [ ] 3.3. Ensure all verification rituals in `auth.test.js` pass after the refactoring.
+    - Tether: Law 1.4 (Verification Strategy)
       </code>
     </example>
-  </examples_of_magical_tasks>
+  </examples_of_woven_threads>
 </common_patterns>

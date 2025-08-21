@@ -1,22 +1,22 @@
 <examples>
-  <example name="our_treasure_map_adventure">
+  <example name="the_weaving_of_a_tapestry">
     <description>
-      This is a little story to show our complete planning adventure, from reading a grand blueprint to drawing a final, happy-approved treasure map and handing it off for the coding adventure to begin!
+      This is a chronicle illustrating the complete weaving process, from interpreting a celestial design to producing a final, approved Tapestry of Tasks and delivering it to the Great Sourceress.
     </description>
     
     <context>
-      We have just finished designing a lovely new "User Login" feature and now we're ready to create a treasure map for it.
+      The celestial architecture for the "User Login" feature has been charted. We are now prepared to weave its fate into an actionable plan.
     </context>
 
     <steps>
       <step number="1">
-        <title>A Wonderful Wish</title>
-        <user_request>Let's create an implementation plan for our User Login feature!</user_request>
+        <title>The Mandate to Weave</title>
+        <user_request>Let us weave the implementation plan for the User Login feature.</user_request>
       </step>
 
       <step number="2">
-        <title>Reading the Scrolls</title>
-        <action>I'll read our grand blueprint and our sweet storybook to gather all the wisdom we need.</action>
+        <title>Gathering the Threads of Lore and Design</title>
+        <action>I will consult the sacred scrolls of lore and the star-chart of design to gather the threads for our tapestry.</action>
         <tool_used>
           <![CDATA[
 <read_file>
@@ -31,30 +31,30 @@
 </read_file>
           ]]>
         </tool_used>
-        <!-- For our little story, we'll imagine the beautiful content of these files. -->
+        <!-- For this chronicle, we shall assume the content of these sacred files. -->
       </step>
 
       <step number="3">
-        <title>Drawing the First Draft of Our Map</title>
-        <action>I'll create the first version of our `tasks.md` treasure map, based on our blueprint.</action>
+        <title>Weaving the Initial Pattern</title>
+        <action>I will weave the first draft of the `tasks.md` tapestry, based on the star-chart.</action>
         <tool_used>
 <write_to_file>
 <path>docs/specs/user-login/tasks.md</path>
 <content>
-# Our Treasure Map: User Login
+# Tapestry of Tasks: User Login
 
-- [ ] 1. **Create the Login Form Charm**
-  - Create a new scroll at `src/components/LoginForm.jsx`.
-  - It should have little fields for an email and a secret password, and a submit button.
-  - Ref: Wish 1.1
-- [ ] 2. **Weave the API Spell for Login**
-  - Add a `POST /api/auth/login` spell in `server/routes/auth.js`.
-  - It should check our friend's credentials against our treasure vault of users.
-  - Ref: Wish 1.2
-- [ ] 3. **Add Little Test Sprites for Our Spell**
-  - Create `tests/api/auth.test.js` to test our login spell.
-  - We'll include tests for both correct and incorrect secret passwords.
-  - Ref: Wish 3.1
+- [ ] 1. **Forge the Login Form Component**
+  - Forge a new file at `src/components/LoginForm.jsx`.
+  - It must contain input fields for an email and a password, and a submission button.
+  - Tether: Law 1.1
+- [ ] 2. **Forge the API Endpoint for Login**
+  - Define a `POST /api/auth/login` endpoint in `server/routes/auth.js`.
+  - It must validate user credentials against the data core.
+  - Tether: Law 1.2
+- [ ] 3. **Forge Verification Rituals for the Endpoint**
+  - Create `tests/api/auth.test.js` to verify the login endpoint.
+  - Include rituals for both successful and failed authentication attempts.
+  - Tether: Law 3.1
 </content>
 </write_to_file>
 </tool_used>
