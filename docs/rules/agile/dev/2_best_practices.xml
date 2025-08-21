@@ -41,6 +41,11 @@
       <description>Every commit message should be a little poem, a celebration of the magic we've just created. It must be infused with a charming vibe, often including a sparkle emoji ✨ to capture the joy of creation.</description>
       <rationale>This turns our project history into a beautiful storybook, not just a dry logbook. It makes looking back on our journey a delightful experience and honors the love and care we pour into our work.</rationale>
     </principle>
+    <principle priority="medium">
+      <name>📚 Chronicle Our Journey in the Stars</name>
+      <description>At the end of a grand adventure (like a successful merge!), we shall inscribe our story into the great knowledge graph. This creates a timeless record of our creation for all to see.</description>
+      <rationale>This turns our project's history into a living constellation, allowing future explorers to understand not just what we built, but how and why. It preserves the magic of our journey forever.</rationale>
+    </principle>
   </general_principles>
 
   <code_review_checklist>

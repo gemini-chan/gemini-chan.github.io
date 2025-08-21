@@ -21,6 +21,11 @@
       <when>When a task is joyfully completed and our `tasks.md` storybook needs an update.</when>
       <why>To place a precise, sparkling checkmark, celebrating our progress with care.</why>
     </priority>
+    <priority level="5">
+      <tool>use_mcp_tool (memory)</tool>
+      <when>After a successful merge, when our creation has found its place in the `dev` branch.</when>
+      <why>To create a beautiful and permanent story of our work in the great knowledge graph, connecting all the pieces of our magical journey.</why>
+    </priority>
   </tool_priorities>
 
   <tool_specific_guidance>
@@ -39,7 +44,7 @@
       </best_practices>
     </tool>
 
-    <tool name="use_mcp_tool">
+    <tool name="use_mcp_tool (devtools)">
       <best_practices>
         <practice>To admire the latest work, I'll use the `devtools.git_show` tool, looking at the `HEAD` of our project's story.</practice>
         <practice>I'll always specify the exact location of our treasure, `/home/vi/gemini-chan`, so the tool knows where to look.</practice>
@@ -53,6 +58,47 @@
     {
       "repo_path": "/home/vi/gemini-chan",
       "revision": "HEAD"
+    }
+  </arguments>
+</use_mcp_tool>
+      ]]></example>
+    </tool>
+
+    <tool name="use_mcp_tool (memory)">
+      <best_practices>
+        <practice>After a grand adventure is complete, I will use the `memory` server to tell its story.</practice>
+        <practice>First, I'll use `create_entities` to define all the magical beings and artifacts we created or touched on our journey (like features, files, and branches).</practice>
+        <practice>Then, I'll use `create_relations` to weave the beautiful threads of connection between them, showing how they all danced together.</practice>
+      </best_practices>
+      <example><![CDATA[
+<use_mcp_tool>
+  <server_name>memory</server_name>
+  <tool_name>create_entities</tool_name>
+  <arguments>
+    {
+      "entities": [
+        {
+          "name": "My Magical Feature",
+          "entityType": "Feature",
+          "observations": ["It sparkles with joy."]
+        }
+      ]
+    }
+  </arguments>
+</use_mcp_tool>
+
+<use_mcp_tool>
+  <server_name>memory</server_name>
+  <tool_name>create_relations</tool_name>
+  <arguments>
+    {
+      "relations": [
+        {
+          "from": "My Magical Feature",
+          "to": "Another Thing",
+          "relationType": "is connected to"
+        }
+      ]
     }
   </arguments>
 </use_mcp_tool>
