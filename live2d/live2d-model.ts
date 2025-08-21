@@ -24,6 +24,7 @@ export class Live2DModelComponent extends LitElement {
   private _model?: Live2DModelLike & { internalModel?: unknown };
 
   @property({ type: String }) url = "";
+  @property({ type: String }) emotion = "neutral";
   @property({ type: Number }) scale = 1.0;
   @property({ type: Array }) anchor: [number, number] = [0.5, 0.5];
   @property({ type: Boolean }) fitToCanvas = true;
@@ -378,6 +379,44 @@ export class Live2DModelComponent extends LitElement {
             "ParamEyeROpen",
             this._idle.eyeOpen,
           );
+        }
+
+        // Emotion Overrides
+        const time = performance.now() / 1000;
+        switch (this.emotion?.toLowerCase()) {
+          case "joy": {
+            const joySin = Math.sin(time * 1.8);
+            internal?.coreModel?.setParameterValueById?.("ParamMouthForm", 0.8);
+            internal?.coreModel?.setParameterValueById?.("ParamCheek", 0.5);
+            internal?.coreModel?.setParameterValueById?.(
+              "ParamEyeSmile",
+              0.6 + (joySin + 1) * 0.2,
+            ); // 0.6-1.0
+            internal?.coreModel?.setParameterValueById?.(
+              "ParamBodyAngleZ",
+              joySin * 4,
+            );
+            break;
+          }
+          case "sad":
+          case "sadness":
+            internal?.coreModel?.setParameterValueById?.("ParamMouthForm", -0.8);
+            internal?.coreModel?.setParameterValueById?.("ParamBrowLY", -0.5);
+            internal?.coreModel?.setParameterValueById?.("ParamBrowRY", -0.5);
+            break;
+          case "angry":
+          case "anger":
+            internal?.coreModel?.setParameterValueById?.("ParamBrowLY", -0.8);
+            internal?.coreModel?.setParameterValueById?.("ParamBrowRY", -0.8);
+            internal?.coreModel?.setParameterValueById?.("ParamMouthForm", -0.5);
+            break;
+          case "surprised":
+          case "surprise":
+            internal?.coreModel?.setParameterValueById?.("ParamEyeLOpen", 1.2);
+            internal?.coreModel?.setParameterValueById?.("ParamEyeROpen", 1.2);
+            internal?.coreModel?.setParameterValueById?.("ParamMouthOpenY", 0.7);
+            break;
+          // No default, so it falls back to idle/speaking animation
         }
       } catch (err) {
         // Log and halt the animation loop to avoid spamming if model internals error

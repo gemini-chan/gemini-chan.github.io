@@ -30,6 +30,7 @@ import "@components/CallHistoryView";
 import type { ToastNotification } from "@components/ToastNotification";
 import { NPUService } from "@features/ai/NPUService";
 import { MemoryService } from "@features/memory/MemoryService";
+import { EmotionService } from "@features/emotion/EmotionService";
 import type { CallSummary, Turn } from "@shared/types";
 
 declare global {
@@ -747,6 +748,7 @@ export class GdmLiveAudio extends LitElement {
   private callSessionManager: CallSessionManager;
   private summarizationService: SummarizationService;
   private personaManager: PersonaManager;
+  private emotionService: EmotionService;
   private vectorStore: VectorStore;
   private memoryService: MemoryService;
   private npuService: NPUService;
@@ -776,6 +778,8 @@ export class GdmLiveAudio extends LitElement {
   @state() callState: "idle" | "connecting" | "active" | "ending" = "idle";
   @state() private chatNewMessageCount = 0;
   @state() private isChatActive = false;
+  @state() private currentEmotion = "neutral";
+  private emotionAnalysisTimer: number | null = null;
 
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
@@ -973,6 +977,7 @@ export class GdmLiveAudio extends LitElement {
         this,
       );
       this.summarizationService = new SummarizationService(this.client);
+      this.emotionService = new EmotionService(this.client);
     }
   }
 
@@ -1726,6 +1731,7 @@ export class GdmLiveAudio extends LitElement {
     );
     this.addEventListener("reconnecting", this._handleReconnecting);
     this.addEventListener("reconnected", this._handleReconnected);
+    this.startEmotionAnalysis();
   }
 
   disconnectedCallback() {
@@ -1740,11 +1746,43 @@ export class GdmLiveAudio extends LitElement {
     );
     this.removeEventListener("reconnecting", this._handleReconnecting);
     this.removeEventListener("reconnected", this._handleReconnected);
+    this.stopEmotionAnalysis();
   }
 
   protected firstUpdated() {
     // Trigger initial TTS greeting once the UI is ready
     this._triggerInitialTTSGreeting();
+  }
+
+  private startEmotionAnalysis() {
+    this.stopEmotionAnalysis(); // Ensure no multiple timers
+    this.emotionAnalysisTimer = window.setInterval(async () => {
+      if (!this.emotionService) return;
+
+      const transcript =
+        this.activeMode === "calling"
+          ? this.callTranscript
+          : this.textTranscript;
+      const lastTurns = transcript.slice(-6); // Analyze last 6 turns for recent emotion
+
+      if (lastTurns.length > 0) {
+        const emotion = await this.emotionService.analyzeEmotion(lastTurns);
+        if (emotion !== this.currentEmotion) {
+          logger.debug("Emotion updated", {
+            from: this.currentEmotion,
+            to: emotion,
+          });
+          this.currentEmotion = emotion;
+        }
+      }
+    }, 5000); // Analyze every 5 seconds
+  }
+
+  private stopEmotionAnalysis() {
+    if (this.emotionAnalysisTimer) {
+      window.clearInterval(this.emotionAnalysisTimer);
+      this.emotionAnalysisTimer = null;
+    }
   }
 
   private _handleReconnecting = () => {
@@ -1869,6 +1907,7 @@ export class GdmLiveAudio extends LitElement {
           .modelUrl=${this.personaManager.getActivePersona().live2dModelUrl || ""}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
+          .emotion=${this.currentEmotion}
           @live2d-loaded=${this._handleLive2dLoaded}
           @live2d-error=${this._handleLive2dError}
         ></live2d-gate>

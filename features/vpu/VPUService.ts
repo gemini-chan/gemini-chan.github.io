@@ -1,0 +1,432 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import {
+  GoogleGenAI,
+  type LiveServerMessage,
+  type Session,
+} from '@google/genai';
+import { createComponentLogger } from '@services/DebugLogger';
+import type { Turn } from '@shared/types';
+import { decode, decodeAudioData } from '@shared/utils';
+import type { SummarizationService } from '@features/summarization/SummarizationService';
+
+const logger = createComponentLogger('VPUService');
+
+interface ExtendedLiveServerMessage extends LiveServerMessage {
+  sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
+  goAway?: { timeLeft: string };
+  serverContent?: LiveServerMessage['serverContent'] & {
+    sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
+    goAway?: { timeLeft: string };
+    generationComplete?: boolean;
+  };
+}
+
+// Session Manager Architecture Pattern
+export abstract class BaseSessionManager {
+  // Resumption handle API
+  public getResumptionHandle(): string | null {
+    return this.currentHandle;
+  }
+  // Session state and reconnection management
+  protected currentHandle: string | null = null;
+  protected isConnected = false;
+  protected lastMessageTimestamp = 0;
+  private reconnecting = false;
+  private reconnectAttempts = 0;
+  private reconnectTimer: number | null = null;
+  private intentionalClose = false;
+  protected nextStartTime = 0;
+  protected sources = new Set<AudioBufferSourceNode>();
+  protected session: Session | null = null;
+  protected fallbackPrompt: string | null = null;
+
+  constructor(
+    protected outputAudioContext: AudioContext,
+    protected outputNode: GainNode,
+    protected client: GoogleGenAI,
+    protected updateStatus: (msg: string) => void,
+    protected updateError: (msg: string) => void,
+    protected onRateLimit: (msg: string) => void,
+    protected hostElement: HTMLElement,
+  ) {}
+
+  // Common audio processing logic
+  protected async handleAudioMessage(audio: { data?: string }): Promise<void> {
+    this.nextStartTime = Math.max(
+      this.nextStartTime,
+      this.outputAudioContext.currentTime,
+    );
+
+    if (!audio?.data) return;
+    const audioBuffer = await decodeAudioData(
+      decode(audio.data),
+      this.outputAudioContext,
+      24000,
+      1,
+    );
+    const source = this.outputAudioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.outputNode);
+    source.addEventListener('ended', () => this.sources.delete(source));
+
+    source.start(this.nextStartTime);
+    this.nextStartTime = this.nextStartTime + audioBuffer.duration;
+    this.sources.add(source);
+  }
+
+  protected handleInterruption(): void {
+    for (const source of this.sources.values()) {
+      source.stop();
+      this.sources.delete(source);
+    }
+    this.nextStartTime = 0;
+  }
+
+  protected getCallbacks() {
+    return {
+      onopen: () => {
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+        this.updateStatus(`${this.getSessionName()} opened`);
+      },
+      onmessage: async (message: LiveServerMessage) => {
+        // Update last activity timestamp
+        this.lastMessageTimestamp = Date.now();
+
+        const extendedMessage = message as ExtendedLiveServerMessage;
+        // Session resumption update handling
+        const resumptionUpdate =
+          extendedMessage.sessionResumptionUpdate ||
+          extendedMessage.serverContent?.sessionResumptionUpdate;
+        if (resumptionUpdate?.resumable && resumptionUpdate?.newHandle) {
+          this.currentHandle = resumptionUpdate.newHandle as string;
+          // Optionally persist the handle if needed by the app.
+          try {
+            const storageKey = this.getResumptionStorageKey();
+            if (storageKey) {
+              localStorage.setItem(storageKey, this.currentHandle);
+            }
+          } catch (e) {
+            console.warn(
+              `Failed to persist session handle to localStorage for ${this.getSessionName()}:`,
+              e,
+            );
+          }
+          this.updateStatus(
+            `${this.getSessionName()}: received resumption handle`,
+          );
+        }
+
+        // GoAway handling (pre-termination notice)
+        const goAway =
+          extendedMessage.goAway || extendedMessage.serverContent?.goAway;
+        if (goAway?.timeLeft) {
+          const timeLeftMs = Number.parseInt(goAway.timeLeft, 10) || 0;
+          // Schedule a reconnect slightly before the server aborts the connection
+          const guard = 250; // ms safety margin
+          const delay = Math.max(timeLeftMs - guard, 0);
+          if (!this.reconnecting) {
+            this.updateStatus(`${this.getSessionName()}: reconnecting soon...`);
+            this.hostElement.dispatchEvent(
+              new CustomEvent('reconnecting', {
+                bubbles: true,
+                composed: true,
+              }),
+            );
+            window.setTimeout(() => {
+              this.reconnectSession();
+            }, delay);
+          }
+        }
+
+        // Generation complete acknowledgement
+        const genComplete = extendedMessage.serverContent?.generationComplete;
+        if (genComplete) {
+          // Hook for post-turn actions; for now, surface a status update
+          this.updateStatus(`${this.getSessionName()}: generation complete`);
+        }
+
+        // Audio handling
+        const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData;
+        if (audio) {
+          await this.handleAudioMessage(audio);
+        }
+
+        // Interruption handling
+        const interrupted = message.serverContent?.interrupted;
+        if (interrupted) {
+          this.handleInterruption();
+        }
+      },
+      onerror: (e: ErrorEvent) => {
+        const msg = e.message || '';
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
+        this.updateError(`${this.getSessionName()} error: ${e.message}`);
+      },
+      onclose: (e: CloseEvent) => {
+        const msg = e.reason || '';
+        const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
+        if (isRateLimited) {
+          this.onRateLimit(msg);
+        }
+        this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
+        this.session = null;
+        this.isConnected = false;
+        // If not an intentional close, attempt to reconnect when possible
+        if (!this.intentionalClose) {
+          this.reconnectSession();
+        }
+        // Reset the flag after handling
+        this.intentionalClose = false;
+      },
+    };
+  }
+
+  // Abstract methods for mode-specific behavior
+  protected abstract getModel(): string;
+  protected abstract getConfig(): Record<string, unknown>;
+  protected abstract getSessionName(): string;
+  protected abstract getResumptionStorageKey(): string | null;
+
+  private async _connect(handle: string | null): Promise<Error | null> {
+    try {
+      const baseConfig = this.getConfig() || {};
+      const configWithResumption: Record<string, unknown> & {
+        sessionResumption?: { handle: string | null };
+      } = {
+        ...baseConfig,
+        sessionResumption: { handle },
+      };
+
+      this.session = await this.client.live.connect({
+        model: this.getModel(),
+        callbacks: this.getCallbacks(),
+        config: configWithResumption,
+      });
+
+      this.isConnected = true;
+      return null;
+    } catch (e) {
+      const error = e as Error;
+      logger.error(`Error connecting ${this.getSessionName()}:`, { error });
+      const msg = String(error?.message || error || '');
+      this.updateError(`Failed to connect ${this.getSessionName()}: ${msg}`);
+      return error;
+    }
+  }
+
+  public async initSession(resumptionHandle?: string | null): Promise<boolean> {
+    // Load persisted handle if none provided and none stored in memory
+    if (resumptionHandle == null && this.currentHandle == null) {
+      try {
+        const storageKey = this.getResumptionStorageKey();
+        if (storageKey) {
+          this.currentHandle = localStorage.getItem(storageKey);
+        }
+      } catch (e) {
+        console.warn(
+          `Failed to read session handle from localStorage for ${this.getSessionName()}:`,
+          e,
+        );
+      }
+    }
+    // Merge resumption handle preference: explicit arg > stored handle > null
+    const handleToUse = resumptionHandle ?? this.currentHandle ?? null;
+
+    // Guard to prevent auto-reconnect in onclose during intentional re-init
+    this.intentionalClose = true;
+    await this.closeSession();
+    this.intentionalClose = false;
+
+    this.updateStatus(
+      handleToUse
+        ? `${this.getSessionName()}: resuming session...`
+        : `${this.getSessionName()}: starting session...`,
+    );
+
+    const error = await this._connect(handleToUse);
+    if (!error) {
+      return true;
+    }
+
+    // If we attempted with a handle and it failed due to invalid/expired handle, clear and retry once
+    const msg = String(error.message || error || '');
+    const looksLikeInvalidHandle =
+      /invalid session resumption handle|expired session resumption handle/i.test(
+        msg,
+      );
+    if (handleToUse && looksLikeInvalidHandle) {
+      this.updateStatus(
+        `${this.getSessionName()}: handle invalid — starting new session`,
+      );
+      this.clearResumptionHandle();
+      const retryError = await this._connect(null);
+      return !retryError;
+    }
+    return false;
+  }
+
+  /**
+   * Attempt to reconnect the session using the latest resumption handle, with
+   * exponential backoff and jitter. Ensures only a single reconnect loop runs.
+   */
+  public async reconnectSession(): Promise<void> {
+    if (this.reconnecting) return;
+    this.reconnecting = true;
+
+    const maxDelay = 15000; // 15s cap
+    const baseDelay = 300; // 300ms base
+
+    const attemptReconnect = async () => {
+      // If we already have a live session, end the loop
+      if (this.session) {
+        this.reconnecting = false;
+        return;
+      }
+
+      const attempt = this.reconnectAttempts++;
+      const backoff = Math.min(maxDelay, baseDelay * 2 ** attempt);
+      const jitter = Math.random() * 0.2 + 0.9; // 0.9x - 1.1x
+      const delay = Math.floor(backoff * jitter);
+
+      this.updateStatus(
+        `${this.getSessionName()}: reconnecting (attempt ${attempt + 1})...`,
+      );
+
+      const ok = await this.initSession(this.currentHandle);
+      if (ok && this.session) {
+        this.updateStatus(`${this.getSessionName()}: session resumed`);
+        this.hostElement.dispatchEvent(
+          new CustomEvent('reconnected', {
+            bubbles: true,
+            composed: true,
+          }),
+        );
+        this.reconnectAttempts = 0;
+        this.reconnecting = false;
+        return;
+      }
+
+      // Schedule next attempt
+      this.reconnectTimer = window.setTimeout(attemptReconnect, delay);
+    };
+
+    attemptReconnect();
+  }
+
+  public async closeSession(): Promise<void> {
+    if (this.session) {
+      try {
+        this.intentionalClose = true;
+        this.session.close();
+      } catch (e) {
+        logger.warn(`Error closing ${this.getSessionName()}:`, e);
+      } finally {
+        this.intentionalClose = false;
+      }
+      this.session = null;
+    }
+  }
+
+  public sendMessage(message: string): void {
+    if (this.session) {
+      try {
+        this.session.sendClientContent({ turns: message });
+      } catch (error) {
+        logger.error(`Error sending message to ${this.getSessionName()}:`, {
+          error,
+        });
+        this.updateError(`Failed to send message: ${error.message}`);
+      }
+    }
+  }
+
+  public sendRealtimeInput(input: {
+    media: { data?: string; mimeType?: string };
+  }): void {
+    if (!this.session) return;
+    try {
+      this.session.sendRealtimeInput(input);
+    } catch (e) {
+      const msg = String((e as Error)?.message || e || '');
+      this.updateError(`Failed to stream audio: ${msg}`);
+    }
+  }
+
+  public get isActive(): boolean {
+    return this.session !== null;
+  }
+
+  public get sessionInstance(): Session | null {
+    return this.session;
+  }
+
+  /**
+   * Clear any stored session resumption handle so the next init starts fresh.
+   */
+  public clearResumptionHandle(): void {
+    this.currentHandle = null;
+    try {
+      const storageKey = this.getResumptionStorageKey();
+      if (storageKey) {
+        localStorage.removeItem(storageKey);
+      }
+    } catch (e) {
+      console.warn(
+        `Failed to remove session handle from localStorage for ${this.getSessionName()}:`,
+        e,
+      );
+    }
+  }
+
+  /**
+   * Handle fallback when energy drops to non-resumable models (STS level 1, TTS level 1).
+   * This method summarizes the transcript and combines it with the last 4 turns.
+   * @param transcript - The conversation transcript to process
+   * @param summarizationService - The service to use for summarization
+   */
+  public async handleFallback(
+    transcript: Turn[],
+    summarizationService: SummarizationService,
+  ): Promise<void> {
+    let summary = '';
+    try {
+      summary = await summarizationService.summarize(transcript);
+    } catch (error) {
+      logger.error('Failed to summarize transcript:', {
+        error,
+        transcriptSnippet: transcript
+          .map((t) => t.text)
+          .join(' ')
+          .slice(0, 100),
+      });
+      // Fallback to a simpler context if summarization fails
+      summary = 'Could not summarize previous conversation.';
+    }
+
+    const lastFourTurns = transcript.slice(-4);
+
+    const contextParts: string[] = [
+      `Summary of previous conversation: ${summary}`,
+    ];
+    for (const turn of lastFourTurns) {
+      contextParts.push(`${turn.speaker}: ${turn.text}`);
+    }
+
+    this.fallbackPrompt = contextParts.join('\n');
+  }
+
+  protected getSystemInstruction(
+    basePrompt: string,
+    fallbackPrompt: string | null,
+  ): string {
+    return fallbackPrompt ? `${basePrompt}\n\n${fallbackPrompt}` : basePrompt;
+  }
+}

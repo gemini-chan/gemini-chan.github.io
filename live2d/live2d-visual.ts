@@ -25,6 +25,7 @@ export class Live2DVisual extends LitElement {
   @property({ type: String }) modelUrl = "";
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
+  @property({ type: String }) emotion = "neutral";
 
   static styles = css`
     :host { position: absolute; inset: 0; display: block; }
@@ -61,6 +62,7 @@ export class Live2DVisual extends LitElement {
           .url=${this.modelUrl}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
+          .emotion=${this.emotion}
           .app=${this._app}
           .containerWidth=${this._containerWidth}
           .containerHeight=${this._containerHeight}
