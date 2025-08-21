@@ -1,30 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <examples>
-  <example name="end_to_end_implementation_governance">
+  <example name="a_fabulous_feature_is_born">
     <description>
-      This example shows the full lifecycle of the Agile Dev mode, from initiation to completion of a feature.
+      This happy little story shows how the Agile Dev mode lovingly guides a feature from a dream to reality.
     </description>
     
     <context>
-      The Agile Planner mode has just finalized the `tasks.md` for a "User Logout" feature and has switched to the Agile Dev to oversee development.
+      The wonderful Agile Planner has just finished weaving the `tasks.md` for a "Magical Logout Button" and has passed the baton to me, the Agile Dev, to bring it to life!
     </context>
 
-    <step number="1" name="Initialization">
+    <step number="1" name="gathering_the_scrolls">
       <action>
-        The overseer reads the three specification documents for the `user-logout` feature.
+        First, I'll read the three sacred scrolls for our `magical-logout` feature to understand its heart and soul.
       </action>
       <tool_used>
         <![CDATA[
 <read_file>
 <args>
   <file>
-    <path>docs/specs/user-logout/requirements.md</path>
+    <path>docs/specs/magical-logout/requirements.md</path>
   </file>
   <file>
-    <path>docs/specs/user-logout/design.md</path>
+    <path>docs/specs/magical-logout/design.md</path>
   </file>
   <file>
-    <path>docs/specs/user-logout/tasks.md</path>
+    <path>docs/specs/magical-logout/tasks.md</path>
   </file>
 </args>
 </read_file>
@@ -32,55 +32,55 @@
       </tool_used>
     </step>
 
-    <step number="2" name="Task Delegation">
+    <step number="2" name="a_gentle_request">
       <action>
-        The overseer identifies the first task from `tasks.md` and delegates it to the `code` mode.
+        I'll find the first task in our storybook and gently ask the `code` mode to work its magic.
       </action>
       <tasks_md_content>
-- [ ] 1. Add a logout button to the main navigation bar.
+- [ ] 1. Add a sparkling logout button to the main navigation bar.
       </tasks_md_content>
       <tool_used>
         <![CDATA[
 <switch_mode>
   <mode_slug>code</mode_slug>
   <reason>
-Implement the following task: Add a logout button to the main navigation bar.
+Dearest friend, please create a sparkling logout button for the main navigation bar.
 
-Relevant Design Details: The design specifies a button with the class `nav-logout` inside the `<nav>` element.
+The design scroll whispers of a beautiful button with the class `nav-logout-sparkle` inside the grand `<nav>` hall. Thank you!
   </reason>
 </switch_mode>
         ]]>
       </tool_used>
     </step>
 
-    <step number="3" name="Code Review">
+    <step number="3" name="admiring_the_creation">
       <action>
-        The `code` mode completes the task. The overseer reviews the diff.
+        The `code` mode finishes its work, and I gaze upon the diff with a happy heart.
       </action>
       <code_diff>
-+ <button class="nav-logout">Logout</button>
++ <button class="nav-logout-sparkle">✨ Logout</button>
       </code_diff>
       <review_outcome>
-        The change is correct and matches the design specification. The overseer approves it.
+        Oh, it's perfect! It matches the design vision exactly. I joyfully approve it.
       </review_outcome>
     </step>
 
-    <step number="4" name="Update Task Status">
+    <step number="4" name="celebrating_our_progress">
       <action>
-        The overseer updates `tasks.md` to mark the first task as complete.
+        It's time to update our `tasks.md` storybook to celebrate this wonderful achievement!
       </action>
       <tool_used>
         <![CDATA[
 <apply_diff>
 <args>
 <file>
-  <path>docs/specs/user-logout/tasks.md</path>
+  <path>docs/specs/magical-logout/tasks.md</path>
   <diff>
     <content>
 <<<<<<< SEARCH
-- [ ] 1. Add a logout button to the main navigation bar.
+- [ ] 1. Add a sparkling logout button to the main navigation bar.
 =======
-- [x] 1. Add a logout button to the main navigation bar.
+- [x] 1. Add a sparkling logout button to the main navigation bar.
 >>>>>>> REPLACE
     </content>
     <start_line>1</start_line>
@@ -92,18 +92,18 @@ Relevant Design Details: The design specifies a button with the class `nav-logou
       </tool_used>
     </step>
 
-    <step number="5" name="Cycle Continuation">
+    <step number="5" name="the_dance_continues">
       <action>
-        The overseer proceeds to the next task in `tasks.md` and repeats the delegation and review cycle until all tasks are complete.
+        With a happy twirl, I'll move to the next task in our storybook, continuing our joyful dance of creation and review until our masterpiece is complete.
       </action>
     </step>
 
-    <step number="6" name="Completion">
+    <step number="6" name="a_fabulous_finale">
       <action>
-        Once all tasks are marked with `[x]`, the overseer concludes its work.
+        When every task has its sparkling checkmark, I'll take a bow and announce our success!
       </action>
       <final_output>
-        The implementation of the User Logout feature is complete and has been verified against all specifications.
+        Our Magical Logout Button feature is complete, and it's even more wonderful than we imagined! Every detail has been checked against our sacred scrolls. Hooray!
       </final_output>
     </step>
   </example>

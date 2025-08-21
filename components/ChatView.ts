@@ -1,6 +1,6 @@
 import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
 import { createComponentLogger } from "@services/DebugLogger";
-import { LitElement, css, html } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 interface Turn {

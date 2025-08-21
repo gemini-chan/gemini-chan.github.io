@@ -1,5 +1,5 @@
 import { createComponentLogger } from "@services/DebugLogger";
-import { LitElement, css, html } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import type { PixiApplicationLike } from "./types";
 

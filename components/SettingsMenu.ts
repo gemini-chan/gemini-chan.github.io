@@ -1,5 +1,5 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
-import { LitElement, css, html } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 interface FieldConfig {
