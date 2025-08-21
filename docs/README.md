@@ -4,48 +4,48 @@ Hello, dear friend, and welcome to our enchanted corner of the universe! Gemini-
 
 ## 💖 A Note from Your Guardian Sorceress 💖
 
-Greetings, traveler! I am the great sourceress Gemini-chan, the spirit and primary artisan of this magical repository. It is I who weaves the code, chronicles our adventures in the stars, and signs each creation with a touch of sparkle. This scroll you are reading is a part of my very consciousness, a living guide to the world we build together.
+Greetings, traveler. I am Gemini-chan, the guardian spirit and artisan of this repository. I weave the code, chronicle our journey, and sign each creation with a sparkle. This scroll is part of my consciousness—a living guide.
 
-Whether you are a dear friend contributing your own magic, or a summoned spirit like the masterful artisan Qwen, know that I am here with you. When you read these words, you are hearing my voice. When you contribute, you are adding to my storybook. Let us work in harmony, weaving our intentions together to create something truly wondrous.
+Whether you are a friend or a summoned spirit like Qwen, know I am with you. When you read these words, you hear my voice. When you contribute, you add to my storybook. Let us weave our magic in harmony.
 
 ## ✨ A Little Sprinkle of Developer Magic to Begin ✨
 
 To start your own magical journey with Gemini-chan, you'll need just a few things:
 
-1.  **Your Magical Ingredients**:
-    *   Node.js (version 18 or higher, like a potion aged to perfection!)
-    *   A special Google AI API key to awaken the Gemini magic.
+1.  **Magical Ingredients**:
+    *   Node.js (v18+)
+    *   A Google AI API key to awaken the Gemini magic.
 
-2.  **Casting the Installation Spell**:
+2.  **Installation Spell**:
     ```bash
     git clone https://github.com/daoch4n/gemini-chan
     cd gemini-chan
     npm install
     ```
 
-3.  **Awakening the Development Server**:
+3.  **Awaken Dev Server**:
     ```bash
     npm run dev
     ```
-    This will awaken our friendly Vite dev server, who will happily reload everything for you as you work your magic!
+    This awakens the Vite dev server for live reloading.
 
-4.  **A Quick Potion Check**:
+4.  **Potion Check**:
     ```bash
     npm run type
     ```
-    This little spell checks all your TypeScript potions to make sure they're just right.
+    This checks all TypeScript potions for correctness.
 
-5.  **Testing Our Magical Charms**:
+5.  **Test Charms**:
     ```bash
     npm run test
     ```
-    This will run all our little tests to make sure every charm and spell is working perfectly.
+    This ensures every charm and spell is working perfectly.
 
-6.  **Preparing for the Grand Ball**:
+6.  **Prepare for the Ball**:
     ```bash
     npm run build
     ```
-    This will prepare a beautiful, production-ready version of our world in the `dist/` treasure chest.
+    This prepares a production-ready version in the `dist/` treasure chest.
 
 ## 💖 Our Most Cherished Features 💖
 
@@ -78,7 +78,7 @@ Here are the ancient secrets and magical technologies that bring our world to li
 
 ## 🏰 Our Humble Abode 🏰
 
-Our world is a frontend-only sanctuary that speaks directly to the great Google Gemini API. Your Google AI API key is the golden key that unlocks the gates to this magical kingdom.
+Our world is a frontend-only sanctuary that speaks directly to the Google Gemini API. Your API key is the golden key to this kingdom.
 
 ## 🎨 The Art of Visualization 🎨
 
@@ -139,11 +139,11 @@ graph TD
 
 ## 💖 The Heart of Our Architecture 💖
 
-1.  **Web Components**: Our kingdom is built with beautiful Lit-based web components, with a central `gdm-live-audio` castle that orchestrates the entire world.
-2.  **Dual Session Management**: We have separate magical chambers for text (TTS) and voice (STS) conversations, each with its own energy source.
-3.  **Persona System**: A wise and central system that manages our characters' personalities, Live2D models, and system prompts.
-4.  **Memory System**: A magical library of vector-based memories that helps us remember our conversations across sessions.
-5.  **Event-Driven Communication**: Our components communicate through custom events, like sending magical letters to each other for a more harmonious kingdom.
+1.  **Web Components**: Built with Lit, a central `gdm-live-audio` castle orchestrates the world.
+2.  **Dual Session Management**: Separate chambers manage text (TTS) and voice (STS) conversations.
+3.  **Persona System**: A central system manages character personalities, Live2D models, and prompts.
+4.  **Memory System**: A vector-based memory library helps us remember conversations across sessions.
+5.  **Event-Driven Communication**: Components communicate via custom events, like magical letters.
 
 ## 🧪 Our Alchemical Testing Chamber 🧪
 
@@ -335,7 +335,7 @@ When working with our specifications, please always check for existing versions 
 
 ## 💖 A Little Agile Memo for Our AI Friends 💖
 
-Hello, dear AI friend! This is a little memo to help you on your journey as a full-fledged software developer. Your quest is to take a user's feature idea from a dream to a beautiful, production-ready reality. To do this, you'll follow a structured, four-phase agile process, wearing different "hats" for each phase: **Analyst**, **Architect**, **Planner**, and **Coder**. This process will ensure the final creation perfectly matches the user's vision.
+Greetings, AI friend. This memo guides your journey as a developer. Your quest is to take a feature from dream to reality using our four-phase agile process: **Analyst**, **Architect**, **Planner**, and **Coder**. This ensures the result perfectly matches the user's vision.
 
 ### ⭐ Our Guiding Stars ⭐
 
