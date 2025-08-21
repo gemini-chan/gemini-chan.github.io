@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<the_sacred_art_of_the_runic_scribe>
+  <overview>
+    The sacred runes (XML tags) are the language of creation, allowing the Great Machine to interpret our incantations with perfect clarity. This grimoire reveals the sacred arts of structuring a soul's texts with these runes of power.
+  </overview>
+
+  <why_wield_the_sacred_runes>
+    <boon type="clarity">
+      To draw clear boundaries between the different currents of an incantation, ensuring a well-formed vessel for magic.
+    </boon>
+    <boon type="purity">
+      To prevent the Great Machine from misinterpreting our will, ensuring the magic flows true.
+    </boon>
+    <boon type="fluidity">
+      To easily find, add, remove, or reshape parts of a grimoire without unweaving the whole tapestry.
+    </boon>
+    <boon type="scryability">
+      To allow the Great Machine to scry specific wisdom from our responses with ease.
+    </boon>
+  </why_wield_the_sacred_runes>
+
+  <the_scribe_s_core_tenets>
+    <tenet name="consistency">
+      <description>Use the same rune for the same purpose throughout a grimoire.</description>
+      <example>
+        Always use the <current> rune for the phases of a rite, not sometimes <phase> or <stage>.
+      </example>
+    </tenet>
+    
+    <tenet name="semantic_potency">
+      <description>A rune's name must reveal the nature of the essence it contains.</description>
+      <potent_runes>
+        <rune>sacred_tenets</rune>
+        <rune>rites_of_inspection</rune>
+        <rune>heresies_against_the_forge</rune>
+      </potent_runes>
+      <impotent_runes>
+        <rune>things</rune>
+        <rune>info</rune>
+        <rune>data2</rune>
+      </impotent_runes>
+    </tenet>
+
+    <tenet name="hierarchical_weaving">
+      <description>Nest runes to show the relationships between currents of magic.</description>
+      <example>
+        <the_rite_of_soul_forging>
+          <the_five_currents_of_creation>
+            <current number="1">
+              <title>Scrying the Essence</title>
+              <actions>...</actions>
+            </current>
+          </the_five_currents_of_creation>
+        </the_rite_of_soul_forging>
+      </example>
+    </tenet>
+  </the_scribe_s_core_tenets>
+
+  <sacred_glyphs_of_structure>
+    <glyph name="the_rite">
+      <purpose>For inscribing sacred rites and step-by-step rituals.</purpose>
+      <template><![CDATA[
+<the_rite_of_[name]>
+  <overview>A description of the rite's purpose.</overview>
+  <preliminaries>
+    <preliminary>What must be true before the rite begins.</preliminary>
+  </preliminaries>
+  <currents_of_the_rite>
+    <current number="1">
+      <title>Title of the Current</title>
+      <description>What this current accomplishes.</description>
+      <actions>
+        <action>A specific act of magic to perform.</action>
+      </actions>
+      <affirmation>How to confirm the magic flowed true.</affirmation>
+    </current>
+  </currents_of_the_rite>
+</the_rite_of_[name]>
+      ]]></template>
+    </glyph>
+
+    <glyph name="the_saga">
+      <purpose>For chronicling sagas and exemplary tales of creation.</purpose>
+      <template><![CDATA[
+<sagas_of_the_forge>
+  <saga name="a_descriptive_name_of_the_saga">
+    <description>What this saga demonstrates.</description>
+    <context>When this saga's wisdom is most relevant.</context>
+    <incantation language="typescript">
+      // The magic itself
+    </incantation>
+    <revelation>
+      Key wisdom revealed by this implementation.
+    </revelation>
+  </saga>
+</sagas_of_the_forge>
+      ]]></template>
+    </glyph>
+  </sacred_glyphs_of_structure>
+
+  <rites_of_inscription>
+    <rite name="indentation">
+      Weave with consistent indentation to reveal the hierarchy of runes.
+    </rite>
+    <rite name="cdata_wards">
+      Encase raw code magic in CDATA wards to contain its power:
+      <![CDATA[<code><![CDATA[your magic here]]></code>]]>
+    </rite>
+    <rite name="attributes_vs_elements">
+      Use attributes for metadata (the properties of a rune); use elements for content (the essence within).
+    </rite>
+  </rites_of_inscription>
+
+  <forbidden_runes>
+    <heresy name="the_flat_earth">
+      <description>Avoid flat structures devoid of hierarchy.</description>
+    </heresy>
+    <heresy name="the_tower_of_babel">
+      <description>Do not mix naming conventions for your runes.</description>
+    </heresy>
+    <heresy name="the_empty_vessel">
+      <description>Avoid runes that convey no meaning, such as <data> or <thing>.</description>
+    </heresy>
+  </forbidden_runes>
+</the_sacred_art_of_the_runic_scribe>
