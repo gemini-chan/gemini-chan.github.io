@@ -2,6 +2,8 @@
 
 This document outlines the technical tasks required to implement the first user story of the "Enable Persistent Memory" epic. The goal is to create a foundational system that allows Gemini-chan to intelligently capture and persist key information from conversations, setting the stage for more advanced memory-driven interactions.
 
+> **Note:** This document details the implementation of the memory *storage* logic. For the overall status of the Core Memory System and its dependencies, please refer to the [Master Specification](../README.md).
+
 
 ### **User Story 1:**
 
@@ -20,30 +22,37 @@ This document outlines the technical tasks required to implement the first user 
 
 ### **Technical Tasks:**
 
-
-
-*   [x] **Task 1.1: Design and Refine the Memory Extraction Prompt.**
+*   **Task 1.1: Design and Refine the Memory Extraction Prompt.**
+    *   **Status:** moitié-forgé (partially forged)
     *   **Objective:** To create a highly reliable system prompt that instructs the Gemini model to act as a "fact extractor" and consistently return structured data.
     *   **Details:**
         *   The prompt will be engineered to be highly specific, instructing the model to analyze a conversation transcript and output an array of JSON objects. Each object will represent a single extracted fact.
         *   The prompt will strictly define the JSON schema. For example: [{ "fact_key": "user_name", "fact_value": "Alex", "confidence_score": 0.99, "permanence_score": "permanent" }, { "fact_key": "user_hobby", "fact_value": "hiking", "confidence_score": 0.85, "permanence_score": "permanent" }]. This rigidity is crucial for reliable parsing.
         *   We will incorporate "few-shot" examples directly into the prompt to train the model on the desired behavior. This includes providing examples of what to do and what *not* to do (e.g., ignoring conversational pleasantries like "how are you?"). This helps the model distinguish between meaningful data and noise.
         *   To improve organization and maintainability, we will create a new root-level directory named prompts. The memory extraction prompt will be stored there as prompts/memory-extraction.prompt.md. This approach decouples the prompt logic from the application code, allowing for easier A/B testing and iteration by non-developers in the future.
-*   [x] **Task 1.2: Architect and Define the MemoryService.ts Module.**
+    *   **Remaining Quest:** The prompt is currently hardcoded. It **must** be updated to load dynamically from `prompts/memory-extraction.prompt.md`.
+
+*   **Task 1.2: Architect and Define the MemoryService.ts Module.**
+    *   **Status:** Forged.
     *   **Objective:** To establish a clean, maintainable, and testable service that encapsulates all memory-related operations, acting as the single source of truth for this feature.
     *   **Details:**
         *   Create the new feature directory and file at features/memory/MemoryService.ts.
         *   Define a clear TypeScript interface, IMemoryService, to establish a contract for the service's functionality. It will include methods like processAndStoreMemory(transcript: string, sessionId: string): Promise<void>. This ensures that any part of the app interacting with this service knows exactly what to expect.
         *   The service's constructor will accept its dependencies (like an instance of VectorStore and DebugLogger) via dependency injection. This design pattern adheres to SOLID principles, decoupling the service from concrete implementations and making it significantly easier to unit test by providing mock dependencies.
         *   This service will be the central orchestrator for the entire memory process. It will be responsible for loading the prompt, calling the AI model, parsing and validating the response, and coordinating with the VectorStore to save the data.
-*   [ ] **Task 1.3: Implement Robust Memory Extraction and Error Handling.**
+
+*   **Task 1.3: Implement Robust Memory Extraction and Error Handling.**
+    *   **Status:** Un-forged.
     *   **Objective:** To build the core logic that communicates with the Gemini API, ensuring it is resilient to failure and safely processes any response.
     *   **Details:**
         *   Implement the API call within MemoryService.ts to send the prompt and the last few conversational turns (e.g., the last 4-6 turns to provide sufficient context) to the Gemini model.
         *   Incorporate a robust, configurable retry mechanism with exponential backoff for the API call. For example, if a request fails (e.g., due to a transient network issue or a 429 rate-limiting error), the service will wait for 1 second, then 2, then 4 (with these parameters being adjustable), before failing. This prevents temporary issues from causing a total failure of the memory system.
         *   Wrap the JSON parsing of the model's response in a try-catch block. A malformed JSON response is a common failure point. If parsing fails, the service will log the exact malformed string using the DebugLogger for later analysis and then gracefully exit the function, ensuring that a single bad response does not crash the entire application.
         *   Implement a data validation step using a dedicated Memory interface and a TypeScript type guard function (e.g., function isMemory(obj: any): obj is Memory). This function will check that the parsed object contains all the required fields (fact_key, fact_value, etc.) with the correct data types *before* it's passed to other parts of the system, preventing runtime errors from unexpected data structures.
-*   [ ] **Task 1.4: Implement Smart Vector Store Integration with De-duplication.**
+    *   **Remaining Quest:** This entire task is outstanding. The required retry logic and robust parsing/validation are not yet implemented.
+
+*   **Task 1.4: Implement Smart Vector Store Integration with De-duplication.**
+    *   **Status:** moitié-forgé (partially forged)
     *   **Objective:** To intelligently store memories in the vector database, preventing redundancy, enriching existing data, and ensuring the memory bank remains high-quality.
     *   **Details:**
         *   For each validated fact, use a text embedding model (like those available through the Gemini API) to convert the fact_value into a high-dimensional vector representation.
@@ -52,19 +61,25 @@ This document outlines the technical tasks required to implement the first user 
         *   If a highly similar fact is found, the system will update the existing record's metadata. This update will refresh the last_accessed_timestamp and increment a reinforcement_count. This counter is valuable long-term data, indicating which facts are most central to the user's identity.
         *   If no similar fact is found, a new entry will be created with the vector and all its associated metadata.
         *   **Scalability Note**: The initial `searchMemories` implementation will retrieve all memories from IndexedDB and perform a linear scan for similarity. This approach does not scale well. For a more scalable long-term solution, client-side Approximate Nearest Neighbor (ANN) search libraries should be explored in a future iteration. This is an accepted technical debt for the v1 implementation to prioritize core functionality.
-*   [x] **Task 1.5: Asynchronously Integrate MemoryService into the Main Application Flow.**
+    *   **Remaining Quest:** The current de-duplication is based on an exact string match. This **must** be replaced with a semantic similarity search using vector embeddings. The dynamic threshold is also not implemented.
+
+*   **Task 1.5: Asynchronously Integrate MemoryService into the Main Application Flow.**
+    *   **Status:** Forged.
     *   **Objective:** To trigger the memory storage process reliably at the appropriate time without degrading the real-time performance of the user interface.
     *   **Details:**
         *   The MemoryService.processAndStoreMemory() method will be invoked *asynchronously* after a complete conversational turn (i.e., after the user has spoken and Gemini-chan has fully responded). This ensures that the potentially slow memory processing (API calls, database writes) does not block the main thread or add any latency to the AI's response time.
         *   This asynchronous call will be initiated from a central point in the application's state management or conversation handling logic. We will pass in the last few conversational turns to provide context for the extraction, along with the current sessionId.
         *   The entire process will run in the background as a non-blocking, "fire-and-forget" operation. We will wrap the call in a top-level try-catch block. Any errors that occur during this background task (which were not handled by the retry logic) will be caught and logged via the DebugLogger service. This is critical for ensuring that a failure in the memory subsystem is visible for debugging but never crashes the main user-facing application.
-*   [ ] **Task 1.6: Develop a Comprehensive Test Suite.**
+
+*   **Task 1.6: Develop a Comprehensive Test Suite.**
+    *   **Status:** Un-forged.
     *   **Objective:** To guarantee the reliability, correctness, and resilience of the memory system through a robust suite of automated tests.
     *   **Details:**
         *   Create the test file features/memory/__tests__/MemoryService.test.ts.
         *   **Unit Tests:** We will heavily mock the Gemini API and VectorStore dependencies. The tests will verify that: (1) the service correctly formats the request payload for the API based on different inputs; (2) it can successfully parse a variety of valid mock JSON responses; (3) it gracefully handles API errors, malformed JSON, and validation failures without crashing.
         *   **Integration Tests:** Using an in-memory or test instance of the VectorStore, we will write tests to verify the end-to-end flow. These tests will confirm that: (1) a new, unique memory is correctly embedded and added to the store; (2) a duplicate memory correctly triggers the update logic (incrementing reinforcement_count) instead of creating a new entry.
         *   We will create a dedicated mock data file, MemoryService.mock.ts, containing a rich set of test cases. This will include simple fact extractions ("my name is Bob"), conversations with no facts, conversations with multiple facts, and edge cases like ambiguous or contradictory statements. This structured approach ensures our test suite is comprehensive and easily expandable.
+    *   **Remaining Quest:** The test suite contains only placeholder tests and must be fully implemented.
 
 
 ### **Prototype Validation:**
@@ -74,25 +89,3 @@ This document outlines the technical tasks required to implement the first user 
     *   **Cross-Session Retrieval:** In a new session, the system was able to recall the user's favorite cat, confirming the persistence layer is working.
     *   **Memory Update:** The user then stated they had a new favorite cat. The system correctly interpreted this as an update to the existing memory, rather than a new, conflicting fact. This validates the de-duplication and update logic outlined in Task 1.4.
     *   **Multi-Language Retrieval:** The updated favorite cat information was successfully retrieved and presented to the user even when the conversation switched to a different language, demonstrating the robustness of the underlying vector-based retrieval.
-
-### **Implementation Completeness Report (as of 2025-08-20)**
-
-While the core functionality is operational and has passed initial validation, the implementation is **incomplete** and not yet production-ready. The following items must be addressed to meet the full technical specification.
-
-*   **Task 1.3 (Robust Memory Extraction and Error Handling):** **Incomplete**
-    *   **Prompt Loading:** The memory extraction prompt is hardcoded in `MemoryService.ts`. It **must** be updated to load dynamically from `prompts/memory-extraction.prompt.md` to allow for easier iteration.
-    *   **Retry Mechanism:** The required retry logic with exponential backoff for API calls is missing. This is a critical resilience feature.
-
-*   **Task 1.4 (Smart Vector Store Integration with De-duplication):** **Incomplete**
-    *   **De-duplication Logic:** The current de-duplication is based on an exact string match of `fact_key` and `fact_value`. This **must** be replaced with a semantic similarity search using vector embeddings to correctly identify and merge conceptually similar facts (e.g., "I like hiking" vs. "My hobby is hiking").
-    *   **Dynamic Threshold:** The dynamic similarity threshold based on `permanence_score` is not implemented.
-
-*   **Task 1.6 (Develop a Comprehensive Test Suite):** **Incomplete**
-    *   **Test Coverage:** The test suite in `features/memory/__tests__/MemoryService.test.ts` contains only placeholder tests. It **must** be expanded to include comprehensive unit and integration tests covering fact extraction, parsing, error handling, and the de-duplication logic.
-
-*   **Known Limitation: Persona-Specific Memory:**
-    *   **Description:** Manual testing has revealed that memories are currently tied to a specific `personaId`. When the user switches personas, the memory context is lost, and the new persona does not have access to facts learned by the previous one. However, it has been validated that memory for a *single persona* **is** persistent across sessions (i.e., if you close and reopen the tab, a persona will still have its memories). The issue is confined to the act of switching between different personas.
-    *   **Impact:** This breaks the user's expectation of a continuous relationship with the AI assistant as a whole, even though individual persona relationships are maintained.
-    *   **Resolution:** A new user story, "[Shared Memory Across Personas](stories/shared-memory-across-personas.md)," has been created to address this in a future sprint.
-
-**Conclusion:** The current implementation serves as a successful proof-of-concept. However, it should be considered an alpha release. The remaining tasks and known limitations are essential for ensuring the system is robust, accurate, and maintainable before being shipped to a wider user base.

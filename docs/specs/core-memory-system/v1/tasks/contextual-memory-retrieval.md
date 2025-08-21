@@ -2,6 +2,8 @@
 
 This document outlines the technical tasks required to implement the second user story of the "Enable Persistent Memory" epic. This phase focuses on actively using stored memories to enrich conversations, transforming the AI from a simple respondent into a context-aware companion.
 
+> **Note:** This document details the implementation of the memory *retrieval* logic. For the overall status of the Core Memory System and its dependencies, please refer to the [Master Specification](../README.md). The functionality described here is contingent on the completion of the [Core Memory Storage](./core-memory-storage.md) tasks.
+
 
 ### **User Story 2:**
 
@@ -143,4 +145,4 @@ User Message → NPU (gemini-2.5-flash) → Memory Retrieval → Enhanced Prompt
 - **Batch Processing**: Group similar queries to reduce API calls
 - **Relevance Tuning**: Adjust similarity thresholds based on usage patterns
 
-**Status: PRODUCTION READY** - NPU-VPU memory integration is fully functional and tested! 🎉
+**Status: ARCHITECTURE COMPLETE** - The NPU-VPU retrieval architecture is implemented and functional. However, its production readiness is **blocked** pending the completion of foundational tasks in the [Core Memory Storage](./core-memory-storage.md) specification.
