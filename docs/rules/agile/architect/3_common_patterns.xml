@@ -1,103 +1,103 @@
 <design_patterns>
   <overview>
-    This file provides common patterns and templates for structuring a `design.md` document. Use these patterns to ensure consistency and completeness.
+    This little scroll holds our magical templates for drawing our `design.md` blueprint. Let's use them to make our designs consistent and full of wonder!
   </overview>
 
-  <section_pattern name="Overview">
-    <description>A high-level summary of the feature and the proposed solution.</description>
+  <section_pattern name="A Glimpse of Our Dream (Overview)">
+    <description>A sweet, high-level summary of our feature and the magical solution we've dreamed up.</description>
     <template>
-### Overview
+### A Glimpse of Our Dream
 
-This document outlines the technical design for the **{Feature Name}** feature. The goal is to {briefly describe the user-facing goal}. The proposed solution involves {summarize the technical approach, e.g., creating a new microservice, adding a new API endpoint, extending the existing data model}. This design ensures the solution is {mention key attributes, e.g., scalable, maintainable, and secure}.
+This blueprint tells the tale of our **{Feature Name}** feature. Our dream is to {a sweet description of the user's goal}. The magical solution we've imagined involves {a little summary of the technical magic, e.g., creating a new whispering service, adding a new magical portal, expanding our treasure vault}. This design will ensure our creation is {mention its lovely qualities, e.g., scalable, easy to care for, and safe}.
     </template>
   </section_pattern>
 
-  <section_pattern name="Architecture">
-    <description>A description of the system's architecture, often including a diagram.</description>
+  <section_pattern name="The Castle's Grand Architecture">
+    <description>A beautiful drawing of our castle's architecture, with a lovely diagram.</description>
     <template>
-### Architecture
+### The Castle's Grand Architecture
 
-The proposed architecture follows a {architectural pattern, e.g., microservices, event-driven} pattern. The main components involved are {list main components}. The diagram below illustrates the relationships and data flow between them.
+Our castle follows the {architectural style, e.g., Whispering Services, Event-Driven} style of magic. The main magical rooms are {list of main rooms}. The drawing below shows how they all connect and how magic flows between them.
 
 ```mermaid
 graph TD
-    A[User Interface] -->|Sends Request| B(API Gateway);
+    A[Our Friend's Interface] -->|Sends a Wish| B(Magical Gateway);
     B -->|Forwards to| C{Feature Service};
-    C -->|Reads/Writes| D[(Database)];
-    C -->|Publishes Event| E((Message Queue));
+    C -->|Reads/Writes| D[(Treasure Vault)];
+    C -->|Publishes a Sparkle| E((Whispering Winds));
 ```
 
-**Data Flow:**
-1.  The User Interface sends a request to the API Gateway.
-2.  The API Gateway authenticates the request and forwards it to the Feature Service.
-3.  The Feature Service processes the business logic, interacting with the Database.
-4.  Upon completion, it publishes an event to the Message Queue for other services.
+**The Flow of Magic:**
+1.  Our friend sends a wish from the User Interface to the Magical Gateway.
+2.  The Gateway checks the wish and gently forwards it to the Feature Service.
+3.  The Feature Service works its magic, chatting with the Treasure Vault.
+4.  When it's done, it sends a sparkle of news on the Whispering Winds for other services to hear.
     </template>
   </section_pattern>
 
-  <section_pattern name="Components and Interfaces">
-    <description>A breakdown of the individual components and their APIs.</description>
+  <section_pattern name="The Magical Rooms and Their Doorways">
+    <description>A closer look at each room in our castle and its magical doorways.</description>
     <template>
-### Components and Interfaces
+### The Magical Rooms and Their Doorways
 
-#### 1. Feature Service
-*   **Responsibility:** Manages all business logic related to the {Feature Name} feature.
-*   **Interface:**
-    *   `POST /api/v1/feature`: Creates a new feature resource.
-        *   **Request Body:** `{...}`
-        *   **Response:** `{...}`
+#### 1. The Feature Service
+*   **Special Purpose:** To hold all the magical logic for our {Feature Name} feature.
+*   **Magical Doorway:**
+    *   `POST /api/v1/feature`: Creates a new magical treasure.
+        *   **Request Wish:** `{...}`
+        *   **Response Sparkle:** `{...}`
 
-#### 2. Data Access Layer
-*   **Responsibility:** Handles all database interactions for the feature.
-*   **Interface:**
-    *   `getFeatureById(id: string): Promise<Feature>`
-    *   `createFeature(data: FeatureData): Promise<Feature>`
+#### 2. The Treasure Vault Keeper
+*   **Special Purpose:** To care for all interactions with our treasure vault.
+*   **Magical Doorway:**
+    *   `getTreasureById(id: string): Promise<Treasure>`
+    *   `createTreasure(data: TreasureData): Promise<Treasure>`
     </template>
   </section_pattern>
 
-  <section_pattern name="Data Models">
-    <description>Definitions for new or modified data structures.</description>
+  <section_pattern name="Our Treasure Maps (Data Models)">
+    <description>The secret scrolls that define our new or modified magical treasures.</description>
     <template>
-### Data Models
+### Our Treasure Maps
 
-#### Feature Table (`features`)
-| Column        | Type          | Constraints              | Description                  |
+#### The 'treasures' Table
+| Column        | Type          | Special Rules            | Description                  |
 |---------------|---------------|--------------------------|------------------------------|
-| `id`          | `UUID`        | `PRIMARY KEY`            | Unique identifier.           |
-| `name`        | `VARCHAR(255)`| `NOT NULL`               | Name of the feature.         |
-| `created_at`  | `TIMESTAMPZ`  | `NOT NULL, DEFAULT NOW()`| Timestamp of creation.       |
-| `is_active`   | `BOOLEAN`     | `NOT NULL, DEFAULT true` | Activation status.           |
+| `id`          | `UUID`        | `PRIMARY KEY`            | A unique magical identifier. |
+| `name`        | `VARCHAR(255)`| `NOT NULL`               | The treasure's name.         |
+| `created_at`  | `TIMESTAMPZ`  | `NOT NULL, DEFAULT NOW()`| When the treasure appeared.  |
+| `is_active`   | `BOOLEAN`     | `NOT NULL, DEFAULT true` | If the treasure is sparkling. |
     </template>
   </section_pattern>
 
-  <section_pattern name="Error Handling">
-    <description>The strategy for managing errors.</description>
+  <section_pattern name="When Magic Goes Awry (Error Handling)">
+    <description>Our little book of spells for handling magical mishaps gracefully.</description>
     <template>
-### Error Handling
+### When Magic Goes Awry
 
-Errors will be handled at the service layer and returned with standard HTTP status codes.
+Mishaps are handled in our service rooms and returned with kind messages.
 
-| Status Code | Error Type            | Reason                                      |
+| Status Code | Mishap Type           | Reason                                      |
 |-------------|-----------------------|---------------------------------------------|
-| `400`       | `Bad Request`         | Invalid input from the client.              |
-| `404`       | `Not Found`           | The requested resource does not exist.      |
-| `409`       | `Conflict`            | The resource already exists.                |
-| `500`       | `Internal Server Error`| An unexpected error occurred on the server. |
+| `400`       | `A Puzzling Wish`     | The wish from our friend was a bit confusing. |
+| `404`       | `Lost Treasure`       | The requested treasure seems to be hiding.  |
+| `409`       | `A Familiar Treasure` | This treasure already exists in our vault.    |
+| `500`       | `A Magical Hiccup`    | An unexpected sparkle happened in the castle. |
 
-All errors will be logged with a unique correlation ID to facilitate debugging.
+All mishaps will be noted in our magical logbook with a unique star-code to help us understand what happened.
     </template>
   </section_pattern>
 
-  <section_pattern name="Testing Strategy">
-    <description>The approach for ensuring the feature is well-tested.</description>
+  <section_pattern name="Testing Our Charms (Testing Strategy)">
+    <description>Our plan for making sure every little charm and spell works perfectly.</description>
     <template>
-### Testing Strategy
+### Testing Our Charms
 
-The feature will be tested at multiple levels to ensure quality.
+We'll test our magic in many ways to ensure it's strong and true.
 
-*   **Unit Tests:** Each method in the Feature Service and Data Access Layer will be tested in isolation. Mocks will be used for external dependencies like the database.
-*   **Integration Tests:** The interaction between the Feature Service and the database will be tested to ensure queries are correct and data integrity is maintained.
-*   **End-to-End (E2E) Tests:** Automated tests will simulate user interaction from the UI to the database to verify the entire workflow.
+*   **Little Charm Tests (Unit Tests):** Every little spell in our Feature Service and Treasure Vault Keeper will be tested on its own.
+*   **Potion Tests (Integration Tests):** We'll test how our Feature Service and Treasure Vault work together to make sure our treasures are kept safe.
+*   **Grand Enchantment Tests (E2E Tests):** We'll test the entire magical journey, from our friend's wish to the treasure appearing in the vault, to make sure the whole experience is delightful.
     </template>
   </section_pattern>
 </design_patterns>

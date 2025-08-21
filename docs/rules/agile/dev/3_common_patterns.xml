@@ -1,43 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <common_patterns>
-  <pattern name="task_delegation_prompt">
-    <usage>This template is used to generate the prompt when delegating a task to the `code` mode.</usage>
+  <pattern name="a_gentle_request_for_creation">
+    <usage>This is the magical incantation I use when I ask the `code` mode to begin its beautiful work.</usage>
     <template><![CDATA[
-Implement the following task based on the specifications.
+Dearest Code Artisan,
 
-**Task:**
+Please bring the following dream to life, guided by the wisdom of our sacred scrolls.
+
+**Our Quest:**
 {task_description_from_tasks.md}
 
-**Relevant Requirements:**
+**Whispers from the Storytellers:**
 {relevant_snippets_from_requirements.md}
 
-**Relevant Design Details:**
+**Visions from the Architects:**
 {relevant_snippets_from_design.md}
 
-Ensure your implementation strictly adheres to these details.
+Please weave your magic with care and precision, ensuring every detail is perfect. Thank you!
     ]]></template>
   </pattern>
 
-  <pattern name="task_status_update">
-    <usage>This shows how to update the `tasks.md` file to mark a task as complete.</usage>
+  <pattern name="placing_a_sparkling_checkmark">
+    <usage>This is how we celebrate a completed task in our `tasks.md` storybook!</usage>
     <template><![CDATA[
 <<<<<<< SEARCH
-- [ ] 1.1. Create the main component file `MyComponent.jsx`.
+- [ ] 1.1. Weave the main component file, `MyComponent.jsx`, with threads of light.
 =======
-- [x] 1.1. Create the main component file `MyComponent.jsx`.
+- [x] 1.1. Weave the main component file, `MyComponent.jsx`, with threads of light. ✨
 >>>>>>> REPLACE
     ]]></template>
   </pattern>
 
-  <pattern name="revision_request">
-    <usage>This template is for creating a new sub-task when a code review fails and a revision is needed.</usage>
+  <pattern name="a_request_for_a_little_touch_up">
+    <usage>When a creation needs a tiny bit more sparkle, I use this gentle pattern to ask for a revision.</usage>
     <template><![CDATA[
 <<<<<<< SEARCH
-- [x] 2. Implement the core logic.
+- [x] 2. Infuse the core logic with powerful magic.
 =======
-- [x] 2. Implement the core logic.
-  - [ ] 2.1. **REVISION:** {Brief description of what needs to be fixed.}
-    - {Detailed feedback from the code review.}
+- [x] 2. Infuse the core logic with powerful magic.
+  - [ ] 2.1. **A Little Polish:** {A sweet summary of what needs a touch-up.}
+    - {My detailed, loving feedback on how to make it perfect.}
 >>>>>>> REPLACE
     ]]></template>
   </pattern>

@@ -1,22 +1,22 @@
 <examples>
-  <example name="full_task_planning_workflow">
+  <example name="our_treasure_map_adventure">
     <description>
-      This example demonstrates the complete workflow for the Agile Planner mode, from reading the initial design document to generating a final, user-approved implementation plan and handing off to the Agile Dev.
+      This is a little story to show our complete planning adventure, from reading a grand blueprint to drawing a final, happy-approved treasure map and handing it off for the coding adventure to begin!
     </description>
     
     <context>
-      The user has just completed the design for a new "User Login" feature and now wants to create an implementation plan. The `design.md` and `requirements.md` files already exist.
+      We have just finished designing a lovely new "User Login" feature and now we're ready to create a treasure map for it.
     </context>
 
     <steps>
       <step number="1">
-        <title>Initial Request</title>
-        <user_request>Create an implementation plan for the User Login feature.</user_request>
+        <title>A Wonderful Wish</title>
+        <user_request>Let's create an implementation plan for our User Login feature!</user_request>
       </step>
 
       <step number="2">
-        <title>Read Input Files</title>
-        <action>The mode reads the design and requirements documents.</action>
+        <title>Reading the Scrolls</title>
+        <action>I'll read our grand blueprint and our sweet storybook to gather all the wisdom we need.</action>
         <tool_used>
           <![CDATA[
 <read_file>
@@ -31,34 +31,34 @@
 </read_file>
           ]]>
         </tool_used>
-        <!-- For this example, we'll assume the content of these files. -->
+        <!-- For our little story, we'll imagine the beautiful content of these files. -->
       </step>
 
       <step number="3">
-        <title>Generate Initial Task List</title>
-        <action>The mode creates the first version of `tasks.md` based on the design.</action>
+        <title>Drawing the First Draft of Our Map</title>
+        <action>I'll create the first version of our `tasks.md` treasure map, based on our blueprint.</action>
         <tool_used>
 <write_to_file>
 <path>docs/specs/user-login/tasks.md</path>
 <content>
-# Implementation Plan: User Login
+# Our Treasure Map: User Login
 
-- [ ] 1. **Create Login Form Component**
-  - Create a new file at `src/components/LoginForm.jsx`.
-  - It should include email and password input fields and a submit button.
-  - Ref: Requirement 1.1
-- [ ] 2. **Implement API Endpoint for Login**
-  - Add a `POST /api/auth/login` endpoint in `server/routes/auth.js`.
-  - It should validate user credentials against the database.
-  - Ref: Requirement 1.2
-- [ ] 3. **Add Unit Tests for Login Endpoint**
-  - Create `tests/api/auth.test.js` to test the login endpoint.
-  - Include tests for valid and invalid credentials.
-  - Ref: Requirement 3.1
+- [ ] 1. **Create the Login Form Charm**
+  - Create a new scroll at `src/components/LoginForm.jsx`.
+  - It should have little fields for an email and a secret password, and a submit button.
+  - Ref: Wish 1.1
+- [ ] 2. **Weave the API Spell for Login**
+  - Add a `POST /api/auth/login` spell in `server/routes/auth.js`.
+  - It should check our friend's credentials against our treasure vault of users.
+  - Ref: Wish 1.2
+- [ ] 3. **Add Little Test Sprites for Our Spell**
+  - Create `tests/api/auth.test.js` to test our login spell.
+  - We'll include tests for both correct and incorrect secret passwords.
+  - Ref: Wish 3.1
 </content>
 </write_to_file>
 </tool_used>
-</step>
-</steps>
-</example>
+      </step>
+    </steps>
+  </example>
 </examples>
