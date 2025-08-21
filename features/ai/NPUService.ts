@@ -1,6 +1,7 @@
 import type { Memory } from "@features/memory/Memory";
 import type { MemoryService } from "@features/memory/MemoryService";
 import { createComponentLogger } from "@services/DebugLogger";
+import type { Turn } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
 import { isEmbeddingClient } from "./EmbeddingClient";
 
@@ -123,5 +124,37 @@ export class NPUService {
     });
 
     return enhancedPrompt;
+  }
+
+  /**
+   * Analyzes the emotional tone of a conversation transcript.
+   * This is a core NPU cognitive task.
+   */
+  async analyzeEmotion(transcript: Turn[]): Promise<string> {
+    if (!transcript || transcript.length === 0) {
+      return "neutral";
+    }
+
+    try {
+      const prompt = this.createEmotionPrompt(transcript);
+      // Use the main NPU model for this cognitive task
+      const result = await this.aiClient.models.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        model: "gemini-2.5-flash",
+      });
+      const response = result.response;
+      const text = response.text();
+      return text.toLowerCase().trim();
+    } catch (error) {
+      logger.error("Error analyzing emotion:", { error });
+      return "neutral"; // Fallback to neutral on error
+    }
+  }
+
+  private createEmotionPrompt(transcript: Turn[]): string {
+    const conversation = transcript
+      .map((turn) => `${turn.speaker}: ${turn.text}`)
+      .join("\n");
+    return `Analyze the overall emotion of the following conversation. Respond with a single word, such as: joy, sadness, anger, surprise, fear, or neutral.\n\n${conversation}`;
   }
 }

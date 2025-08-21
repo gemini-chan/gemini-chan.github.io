@@ -30,7 +30,6 @@ import "@components/CallHistoryView";
 import type { ToastNotification } from "@components/ToastNotification";
 import { NPUService } from "@features/ai/NPUService";
 import { MemoryService } from "@features/memory/MemoryService";
-import { EmotionService } from "@features/emotion/EmotionService";
 import {
   TextSessionManager,
   CallSessionManager,
@@ -96,7 +95,6 @@ export class GdmLiveAudio extends LitElement {
   private callSessionManager: CallSessionManager;
   private summarizationService: SummarizationService;
   private personaManager: PersonaManager;
-  private emotionService: EmotionService;
   private vectorStore: VectorStore;
   private memoryService: MemoryService;
   private npuService: NPUService;
@@ -327,7 +325,6 @@ export class GdmLiveAudio extends LitElement {
         this,
       );
       this.summarizationService = new SummarizationService(this.client);
-      this.emotionService = new EmotionService(this.client);
     }
   }
 
@@ -1116,7 +1113,7 @@ export class GdmLiveAudio extends LitElement {
   private startEmotionAnalysis() {
     this.stopEmotionAnalysis(); // Ensure no multiple timers
     this.emotionAnalysisTimer = window.setInterval(async () => {
-      if (!this.emotionService) return;
+      if (!this.npuService) return;
 
       const transcript =
         this.activeMode === "calling"
@@ -1125,7 +1122,7 @@ export class GdmLiveAudio extends LitElement {
       const lastTurns = transcript.slice(-6); // Analyze last 6 turns for recent emotion
 
       if (lastTurns.length > 0) {
-        const emotion = await this.emotionService.analyzeEmotion(lastTurns);
+        const emotion = await this.npuService.analyzeEmotion(lastTurns);
         if (emotion !== this.currentEmotion) {
           logger.debug("Emotion updated", {
             from: this.currentEmotion,
