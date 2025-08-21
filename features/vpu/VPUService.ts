@@ -6,12 +6,17 @@
 import {
   GoogleGenAI,
   type LiveServerMessage,
+  Modality,
   type Session,
 } from '@google/genai';
 import { createComponentLogger } from '@services/DebugLogger';
 import type { Turn } from '@shared/types';
 import { decode, decodeAudioData } from '@shared/utils';
 import type { SummarizationService } from '@features/summarization/SummarizationService';
+import { PersonaManager } from '@features/persona/PersonaManager';
+import { NPUService } from '@features/ai/NPUService';
+import { MemoryService } from '@features/memory/MemoryService';
+import { energyBarService } from '@services/EnergyBarService';
 
 const logger = createComponentLogger('VPUService');
 
@@ -428,5 +433,255 @@ export abstract class BaseSessionManager {
     fallbackPrompt: string | null,
   ): string {
     return fallbackPrompt ? `${basePrompt}\n\n${fallbackPrompt}` : basePrompt;
+  }
+}
+
+export class TextSessionManager extends BaseSessionManager {
+  protected getResumptionStorageKey(): string | null {
+    return "gdm:text-session-handle";
+  }
+  constructor(
+    outputAudioContext: AudioContext,
+    outputNode: GainNode,
+    client: GoogleGenAI,
+    updateStatus: (msg: string) => void,
+    updateError: (msg: string) => void,
+    onRateLimit: (msg: string) => void,
+    private updateTranscript: (text: string) => void,
+    private personaManager: PersonaManager,
+    private npuService: NPUService,
+    private memoryService: MemoryService,
+    private getTranscript: () => Turn[],
+    hostElement: HTMLElement,
+  ) {
+    super(
+      outputAudioContext,
+      outputNode,
+      client,
+      updateStatus,
+      updateError,
+      onRateLimit,
+      hostElement,
+    );
+  }
+
+  protected getCallbacks() {
+    const base = super.getCallbacks();
+    return {
+      ...base,
+      onmessage: async (message: LiveServerMessage) => {
+        // Always delegate to base to handle resumption/goAway/generationComplete/audio/interruption
+        if (typeof base.onmessage === "function") {
+          await base.onmessage(message);
+        }
+
+        // Handle text response for transcript (after base processing)
+        const modelTurn = message.serverContent?.modelTurn;
+        if (modelTurn) {
+          const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
+          const text = lastPart.text;
+          if (text) {
+            this.updateTranscript(text);
+          }
+        }
+
+        // After turn is complete, process for memory storage
+        const extendedMessage = message as ExtendedLiveServerMessage;
+        const genComplete = extendedMessage.serverContent?.generationComplete;
+        if (genComplete) {
+          this.processMemoryAfterTurn();
+        }
+      },
+    };
+  }
+
+  private processMemoryAfterTurn() {
+    const transcript = this.getTranscript();
+    // Get only the last two turns (user and model) for memory processing
+    const lastTwoTurns = transcript.slice(-2);
+    const transcriptForMemory = lastTwoTurns
+      .map((t) => `${t.speaker}: ${t.text}`)
+      .join("\n");
+    const personaId = this.personaManager.getActivePersona().id;
+
+    if (transcriptForMemory) {
+      logger.debug("Processing memory for last turn", {
+        personaId,
+        transcriptSnippet: transcriptForMemory.slice(0, 100),
+      });
+      // Fire and forget
+      this.memoryService
+        .processAndStoreMemory(transcriptForMemory, personaId)
+        .catch((error) => {
+          logger.error("Failed to process memory in background", { error });
+        });
+    }
+  }
+
+  protected getModel(): string {
+    // Align text session with energy levels (TTS); if exhausted (level 0), refuse to provide a model
+    const model = energyBarService.getCurrentModel("tts");
+    if (!model)
+      throw new Error("Energy exhausted: no model available for text session");
+    return model;
+  }
+
+  protected getConfig(): Record<string, unknown> {
+    const basePrompt = this.personaManager.getActivePersona().systemPrompt;
+    const systemInstruction = this.getSystemInstruction(
+      basePrompt,
+      this.fallbackPrompt,
+    );
+
+    return {
+      responseModalities: [Modality.AUDIO],
+      contextWindowCompression: { slidingWindow: {} },
+      systemInstruction,
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
+      },
+    };
+  }
+
+  protected getSessionName(): string {
+    return "Text session";
+  }
+  public override reconnectSession(): Promise<void> {
+    // Do nothing. Reconnect is disabled for TTS sessions.
+    return Promise.resolve();
+  }
+
+  /**
+   * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
+   * then VPU (the session) responds with the enhanced context.
+   */
+  public async sendMessageWithMemory(message: string): Promise<void> {
+    if (!this.session) {
+      throw new Error("Text session not available");
+    }
+
+    try {
+      // Step 1: Get persona ID for memory retrieval
+      const personaId = this.personaManager.getActivePersona().id;
+
+      // Step 2: NPU creates RAG-augmented prompt
+      const ragPrompt = await this.npuService.createRAGPrompt(
+        message,
+        personaId,
+      );
+
+      logger.debug("NPU created RAG prompt", {
+        originalMessage: message,
+        enhancedPromptLength: ragPrompt.enhancedPrompt.length,
+        memoryCount: ragPrompt.retrievedMemories.length,
+      });
+
+      // Step 3: Send the enhanced prompt to VPU (the session)
+      this.session.sendClientContent({ turns: ragPrompt.enhancedPrompt });
+    } catch (error) {
+      logger.error("Failed to send message with memory", {
+        error,
+        message,
+      });
+
+      // Fallback: send original message if RAG fails
+      this.session.sendClientContent({ turns: message });
+    }
+  }
+}
+
+export class CallSessionManager extends BaseSessionManager {
+  protected getResumptionStorageKey(): string | null {
+    return "gdm:call-session-handle";
+  }
+  constructor(
+    outputAudioContext: AudioContext,
+    outputNode: GainNode,
+    client: GoogleGenAI,
+    updateStatus: (msg: string) => void,
+    updateError: (msg: string) => void,
+    onRateLimit: (msg: string) => void,
+    private updateCallTranscript: (
+      text: string,
+      speaker: "user" | "model",
+    ) => void,
+    private personaManager: PersonaManager,
+    hostElement: HTMLElement,
+  ) {
+    super(
+      outputAudioContext,
+      outputNode,
+      client,
+      updateStatus,
+      updateError,
+      onRateLimit,
+      hostElement,
+    );
+  }
+
+  protected getModel(): string {
+    // Choose model based on current energy level for STS; if exhausted (0), refuse to start a call
+    const model = energyBarService.getCurrentModel("sts");
+    if (!model)
+      throw new Error("Energy exhausted: no model available for call session");
+    return model;
+  }
+
+  protected getConfig(): Record<string, unknown> {
+    const basePrompt = this.personaManager.getActivePersona().systemPrompt;
+    const systemInstruction = this.getSystemInstruction(
+      basePrompt,
+      this.fallbackPrompt,
+    );
+
+    const config = {
+      responseModalities: [Modality.AUDIO],
+      contextWindowCompression: { slidingWindow: {} },
+      outputAudioTranscription: {}, // Enable transcription of model's audio output
+      inputAudioTranscription: {}, // Enable transcription of user's audio input
+      systemInstruction,
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
+      },
+      // Conditionally enable affective dialog based on STS energy level
+      ...(energyBarService.isAffectiveDialogEnabled() && {
+        enableAffectiveDialog: true,
+      }),
+    };
+
+    return config;
+  }
+
+  protected getCallbacks() {
+    const base = super.getCallbacks();
+    return {
+      ...base,
+      onmessage: async (message: LiveServerMessage) => {
+        // Always delegate to base to handle resumption/goAway/generationComplete/audio/interruption
+        if (typeof base.onmessage === "function") {
+          await base.onmessage(message);
+        }
+
+        // Handle audio transcription for call transcript (model responses)
+        if (message.serverContent?.outputTranscription?.text) {
+          this.updateCallTranscript(
+            message.serverContent.outputTranscription.text,
+            "model",
+          );
+        }
+
+        // Handle input transcription for call transcript (user speech)
+        if (message.serverContent?.inputTranscription?.text) {
+          this.updateCallTranscript(
+            message.serverContent.inputTranscription.text,
+            "user",
+          );
+        }
+      },
+    };
+  }
+
+  protected getSessionName(): string {
+    return "Call session";
   }
 }
