@@ -17,7 +17,7 @@ This scroll contains the ordered tapestry of quests required to forge the Artifi
     *   **Location:** `features/emotion/EmotionTokenParser.ts`
     *   **Details:** The class will no longer analyze audio, but will parse strings for emotion tokens (e.g., `<|EMOTE_HAPPY|>`) and emit `EmotionEvent`s.
 
-*   [ ] **Quest 4: Grant the Vessel Understanding.**
+*   [x] **Quest 4: Grant the Vessel Understanding.**
     *   **Task:** Implement the core `parse(text: string)` method within the `EmotionTokenParser`.
     *   **Details:** This method will use regular expressions to find, extract, and emit `EmotionEvent`s from a given text stream. It should also return the cleaned text with tokens removed.
 
