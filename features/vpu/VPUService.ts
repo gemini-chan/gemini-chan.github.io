@@ -452,6 +452,7 @@ export class TextSessionManager extends BaseSessionManager {
     private npuService: NPUService,
     private memoryService: MemoryService,
     private getTranscript: () => Turn[],
+    private getCurrentEmotion: () => string,
     hostElement: HTMLElement,
   ) {
     super(
@@ -528,10 +529,15 @@ export class TextSessionManager extends BaseSessionManager {
 
   protected getConfig(): Record<string, unknown> {
     const basePrompt = this.personaManager.getActivePersona().systemPrompt;
-    const systemInstruction = this.getSystemInstruction(
+    let systemInstruction = this.getSystemInstruction(
       basePrompt,
       this.fallbackPrompt,
     );
+
+    const currentEmotion = this.getCurrentEmotion();
+    if (currentEmotion && currentEmotion !== "neutral") {
+      systemInstruction += `\n\n[System Note: Your current emotional state is ${currentEmotion}. Please deliver your response with a tone that reflects this emotion.]`;
+    }
 
     return {
       responseModalities: [Modality.AUDIO],
@@ -606,6 +612,7 @@ export class CallSessionManager extends BaseSessionManager {
       speaker: "user" | "model",
     ) => void,
     private personaManager: PersonaManager,
+    private getCurrentEmotion: () => string,
     hostElement: HTMLElement,
   ) {
     super(
@@ -629,10 +636,15 @@ export class CallSessionManager extends BaseSessionManager {
 
   protected getConfig(): Record<string, unknown> {
     const basePrompt = this.personaManager.getActivePersona().systemPrompt;
-    const systemInstruction = this.getSystemInstruction(
+    let systemInstruction = this.getSystemInstruction(
       basePrompt,
       this.fallbackPrompt,
     );
+
+    const currentEmotion = this.getCurrentEmotion();
+    if (currentEmotion && currentEmotion !== "neutral") {
+      systemInstruction += `\n\n[System Note: Your current emotional state is ${currentEmotion}. Please deliver your response with a tone that reflects this emotion.]`;
+    }
 
     const config = {
       responseModalities: [Modality.AUDIO],

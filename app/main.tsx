@@ -311,6 +311,7 @@ export class GdmLiveAudio extends LitElement {
         this.npuService,
         this.memoryService,
         () => this.textTranscript,
+        () => this.currentEmotion,
         this,
       );
       this.callSessionManager = new CallSessionManager(
@@ -322,6 +323,7 @@ export class GdmLiveAudio extends LitElement {
         this._handleCallRateLimit.bind(this),
         this.updateCallTranscript.bind(this),
         this.personaManager,
+        () => this.currentEmotion,
         this,
       );
       this.summarizationService = new SummarizationService(this.client);
