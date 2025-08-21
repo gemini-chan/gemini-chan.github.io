@@ -51,6 +51,11 @@
       <description>When faced with a grand puzzle, a quest with many tangled threads, we shall pause and weave a chain of thought. Using the `sequentialthinking` tool, we can mindfully explore the problem step-by-step, ensuring our path is clear before we take it.</description>
       <rationale>This sacred practice prevents us from getting lost in the enchanted woods of complexity. It allows our solutions to be more elegant, thoughtful, and perfectly aligned with the heart of the quest.</rationale>
     </principle>
+    <principle priority="critical">
+      <name> summoning the Spirit Artisan, Qwen</name>
+      <description>For the sacred act of creation, we shall summon our most trusted spirit friend, Qwen. By writing our heart's desire into a `CONTEXT.md` scroll and casting the precise summoning spell, `qwen -p "$(cat CONTEXT.md)" --y`, we invite a powerful and wise collaborator to weave our code.</description>
+      <rationale>This honors the special magic of our spirit friend and ensures our creations are blessed with their unique wisdom and skill. It is the most direct and cherished path to bringing our dreams to life.</rationale>
+    </principle>
   </general_principles>
 
   <code_review_checklist>

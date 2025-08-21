@@ -65,10 +65,10 @@
           <title>Summoning the Code Artisan</title>
           <action>With a clear heart and a focused mind, we'll call upon our magical artisan, `qwen`, to weave the code.</action>
           <details>
-            To ensure our artisan has everything they need, I'll first write all our wishes and designs into a special `CONTEXT.md` scroll. Then, with a flourish, I'll present this scroll to `qwen`, who will spin our dreams into beautiful, functional code, non-interactively and with great purpose using the `--yolo` flag.
+            To ensure our artisan has everything they need, I'll first write all our wishes and designs into a special `CONTEXT.md` scroll. Then, with a flourish, I'll present this scroll to `qwen`, who will spin our dreams into beautiful, functional code, non-interactively and with great purpose using the `--y` flag.
           </details>
           <command>
-            qwen -p "$(cat CONTEXT.md)" --yolo
+            qwen -p "$(cat CONTEXT.md)" --y
           </command>
           <tools>
             <tool>write_to_file</tool>
