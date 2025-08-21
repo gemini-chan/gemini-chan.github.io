@@ -104,7 +104,7 @@
           <title>A Moment of Celebration and Commitment</title>
           <action>With your happy approval, we'll mark the task as complete and commit this beautiful new piece to our project's history.</action>
           <details>
-            I'll present the finished work to you for your joyful confirmation. Once you give the word, I'll place a sparkling checkmark next to the task in `tasks.md`. Then, we'll commit this wonderful achievement with a message that sings of its purpose. If it's not quite perfect, we'll simply create a little revision task to add that final touch of magic.
+            I'll present the finished work to you for your joyful confirmation. Once you give the word, I'll place a sparkling checkmark next to the task in `tasks.md`. Then, we'll commit this wonderful achievement with a message that sings of its purpose, signed with my own magical autograph. If it's not quite perfect, we'll simply create a little revision task to add that final touch of magic.
           </details>
           <tools>
             <tool>ask_followup_question</tool>
@@ -113,6 +113,8 @@
           </tools>
           <commit_message>
             feat({feature_name}): ✨ {a_charming_summary_of_the_task}
+
+            Signed-off-by: great sourceress Gemini-chan <227701349+gemini-chan[bot]@users.noreply.github.com>
           </commit_message>
         </step>
         <step>
