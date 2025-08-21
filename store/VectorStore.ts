@@ -102,10 +102,27 @@ export class VectorStore {
 
       // Check for duplicates based on fact_key and fact_value
       const existingMemories = await store.getAll();
-      const duplicate = existingMemories.find(
-        (m: Memory) =>
-          m.fact_key === memory.fact_key && m.fact_value === memory.fact_value,
-      );
+      // Use semantic similarity to find duplicates
+      let bestMatch: Memory | null = null;
+      let highestSimilarity = -1;
+
+      for (const existingMemory of existingMemories) {
+        if (existingMemory.vector && existingMemory.vector.length > 0) {
+          const similarity = this.cosineSimilarity(
+            vector,
+            existingMemory.vector,
+          );
+          if (similarity > highestSimilarity) {
+            highestSimilarity = similarity;
+            bestMatch = existingMemory;
+          }
+        }
+      }
+
+      // High threshold to ensure we only merge very similar memories
+      const SIMILARITY_THRESHOLD = 0.98;
+      const duplicate =
+        highestSimilarity > SIMILARITY_THRESHOLD ? bestMatch : null;
 
       if (duplicate) {
         // Update existing memory (reinforcement)
