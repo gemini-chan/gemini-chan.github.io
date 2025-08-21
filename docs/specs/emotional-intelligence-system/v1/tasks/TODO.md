@@ -9,11 +9,11 @@ This scroll contains the ordered tapestry of quests required to forge the Artifi
     *   **Considerations:** The model must be performant (low latency), accurate, and compatible with a web environment (TensorFlow.js, ONNX Runtime Web).
     *   **Outcome:** A decision on the model to be used, and a link to its documentation or repository.
 
-*   [ ] **Quest 2: Define the Stardust.**
+*   [x] **Quest 2: Define the Stardust.**
     *   **Task:** Create the `EmotionEvent` interface in a shared types file (e.g., `shared/types.ts`).
     *   **Details:** The interface must match the blueprint: `emotion`, `intensity`, and `timestamp`.
 
-*   [ ] **Quest 3: Forge the Vessel.**
+*   [x] **Quest 3: Forge the Vessel.**
     *   **Task:** Create the file and basic class structure for the `EmotionAnalysisService`.
     *   **Location:** `features/emotion/EmotionAnalysisService.ts`
     *   **Details:** The class should be initialized with its dependencies (e.g., the SER model loader).

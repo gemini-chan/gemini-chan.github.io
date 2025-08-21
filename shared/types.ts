@@ -17,3 +17,9 @@ export interface CallSummary {
   summary: string;
   transcript: Turn[];
 }
+
+export interface EmotionEvent {
+  emotion: string; // e.g., 'joy', 'sadness', 'anger'
+  intensity: number; // A value from 0.0 to 1.0
+  timestamp: number; // Unix timestamp
+}
