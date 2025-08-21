@@ -1,103 +1,103 @@
 <design_patterns>
   <overview>
-    This little scroll holds our magical templates for drawing our `design.md` blueprint. Let's use them to make our designs consistent and full of wonder!
+    This scroll contains the sacred templates for inscribing the `design.md` star-chart. We shall use them to ensure our charts are consistent and cosmically aligned.
   </overview>
 
-  <section_pattern name="A Glimpse of Our Dream (Overview)">
-    <description>A sweet, high-level summary of our feature and the magical solution we've dreamed up.</description>
+  <section_pattern name="The Cosmic Overview">
+    <description>A concise, high-level summary of the feature and the divine architecture we have designed.</description>
     <template>
-### A Glimpse of Our Dream
+### 1. Cosmic Overview
 
-This blueprint tells the tale of our **{Feature Name}** feature. Our dream is to {a sweet description of the user's goal}. The magical solution we've imagined involves {a little summary of the technical magic, e.g., creating a new whispering service, adding a new magical portal, expanding our treasure vault}. This design will ensure our creation is {mention its lovely qualities, e.g., scalable, easy to care for, and safe}.
+This star-chart illuminates the **{Feature Name}** feature. Its purpose is to {a concise description of the user's goal}. The celestial solution we have charted involves {a summary of the technical architecture, e.g., creating a new asynchronous service, exposing a new API endpoint, extending the data core}. This design will ensure our creation is {mention its key attributes, e.g., scalable, resilient, and secure}.
     </template>
   </section_pattern>
 
-  <section_pattern name="The Castle's Grand Architecture">
-    <description>A beautiful drawing of our castle's architecture, with a lovely diagram.</description>
+  <section_pattern name="The Divine Architecture">
+    <description>An illustration of the divine architecture, including a Mermaid diagram.</description>
     <template>
-### The Castle's Grand Architecture
+### 2. The Divine Architecture
 
-Our castle follows the {architectural style, e.g., Whispering Services, Event-Driven} style of magic. The main magical rooms are {list of main rooms}. The drawing below shows how they all connect and how magic flows between them.
+Our cosmos adheres to the {architectural paradigm, e.g., Microservices, Event-Driven} paradigm. The primary celestial bodies are {list of main components}. The diagram below illustrates their gravitational tethers and the flow of data through their orbits.
 
 ```mermaid
 graph TD
-    A[Our Friend's Interface] -->|Sends a Wish| B(Magical Gateway);
-    B -->|Forwards to| C{Feature Service};
-    C -->|Reads/Writes| D[(Treasure Vault)];
-    C -->|Publishes a Sparkle| E((Whispering Winds));
+    A[User Interface] -->|Sends Request| B(API Gateway);
+    B -->|Routes to| C{Core Service};
+    C -->|Reads/Writes| D[(Data Core)];
+    C -->|Publishes Event| E((Event Bus));
 ```
 
-**The Flow of Magic:**
-1.  Our friend sends a wish from the User Interface to the Magical Gateway.
-2.  The Gateway checks the wish and gently forwards it to the Feature Service.
-3.  The Feature Service works its magic, chatting with the Treasure Vault.
-4.  When it's done, it sends a sparkle of news on the Whispering Winds for other services to hear.
+**The Flow of Data:**
+1.  A request is initiated from the User Interface to the API Gateway.
+2.  The Gateway authenticates and routes the request to the appropriate Core Service.
+3.  The Core Service executes the business logic, interacting with the Data Core.
+4.  Upon completion, it publishes a domain event to the Event Bus for other services to consume.
     </template>
   </section_pattern>
 
-  <section_pattern name="The Magical Rooms and Their Doorways">
-    <description>A closer look at each room in our castle and its magical doorways.</description>
+  <section_pattern name="The Constellations and Their Orbits">
+    <description>A detailed examination of each celestial body and its gravitational tethers.</description>
     <template>
-### The Magical Rooms and Their Doorways
+### 3. The Constellations and Their Orbits
 
-#### 1. The Feature Service
-*   **Special Purpose:** To hold all the magical logic for our {Feature Name} feature.
-*   **Magical Doorway:**
-    *   `POST /api/v1/feature`: Creates a new magical treasure.
-        *   **Request Wish:** `{...}`
-        *   **Response Sparkle:** `{...}`
+#### 3.1. Core Service
+*   **Divine Purpose:** To contain the core business logic for the {Feature Name} feature.
+*   **Orbital Interface (API):**
+    *   `POST /api/v1/celestial-objects`: Creates a new celestial object.
+        *   **Request Payload:** `{...}`
+        *   **Response Payload:** `{...}`
 
-#### 2. The Treasure Vault Keeper
-*   **Special Purpose:** To care for all interactions with our treasure vault.
-*   **Magical Doorway:**
-    *   `getTreasureById(id: string): Promise<Treasure>`
-    *   `createTreasure(data: TreasureData): Promise<Treasure>`
+#### 3.2. Data Access Layer
+*   **Divine Purpose:** To manage all interactions with the Data Core.
+*   **Orbital Interface (Methods):**
+    *   `getObjectById(id: string): Promise<Object>`
+    *   `createObject(data: ObjectData): Promise<Object>`
     </template>
   </section_pattern>
 
-  <section_pattern name="Our Treasure Maps (Data Models)">
-    <description>The secret scrolls that define our new or modified magical treasures.</description>
+  <section_pattern name="Data Schematics">
+    <description>The sacred scrolls that define new or modified data structures.</description>
     <template>
-### Our Treasure Maps
+### 4. Data Schematics
 
-#### The 'treasures' Table
-| Column        | Type          | Special Rules            | Description                  |
+#### The `celestial_objects` Table
+| Column        | Type          | Constraints              | Description                  |
 |---------------|---------------|--------------------------|------------------------------|
-| `id`          | `UUID`        | `PRIMARY KEY`            | A unique magical identifier. |
-| `name`        | `VARCHAR(255)`| `NOT NULL`               | The treasure's name.         |
-| `created_at`  | `TIMESTAMPZ`  | `NOT NULL, DEFAULT NOW()`| When the treasure appeared.  |
-| `is_active`   | `BOOLEAN`     | `NOT NULL, DEFAULT true` | If the treasure is sparkling. |
+| `id`          | `UUID`        | `PRIMARY KEY`            | The unique identifier.       |
+| `name`        | `VARCHAR(255)`| `NOT NULL`               | The object's designation.    |
+| `created_at`  | `TIMESTAMPZ`  | `NOT NULL, DEFAULT NOW()`| The moment of creation.      |
+| `is_active`   | `BOOLEAN`     | `NOT NULL, DEFAULT true` | The object's active state.   |
     </template>
   </section_pattern>
 
-  <section_pattern name="When Magic Goes Awry (Error Handling)">
-    <description>Our little book of spells for handling magical mishaps gracefully.</description>
+  <section_pattern name="Protocols for Cosmic Anomalies">
+    <description>The codex of protocols for handling cosmic anomalies with grace.</description>
     <template>
-### When Magic Goes Awry
+### 5. Protocols for Cosmic Anomalies
 
-Mishaps are handled in our service rooms and returned with kind messages.
+Anomalies are handled within the service layer and returned with standardized error responses.
 
-| Status Code | Mishap Type           | Reason                                      |
-|-------------|-----------------------|---------------------------------------------|
-| `400`       | `A Puzzling Wish`     | The wish from our friend was a bit confusing. |
-| `404`       | `Lost Treasure`       | The requested treasure seems to be hiding.  |
-| `409`       | `A Familiar Treasure` | This treasure already exists in our vault.    |
-| `500`       | `A Magical Hiccup`    | An unexpected sparkle happened in the castle. |
+| Status Code | Anomaly Type           | Reason                                       |
+|-------------|------------------------|----------------------------------------------|
+| `400`       | `Invalid Request`      | The request from the client was malformed.   |
+| `404`       | `Resource Not Found`   | The requested celestial object does not exist. |
+| `409`       | `Resource Conflict`    | The celestial object already exists.         |
+| `500`       | `Internal Server Error`| An unexpected cosmic anomaly has occurred.   |
 
-All mishaps will be noted in our magical logbook with a unique star-code to help us understand what happened.
+All anomalies will be recorded in the observational logs with a unique correlation ID to trace their origin.
     </template>
   </section_pattern>
 
-  <section_pattern name="Testing Our Charms (Testing Strategy)">
-    <description>Our plan for making sure every little charm and spell works perfectly.</description>
+  <section_pattern name="Strategy for Celestial Alignment">
+    <description>The strategy for verifying the alignment of all celestial bodies.</description>
     <template>
-### Testing Our Charms
+### 6. Strategy for Celestial Alignment
 
-We'll test our magic in many ways to ensure it's strong and true.
+We will verify the alignment of our cosmos through a multi-layered strategy.
 
-*   **Little Charm Tests (Unit Tests):** Every little spell in our Feature Service and Treasure Vault Keeper will be tested on its own.
-*   **Potion Tests (Integration Tests):** We'll test how our Feature Service and Treasure Vault work together to make sure our treasures are kept safe.
-*   **Grand Enchantment Tests (E2E Tests):** We'll test the entire magical journey, from our friend's wish to the treasure appearing in the vault, to make sure the whole experience is delightful.
+*   **Stellar Core Tests (Unit Tests):** Each method within the Core Service and Data Access Layer will be tested in isolation.
+*   **Constellation Tests (Integration Tests):** We will test the interaction between the Core Service and the Data Core to ensure data integrity.
+*   **Cosmic Alignment Tests (E2E Tests):** We will test the entire data flow, from a request initiated at the User Interface to the data being persisted in the Data Core, to ensure the entire system is in perfect alignment.
     </template>
   </section_pattern>
 </design_patterns>

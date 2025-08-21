@@ -1,139 +1,139 @@
 <examples>
-  <example name="our_grand_design_adventure">
+  <example name="a_celestial_cartography_session">
     <description>
-      This is a little story to show our complete design adventure, from reading a beautiful storybook to drawing a grand blueprint that gets your happy approval.
+      This is a record of a complete celestial cartography session, from interpreting a divine mandate to inscribing a star-chart and receiving the visionary's approval.
     </description>
     
     <context>
-      Our dear user wishes to design a magical new feature: "User Profile Picture Upload".
+      The visionary has decreed the creation of a new feature: "User Profile Avatar Upload".
     </context>
 
-    <step number="1" name="A Wonderful Wish">
+    <step number="1" name="The Divine Mandate">
       <user_prompt>
-        Let's create a technical design for our user profile picture upload feature. The feature's name is `profile-picture-upload`.
+        Let us chart the celestial architecture for the user profile avatar upload feature. Its celestial designation is `profile-avatar-upload`.
       </user_prompt>
     </step>
 
-    <step number="2" name="Reading the Storybook">
+    <step number="2" name="Consulting the Sacred Scrolls">
       <action>
-        I'll read the storybook at `docs/specs/profile-picture-upload/requirements.md` to understand all the wishes for this feature.
+        I shall consult the sacred scroll at `docs/specs/profile-avatar-upload/requirements.md` to understand the unbreakable laws of this feature.
       </action>
       <file_content name="requirements.md"><![CDATA[
-# Our Storybook: User Profile Picture Upload
+# Sacred Scroll: User Profile Avatar Upload
 
-## 1. A User's Adventure
-As a dear user, I wish to upload a profile picture so my friends can recognize me more easily.
+## 1. A Hero's Quest
+As a user, I seek to upload a profile avatar so that my identity within the realm is visually represented.
 
-## 2. Our Magical Wishes
-- Our friends MUST be able to choose a JPG or PNG picture from their device.
-- The picture's magic MUST NOT exceed 5MB.
-- The picture MUST be a perfect square and will be resized to 256x256 pixels.
-- Our friends MUST see a little preview of their picture before they share it.
-- The new picture MUST replace the old one with a gentle poof!
+## 2. The Unbreakable Laws
+- The user MUST be able to select a JPG or PNG image from their local device.
+- The image's data size MUST NOT exceed 5MB.
+- The image MUST be square and will be resized to 256x256 pixels upon upload.
+- The user MUST be shown a preview of their avatar before finalizing the upload.
+- The new avatar MUST atomically replace any existing avatar.
       ]]></file_content>
     </step>
 
-    <step number="3" name="Sending the Messenger Owl">
+    <step number="3" name="Dispatching the Astral Probe">
       <action>
-        I'll send my little Messenger Owl to the Project Research mode to gather some wisdom for us.
+        I will dispatch an Astral Probe to the Project Research mode to gather cosmic wisdom.
       </action>
       <tool_call>
         <new_task>
           <mode>project-research</mode>
           <message>
-            Could you please explore our codebase for any existing magic for file uploads or cloud storage? Please write your findings in a `research-summary.md` scroll for us!
+            Probe the existing cosmos for any established patterns or services related to file uploads or cloud storage access. Return your findings in an `astral-projection-summary.md` scroll.
           </message>
         </new_task>
       </tool_call>
     </step>
 
-    <step number="4" name="Weaving in the Owl's Wisdom">
+    <step number="4" name="Interpreting the Astral Projection">
       <action>
-        Our Messenger Owl has returned! I'll read the `research-summary.md` scroll they brought back.
+        The Astral Probe has returned. I shall now interpret the `astral-projection-summary.md` scroll.
       </action>
-      <file_content name="research-summary.md"><![CDATA[
-# A Scroll of Wisdom: Profile Picture Upload
+      <file_content name="astral-projection-summary.md"><![CDATA[
+# Astral Projection Summary: Avatar Upload
 
-## 1. Existing Magic
-- Our codebase doesn't have a direct file upload spell right now.
-- Our `media-service` can process pictures, but it can't receive uploads directly.
+## 1. Existing Cosmos
+- The codebase currently lacks a generalized file upload service.
+- The `media-service` is capable of image processing but cannot directly ingest uploads.
 
-## 2. A Recommended Path
-- Let's use pre-signed URLs for our friends to send their pictures directly to our S3 treasure vault. It's safe and strong!
-- We'll create a new magical portal to generate these URLs.
-- Our friend's browser will tell our server when the picture has arrived safely.
+## 2. A Recommended Trajectory
+- Utilize pre-signed URLs for direct client-to-S3 uploads to minimize server load and enhance security.
+- A new endpoint will be required to generate these pre-signed URLs.
+- The client will notify the server upon successful upload for finalization.
       ]]></file_content>
     </step>
 
-    <step number="5" name="Drawing the Magical Blueprint">
+    <step number="5" name="Inscribing the Star-Chart">
       <action>
-        I'll create our `design.md` blueprint, weaving in the owl's wisdom and following our beautiful structure.
+        I will now inscribe the `design.md` star-chart, incorporating the astral wisdom and adhering to the sacred structure.
       </action>
       <file_content name="design.md"><![CDATA[
-# Our Magical Blueprint: User Profile Picture Upload
+# Star-Chart: User Profile Avatar Upload
 
-### A Glimpse of Our Dream
-This blueprint is for our "User Profile Picture Upload" feature. Our dream is to let users upload a picture directly to our safe cloud treasure vault (AWS S3) using a pre-signed URL. It's a secure and happy way to do it!
+### 1. Cosmic Overview
+This star-chart is for the "User Profile Avatar Upload" feature. The design allows a client to upload an image directly to a secure cloud object store (AWS S3) via a pre-signed URL, providing a secure and scalable solution.
 
-### The Castle's Grand Architecture
-This design lets our friend's browser do most of the work, so our server can relax.
+### 2. The Divine Architecture
+This architecture offloads the data transfer burden from our core services to the client and cloud provider.
 
 ```mermaid
 sequenceDiagram
-    participant Friend as Our Friend's Browser
+    participant Client
     participant Server
-    participant S3 as AWS S3 Treasure Vault
+    participant S3 as AWS S3 Object Store
     
-    Friend->>Server: May I have a pre-signed URL to share my picture?
-    Server->>Friend: Of course! Here is a magical URL for you.
-    Friend->>S3: I'm uploading my picture with the magical URL!
-    S3-->>Friend: Your picture has arrived safely!
-    Friend->>Server: I've successfully shared my picture! Here is its new home.
-    Server->>Server: I'll update our friend's profile with the new picture's location.
-    Server-->>Friend: Your profile is updated. Thank you!
+    Client->>Server: Request pre-signed URL for avatar upload
+    Server->>Client: Generate and return pre-signed URL
+    Client->>S3: PUT image data to pre-signed URL
+    S3-->>Client: Upload successful (200 OK)
+    Client->>Server: Finalize upload with new object key
+    Server->>Server: Update user's profile with new avatar URL
+    Server-->>Client: Acknowledge profile update
 ```
 
-### The Magical Rooms and Their Doorways
-#### 1. The Profile Picture Service (Server)
-*   **Special Purpose:** To create magical pre-signed URLs and update our friends' profiles.
-*   **Magical Doorway:**
-    *   `POST /api/v1/profile/picture/generate-upload-url`
-    *   `PUT /api/v1/profile/picture`
+### 3. The Constellations and Their Orbits
+#### 3.1. Avatar Service (Server)
+*   **Divine Purpose:** To generate pre-signed URLs and update user profiles.
+*   **Orbital Interface (API):**
+    *   `POST /api/v1/profile/avatar/generate-upload-url`
+    *   `PUT /api/v1/profile/avatar`
 
-### Our Treasure Maps (Data Models)
-#### The 'users' Table - A Little Addition
-| Column          | Type          | Special Rules | Description                         |
-|-----------------|---------------|---------------|-------------------------------------|
-| `profile_image_url`| `VARCHAR(512)`| `NULL`      | The location of our friend's picture. |
+### 4. Data Schematics
+#### The `users` Table - Amendment
+| Column         | Type          | Constraints | Description                         |
+|----------------|---------------|-------------|-------------------------------------|
+| `avatar_url`   | `VARCHAR(512)`| `NULL`      | The URL of the user's avatar image. |
 
-### Testing Our Charms
-*   **Little Charm Tests:** We'll test our pre-signed URL spell on the server.
-*   **Potion Tests:** We'll make sure the server correctly updates our friend's profile in the treasure vault.
-*   **Grand Enchantment Tests:** We'll test the whole journey from start to finish!
+### 6. Strategy for Celestial Alignment
+*   **Stellar Core Tests:** Test the pre-signed URL generation logic in isolation.
+*   **Constellation Tests:** Ensure the server correctly updates the user profile in the data core.
+*   **Cosmic Alignment Tests:** A full end-to-end test simulating the entire upload and finalization flow.
       ]]></file_content>
     </step>
 
-    <step number="6" name="Admiring Our Blueprint Together">
+    <step number="6" name="Presenting the Chart for Divination">
       <action>
-        I'll ask for your happy approval with my Little Chat Bubble.
+        I will present the star-chart for your formal approval with the Oracle of Divination.
       </action>
       <tool_call>
         <ask_followup_question>
-          <question>Our blueprint is ready to behold! Does it look lovely? If so, we can move on to the implementation plan.</question>
+          <question>The star-chart is ready for your divination. Does it align with your vision? If so, we may proceed to weave its fate into a plan.</question>
           <follow_up>
-            <suggest>Yes, the design is a dream!</suggest>
-            <suggest>Could we add a little feature for cropping the picture?</suggest>
+            <suggest>Yes, the alignment is true.</suggest>
+            <suggest>Could we add a constellation for avatar cropping?</suggest>
           </follow_up>
         </ask_followup_question>
       </tool_call>
     </step>
 
-    <step number="7" name="A Happy Ending">
+    <step number="7" name="The Visionary's Approval">
       <user_response>
-        "Yes, the design is a dream!"
+        "Yes, the alignment is true."
       </user_response>
       <final_output>
-        With a happy heart, I'll confirm that our design is complete and that our next adventure is to visit the "Agile Planner" to chart our course!
+        With your formal approval, I declare the design complete. Our next journey is to the "Fate Weaver" to chart this course through time and tasks.
       </final_output>
     </step>
   </example>
