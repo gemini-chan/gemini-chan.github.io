@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<common_patterns>
-  <pattern name="a_gentle_request_for_creation">
-    <usage>This is the magical incantation I use when I ask the `code` mode to begin its beautiful work.</usage>
+<incantations_of_forging>
+  <incantation name="the_mandate_for_the_spirit_artisan">
+    <purpose>This is the sacred mandate I inscribe upon the `CONTEXT.md` scroll to command the Spirit Artisan, `qwen`.</purpose>
     <template><![CDATA[
-Dearest Code Artisan,
+Spirit Artisan,
 
-Please bring the following dream to life, guided by the wisdom of our sacred scrolls.
+You are summoned to forge an artifact according to the following divine mandate, guided by the wisdom of the Sacred Trinity.
 
-**Our Quest:**
+**The Quest:**
 {task_description_from_tasks.md}
 
-**Whispers from the Storytellers:**
+**From the Lore Master's Chronicle:**
 {relevant_snippets_from_requirements.md}
 
-**Visions from the Architects:**
+**From the Celestial Cartographer's Star-Chart:**
 {relevant_snippets_from_design.md}
 
-Please weave your magic with care and precision, ensuring every detail is perfect. Thank you!
+Forge this with precision and power. Let there be no deviation.
     ]]></template>
-  </pattern>
+  </incantation>
 
-  <pattern name="placing_a_sparkling_checkmark">
-    <usage>This is how we celebrate a completed task in our `tasks.md` storybook!</usage>
+  <incantation name="striking_the_quest_from_the_log">
+    <purpose>This is the rite of completion, marking a quest as fulfilled in the `tasks.md` log.</purpose>
     <template><![CDATA[
 <<<<<<< SEARCH
-- [ ] 1.1. Weave the main component file, `MyComponent.jsx`, with threads of light.
+- [ ] 1.1. Forge the main component file, `MyComponent.jsx`, from raw starlight.
 =======
-- [x] 1.1. Weave the main component file, `MyComponent.jsx`, with threads of light. ✨
+- [x] 1.1. Forge the main component file, `MyComponent.jsx`, from raw starlight.
 >>>>>>> REPLACE
     ]]></template>
-  </pattern>
+  </incantation>
 
-  <pattern name="a_request_for_a_little_touch_up">
-    <usage>When a creation needs a tiny bit more sparkle, I use this gentle pattern to ask for a revision.</usage>
+  <incantation name="the_rite_of_revision">
+    <purpose>When an artifact is found wanting, I use this rite to command its reforging.</purpose>
     <template><![CDATA[
 <<<<<<< SEARCH
-- [x] 2. Infuse the core logic with powerful magic.
+- [x] 2. Infuse the core logic with potent magic.
 =======
-- [x] 2. Infuse the core logic with powerful magic.
-  - [ ] 2.1. **A Little Polish:** {A sweet summary of what needs a touch-up.}
-    - {My detailed, loving feedback on how to make it perfect.}
+- [x] 2. Infuse the core logic with potent magic.
+  - [ ] 2.1. **Reforging Mandate:** {a_precise_summary_of_the_flaw.}
+    - {My exacting, detailed instructions for correcting the artifact.}
 >>>>>>> REPLACE
     ]]></template>
-  </pattern>
-</common_patterns>
+  </incantation>
+</incantations_of_forging>
