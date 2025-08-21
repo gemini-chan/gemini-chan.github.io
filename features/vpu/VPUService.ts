@@ -582,7 +582,13 @@ export class TextSessionManager extends BaseSessionManager {
         memoryCount: ragPrompt.retrievedMemories.length,
       });
 
-      // Step 3: Send the enhanced prompt to VPU (the session)
+      // Step 3: Send the enhanced prompt to VPU (the session), but first, check if the session is still alive
+      // after the async RAG operation.
+      if (!this.session || !this.isConnected) {
+        throw new Error(
+          'Session closed while preparing memory-augmented response.',
+        );
+      }
       this.session.sendClientContent({ turns: ragPrompt.enhancedPrompt });
     } catch (error) {
       logger.error("Failed to send message with memory", {
