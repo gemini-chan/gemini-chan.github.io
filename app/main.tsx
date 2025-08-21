@@ -1057,10 +1057,19 @@ export class GdmLiveAudio extends LitElement {
         const msg = String((error as Error)?.message || error || "");
         this.updateError(`Failed to send message: ${msg}`);
 
-        // Try to reinitialize the session and abort if still failing
+        // Try to reinitialize the session and resend once.
         const ok = await this._initTextSession();
-        if (!ok) {
-          return;
+        if (ok && this.textSession) {
+          try {
+            await this.textSessionManager.sendMessageWithMemory(message);
+          } catch (retryError) {
+            logger.error("Failed to send message on retry:", { retryError });
+            this.updateError(
+              `Failed to send message on retry: ${
+                (retryError as Error).message
+              }`,
+            );
+          }
         }
       }
     } else {

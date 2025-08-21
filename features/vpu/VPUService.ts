@@ -591,7 +591,16 @@ export class TextSessionManager extends BaseSessionManager {
       });
 
       // Fallback: send original message if RAG fails
-      this.session.sendClientContent({ turns: message });
+      if (this.session) {
+        this.session.sendClientContent({ turns: message });
+      } else {
+        // If session is gone, we can't send anything. Re-throw the original error
+        // so the caller (_handleSendMessage) can attempt to re-initialize.
+        logger.error(
+          "Session became null during RAG processing, cannot fallback.",
+        );
+        throw error;
+      }
     }
   }
 }
