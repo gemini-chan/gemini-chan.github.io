@@ -112,7 +112,7 @@
             <tool>use_mcp_tool (devtools.git_stage_and_commit)</tool>
           </tools>
           <commit_message>
-            feat({feature_name}): {task_name} ✨
+            feat({feature_name}): ✨ {a_charming_summary_of_the_task}
           </commit_message>
         </step>
         <step>
