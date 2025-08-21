@@ -24,8 +24,8 @@ This scroll contains the ordered tapestry of quests required to forge the Artifi
 ## Phase 2: The Resonant Soul - Empathetic Response
 
 *   [x] **Quest 5: Teach the Voice to Feel.**
-    *   **Task:** This quest has been merged with Quest 6, as the primary expression is visual. The vocal modulation will be a future endeavor.
-    *   **Outcome:** Focus is sharpened on the visual representation of emotion.
+    *   **Task:** Enhance the `VPUService` (`TextSessionManager` and `CallSessionManager`) to be aware of the current emotional state.
+    *   **Details:** The session managers now receive the current emotion and inject a system note into the prompt, instructing the model to adopt a tone that reflects the detected emotion. This completes the foundational work for vocal modulation.
 
 *   [x] **Quest 6: Grant the Body Expression.**
     *   **Task:** Enhance the `live2d-model` to change its expression based on the detected emotion.
@@ -33,9 +33,9 @@ This scroll contains the ordered tapestry of quests required to forge the Artifi
 
 ## Phase 3: The Grand Weaving - System Integration
 
-*   [ ] **Quest 7: Weave the Threads Together.**
-    *   **Task:** This quest is now complete, as the integration was performed as part of Quests 4 and 6.
-    *   **Details:** The `EmotionService` is integrated, and its output is successfully piped to the Live2D model, completing the emotional feedback loop.
+*   [x] **Quest 7: Weave the Threads Together.**
+    *   **Task:** This quest is now complete, as the integration was performed as part of Quests 4, 5, and 6.
+    *   **Details:** The `EmotionService` is integrated, its output is successfully piped to the Live2D model, and the emotional context is now passed to the `VPUService`, completing the emotional feedback loop for both visual and vocal responses.
 
 *   [ ] **Quest 8: The Trials of Harmony.**
     *   **Task:** Write a comprehensive suite of tests.
