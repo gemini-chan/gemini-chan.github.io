@@ -6,7 +6,7 @@ import type { VectorStore } from "@store/VectorStore";
 import type { AIClient } from "@features/ai/BaseAIService";
 
 // A more robust Mock VectorStore for detailed testing
-class MockVectorStore implements VectorStore {
+class MockVectorStore {
   public memories: Memory[] = [];
   saveMemory = sinon.stub().callsFake(async (memory: Memory): Promise<void> => {
     this.memories.push(memory);
@@ -22,9 +22,10 @@ class MockVectorStore implements VectorStore {
 }
 
 // Mock AI Client with more control
+const mockGenerateContent = sinon.stub();
 const mockAIClient = {
   models: {
-    generateContent: sinon.stub(),
+    generateContent: mockGenerateContent,
   },
 } as unknown as AIClient;
 
@@ -35,7 +36,7 @@ describe("MemoryService", () => {
   beforeEach(() => {
     mockVectorStore = new MockVectorStore();
     // Reset stubs before each test
-    mockAIClient.models.generateContent.reset();
+    mockGenerateContent.reset();
     memoryService = new MemoryService(
       mockVectorStore as unknown as VectorStore,
       mockAIClient,
@@ -64,14 +65,14 @@ describe("MemoryService", () => {
           permanence_score: "contextual",
         },
       ];
-      mockAIClient.models.generateContent.resolves({
+      mockGenerateContent.resolves({
         text: JSON.stringify(mockFacts),
       });
 
       await memoryService.processAndStoreMemory(transcript, sessionId);
 
       // Verify AI was called
-      expect(mockAIClient.models.generateContent.calledOnce).to.be.true;
+      expect(mockGenerateContent.calledOnce).to.be.true;
 
       // Verify facts were saved
       expect(mockVectorStore.saveMemory.callCount).to.equal(2);
@@ -84,7 +85,7 @@ describe("MemoryService", () => {
     it("should handle invalid JSON responses gracefully", async () => {
       const transcript = "User: Some random chatter.";
       const sessionId = "test-session-2";
-      mockAIClient.models.generateContent.resolves({ text: "this is not json" });
+      mockGenerateContent.resolves({ text: "this is not json" });
 
       await memoryService.processAndStoreMemory(transcript, sessionId);
 
@@ -103,7 +104,7 @@ describe("MemoryService", () => {
         },
         { fact_key: "missing_value", confidence_score: 0.8 }, // Missing fact_value
       ];
-      mockAIClient.models.generateContent.resolves({
+      mockGenerateContent.resolves({
         text: JSON.stringify(mockFacts),
       });
 
@@ -118,7 +119,7 @@ describe("MemoryService", () => {
     it("should not store anything if AI returns no facts", async () => {
       const transcript = "User: Nothing important here.";
       const sessionId = "test-session-4";
-      mockAIClient.models.generateContent.resolves({ text: JSON.stringify([]) });
+      mockGenerateContent.resolves({ text: JSON.stringify([]) });
 
       await memoryService.processAndStoreMemory(transcript, sessionId);
 
@@ -127,7 +128,7 @@ describe("MemoryService", () => {
   });
 
   describe("retrieveRelevantMemories", () => {
-    const clock;
+    let clock;
 
     afterEach(() => {
       if (clock) {
