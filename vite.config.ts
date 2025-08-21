@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
         "@shared": path.resolve(__dirname, "shared"),
         "@tests": path.resolve(__dirname, "tests"),
         "@live2d": path.resolve(__dirname, "live2d"),
+        "@prompts": path.resolve(__dirname, "prompts"),
       },
     },
     plugins: [DownloadLive2DSDK()],

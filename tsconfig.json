@@ -16,7 +16,8 @@
       "@visuals/*": ["visuals/*"],
       "@shared/*": ["shared/*"],
       "@tests/*": ["tests/*"],
-      "@live2d/*": ["live2d/*"]
+      "@live2d/*": ["live2d/*"],
+      "@prompts/*": ["prompts/*"]
     },
     "moduleResolution": "bundler",
     "isolatedModules": true,
