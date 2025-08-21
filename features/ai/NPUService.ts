@@ -142,8 +142,7 @@ export class NPUService {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         model: "gemini-2.5-flash",
       });
-      const response = result.response;
-      const text = response.text();
+      const text = result.text;
       return text.toLowerCase().trim();
     } catch (error) {
       logger.error("Error analyzing emotion:", { error });
