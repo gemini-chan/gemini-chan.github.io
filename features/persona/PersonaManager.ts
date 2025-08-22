@@ -46,8 +46,37 @@ export class PersonaManager {
 
   constructor() {
     this.personas = this._loadPersonas();
-    if (this.personas.length === 0) {
-      this._createDefaultPersona();
+    let personasChanged = false;
+
+    // Sync default personas to add any that are missing from storage.
+    for (const personaData of defaultPersonas) {
+      const exists = this.personas.some((p) => p.name === personaData.name);
+      if (!exists) {
+        const newPersona: Persona = {
+          ...(personaData as Omit<Persona, "id">),
+          id: uuidv4(),
+        };
+        this.personas.push(newPersona);
+        personasChanged = true;
+      }
+    }
+
+    // Ensure an active persona is set if one doesn't exist or is invalid.
+    const activeId = localStorage.getItem(
+      PersonaManager.ACTIVE_PERSONA_ID_STORAGE_KEY,
+    );
+    const activePersona = this.personas.find((p) => p.id === activeId);
+
+    if (!activePersona) {
+      // Default to VTuber for a good first-time experience.
+      const vtuberPersona = this.personas.find((p) => p.name === "VTuber");
+      if (vtuberPersona) {
+        this.setActivePersona(vtuberPersona.id);
+      }
+    }
+
+    if (personasChanged) {
+      this._savePersonas();
     }
   }
 
@@ -194,26 +223,4 @@ export class PersonaManager {
     );
   }
 
-  /**
-   * Creates and saves the default personas from the external JSON file.
-   */
-  private _createDefaultPersona(): void {
-    const createdPersonas: Persona[] = [];
-
-    for (const personaData of defaultPersonas) {
-      const newPersona: Persona = {
-        ...(personaData as Omit<Persona, "id">),
-        id: uuidv4(),
-      };
-      this.personas.push(newPersona);
-      createdPersonas.push(newPersona);
-    }
-    this._savePersonas();
-
-    // Set VTuber as the default active persona for better UX
-    const vtuberPersona = createdPersonas.find((p) => p.name === "VTuber");
-    if (vtuberPersona) {
-      this.setActivePersona(vtuberPersona.id);
-    }
-  }
 }
