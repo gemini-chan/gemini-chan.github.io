@@ -441,6 +441,7 @@ export class Live2DModelComponent extends LitElement {
           default:
             // Reset Fern-specific expressions when neutral
             internal?.coreModel?.setParameterValueById?.("Param32", 0);
+            internal?.coreModel?.setParameterValueById?.("Param33", 0); // Watermark
             internal?.coreModel?.setParameterValueById?.("Param34", 0);
             break;
         }
