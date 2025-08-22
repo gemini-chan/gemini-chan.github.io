@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from "uuid";
-import prompts from "@prompts/personas/energy-level-prompts.json";
 import defaultPersonas from "@prompts/personas/default-personas.json";
+import prompts from "@prompts/personas/energy-level-prompts.json";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Defines the structure for a persona.
@@ -105,16 +105,19 @@ export class PersonaManager {
   }
 
   /**
-   * Creates a new persona with a given name.
+   * Creates a new persona. Can optionally be based on an existing persona.
    * @param name - The name for the new persona.
+   * @param basePersonaId - Optional ID of a persona to use as a template.
    * @returns The newly created persona.
    */
-  createPersona(name: string): Persona {
+  createPersona(name: string, basePersonaId?: string): Persona {
+    const basePersona = this.personas.find((p) => p.id === basePersonaId);
+
     const newPersona: Persona = {
       id: uuidv4(),
       name,
-      systemPrompt: "",
-      live2dModelUrl: "",
+      systemPrompt: basePersona?.systemPrompt || "",
+      live2dModelUrl: basePersona?.live2dModelUrl || "",
       isDefault: false,
     };
     this.personas.push(newPersona);
