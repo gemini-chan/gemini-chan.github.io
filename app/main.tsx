@@ -31,8 +31,8 @@ import type { ToastNotification } from "@components/ToastNotification";
 import { NPUService } from "@features/ai/NPUService";
 import { MemoryService } from "@features/memory/MemoryService";
 import {
-  TextSessionManager,
   CallSessionManager,
+  TextSessionManager,
 } from "@features/vpu/VPUService";
 import type { CallSummary, Turn } from "@shared/types";
 
@@ -172,7 +172,10 @@ export class GdmLiveAudio extends LitElement {
       return false;
     };
 
-    if (checkTranscript("textTranscript") || checkTranscript("callTranscript")) {
+    if (
+      checkTranscript("textTranscript") ||
+      checkTranscript("callTranscript")
+    ) {
       return true;
     }
 
@@ -1113,6 +1116,11 @@ export class GdmLiveAudio extends LitElement {
   private startEmotionAnalysis() {
     this.stopEmotionAnalysis(); // Ensure no multiple timers
     this.emotionAnalysisTimer = window.setInterval(async () => {
+      // Only run analysis if a call is active or a text chat is active
+      if (!this.isCallActive && !this.isChatActive) {
+        return;
+      }
+
       if (!this.npuService) return;
 
       const transcript =
