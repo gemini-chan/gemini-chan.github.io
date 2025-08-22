@@ -32,6 +32,7 @@ export class Live2DModelComponent extends LitElement {
   @property({ type: Number }) containerHeight = 0;
   @property({ type: Number }) xOffset = 0;
   @property({ type: Number }) yOffset = -80;
+  @property({ type: Boolean }) skipWatermark = true;
 
   // Guarded restart for animation loop after errors
   private _loopRestartDelay = 1000; // ms
@@ -385,7 +386,9 @@ export class Live2DModelComponent extends LitElement {
         const time = performance.now() / 1000;
 
         // Always hide the watermark by default. This is a persistent spell.
-        internal?.coreModel?.setParameterValueById?.("Param33", 0); // Watermark
+        if (this.skipWatermark) {
+          internal?.coreModel?.setParameterValueById?.("Param33", 0); // Watermark
+        }
 
         switch (this.emotion?.toLowerCase()) {
           case "joy": {

@@ -63,6 +63,7 @@ export class Live2DVisual extends LitElement {
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
           .emotion=${this.emotion}
+          .skipWatermark=${true}
           .app=${this._app}
           .containerWidth=${this._containerWidth}
           .containerHeight=${this._containerHeight}
