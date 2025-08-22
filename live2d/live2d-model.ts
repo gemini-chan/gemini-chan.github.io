@@ -400,23 +400,49 @@ export class Live2DModelComponent extends LitElement {
           }
           case "sad":
           case "sadness":
-            internal?.coreModel?.setParameterValueById?.("ParamMouthForm", -0.8);
+            internal?.coreModel?.setParameterValueById?.(
+              "ParamMouthForm",
+              -0.8,
+            );
             internal?.coreModel?.setParameterValueById?.("ParamBrowLY", -0.5);
             internal?.coreModel?.setParameterValueById?.("ParamBrowRY", -0.5);
+            // Gloomy face for Fern
+            internal?.coreModel?.setParameterValueById?.("Param34", 1);
+            break;
+          case "displeased":
+            // Gloomy face for Fern
+            internal?.coreModel?.setParameterValueById?.("Param34", 1);
+            internal?.coreModel?.setParameterValueById?.(
+              "ParamMouthForm",
+              -0.5,
+            );
             break;
           case "angry":
           case "anger":
+            // Use Fern's specific anger parameter
+            internal?.coreModel?.setParameterValueById?.("Param32", 1);
             internal?.coreModel?.setParameterValueById?.("ParamBrowLY", -0.8);
             internal?.coreModel?.setParameterValueById?.("ParamBrowRY", -0.8);
-            internal?.coreModel?.setParameterValueById?.("ParamMouthForm", -0.5);
+            internal?.coreModel?.setParameterValueById?.(
+              "ParamMouthForm",
+              -0.5,
+            );
             break;
           case "surprised":
           case "surprise":
             internal?.coreModel?.setParameterValueById?.("ParamEyeLOpen", 1.2);
             internal?.coreModel?.setParameterValueById?.("ParamEyeROpen", 1.2);
-            internal?.coreModel?.setParameterValueById?.("ParamMouthOpenY", 0.7);
+            internal?.coreModel?.setParameterValueById?.(
+              "ParamMouthOpenY",
+              0.7,
+            );
             break;
           // No default, so it falls back to idle/speaking animation
+          default:
+            // Reset Fern-specific expressions when neutral
+            internal?.coreModel?.setParameterValueById?.("Param32", 0);
+            internal?.coreModel?.setParameterValueById?.("Param34", 0);
+            break;
         }
       } catch (err) {
         // Log and halt the animation loop to avoid spamming if model internals error
