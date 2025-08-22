@@ -383,6 +383,10 @@ export class Live2DModelComponent extends LitElement {
 
         // Emotion Overrides
         const time = performance.now() / 1000;
+
+        // Always hide the watermark by default. This is a persistent spell.
+        internal?.coreModel?.setParameterValueById?.("Param33", 0); // Watermark
+
         switch (this.emotion?.toLowerCase()) {
           case "joy": {
             const joySin = Math.sin(time * 1.8);
@@ -441,7 +445,6 @@ export class Live2DModelComponent extends LitElement {
           default:
             // Reset Fern-specific expressions when neutral
             internal?.coreModel?.setParameterValueById?.("Param32", 0);
-            internal?.coreModel?.setParameterValueById?.("Param33", 0); // Watermark
             internal?.coreModel?.setParameterValueById?.("Param34", 0);
             break;
         }
