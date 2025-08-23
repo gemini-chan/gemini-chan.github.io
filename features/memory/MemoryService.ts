@@ -14,6 +14,9 @@ export interface IMemoryService {
     sessionId: string,
     topK?: number,
   ): Promise<Memory[]>;
+  getAllMemories(): Promise<Memory[]>;
+  deleteMemory(memoryId: number): Promise<void>;
+  deleteAllMemories(): Promise<void>;
 }
 
 export class MemoryService extends BaseAIService implements IMemoryService {
@@ -220,6 +223,48 @@ export class MemoryService extends BaseAIService implements IMemoryService {
         topK,
       });
       return []; // Return empty array on failure
+    }
+  }
+
+  /**
+   * Retrieve all memories for the current persona.
+   */
+  async getAllMemories(): Promise<Memory[]> {
+    try {
+      logger.debug("Retrieving all memories");
+      const memories = await this.vectorStore.getAllMemories();
+      logger.debug("Retrieved all memories", { count: memories.length });
+      return memories;
+    } catch (error) {
+      logger.error("Failed to retrieve all memories", { error });
+      return [];
+    }
+  }
+
+  /**
+   * Delete a specific memory by its ID.
+   * @param memoryId The ID of the memory to delete.
+   */
+  async deleteMemory(memoryId: number): Promise<void> {
+    try {
+      logger.debug("Deleting memory", { memoryId });
+      await this.vectorStore.deleteMemory(memoryId);
+      logger.debug("Deleted memory successfully", { memoryId });
+    } catch (error) {
+      logger.error("Failed to delete memory", { error, memoryId });
+    }
+  }
+
+  /**
+   * Delete all memories for the current persona.
+   */
+  async deleteAllMemories(): Promise<void> {
+    try {
+      logger.debug("Deleting all memories");
+      await this.vectorStore.deleteAllMemories();
+      logger.debug("Deleted all memories successfully");
+    } catch (error) {
+      logger.error("Failed to delete all memories", { error });
     }
   }
 }

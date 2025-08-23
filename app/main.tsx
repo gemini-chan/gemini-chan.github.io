@@ -87,7 +87,7 @@ export class GdmLiveAudio extends LitElement {
   @state() callTranscript: Turn[] = [];
   @state() textSession: Session | null = null;
   @state() callSession: Session | null = null;
-  @state() activeTab: "chat" | "call-history" = "chat";
+  @state() activeTab: "chat" | "call-history" | "memory" = "chat";
   @state() callHistory: CallSummary[] = [];
 
   // Session managers
@@ -96,7 +96,7 @@ export class GdmLiveAudio extends LitElement {
   private summarizationService: SummarizationService;
   private personaManager: PersonaManager;
   private vectorStore: VectorStore;
-  private memoryService: MemoryService;
+  memoryService: MemoryService;
   private npuService: NPUService;
 
   private client: GoogleGenAI;
@@ -1289,27 +1289,27 @@ export class GdmLiveAudio extends LitElement {
             .visible=${this.activeMode !== "calling"}
             @tab-switch=${this._handleTabSwitch}
           ></tab-view>
-          ${
-            this.activeTab === "chat"
-              ? html`
-                  <chat-view
-                    .transcript=${this.textTranscript}
-                    .visible=${this.activeMode !== "calling"}
-                    @send-message=${this._handleSendMessage}
-                    @reset-text=${this._resetTextContext}
-                    @scroll-state-changed=${this._handleChatScrollStateChanged}
-                    @chat-active-changed=${this._handleChatActiveChanged}
-                  >
-                  </chat-view>
-                `
-              : html`
-                  <call-history-view
-                    .callHistory=${this.callHistory}
-                    @start-tts-from-summary=${this._startTtsFromSummary}
-                  >
-                  </call-history-view>
-                `
-          }
+          ${this.activeTab === "chat"
+            ? html`
+                <chat-view
+                  .transcript=${this.textTranscript}
+                  .visible=${this.activeMode !== "calling"}
+                  @send-message=${this._handleSendMessage}
+                  @reset-text=${this._resetTextContext}
+                  @scroll-state-changed=${this._handleChatScrollStateChanged}
+                  @chat-active-changed=${this._handleChatActiveChanged}
+                >
+                </chat-view>
+              `
+            : this.activeTab === "call-history"
+            ? html`
+                <call-history-view
+                  .callHistory=${this.callHistory}
+                  @start-tts-from-summary=${this._startTtsFromSummary}
+                >
+                </call-history-view>
+              `
+            : html` <memory-view></memory-view> `}
         </div>
 
         <div>

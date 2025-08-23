@@ -365,6 +365,56 @@ export class VectorStore {
   }
 
   /**
+   * Delete a specific memory by its ID
+   * @param memoryId The ID of the memory to delete
+   */
+  async deleteMemory(memoryId: number): Promise<void> {
+    await this.initializationPromise;
+
+    try {
+      const storeName = this.getStoreName();
+      const tx = this.db?.transaction(storeName, "readwrite");
+      if (!tx) {
+        throw new Error("Could not start a transaction.");
+      }
+      const store = tx.objectStore(storeName);
+      await store.delete(memoryId);
+      await tx.done;
+      logger.debug("Deleted memory", { memoryId });
+    } catch (error) {
+      logger.error("Failed to delete memory", { error, memoryId });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete all memories for the current persona
+   */
+  async deleteAllMemories(): Promise<void> {
+    await this.initializationPromise;
+
+    try {
+      const storeName = this.getStoreName();
+      const tx = this.db?.transaction(storeName, "readwrite");
+      if (!tx) {
+        throw new Error("Could not start a transaction.");
+      }
+      const store = tx.objectStore(storeName);
+      await store.clear();
+      await tx.done;
+      logger.debug("Deleted all memories for persona", {
+        personaId: this.personaId,
+      });
+    } catch (error) {
+      logger.error("Failed to delete all memories", {
+        error,
+        personaId: this.personaId,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Calculate cosine similarity between two vectors
    * @param vecA First vector
    * @param vecB Second vector
