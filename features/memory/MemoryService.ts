@@ -1,8 +1,8 @@
 import { type AIClient, BaseAIService } from "@features/ai/BaseAIService";
+import memoryExtractionPrompt from "@prompts/memory-extraction.prompt.md?raw";
 import { createComponentLogger } from "@services/DebugLogger";
 import type { VectorStore } from "@store/VectorStore";
 import type { Memory } from "./Memory";
-import memoryExtractionPrompt from "@prompts/memory-extraction.prompt.md?raw";
 
 const logger = createComponentLogger("MemoryService");
 const MODEL_NAME = "gemini-2.5-flash-lite";

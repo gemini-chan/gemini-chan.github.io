@@ -3,27 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { NPUService } from "@features/ai/NPUService";
+import type { MemoryService } from "@features/memory/MemoryService";
+import type { PersonaManager } from "@features/persona/PersonaManager";
+import type { SummarizationService } from "@features/summarization/SummarizationService";
 import {
-  GoogleGenAI,
+  type GoogleGenAI,
   type LiveServerMessage,
   Modality,
   type Session,
-} from '@google/genai';
-import { createComponentLogger } from '@services/DebugLogger';
-import type { Turn } from '@shared/types';
-import { decode, decodeAudioData } from '@shared/utils';
-import type { SummarizationService } from '@features/summarization/SummarizationService';
-import { PersonaManager } from '@features/persona/PersonaManager';
-import { NPUService } from '@features/ai/NPUService';
-import { MemoryService } from '@features/memory/MemoryService';
-import { energyBarService } from '@services/EnergyBarService';
+} from "@google/genai";
+import { createComponentLogger } from "@services/DebugLogger";
+import { energyBarService } from "@services/EnergyBarService";
+import type { Turn } from "@shared/types";
+import { decode, decodeAudioData } from "@shared/utils";
 
-const logger = createComponentLogger('VPUService');
+const logger = createComponentLogger("VPUService");
 
 interface ExtendedLiveServerMessage extends LiveServerMessage {
   sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
   goAway?: { timeLeft: string };
-  serverContent?: LiveServerMessage['serverContent'] & {
+  serverContent?: LiveServerMessage["serverContent"] & {
     sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
     goAway?: { timeLeft: string };
     generationComplete?: boolean;
@@ -76,7 +76,7 @@ export abstract class BaseSessionManager {
     const source = this.outputAudioContext.createBufferSource();
     source.buffer = audioBuffer;
     source.connect(this.outputNode);
-    source.addEventListener('ended', () => this.sources.delete(source));
+    source.addEventListener("ended", () => this.sources.delete(source));
 
     source.start(this.nextStartTime);
     this.nextStartTime = this.nextStartTime + audioBuffer.duration;
@@ -137,7 +137,7 @@ export abstract class BaseSessionManager {
           if (!this.reconnecting) {
             this.updateStatus(`${this.getSessionName()}: reconnecting soon...`);
             this.hostElement.dispatchEvent(
-              new CustomEvent('reconnecting', {
+              new CustomEvent("reconnecting", {
                 bubbles: true,
                 composed: true,
               }),
@@ -168,7 +168,7 @@ export abstract class BaseSessionManager {
         }
       },
       onerror: (e: ErrorEvent) => {
-        const msg = e.message || '';
+        const msg = e.message || "";
         const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
         if (isRateLimited) {
           this.onRateLimit(msg);
@@ -176,7 +176,7 @@ export abstract class BaseSessionManager {
         this.updateError(`${this.getSessionName()} error: ${e.message}`);
       },
       onclose: (e: CloseEvent) => {
-        const msg = e.reason || '';
+        const msg = e.reason || "";
         const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
         if (isRateLimited) {
           this.onRateLimit(msg);
@@ -221,7 +221,7 @@ export abstract class BaseSessionManager {
     } catch (e) {
       const error = e as Error;
       logger.error(`Error connecting ${this.getSessionName()}:`, { error });
-      const msg = String(error?.message || error || '');
+      const msg = String(error?.message || error || "");
       this.updateError(`Failed to connect ${this.getSessionName()}: ${msg}`);
       return error;
     }
@@ -262,7 +262,7 @@ export abstract class BaseSessionManager {
     }
 
     // If we attempted with a handle and it failed due to invalid/expired handle, clear and retry once
-    const msg = String(error.message || error || '');
+    const msg = String(error.message || error || "");
     const looksLikeInvalidHandle =
       /invalid session resumption handle|expired session resumption handle/i.test(
         msg,
@@ -309,7 +309,7 @@ export abstract class BaseSessionManager {
       if (ok && this.session) {
         this.updateStatus(`${this.getSessionName()}: session resumed`);
         this.hostElement.dispatchEvent(
-          new CustomEvent('reconnected', {
+          new CustomEvent("reconnected", {
             bubbles: true,
             composed: true,
           }),
@@ -360,7 +360,7 @@ export abstract class BaseSessionManager {
     try {
       this.session.sendRealtimeInput(input);
     } catch (e) {
-      const msg = String((e as Error)?.message || e || '');
+      const msg = String((e as Error)?.message || e || "");
       this.updateError(`Failed to stream audio: ${msg}`);
     }
   }
@@ -401,19 +401,19 @@ export abstract class BaseSessionManager {
     transcript: Turn[],
     summarizationService: SummarizationService,
   ): Promise<void> {
-    let summary = '';
+    let summary = "";
     try {
       summary = await summarizationService.summarize(transcript);
     } catch (error) {
-      logger.error('Failed to summarize transcript:', {
+      logger.error("Failed to summarize transcript:", {
         error,
         transcriptSnippet: transcript
           .map((t) => t.text)
-          .join(' ')
+          .join(" ")
           .slice(0, 100),
       });
       // Fallback to a simpler context if summarization fails
-      summary = 'Could not summarize previous conversation.';
+      summary = "Could not summarize previous conversation.";
     }
 
     const lastFourTurns = transcript.slice(-4);
@@ -425,7 +425,7 @@ export abstract class BaseSessionManager {
       contextParts.push(`${turn.speaker}: ${turn.text}`);
     }
 
-    this.fallbackPrompt = contextParts.join('\n');
+    this.fallbackPrompt = contextParts.join("\n");
   }
 
   protected getSystemInstruction(
@@ -586,7 +586,7 @@ export class TextSessionManager extends BaseSessionManager {
       // after the async RAG operation.
       if (!this.session || !this.isConnected) {
         throw new Error(
-          'Session closed while preparing memory-augmented response.',
+          "Session closed while preparing memory-augmented response.",
         );
       }
       this.session.sendClientContent({ turns: ragPrompt.enhancedPrompt });

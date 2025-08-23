@@ -1,9 +1,9 @@
+import type { AIClient } from "@features/ai/BaseAIService";
 import { expect } from "@open-wc/testing";
+import type { VectorStore } from "@store/VectorStore";
 import sinon from "sinon";
 import type { Memory } from "../Memory";
 import { MemoryService } from "../MemoryService";
-import type { VectorStore } from "@store/VectorStore";
-import type { AIClient } from "@features/ai/BaseAIService";
 
 // A more robust Mock VectorStore for detailed testing
 class MockVectorStore {
