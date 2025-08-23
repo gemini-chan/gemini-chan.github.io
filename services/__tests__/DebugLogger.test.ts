@@ -64,9 +64,7 @@ describe("DebugLogger with ConfigurationManager", () => {
       value: originalLocalStorage,
     });
     process.env = originalProcessEnv;
-    // @ts-expect-error
     globalThis.__DEBUG__ = undefined;
-    // @ts-expect-error
     globalThis.__DEBUG_COMPONENTS__ = undefined;
   });
 
