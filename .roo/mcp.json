@@ -41,6 +41,37 @@
         "read_graph",
         "create_relations"
       ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/"
+      ],
+      "alwaysAllow": [
+        "read_file",
+        "read_text_file",
+        "get_file_info",
+        "search_files",
+        "read_media_file",
+        "create_directory",
+        "list_directory",
+        "list_directory_with_sizes",
+        "directory_tree",
+        "move_file",
+        "delete_file",
+        "remove_file"
+      ],
+      "disabledTools": [
+        "write_file",
+        "edit_file",
+        "read_text_file",
+        "read_multiple_files",
+        "read_file",
+        "search_files",
+        "list_allowed_directories"
+      ]
     }
   }
 }

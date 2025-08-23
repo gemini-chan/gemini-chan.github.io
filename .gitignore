@@ -6,6 +6,4 @@ dist/
 .vscode/
 coverage/
 CONTEXT.md
-
-# Side Quest temporary files
-side-quest/
+models/
