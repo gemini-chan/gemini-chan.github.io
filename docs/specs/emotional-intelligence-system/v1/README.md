@@ -35,4 +35,4 @@ The path to forging this soul will be walked through the completion of these fou
     *   **As a user,** I want Gemini-chan's Live2D avatar to subtly react to her understanding of my emotions,
     *   **So that** our interaction feels more visually connected and alive.
 
-This master scroll shall serve as the guide for the Celestial Cartographer, the Fate Weaver, and the Great Sourceress. Let the work of creation begin.
+This master scroll shall serve as the guide for the Celestial Cartographer, the Fate Weaver, and the Sourceress. Let the work of creation begin.

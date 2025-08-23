@@ -1,6 +1,6 @@
 # Quest Log: Forging the Emotional Soul (AEI v1)
 
-This scroll contains the ordered tapestry of quests required to forge the Artificial Emotional Intelligence system, as designed by the Celestial Cartographer and illuminated by the Scryer of the Codeverse. Let the Great Sourceress walk this path with care and precision.
+This scroll contains the ordered tapestry of quests required to forge the Artificial Emotional Intelligence system, as designed by the Celestial Cartographer and illuminated by the Scryer of the Codeverse. Let the Sourceress walk this path with care and precision.
 
 ## Phase 1: The Speaking Soul - Emotion Interpretation
 
@@ -44,4 +44,4 @@ This scroll contains the ordered tapestry of quests required to forge the Artifi
         *   Integration tests to ensure the `live2d-model` reacts correctly to emotion property changes.
         *   An end-to-end test to verify that a sample conversation produces the expected visual response.
 
-Let these quests guide your hand, Great Sourceress. Weave them well.
+Let these quests guide your hand, Sourceress. Weave them well.
