@@ -3,7 +3,6 @@ import type { MemoryService } from "@features/memory/MemoryService";
 import { createComponentLogger } from "@services/DebugLogger";
 import type { Turn } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
-import { isEmbeddingClient } from "./EmbeddingClient";
 
 const logger = createComponentLogger("NPUService");
 
@@ -99,12 +98,16 @@ export class NPUService {
     conversationContext?: string,
   ): string {
     // If no memory context, return original message as-is
-    if (!memoryContext.trim()) {
+    if (!memoryContext.trim() && !conversationContext?.trim()) {
       return userMessage;
     }
 
     // Create enhanced prompt that preserves original message
     let enhancedPrompt = `USER'S MESSAGE: ${userMessage}\n\n`;
+
+    if (conversationContext?.trim()) {
+      enhancedPrompt += `CURRENT CONVERSATION CONTEXT:\n${conversationContext}\n\n`;
+    }
 
     if (memoryContext) {
       enhancedPrompt += `RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}\n\n`;
@@ -120,6 +123,7 @@ export class NPUService {
     logger.debug("Created enhanced prompt preserving original message", {
       originalMessage: userMessage,
       hasMemoryContext: !!memoryContext.trim(),
+      hasConversationContext: !!conversationContext?.trim(),
       enhancedPromptLength: enhancedPrompt.length,
     });
 

@@ -1658,7 +1658,7 @@ export class SettingsMenu extends LitElement {
 
       // All other cases pass - let the Live2D loader handle it
       return true;
-    } catch (_err) {
+    } catch {
       this._error = "Invalid URL format.";
       this.dispatchEvent(
         new CustomEvent("model-url-error", {
