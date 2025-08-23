@@ -17,70 +17,119 @@ export class MemoryView extends LitElement {
 
   static styles = css`
     :host {
-      display: block;
-      padding: 1rem;
-      background-color: var(--background-color, #1a1a1a);
-      color: var(--text-color, #ffffff);
-      height: 100%;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      min-width: 300px;
+      box-sizing: border-box;
+      padding: 12px;
+      gap: 12px;
+      color: var(--cp-text);
+      background: transparent;
     }
 
     .controls {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 1rem;
+      align-items: center;
+      gap: 8px;
     }
 
+    /* Ethereal buttons, aligned with ChatView */
     .btn {
-      background-color: var(--primary-color, #333);
-      color: var(--text-color, #fff);
-      border: 1px solid var(--primary-color, #444);
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      outline: none;
+      border: 1px solid var(--cp-surface-border);
+      color: var(--cp-text);
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      padding: 8px 14px;
       cursor: pointer;
-      font-size: 0.9rem;
-      transition: background-color 0.3s;
-    }
-
-    .btn-danger {
-      background-color: #8b0000;
-      border-color: #8b0000;
+      font: 14px/1.4 system-ui;
+      box-shadow: var(--cp-glow-cyan);
+      backdrop-filter: blur(4px);
+      transition: transform 0.15s ease, background 0.15s ease;
     }
 
     .btn:hover {
-      background-color: var(--primary-color-hover, #444);
+      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+      transform: translateY(-1px);
     }
-    
+
+    .btn-danger {
+      border: 1px solid var(--cp-surface-border-2);
+      background: linear-gradient(135deg, rgba(255,0,229,0.18), rgba(124,77,255,0.16));
+      box-shadow: var(--cp-glow-magenta);
+      color: var(--cp-text);
+    }
+
     .btn-danger:hover {
-        background-color: #a52a2a;
+      background: linear-gradient(135deg, rgba(255,0,229,0.25), rgba(124,77,255,0.22));
     }
 
     ul {
       list-style: none;
       padding: 0;
       margin: 0;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--cp-surface-strong) var(--cp-surface);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Custom scrollbar styles for Webkit browsers */
+    ul::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ul::-webkit-scrollbar-track {
+      background-color: var(--cp-surface);
+      border-radius: 4px;
+    }
+
+    ul::-webkit-scrollbar-thumb {
+      background-color: var(--cp-surface-strong);
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background-clip: content-box;
+    }
+
+    ul::-webkit-scrollbar-thumb:hover {
+      background-color: var(--cp-cyan);
+      box-shadow: var(--cp-glow-cyan);
     }
 
     li {
-      background-color: var(--secondary-background-color, #2a2a2a);
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 0.75rem;
+      padding: 12px;
+      border-radius: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 1rem;
+      gap: 12px;
+      border: 1px solid var(--cp-surface-border);
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.16), rgba(124, 77, 255, 0.14));
+      box-shadow: var(--cp-glow-purple);
+      color: var(--cp-text);
     }
 
     .memory-content {
-      flex-grow: 1;
-      font-family: monospace;
-      font-size: 0.9em;
+      flex: 1;
+      font: 14px/1.5 monospace;
+      white-space: pre-wrap;
     }
 
     .memory-key {
-      font-weight: bold;
-      color: var(--primary-color, #a9a9a9);
+      font: 600 14px/1.4 system-ui;
+      color: var(--cp-cyan);
+      margin-right: 6px;
     }
   `;
 
