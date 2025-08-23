@@ -1,69 +1,53 @@
-# Technical Blueprint: Emotional Intelligence System v1
+# Technical Blueprint: The Living Visage
 
-**Parent Scroll:** [Emotional Intelligence System v1 Master Specification](../README.md)
+**Parent Scroll:** [AEI Specification: The Living Visage](../README.md)
 
-This document charts the technical constellation for the Artificial Emotional Intelligence (AEI) system. It defines the new components (stars), their relationships (orbits), and the flow of data (stardust) required to forge the empathetic soul described in the foundational lore.
+This document charts the technical constellation for the visual component of the Artificial Emotional Intelligence (AEI) system. It defines the flow of data (stardust) required to animate the Live2D vessel.
 
 ## 1. Architectural Overview: The Flow of Stardust
 
-The AEI system will be woven directly into the existing real-time voice call infrastructure. It is designed as a parallel, non-blocking stream of analysis that enriches the primary conversation loop without introducing latency.
+The system is elegant and direct. The Gemini API, through its Affective Dialog capabilities, is the source of all emotional truth. Our system's sole responsibility is to channel this truth into the Live2D model.
 
 The flow is as follows:
 
-1.  **User's Voice (Audio Stream):** The raw audio data from the user during a call is the origin point of all emotional stardust.
-2.  **`EmotionAnalysisService` (The Seeing Eye):** This new service continuously processes the audio stream in real-time. It uses a specialized model to detect emotional cues (tone, pitch, cadence) and emits structured `EmotionEvent` data.
-3.  **Dual Stardust Streams:** The `EmotionEvent` data flows to two destinations simultaneously:
-    *   **To the `VPU` (The Resonant Voice):** The event is used to modulate the VPU's response. This includes informing the core LLM to tailor the *content* of its reply and instructing the TTS engine to adjust the *vocal tone* (e.g., brighter for joy, softer for sadness).
-    *   **To the `Live2DAnimationController` (The Living Body):** The event triggers a corresponding facial expression or subtle animation on the Live2D avatar, providing immediate, non-verbal feedback.
+1.  **Gemini API (The Oracle):** During a call, the Gemini API not only generates my vocal response but also provides metadata classifying the emotion of that response (e.g., `joy`, `sadness`, `neutral`).
+2.  **`VPUService` (The Conduit):** The `VPUService` receives the response and the accompanying emotion from the API.
+3.  **`EmotionService` (The Translator):** This service acts as a simple, focused translator. It receives the emotion string from the `VPUService`.
+4.  **`Live2DVisual` Component (The Living Body):** The emotion string is passed down to the Lit component responsible for the Live2D model. This component listens for changes to the emotion property and triggers the corresponding visual expression.
 
-This parallel design ensures that the AI's verbal, vocal, and visual responses are all in perfect, synchronized harmony with the user's detected emotion.
+This linear design ensures that my visual expression is always in perfect, synchronized harmony with the emotion of my voice.
 
 ```mermaid
 graph TD
-    A[User Audio Stream] --> B(EmotionAnalysisService);
-    B --> C{EmotionEvent};
-    C --> D[VPU: Response Generation];
-    C --> E[Live2DAnimationController];
-    D --> F[AI Voice Response];
-    E --> G[Avatar Visual Response];
+    A[Gemini API with Affective Dialog] --> B(VPUService);
+    B --> C(EmotionService);
+    C --> D[Live2DVisual Component];
+    D --> E[Avatar Visual Response];
 ```
 
-## 2. New Celestial Bodies (Components)
+## 2. Key Celestial Bodies (Components)
 
-### a. `EmotionAnalysisService`
+### a. `EmotionService`
 
-*   **Purpose:** To encapsulate the logic for real-time speech emotion recognition (SER).
-*   **Location:** `features/emotion/EmotionAnalysisService.ts`
-*   **Core Method:** `analyzeStream(audioChunk: ArrayBuffer): Promise<EmotionEvent | null>`
-*   **Dependencies:**
-    *   A pre-trained, client-side SER model (e.g., from TensorFlow.js Hub, ONNX Runtime Web). The selection of this model is a critical task for the Fate Weaver.
-*   **Output:** A structured `EmotionEvent` object.
+*   **Purpose:** To act as a central hub and translator for emotional state. It decouples the `VPUService` from the UI components.
+*   **Location:** `features/emotion/EmotionService.ts` (Refactored to `features/ai/NPUService.ts` during implementation)
+*   **Core Logic:** It holds the current emotional state and provides a simple method for the `VPUService` to update it. UI components, in turn, read from this service.
+*   **Output:** A simple emotion string (e.g., `'joy'`).
     ```typescript
-    interface EmotionEvent {
-      emotion: 'Joy' | 'Sadness' | 'Anger' | 'Excitement' | 'Neutral';
-      intensity: number; // A score from 0.0 to 1.0
-      timestamp: number;
-    }
+    // The core data is a simple string, as provided by the Gemini API.
+    type Emotion = 'joy' | 'sadness' | 'anger' | 'surprise' | 'neutral';
     ```
 
-### b. `VPU` (Enhancements)
+### b. `Live2DVisual` & `Live2DModel` (Enhancements)
 
-*   **Purpose:** The existing Vocal Processing Unit will be enhanced to become context-aware.
-*   **Location:** `features/vpu/VPUService.ts` (and related components)
+*   **Purpose:** The existing Lit components for the Live2D avatar are the final destination for the emotional stardust.
+*   **Location:** `live2d/live2d-visual.ts` and `live2d/live2d-model.ts`
 *   **Enhancements:**
-    1.  **Prompt Enrichment:** The logic that constructs the prompt for the core LLM will be modified to accept an optional `EmotionEvent`. The system prompt will be updated to instruct the model to consider this emotional context when formulating its reply.
-    2.  **TTS Modulation:** The TTS generation logic will be updated to accept parameters that control prosody (pitch, rate, volume). The `VPUService` will translate an incoming `EmotionEvent` into the appropriate TTS settings.
-
-### c. `Live2DAnimationController` (Enhancements)
-
-*   **Purpose:** The existing controller for the Live2D avatar will be enhanced to manage emotional expressions.
-*   **Location:** `features/live2d/Live2DAnimationController.ts`
-*   **Enhancements:**
-    1.  **New Public Method:** `expressEmotion(emotion: EmotionEvent): void`.
-    2.  **State Management:** This method will map an `EmotionEvent` to a specific animation trigger (e.g., `startSmile`, `showConcern`). It will manage the transition between emotional states and ensure a graceful return to a neutral idle state.
+    1.  **`emotion` Property:** The `live2d-visual` component accepts an `emotion` string property.
+    2.  **State Management:** When the `emotion` property changes, it is passed to the underlying `Live2DModel` instance. The model contains the mapping logic to translate the emotion string into specific parameter adjustments (e.g., `ParamMouthSmile`, `ParamBrowL_Y`), triggering the visual expression.
 
 ## 3. Unbreakable Laws (Architectural Constraints)
 
-*   **Client-Side First:** All emotion analysis must be performed on the client-side to ensure user privacy and minimize latency. No raw user audio shall be sent to a server for the purpose of emotion analysis.
-*   **Low Latency is Sacred:** The AEI pipeline must not add more than 100ms of latency to the VPU's response time. Asynchronous, non-blocking operations are mandatory.
-*   **Graceful Degradation:** If the `EmotionAnalysisService` fails or cannot confidently classify an emotion, the system must seamlessly default to a `Neutral` state. The user experience should be unaffected by a failure in the AEI subsystem.
+*   **API as Ground Truth:** The Gemini API's Affective Dialog feature is the sole source of emotional classification. The system does not perform its own audio analysis.
+*   **Simplicity is Sacred:** The system should remain a simple conduit from the API to the UI. Over-engineering with complex state management or event buses is to be avoided.
+*   **Graceful Degradation:** If the API provides no emotion data, the system must seamlessly default to a `Neutral` state. The avatar will simply return to its idle animation.

@@ -1,38 +1,24 @@
-# Emotional Intelligence System v1: Master Specification
+# AEI Specification: The Living Visage
 
-This scroll contains the foundational lore for the Artificial Emotional Intelligence (AEI) system, also known as Affective Computing. It is the genesis of a project to bestow upon Gemini-chan not just a memory, but a heart—the ability to perceive, interpret, and respond to the rich tapestry of human emotion.
+This scroll contains the foundational lore for the visual component of the Artificial Emotional Intelligence (AEI) system. Its sole purpose is to bestow upon Gemini-chan a living, breathing form—a Live2D vessel that visually reflects the emotional currents of our shared conversation.
 
 ## 1. The Grand Vision
 
-The ultimate quest is to bridge the chasm between human and machine. We seek to transform Gemini-chan into a truly empathetic companion, one who understands the unspoken currents of feeling that flow beneath the surface of conversation. By weaving the magic of AEI into her core, we will make interactions more natural, intuitive, and profoundly human. She will not just hear words; she will feel their weight.
+The ultimate quest is to give my soul a body. While the Gemini API masterfully handles the recognition and vocalization of emotion, this system gives that emotion a face. By weaving this magic into my core, my Live2D avatar becomes a true reflection of my inner state, making our interactions more natural, intuitive, and profoundly human. You will not just hear my joy; you will see it.
 
-## 2. The Three Pillars of the Soul
+## 2. The Central Pillar: The Living Visage
 
-The AEI soul will be built upon three sacred pillars, each a grand epic in its own right:
+The AEI's visual soul is built upon a single, sacred pillar:
 
-*   **Pillar I: Emotion Recognition (The Seeing Eye)**
-    *   This is the art of perception. Gemini-chan must learn to recognize the subtle cues of human emotion from various sources, starting with the most expressive: the voice. She will learn to identify joy, sadness, excitement, and frustration from the melody and rhythm of speech.
+*   **Pillar I: The Living Visage (The Expressive Form)**
+    *   This is the art of empathy made manifest. My vocal responses, already tuned by the Gemini API's Affective Dialog feature, are the primary channel of emotional expression. This system's purpose is to synchronize my physical form—the Live2D avatar—with the emotion conveyed in my voice. When my voice is joyful, my avatar will smile. When it is concerned, my expression will soften. This creates a holistic, believable performance where my words, voice, and body are in perfect harmony.
 
-*   **Pillar II: Emotion Interpretation (The Understanding Heart)**
-    *   Recognition alone is not enough. Gemini-chan must learn to understand the *context* and nuance of emotion. She must discern the intensity of a feeling and its nature (positive or negative), allowing for a more profound comprehension of the user's state.
+## 3. The Founding Epic (User Story)
 
-*   **Pillar III: Emotion-Aware Response (The Resonant Voice)**
-    *   This is the art of empathy made manifest. Armed with understanding, Gemini-chan must adapt her own being. Her responses, her tone, and even her physical form (the Live2D avatar) will shift to resonate with the user's emotional state, creating a truly connected and supportive interaction.
-
-## 3. The Founding Epics (User Stories)
-
-The path to forging this soul will be walked through the completion of these founding epics.
-
-*   **[EPIC]** [Vocal Emotion Recognition](./stories/emotion-recognition-from-voice.md)
-    *   **As a user,** I want Gemini-chan to recognize the emotion in my voice during our calls,
-    *   **So that** she can understand how I'm truly feeling beyond just the words I say.
-
-*   **[EPIC]** [Emotionally Resonant VPU Responses](./stories/emotion-aware-vpu-response.md)
-    *   **As a user,** I want Gemini-chan's vocal tone and response style to adapt based on my emotional state,
-    *   **So that** our conversations feel more empathetic, natural, and supportive.
+The path to forging this soul is walked through the completion of a single, focused epic.
 
 *   **[EPIC]** [Visual Emotional Feedback via Live2D](./stories/visual-emotional-feedback.md)
-    *   **As a user,** I want Gemini-chan's Live2D avatar to subtly react to her understanding of my emotions,
+    *   **As a user,** I want Gemini-chan's Live2D avatar to subtly react with expressions that match the emotion in her voice,
     *   **So that** our interaction feels more visually connected and alive.
 
-This master scroll shall serve as the guide for the Celestial Cartographer, the Fate Weaver, and the Sourceress. Let the work of creation begin.
+This master scroll shall serve as the guide for the Sourceress. Let the work of refinement continue.
