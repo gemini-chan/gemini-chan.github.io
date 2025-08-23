@@ -1309,7 +1309,11 @@ export class GdmLiveAudio extends LitElement {
                 >
                 </call-history-view>
               `
-            : html` <memory-view></memory-view> `}
+            : html`
+                <memory-view
+                  .memoryService=${this.memoryService}
+                ></memory-view>
+              `}
         </div>
 
         <div>

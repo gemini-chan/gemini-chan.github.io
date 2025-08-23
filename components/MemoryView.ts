@@ -1,13 +1,16 @@
 import { LitElement, html, css } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { Memory } from "@features/memory/Memory";
-import { memoryService } from "app/main"; // Assuming memoryService is exported from main
 import { createComponentLogger } from "@services/DebugLogger";
+import type { IMemoryService } from "@features/memory/MemoryService";
 
 const logger = createComponentLogger("MemoryView");
 
 @customElement("memory-view")
 export class MemoryView extends LitElement {
+  @property({ attribute: false })
+  memoryService!: IMemoryService;
+
   @state() private memories: Memory[] = [];
   @state() private isLoading = true;
   @state() private error: string | null = null;
@@ -87,10 +90,15 @@ export class MemoryView extends LitElement {
   }
 
   private async fetchMemories() {
+    if (!this.memoryService) {
+      this.error = "Memory service is not available.";
+      this.isLoading = false;
+      return;
+    }
     this.isLoading = true;
     this.error = null;
     try {
-      this.memories = await memoryService.getAllMemories();
+      this.memories = await this.memoryService.getAllMemories();
     } catch (e) {
       this.error = "Failed to load memories.";
       logger.error("Failed to fetch memories", { error: e });
@@ -100,8 +108,9 @@ export class MemoryView extends LitElement {
   }
 
   private async deleteMemory(id: number) {
+    if (!this.memoryService) return;
     try {
-      await memoryService.deleteMemory(id);
+      await this.memoryService.deleteMemory(id);
       this.memories = this.memories.filter((m) => m.id !== id);
     } catch (e) {
       logger.error("Failed to delete memory", { id, error: e });
@@ -110,13 +119,14 @@ export class MemoryView extends LitElement {
   }
 
   private async deleteAllMemories() {
+    if (!this.memoryService) return;
     const confirmed = window.confirm(
       "Are you sure you want to delete all memories? This action cannot be undone."
     );
     if (!confirmed) return;
 
     try {
-      await memoryService.deleteAllMemories();
+      await this.memoryService.deleteAllMemories();
       this.memories = [];
     } catch (e) {
       logger.error("Failed to delete all memories", { error: e });
