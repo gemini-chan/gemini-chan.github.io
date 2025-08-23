@@ -1130,16 +1130,21 @@ export class GdmLiveAudio extends LitElement {
       const lastTurns = transcript.slice(-6); // Analyze last 6 turns for recent emotion
 
       if (lastTurns.length > 0) {
-        const emotion = await this.npuService.analyzeEmotion(lastTurns);
+        const ttsEnergy = energyBarService.getCurrentEnergyLevel("tts");
+        const emotion = await this.npuService.analyzeEmotion(
+          lastTurns,
+          ttsEnergy,
+        );
         if (emotion !== this.currentEmotion) {
           logger.debug("Emotion updated", {
             from: this.currentEmotion,
             to: emotion,
+            ttsEnergy,
           });
           this.currentEmotion = emotion;
         }
       }
-    }, 5000); // Analyze every 5 seconds
+    }, 10000); // Analyze every 10 seconds to stay within RPM limits
   }
 
   private stopEmotionAnalysis() {

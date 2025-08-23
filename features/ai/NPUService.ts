@@ -134,22 +134,33 @@ export class NPUService {
    * Analyzes the emotional tone of a conversation transcript.
    * This is a core NPU cognitive task.
    */
-  async analyzeEmotion(transcript: Turn[]): Promise<string> {
+  async analyzeEmotion(
+    transcript: Turn[],
+    energyLevel: number,
+  ): Promise<string> {
     if (!transcript || transcript.length === 0) {
       return "neutral";
     }
+
+    // Determine model based on energy level
+    const model =
+      energyLevel >= 2 ? "gemini-2.5-flash" : "gemini-2.5-flash-lite";
+    logger.debug("Analyzing emotion with model based on energy level", {
+      model,
+      energyLevel,
+    });
 
     try {
       const prompt = this.createEmotionPrompt(transcript);
       // Use the main NPU model for this cognitive task
       const result = await this.aiClient.models.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        model: "gemini-2.5-flash",
+        model,
       });
       const text = result.text;
       return text.toLowerCase().trim();
     } catch (error) {
-      logger.error("Error analyzing emotion:", { error });
+      logger.error("Error analyzing emotion:", { error, model, energyLevel });
       return "neutral"; // Fallback to neutral on error
     }
   }
