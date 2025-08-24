@@ -1005,22 +1005,22 @@ export class GdmLiveAudio extends LitElement {
 
     // With an active session, use unified NPU flow to prepare context and send.
     const personaId = this.personaManager.getActivePersona().id;
-    const unified = await this.npuService.analyzeAndPrepareContext(
+    const intention = await this.npuService.analyzeAndAdvise(
       message,
       personaId
     );
-    this.currentEmotion = unified.emotion;
+    this.currentEmotion = intention.emotion;
 
     // If debug mode is on, show the prompt in the UI
     if (this.vpuDebugMode) {
       this._appendTextMessage(
-        `[VPU Debug] Enhanced Prompt:\n---\n${unified.enhancedPrompt}`,
+        `[VPU Debug] Advisory Prompt:\n---\n${intention.advisory_prompt_for_vpu}`,
         "model",
         true
       );
     }
 
-    this.textSessionManager.sendMessage(unified.enhancedPrompt);
+    this.textSessionManager.sendMessage(intention.advisory_prompt_for_vpu);
   }
 
   private _scrollCallTranscriptToBottom() {

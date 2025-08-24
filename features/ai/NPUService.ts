@@ -1,7 +1,7 @@
 import type { Memory } from "@features/memory/Memory";
 import type { MemoryService } from "@features/memory/MemoryService";
 import { createComponentLogger } from "@services/DebugLogger";
-import type { Turn } from "@shared/types";
+import type { Turn, IntentionBridgePayload } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
 
 const logger = createComponentLogger("NPUService");
@@ -26,7 +26,101 @@ export interface UnifiedContext {
   enhancedPrompt: string;
 }
 
+// New v1 Intention Bridge shape for model output
+interface ModelIntentionBridgePayloadLike {
+  emotion?: IntentionBridgePayload["emotion"] | string;
+  emotion_confidence?: number;
+  advisory_prompt_for_vpu?: string;
+  // Back-compat keys the model might return
+  analysis?: { emotion?: string; confidence?: number };
+  prompt_for_vpu?: string;
+  confidence?: number;
+}
+
 export class NPUService {
+  /**
+   * v1: analyze user input and return IntentionBridgePayload for VPU.
+   * Performs a single model call, parses JSON, and applies graceful fallback.
+   */
+  public async analyzeAndAdvise(userInput: string, personaId: string, conversationContext?: string): Promise<IntentionBridgePayload> {
+    // Retrieve memories to inform prompt (not exposed directly to VPU)
+    let memories: Memory[] = [];
+    try {
+      memories = await this.memoryService.retrieveRelevantMemories(userInput, personaId, 5);
+    } catch (error) {
+      logger.error("Failed to retrieve memories for analyzeAndAdvise", { error, personaId });
+    }
+
+    // Build prompt
+    const memoryContext = this.formatMemoriesForContext(memories);
+    const unifiedPrompt = this.buildUnifiedPrompt(userInput, memoryContext, conversationContext);
+
+    // Call model with retry
+    const model = "gemini-2.5-flash";
+    let responseText = "";
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const result = await this.aiClient.models.generateContent({
+          contents: [{ role: "user", parts: [{ text: unifiedPrompt }] }],
+          model,
+        });
+        responseText = (result.text || "").trim();
+        if (responseText) break;
+      } catch (error) {
+        logger.error("analyzeAndAdvise model call failed", { error, attempt });
+        if (attempt < maxAttempts) {
+          await new Promise((res) => setTimeout(res, Math.pow(2, attempt) * 200));
+          continue;
+        }
+      }
+    }
+
+    // Parse
+    let payload: IntentionBridgePayload = {
+      emotion: "neutral",
+      emotion_confidence: 0.5,
+      advisory_prompt_for_vpu: userInput,
+    };
+
+    if (responseText) {
+      try {
+        const cleaned = responseText
+          .replace(/^```json\s*/, "")
+          .replace(/^```\s*/, "")
+          .replace(/```$/, "")
+          .trim();
+        const parsed = JSON.parse(cleaned) as ModelIntentionBridgePayloadLike;
+
+        // emotion
+        let em = parsed.emotion ?? parsed?.analysis?.emotion;
+        const allowed = ["joy","sadness","anger","fear","surprise","neutral","curiosity"];
+        if (typeof em === "string") {
+          em = em.toLowerCase();
+          if (allowed.includes(em)) payload.emotion = em as IntentionBridgePayload["emotion"];
+        }
+
+        // confidence
+        const conf = parsed.emotion_confidence ?? parsed.confidence ?? parsed?.analysis?.confidence;
+        if (typeof conf === "number" && conf >= 0 && conf <= 1) {
+          payload.emotion_confidence = conf;
+        }
+
+        // advisory prompt
+        const ap = parsed.advisory_prompt_for_vpu ?? parsed.prompt_for_vpu;
+        if (typeof ap === "string" && ap.trim()) {
+          payload.advisory_prompt_for_vpu = ap;
+        } else {
+          payload.advisory_prompt_for_vpu = this.formulateEnhancedPrompt(userInput, memoryContext, conversationContext);
+        }
+      } catch (error) {
+        logger.error("Failed to parse analyzeAndAdvise JSON", { error, responseText });
+      }
+    }
+
+    return payload;
+  }
+
   constructor(
     private aiClient: AIClient,
     private memoryService: MemoryService,
@@ -35,6 +129,7 @@ export class NPUService {
   /**
    * Unified analysis: retrieve memories, ask model for emotion/confidence + enhanced prompt, return unified context.
    */
+  // Deprecated: analyzeAndPrepareContext will be superseded by analyzeAndAdvise but kept for back-compat
   async analyzeAndPrepareContext(
     userMessage: string,
     personaId: string,
@@ -63,21 +158,30 @@ export class NPUService {
       conversationContext,
     );
 
-    // Step 3: Call model
+    // Step 3: Call model with exponential backoff
+    const model = "gemini-2.5-flash";
     let responseText = "";
-    try {
-      const model = "gemini-2.5-flash"; // Main NPU model per design
-      const result = await this.aiClient.models.generateContent({
-        contents: [{ role: "user", parts: [{ text: unifiedPrompt }] }],
-        model,
-      });
-      responseText = (result.text || "").trim();
-    } catch (error) {
-      logger.error("Unified analysis model call failed", { error });
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const result = await this.aiClient.models.generateContent({
+          contents: [{ role: "user", parts: [{ text: unifiedPrompt }] }],
+          model,
+        });
+        responseText = (result.text || "").trim();
+        if (responseText) break;
+      } catch (error) {
+        logger.error("Unified analysis model call failed", { error, attempt });
+        if (attempt < maxAttempts) {
+          const delay = Math.pow(2, attempt) * 200; // 400, 800 ms
+          await new Promise((res) => setTimeout(res, delay));
+          continue;
+        }
+      }
     }
 
-    // Step 4: Parse JSON
-    let emotion = "neutral";
+    // Step 4: Parse JSON into IntentionBridgePayload-like structure with graceful fallback
+    let emotion: IntentionBridgePayload["emotion"] = "neutral";
     let confidence = 0.5;
     let enhancedPrompt = userMessage;
 
@@ -86,19 +190,31 @@ export class NPUService {
         // Pre-process the response to remove markdown fences
         const cleanedResponseText = responseText
           .replace(/^```json\s*/, "")
+          .replace(/^```\s*/, "")
           .replace(/```$/, "")
           .trim();
-        const parsed = JSON.parse(cleanedResponseText) as UnifiedNpuResponse;
-        // Prefer nested analysis object, then top-level fields
-        const parsedEmotion =
-          parsed?.analysis?.emotion ?? (parsed as any)?.emotion;
-        const parsedConfidence =
-          parsed?.analysis?.confidence ?? (parsed as any)?.confidence;
-        const vpuPrompt = parsed?.prompt_for_vpu;
+        const parsed = JSON.parse(cleanedResponseText) as ModelIntentionBridgePayloadLike;
 
-        if (typeof parsedEmotion === "string" && parsedEmotion.trim()) {
-          emotion = parsedEmotion.toLowerCase();
+        // Extract emotion
+        let parsedEmotion = parsed.emotion ?? parsed?.analysis?.emotion;
+        if (typeof parsedEmotion === "string") {
+          parsedEmotion = parsedEmotion.toLowerCase() as string;
+          const allowed = [
+            "joy",
+            "sadness",
+            "anger",
+            "fear",
+            "surprise",
+            "neutral",
+            "curiosity",
+          ];
+          if (allowed.includes(parsedEmotion)) {
+            emotion = parsedEmotion as IntentionBridgePayload["emotion"];
+          }
         }
+
+        // Extract confidence
+        const parsedConfidence = parsed.emotion_confidence ?? parsed.confidence ?? parsed?.analysis?.confidence;
         if (
           typeof parsedConfidence === "number" &&
           parsedConfidence >= 0 &&
@@ -106,6 +222,9 @@ export class NPUService {
         ) {
           confidence = parsedConfidence;
         }
+
+        // Extract advisory prompt
+        const vpuPrompt = parsed.advisory_prompt_for_vpu ?? parsed.prompt_for_vpu;
         if (typeof vpuPrompt === "string" && vpuPrompt.trim()) {
           enhancedPrompt = vpuPrompt;
         } else {
@@ -132,6 +251,7 @@ export class NPUService {
     return { emotion, confidence, retrievedMemories, enhancedPrompt };
   }
 
+  // v1 unified prompt for model to return IntentionBridgePayload JSON
   private buildUnifiedPrompt(
     userMessage: string,
     memoryContext: string,
@@ -152,13 +272,17 @@ export class NPUService {
       : "";
 
     return [
-      "SYSTEM: You are an intelligent Neural Processing Unit (NPU). Your task is to analyze the user's message, assess their emotional state, and prepare a final prompt for a separate AI to respond to.",
-      "You MUST reply with a single, valid JSON object containing two keys: \"analysis\" and \"prompt_for_vpu\".",
-      "1. The \"analysis\" key must contain an object with two keys: \n   - \"emotion\": A single lowercase word describing the user's primary emotion from this list: [joy, sadness, anger, fear, surprise, neutral].\n   - \"confidence\": A float between 0.0 and 1.0 representing your confidence in the emotion detection.",
-      "2. The \"prompt_for_vpu\" key must contain the final, enhanced prompt string for the VPU (Vocal Processing Unit). This prompt should incorporate the provided context to help the VPU respond naturally. Do not mention the memories or context explicitly in this prompt.",
+      "SYSTEM: You are an intelligent Neural Processing Unit (NPU). Analyze the user's message, assess their emotion, recall relevant memories, and construct a single IntentionBridgePayload JSON.",
+      "Respond ONLY with a single, valid JSON object matching this TypeScript interface:",
+      "interface IntentionBridgePayload { emotion: 'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'neutral' | 'curiosity'; emotion_confidence: number; advisory_prompt_for_vpu: string; }",
+      "Rules:",
+      "- Always include the exact keys: emotion, emotion_confidence, advisory_prompt_for_vpu.",
+      "- emotion must be lowercase and one of the allowed values.",
+      "- emotion_confidence must be a float between 0 and 1.",
+      "- advisory_prompt_for_vpu must preserve the user's original message verbatim, enriched with relevant context, without explicitly mentioning memories.",
       contextSection ? contextSection : undefined,
       `USER'S MESSAGE:\n${userMessage}`,
-      "Respond ONLY with the JSON object, no markdown fences.",
+      "Return ONLY the JSON object. No markdown fences, no commentary.",
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -168,6 +292,7 @@ export class NPUService {
   /**
    * Formats retrieved memories into a clean context string for the prompt.
    */
+  // v1: supplementary helpers retained for fallback or alt prompts
   private formatMemoriesForContext(memories: Memory[]): string {
     if (memories.length === 0) {
       return "";
@@ -227,6 +352,7 @@ export class NPUService {
    * Analyzes the emotional tone of a conversation transcript.
    * This is a core NPU cognitive task.
    */
+  // TODO(v1-archive): this legacy method remains for background AEI until unified refactor replaces it.
   async analyzeEmotion(
     transcript: Turn[],
     energyLevel: number,
