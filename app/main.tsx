@@ -126,6 +126,7 @@ export class GdmLiveAudio extends LitElement {
   @state() private isChatActive = false;
   @state() private currentEmotion = "neutral";
   private emotionAnalysisTimer: number | null = null;
+  @state() private vpuDebugMode = false;
   // Track last analyzed position in the active transcript for efficient delta analysis
   private lastAnalyzedTranscriptIndex = 0;
 
@@ -484,15 +485,23 @@ export class GdmLiveAudio extends LitElement {
     this.callTranscript = [...this.callTranscript, notice];
   }
 
-  private _appendTextMessage(text: string, speaker: "user" | "model") {
+  private _appendTextMessage(
+    text: string,
+    speaker: "user" | "model",
+    isSystemMessage = false
+  ) {
     // Append a message directly to the text transcript
     logger.debug("Appending text message", {
       text,
       speaker,
+      isSystemMessage,
       currentLength: this.textTranscript.length,
     });
 
-    this.textTranscript = [...this.textTranscript, { text, speaker }];
+    this.textTranscript = [
+      ...this.textTranscript,
+      { text, speaker, isSystemMessage },
+    ];
 
     logger.debug("Text message appended", {
       newLength: this.textTranscript.length,
@@ -934,6 +943,18 @@ export class GdmLiveAudio extends LitElement {
     this.activeTab = e.detail.tab;
   }
 
+  private _handleVpuDebugToggle(e: CustomEvent) {
+    this.vpuDebugMode = e.detail.enabled;
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification#inline-toast",
+    ) as ToastNotification;
+    toast?.show(
+      `VPU Debug Mode ${this.vpuDebugMode ? "Enabled" : "Disabled"}`,
+      "info",
+      2000,
+    );
+  }
+
   private _handleSummarizationComplete(summary: string, transcript: Turn[]) {
     const newSummary: CallSummary = {
       id: Date.now().toString(),
@@ -984,8 +1005,21 @@ export class GdmLiveAudio extends LitElement {
 
     // With an active session, use unified NPU flow to prepare context and send.
     const personaId = this.personaManager.getActivePersona().id;
-    const unified = await this.npuService.analyzeAndPrepareContext(message, personaId);
+    const unified = await this.npuService.analyzeAndPrepareContext(
+      message,
+      personaId
+    );
     this.currentEmotion = unified.emotion;
+
+    // If debug mode is on, show the prompt in the UI
+    if (this.vpuDebugMode) {
+      this._appendTextMessage(
+        `[VPU Debug] Enhanced Prompt:\n---\n${unified.enhancedPrompt}`,
+        "model",
+        true
+      );
+    }
+
     this.textSessionManager.sendMessage(unified.enhancedPrompt);
   }
 
@@ -1065,8 +1099,21 @@ export class GdmLiveAudio extends LitElement {
       try {
         // Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
         const personaId = this.personaManager.getActivePersona().id;
-        const unified = await this.npuService.analyzeAndPrepareContext(message, personaId);
+        const unified = await this.npuService.analyzeAndPrepareContext(
+          message,
+          personaId
+        );
         this.currentEmotion = unified.emotion;
+
+        // If debug mode is on, show the prompt in the UI
+        if (this.vpuDebugMode) {
+          this._appendTextMessage(
+            `[VPU Debug] Enhanced Prompt:\n---\n${unified.enhancedPrompt}`,
+            "model",
+            true
+          );
+        }
+
         this.textSessionManager.sendMessage(unified.enhancedPrompt);
       } catch (error) {
         logger.error("Error sending message to text session (unified flow):", {
@@ -1080,8 +1127,20 @@ export class GdmLiveAudio extends LitElement {
         if (ok && this.textSession) {
           try {
             const personaId = this.personaManager.getActivePersona().id;
-            const unified = await this.npuService.analyzeAndPrepareContext(message, personaId);
+            const unified = await this.npuService.analyzeAndPrepareContext(
+              message,
+              personaId
+            );
             this.currentEmotion = unified.emotion;
+
+            // If debug mode is on, show the prompt in the UI
+            if (this.vpuDebugMode) {
+              this._appendTextMessage(
+                `[VPU Debug] Enhanced Prompt:\n---\n${unified.enhancedPrompt}`,
+                "model",
+                true
+              );
+            }
             this.textSessionManager.sendMessage(unified.enhancedPrompt);
           } catch (retryError) {
             logger.error("Failed to send message on retry:", { retryError });
@@ -1347,6 +1406,7 @@ export class GdmLiveAudio extends LitElement {
             : html`
                 <memory-view
                   .memoryService=${this.memoryService}
+                  @vpu-debug-toggle=${this._handleVpuDebugToggle}
                 ></memory-view>
               `}
         </div>

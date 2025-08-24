@@ -14,6 +14,7 @@ export class MemoryView extends LitElement {
   @state() private memories: Memory[] = [];
   @state() private isLoading = true;
   @state() private error: string | null = null;
+  @state() private vpuDebugMode = false;
 
   static styles = css`
     :host {
@@ -32,9 +33,23 @@ export class MemoryView extends LitElement {
 
     .controls {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
       gap: 8px;
+    }
+
+    .debug-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .debug-toggle input {
+      margin: 0;
+      width: 16px;
+      height: 16px;
     }
 
     /* Ethereal buttons, aligned with ChatView */
@@ -183,6 +198,18 @@ export class MemoryView extends LitElement {
     }
   }
 
+  private _handleDebugToggle(e: Event) {
+    const target = e.target as HTMLInputElement;
+    this.vpuDebugMode = target.checked;
+    this.dispatchEvent(
+      new CustomEvent("vpu-debug-toggle", {
+        detail: { enabled: this.vpuDebugMode },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   render() {
     if (this.isLoading) {
       return html`<p>Loading memories...</p>`;
@@ -194,6 +221,14 @@ export class MemoryView extends LitElement {
 
     return html`
       <div class="controls">
+        <label class="debug-toggle">
+          <input
+            type="checkbox"
+            .checked=${this.vpuDebugMode}
+            @change=${this._handleDebugToggle}
+          />
+          VPU Debug Mode
+        </label>
         <button class="btn btn-danger" @click=${this.deleteAllMemories}>
           Forget Everything
         </button>
