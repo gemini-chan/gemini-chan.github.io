@@ -501,7 +501,6 @@ export class TextSessionManager extends BaseSessionManager {
         }
 
         // Handle text response for transcript (after base processing)
-        const modelTurn = message.serverContent?.modelTurn;
         if (modelTurn) {
           const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
           const text = lastPart.text;
