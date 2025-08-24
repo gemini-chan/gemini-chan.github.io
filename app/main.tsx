@@ -1061,9 +1061,13 @@ export class GdmLiveAudio extends LitElement {
     // Send message to text session using NPU-VPU flow (memory-augmented)
     if (this.textSession) {
       try {
-        // Step 1: Quickly analyze the user's input emotion for reactive TTS tone
-        const userEmotion = await this.npuService.analyzeUserInputEmotion(message);
-        // Step 2: Send with emotion context
+        // Step 1: Quickly analyze the user's input emotion for reactive TTS tone, if AEI is enabled
+        let userEmotion: string | undefined;
+        if (this.personaManager.getActivePersona().aeiEnabled) {
+          userEmotion = await this.npuService.analyzeUserInputEmotion(message);
+        }
+
+        // Step 2: Send with optional emotion context
         await this.textSessionManager.sendMessageWithMemory(message, userEmotion);
       } catch (error) {
         logger.error("Error sending message with memory to text session:", {
@@ -1137,6 +1141,16 @@ export class GdmLiveAudio extends LitElement {
       }
 
       if (!this.npuService) return;
+
+      // Only run analysis if AEI is enabled for the current persona
+      if (!this.personaManager.getActivePersona().aeiEnabled) {
+        // If AEI was just disabled, reset emotion to neutral to avoid a stuck state
+        if (this.currentEmotion !== "neutral") {
+          this.currentEmotion = "neutral";
+          logger.debug("AEI disabled, resetting emotion to neutral.");
+        }
+        return;
+      }
 
       const transcript =
         this.activeMode === "calling"

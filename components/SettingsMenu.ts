@@ -1061,6 +1061,19 @@ export class SettingsMenu extends LitElement {
             </svg>
           </button>
         </div>
+        <div class="checkbox-group" style="margin-top: 1em; justify-content: flex-start;" title="${this._editingPersona.isDefault ? "AEI is always enabled for default personas." : ""}">
+          <input
+            id="aeiEnabled"
+            type="checkbox"
+            .checked=${this._editingPersona.aeiEnabled}
+            @change=${(e: Event) => this._handlePersonaFormInput(
+              "aeiEnabled",
+              (e.target as HTMLInputElement).checked,
+            )}
+            ?disabled=${this._editingPersona.isDefault}
+          />
+          <label for="aeiEnabled">Enable AEI (Emotional Intelligence)</label>
+        </div>
         <div class="persona-form-buttons">
           ${
             !this._editingPersona.isDefault
@@ -1083,7 +1096,7 @@ export class SettingsMenu extends LitElement {
     `;
   }
 
-  private _handlePersonaFormInput(field: keyof Persona, value: string) {
+  private _handlePersonaFormInput(field: keyof Persona, value: string | boolean) {
     if (this._editingPersona) {
       this._editingPersona = { ...this._editingPersona, [field]: value };
     }
