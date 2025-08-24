@@ -83,7 +83,12 @@ export class NPUService {
 
     if (responseText) {
       try {
-        const parsed = JSON.parse(responseText) as UnifiedNpuResponse;
+        // Pre-process the response to remove markdown fences
+        const cleanedResponseText = responseText
+          .replace(/^```json\s*/, "")
+          .replace(/```$/, "")
+          .trim();
+        const parsed = JSON.parse(cleanedResponseText) as UnifiedNpuResponse;
         // Prefer nested analysis object, then top-level fields
         const parsedEmotion =
           parsed?.analysis?.emotion ?? (parsed as any)?.emotion;
