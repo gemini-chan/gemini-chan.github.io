@@ -541,6 +541,20 @@ export class GdmLiveAudio extends LitElement {
     energyBarService.resetEnergyLevel("session-reset", "sts");
     if (this.isCallActive) return;
 
+    // PRE-FLIGHT CHECK: Verify STS energy before proceeding
+    const stsEnergy = energyBarService.getCurrentEnergyLevel("sts");
+    if (stsEnergy === 0) {
+      this.updateStatus("Energy exhausted — call unavailable.");
+      const toast = this.shadowRoot?.querySelector(
+        "toast-notification#inline-toast",
+      ) as ToastNotification;
+      toast?.show("Cannot start call: energy exhausted.", "error", 3000, {
+        position: "bottom-right",
+        variant: "standard",
+      });
+      return;
+    }
+
     // Check API key presence before proceeding
     if (!this._checkApiKeyExists()) {
       this._showApiKeyPrompt(() => this._handleCallStart());

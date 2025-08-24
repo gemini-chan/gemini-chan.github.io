@@ -290,10 +290,23 @@ export abstract class BaseSessionManager {
     const baseDelay = 300; // 300ms base
 
     const attemptReconnect = async () => {
-      // If we already have a live session, end the loop
+      // If we already have a live session, or if energy is exhausted, end the loop
       if (this.session) {
         this.reconnecting = false;
         return;
+      }
+
+      // PRE-FLIGHT CHECK: do not attempt to reconnect if energy is depleted for this session type
+      const sessionType = this.getSessionName().startsWith("Text")
+        ? "tts"
+        : "sts";
+      const energyLevel = energyBarService.getCurrentEnergyLevel(sessionType);
+      if (energyLevel === 0) {
+        this.updateStatus(
+          `${this.getSessionName()}: reconnect failed (energy exhausted)`,
+        );
+        this.reconnecting = false;
+        return; // Abort reconnection attempts
       }
 
       const attempt = this.reconnectAttempts++;
