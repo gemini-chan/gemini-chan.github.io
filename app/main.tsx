@@ -126,6 +126,8 @@ export class GdmLiveAudio extends LitElement {
   @state() private isChatActive = false;
   @state() private currentEmotion = "neutral";
   private emotionAnalysisTimer: number | null = null;
+  // Track last analyzed position in the active transcript for efficient delta analysis
+  private lastAnalyzedTranscriptIndex = 0;
 
   // Audio nodes for each session type
   private textOutputNode = this.outputAudioContext.createGain();
@@ -539,6 +541,8 @@ export class GdmLiveAudio extends LitElement {
     logger.debug("Call start. Existing callSession:", this.callSession);
     // Switch to calling mode
     this.activeMode = "calling";
+    // When switching to calling mode, reset delta index so we analyze from the start of the call transcript
+    this.lastAnalyzedTranscriptIndex = 0;
     this.callState = "connecting";
     this._updateActiveOutputNode();
 
@@ -664,6 +668,8 @@ export class GdmLiveAudio extends LitElement {
 
     // Switch back to texting mode
     this.activeMode = "texting";
+    // Reset index when switching back to texting mode; next analysis will start fresh on text transcript
+    this.lastAnalyzedTranscriptIndex = 0;
     this._updateActiveOutputNode();
 
     // Summarize the call
@@ -692,6 +698,8 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private _resetTextContext() {
+    // Reset the delta-analysis index for text transcript
+    this.lastAnalyzedTranscriptIndex = 0;
     // Close existing text session using session manager
     if (this.textSessionManager) {
       this.textSessionManager.closeSession();
@@ -700,12 +708,15 @@ export class GdmLiveAudio extends LitElement {
 
     // Clear text transcript
     this.textTranscript = [];
+    this.lastAnalyzedTranscriptIndex = 0;
 
     // Text session will be lazily initialized when user sends next message
     this.updateStatus("Text conversation cleared.");
   }
 
   private _resetCallContext() {
+    // Reset the delta-analysis index for call transcript
+    this.lastAnalyzedTranscriptIndex = 0;
     // Also clear the persisted resumption handle so the next call starts fresh
     try {
       this.callSessionManager?.clearResumptionHandle();
@@ -971,8 +982,9 @@ export class GdmLiveAudio extends LitElement {
       return;
     }
 
-    // With an active session, send the message to start the TTS flow.
-    this.textSessionManager.sendMessage(message);
+    // With an active session, send the message to start the TTS flow using NPU-VPU with reactive emotion.
+    const userEmotion = await this.npuService.analyzeUserInputEmotion(message);
+    await this.textSessionManager.sendMessageWithMemory(message, userEmotion);
   }
 
   private _scrollCallTranscriptToBottom() {
@@ -1049,7 +1061,10 @@ export class GdmLiveAudio extends LitElement {
     // Send message to text session using NPU-VPU flow (memory-augmented)
     if (this.textSession) {
       try {
-        await this.textSessionManager.sendMessageWithMemory(message);
+        // Step 1: Quickly analyze the user's input emotion for reactive TTS tone
+        const userEmotion = await this.npuService.analyzeUserInputEmotion(message);
+        // Step 2: Send with emotion context
+        await this.textSessionManager.sendMessageWithMemory(message, userEmotion);
       } catch (error) {
         logger.error("Error sending message with memory to text session:", {
           error,
@@ -1127,23 +1142,27 @@ export class GdmLiveAudio extends LitElement {
         this.activeMode === "calling"
           ? this.callTranscript
           : this.textTranscript;
-      const lastTurns = transcript.slice(-6); // Analyze last 6 turns for recent emotion
 
-      if (lastTurns.length > 0) {
-        const ttsEnergy = energyBarService.getCurrentEnergyLevel("tts");
-        const emotion = await this.npuService.analyzeEmotion(
-          lastTurns,
-          ttsEnergy,
-        );
-        if (emotion !== this.currentEmotion) {
-          logger.debug("Emotion updated", {
-            from: this.currentEmotion,
-            to: emotion,
-            ttsEnergy,
-          });
-          this.currentEmotion = emotion;
-        }
+      // Analyze only new transcript parts since the last analysis
+      const newTurns = transcript.slice(this.lastAnalyzedTranscriptIndex);
+      if (newTurns.length === 0) {
+        return; // Nothing new to analyze
       }
+
+      const ttsEnergy = energyBarService.getCurrentEnergyLevel("tts");
+      const emotion = await this.npuService.analyzeEmotion(newTurns, ttsEnergy);
+      if (emotion && emotion !== this.currentEmotion) {
+        logger.debug("Emotion updated (delta analysis)", {
+          from: this.currentEmotion,
+          to: emotion,
+          ttsEnergy,
+          analyzedCount: newTurns.length,
+        });
+        this.currentEmotion = emotion;
+      }
+
+      // Update the index to the full length after processing
+      this.lastAnalyzedTranscriptIndex = transcript.length;
     }, 10000); // Analyze every 10 seconds to stay within RPM limits
   }
 

@@ -561,7 +561,7 @@ export class TextSessionManager extends BaseSessionManager {
    * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
    * then VPU (the session) responds with the enhanced context.
    */
-  public async sendMessageWithMemory(message: string): Promise<void> {
+  public async sendMessageWithMemory(message: string, emotion: string = "neutral"): Promise<void> {
     if (!this.session) {
       throw new Error("Text session not available");
     }
@@ -582,6 +582,13 @@ export class TextSessionManager extends BaseSessionManager {
         memoryCount: ragPrompt.retrievedMemories.length,
       });
 
+      // Infuse the enhanced prompt with an emotional tone directive when available
+      let promptToSend = ragPrompt.enhancedPrompt;
+      const tone = (emotion || "neutral").toLowerCase();
+      if (tone && tone !== "neutral") {
+        promptToSend += `\n\n[System Note: Deliver your response with a tone of ${tone}.]`;
+      }
+
       // Step 3: Send the enhanced prompt to VPU (the session), but first, check if the session is still alive
       // after the async RAG operation.
       if (!this.session || !this.isConnected) {
@@ -589,7 +596,7 @@ export class TextSessionManager extends BaseSessionManager {
           "Session closed while preparing memory-augmented response.",
         );
       }
-      this.session.sendClientContent({ turns: ragPrompt.enhancedPrompt });
+      this.session.sendClientContent({ turns: promptToSend });
     } catch (error) {
       logger.error("Failed to send message with memory", {
         error,

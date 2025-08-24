@@ -131,6 +131,33 @@ export class NPUService {
   }
 
   /**
+   * Analyzes the emotional tone of a single user input for reactive TTS.
+   * This is designed to be a fast, lightweight operation.
+   */
+  async analyzeUserInputEmotion(text: string): Promise<string> {
+    if (!text || !text.trim()) {
+      return "neutral";
+    }
+
+    // Use the lightest, fastest model for this reactive task
+    const model = "gemini-2.5-flash-lite";
+    logger.debug("Analyzing user input emotion with model", { model });
+
+    try {
+      const prompt = this.createSingleTurnEmotionPrompt(text);
+      const result = await this.aiClient.models.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        model,
+      });
+      const emotion = result.text.toLowerCase().trim();
+      return emotion || "neutral";
+    } catch (error) {
+      logger.error("Error analyzing user input emotion:", { error, model });
+      return "neutral"; // Fallback to neutral on error
+    }
+  }
+
+  /**
    * Analyzes the emotional tone of a conversation transcript.
    * This is a core NPU cognitive task.
    */
@@ -170,5 +197,41 @@ export class NPUService {
       .map((turn) => `${turn.speaker}: ${turn.text}`)
       .join("\n");
     return `Analyze the overall emotion of the following conversation. Respond with a single word, such as: joy, sadness, anger, surprise, fear, or neutral.\n\n${conversation}`;
+  }
+
+  /**
+   * Quickly analyze the user's latest input for primary emotion using a lightweight prompt and model.
+   * Returns a lowercase single-word emotion like 'joy', 'sadness', 'anger', 'fear', 'surprise', or 'neutral'.
+   */
+  async analyzeUserInputEmotion(text: string): Promise<string> {
+    const input = (text || "").trim();
+    if (!input) return "neutral";
+
+    const prompt = `Identify the primary emotion expressed by the user in the following text. Reply with one lowercase word from this set: joy, sadness, anger, fear, surprise, disgust, curiosity, frustration, affection, gratitude, or neutral. If uncertain, reply 'neutral'.\n\nUser: ${input}`;
+    try {
+      const result = await this.aiClient.models.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        model: "gemini-2.5-flash-lite",
+      });
+      const emotion = (result.text || "").toLowerCase().trim();
+      // Basic guard to map unexpected outputs to neutral
+      const allowed = new Set([
+        "joy",
+        "sadness",
+        "anger",
+        "fear",
+        "surprise",
+        "disgust",
+        "curiosity",
+        "frustration",
+        "affection",
+        "gratitude",
+        "neutral",
+      ]);
+      return allowed.has(emotion) ? emotion : "neutral";
+    } catch (error) {
+      logger.error("Error analyzing user input emotion:", { error });
+      return "neutral";
+    }
   }
 }
