@@ -4,6 +4,8 @@
 
 This feature implements a configurable debug logging system that allows developers to enable detailed logging during development while keeping production builds clean. The system will provide granular control over logging levels and can be toggled via environment variables or runtime configuration.
 
+Development default: In development builds, debug logging is enabled for all components by default (equivalent to `*`). In development builds, narrowing is disabled by default; all components log.
+
 ## Requirements
 
 ### Requirement 1
@@ -12,7 +14,7 @@ This feature implements a configurable debug logging system that allows develope
 
 #### Acceptance Criteria
 
-1. WHEN debug mode is enabled THEN the system SHALL output detailed logging information to the console
+1. WHEN running in development mode THEN the system SHALL output detailed logging information to the console for all components by default
 2. WHEN debug mode is disabled THEN the system SHALL not output any debug logs to the console
 3. WHEN the application is built for production THEN debug logging SHALL be automatically disabled by default
 
@@ -26,7 +28,7 @@ This feature implements a configurable debug logging system that allows develope
 2. WHEN a specific component's debug logging is enabled THEN only logs from that component SHALL be displayed
 3. WHEN multiple components have debug logging enabled THEN logs from all enabled components SHALL be displayed
 4. WHEN a component's debug logging is disabled THEN no logs from that component SHALL be displayed regardless of global debug settings
-5. WHEN global debug is enabled but no specific components are configured THEN all components SHALL log debug information
+5. WHEN running in development mode THEN all components SHALL log debug information by default with no narrowing; otherwise, when global debug is enabled but no specific components are configured THEN all components SHALL log debug information
 
 ### Requirement 3
 

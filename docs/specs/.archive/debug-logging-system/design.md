@@ -13,9 +13,14 @@ The debug logging system provides a configurable, production-safe logging soluti
 3. **Component Integration** - Seamless integration with existing Lit components
 4. **Build-time Optimization** - Automatic removal of debug code in production builds
 
-### Configuration Hierarchy
+## Development Defaults
 
-The system supports multiple configuration sources with the following priority order:
+- In development mode, debug logging is always enabled globally.
+- All components log by default with no narrowing.
+- Narrowing through URL parameters or localStorage is considered disabled by default in development.
+
+
+The system supports multiple configuration sources for production tuning. In development, defaults take precedence and enable global logging with no narrowing. Priority order for non-development modes:
 1. URL parameters (highest priority)
 2. localStorage settings
 3. Environment variables
@@ -132,8 +137,8 @@ Components will be automatically registered when they create their first logger 
 - Malformed log data is sanitized before output
 
 ### Production Safety
-- All debug logging is wrapped in development-only checks
-- Production builds automatically strip debug code via build-time optimization
+- Development builds: debug logging is enabled by default for all components
+- Production builds: debug code is stripped and logging is disabled by default
 - No performance impact in production environments
 
 ## Testing Strategy
@@ -185,7 +190,7 @@ export default defineConfig(({ mode }) => {
     define: {
       '__DEBUG__': mode === 'development',
       '__DEBUG_COMPONENTS__': JSON.stringify(
-        mode === 'development' ? process.env.DEBUG_COMPONENTS?.split(',') || [] : []
+        mode === 'development' ? (process.env.DEBUG_COMPONENTS ? process.env.DEBUG_COMPONENTS.split(',') : ['*']) : []
       )
     }
   };

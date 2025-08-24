@@ -1099,22 +1099,22 @@ export class GdmLiveAudio extends LitElement {
       try {
         // Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
         const personaId = this.personaManager.getActivePersona().id;
-        const unified = await this.npuService.analyzeAndPrepareContext(
+        const intention = await this.npuService.analyzeAndAdvise(
           message,
           personaId
         );
-        this.currentEmotion = unified.emotion;
+        this.currentEmotion = intention.emotion;
 
         // If debug mode is on, show the prompt in the UI
         if (this.vpuDebugMode) {
           this._appendTextMessage(
-            `[VPU Debug] Enhanced Prompt:\n---\n${unified.enhancedPrompt}`,
+            `[VPU Debug] Advisory Prompt:\n---\n${intention.advisory_prompt_for_vpu}`,
             "model",
             true
           );
         }
 
-        this.textSessionManager.sendMessage(unified.enhancedPrompt);
+        this.textSessionManager.sendMessage(intention.advisory_prompt_for_vpu);
       } catch (error) {
         logger.error("Error sending message to text session (unified flow):", {
           error,
@@ -1127,21 +1127,21 @@ export class GdmLiveAudio extends LitElement {
         if (ok && this.textSession) {
           try {
             const personaId = this.personaManager.getActivePersona().id;
-            const unified = await this.npuService.analyzeAndPrepareContext(
+            const intention = await this.npuService.analyzeAndAdvise(
               message,
               personaId
             );
-            this.currentEmotion = unified.emotion;
+            this.currentEmotion = intention.emotion;
 
             // If debug mode is on, show the prompt in the UI
             if (this.vpuDebugMode) {
               this._appendTextMessage(
-                `[VPU Debug] Enhanced Prompt:\n---\n${unified.enhancedPrompt}`,
+                `[VPU Debug] Advisory Prompt:\n---\n${intention.advisory_prompt_for_vpu}`,
                 "model",
                 true
               );
             }
-            this.textSessionManager.sendMessage(unified.enhancedPrompt);
+            this.textSessionManager.sendMessage(intention.advisory_prompt_for_vpu);
           } catch (retryError) {
             logger.error("Failed to send message on retry:", { retryError });
             this.updateError(

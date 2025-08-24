@@ -43,6 +43,11 @@ export class NPUService {
    * Performs a single model call, parses JSON, and applies graceful fallback.
    */
   public async analyzeAndAdvise(userInput: string, personaId: string, conversationContext?: string): Promise<IntentionBridgePayload> {
+    logger.debug("analyzeAndAdvise: start", {
+      personaId,
+      userInputLength: userInput?.length ?? 0,
+      hasConversationContext: !!conversationContext,
+    });
     // Retrieve memories to inform prompt (not exposed directly to VPU)
     let memories: Memory[] = [];
     try {
@@ -53,7 +58,9 @@ export class NPUService {
 
     // Build prompt
     const memoryContext = this.formatMemoriesForContext(memories);
+    logger.debug("analyzeAndAdvise: memories retrieved", { count: memories.length });
     const unifiedPrompt = this.buildUnifiedPrompt(userInput, memoryContext, conversationContext);
+    logger.debug("analyzeAndAdvise: unified prompt built", { length: unifiedPrompt.length });
 
     // Call model with retry
     const model = "gemini-2.5-flash";

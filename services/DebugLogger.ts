@@ -87,7 +87,11 @@ class ConfigurationManager {
           ? __DEBUG__
           : process.env.NODE_ENV !== "production",
       components,
-      logLevel: "info",
+      // In development, default to most verbose logging
+      logLevel:
+        (typeof __DEBUG__ !== "undefined" && __DEBUG__) || process.env.NODE_ENV !== "production"
+          ? "debug"
+          : "info",
       timestamp: true,
       prefix: true,
     };
@@ -157,7 +161,8 @@ export class DebugLogger {
         const params = new URLSearchParams(window.location.search);
         const debugParam = params.get("debug");
 
-        if (debugParam !== null) {
+        // In development builds, ignore URL narrowing (production-only narrowing)
+        if (debugParam !== null && process.env.NODE_ENV === 'production') {
           config.enabled = true;
           config.components = {};
           if (debugParam === "*") {

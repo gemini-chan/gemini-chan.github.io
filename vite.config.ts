@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY),
       __DEBUG__: mode !== "production",
       __DEBUG_COMPONENTS__: JSON.stringify(
-        mode === "development" ? env.DEBUG_COMPONENTS?.split(",") || [] : [],
+        mode === "development" ? ["*"] : [],
       ),
     },
     resolve: {

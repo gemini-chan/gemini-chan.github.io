@@ -14,7 +14,7 @@
   - Create URL parameter parsing for debug settings
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [x] 3. Add build-time optimization for production
+- [x] 3. Add build-time optimization for production and dev defaults
   - Update vite.config.ts to define debug flags based on build mode
   - Implement conditional compilation for debug code removal
   - Create utility functions that are automatically stripped in production builds
