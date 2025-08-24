@@ -982,9 +982,11 @@ export class GdmLiveAudio extends LitElement {
       return;
     }
 
-    // With an active session, send the message to start the TTS flow using NPU-VPU with reactive emotion.
-    const userEmotion = await this.npuService.analyzeUserInputEmotion(message);
-    await this.textSessionManager.sendMessageWithMemory(message, userEmotion);
+    // With an active session, use unified NPU flow to prepare context and send.
+    const personaId = this.personaManager.getActivePersona().id;
+    const unified = await this.npuService.analyzeAndPrepareContext(message, personaId);
+    this.currentEmotion = unified.emotion;
+    this.textSessionManager.sendMessage(unified.enhancedPrompt);
   }
 
   private _scrollCallTranscriptToBottom() {
@@ -1061,16 +1063,13 @@ export class GdmLiveAudio extends LitElement {
     // Send message to text session using NPU-VPU flow (memory-augmented)
     if (this.textSession) {
       try {
-        // Step 1: Quickly analyze the user's input emotion for reactive TTS tone, if AEI is enabled
-        let userEmotion: string | undefined;
-        if (this.personaManager.getActivePersona().aeiEnabled) {
-          userEmotion = await this.npuService.analyzeUserInputEmotion(message);
-        }
-
-        // Step 2: Send with optional emotion context
-        await this.textSessionManager.sendMessageWithMemory(message, userEmotion);
+        // Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
+        const personaId = this.personaManager.getActivePersona().id;
+        const unified = await this.npuService.analyzeAndPrepareContext(message, personaId);
+        this.currentEmotion = unified.emotion;
+        this.textSessionManager.sendMessage(unified.enhancedPrompt);
       } catch (error) {
-        logger.error("Error sending message with memory to text session:", {
+        logger.error("Error sending message to text session (unified flow):", {
           error,
         });
         const msg = String((error as Error)?.message || error || "");
@@ -1080,7 +1079,10 @@ export class GdmLiveAudio extends LitElement {
         const ok = await this._initTextSession();
         if (ok && this.textSession) {
           try {
-            await this.textSessionManager.sendMessageWithMemory(message);
+            const personaId = this.personaManager.getActivePersona().id;
+            const unified = await this.npuService.analyzeAndPrepareContext(message, personaId);
+            this.currentEmotion = unified.emotion;
+            this.textSessionManager.sendMessage(unified.enhancedPrompt);
           } catch (retryError) {
             logger.error("Failed to send message on retry:", { retryError });
             this.updateError(

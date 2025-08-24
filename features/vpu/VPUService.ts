@@ -340,6 +340,9 @@ export abstract class BaseSessionManager {
     }
   }
 
+/**
+   * Simplified send: expects a fully prepared prompt.
+   */
   public sendMessage(message: string): void {
     if (this.session) {
       try {
@@ -561,61 +564,6 @@ export class TextSessionManager extends BaseSessionManager {
    * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
    * then VPU (the session) responds with the enhanced context.
    */
-  public async sendMessageWithMemory(message: string, emotion: string = "neutral"): Promise<void> {
-    if (!this.session) {
-      throw new Error("Text session not available");
-    }
-
-    try {
-      // Step 1: Get persona ID for memory retrieval
-      const personaId = this.personaManager.getActivePersona().id;
-
-      // Step 2: NPU creates RAG-augmented prompt
-      const ragPrompt = await this.npuService.createRAGPrompt(
-        message,
-        personaId,
-      );
-
-      logger.debug("NPU created RAG prompt", {
-        originalMessage: message,
-        enhancedPromptLength: ragPrompt.enhancedPrompt.length,
-        memoryCount: ragPrompt.retrievedMemories.length,
-      });
-
-      // Infuse the enhanced prompt with an emotional tone directive when available
-      let promptToSend = ragPrompt.enhancedPrompt;
-      const tone = (emotion || "neutral").toLowerCase();
-      if (tone && tone !== "neutral") {
-        promptToSend += `\n\n[System Note: Deliver your response with a tone of ${tone}.]`;
-      }
-
-      // Step 3: Send the enhanced prompt to VPU (the session), but first, check if the session is still alive
-      // after the async RAG operation.
-      if (!this.session || !this.isConnected) {
-        throw new Error(
-          "Session closed while preparing memory-augmented response.",
-        );
-      }
-      this.session.sendClientContent({ turns: promptToSend });
-    } catch (error) {
-      logger.error("Failed to send message with memory", {
-        error,
-        message,
-      });
-
-      // Fallback: send original message if RAG fails
-      if (this.session) {
-        this.session.sendClientContent({ turns: message });
-      } else {
-        // If session is gone, we can't send anything. Re-throw the original error
-        // so the caller (_handleSendMessage) can attempt to re-initialize.
-        logger.error(
-          "Session became null during RAG processing, cannot fallback.",
-        );
-        throw error;
-      }
-    }
-  }
 }
 
 export class CallSessionManager extends BaseSessionManager {

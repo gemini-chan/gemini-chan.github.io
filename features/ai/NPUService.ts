@@ -12,6 +12,20 @@ export interface RAGPrompt {
   memoryContext: string;
 }
 
+export interface UnifiedNpuResponse {
+  analysis?: { emotion?: string; confidence?: number };
+  prompt_for_vpu?: string;
+  emotion?: string;
+  confidence?: number;
+}
+
+export interface UnifiedContext {
+  emotion: string;
+  confidence: number;
+  retrievedMemories: Memory[];
+  enhancedPrompt: string;
+}
+
 export class NPUService {
   constructor(
     private aiClient: AIClient,
@@ -19,59 +33,132 @@ export class NPUService {
   ) {}
 
   /**
-   * Creates an RAG-augmented prompt by retrieving relevant memories and formulating
-   * an enhanced prompt for the VPU (conversational model).
+   * Unified analysis: retrieve memories, ask model for emotion/confidence + enhanced prompt, return unified context.
    */
-  async createRAGPrompt(
+  async analyzeAndPrepareContext(
     userMessage: string,
     personaId: string,
     conversationContext?: string,
-  ): Promise<RAGPrompt> {
+  ): Promise<UnifiedContext> {
+    // Step 1: Retrieve relevant memories
+    let retrievedMemories: Memory[] = [];
     try {
-      // Step 1: Retrieve relevant memories for the user's message
-      const retrievedMemories =
-        await this.memoryService.retrieveRelevantMemories(
-          userMessage,
-          personaId,
-          5, // Get top 5 relevant memories
-        );
-
-      logger.debug("Retrieved memories for RAG prompt", {
+      retrievedMemories = await this.memoryService.retrieveRelevantMemories(
         userMessage,
-        memoryCount: retrievedMemories.length,
         personaId,
-      });
-
-      // Step 2: Format memories into context string
-      const memoryContext = this.formatMemoriesForContext(retrievedMemories);
-
-      // Step 3: Synchronously formulate the enhanced prompt
-      const enhancedPrompt = this.formulateEnhancedPrompt(
-        userMessage,
-        memoryContext,
-        conversationContext,
+        5,
       );
-
-      return {
-        enhancedPrompt,
-        retrievedMemories,
-        memoryContext,
-      };
     } catch (error) {
-      logger.error("Failed to create RAG prompt", {
+      logger.error("Failed to retrieve memories for unified analysis", {
         error,
-        userMessage,
         personaId,
       });
-
-      // Return original message if RAG fails
-      return {
-        enhancedPrompt: userMessage,
-        retrievedMemories: [],
-        memoryContext: "",
-      };
     }
+
+    // Step 2: Build unified prompt instructing JSON output
+    const memoryContext = this.formatMemoriesForContext(retrievedMemories);
+    const unifiedPrompt = this.buildUnifiedPrompt(
+      userMessage,
+      memoryContext,
+      conversationContext,
+    );
+
+    // Step 3: Call model
+    let responseText = "";
+    try {
+      const model = "gemini-2.5-flash"; // Main NPU model per design
+      const result = await this.aiClient.models.generateContent({
+        contents: [{ role: "user", parts: [{ text: unifiedPrompt }] }],
+        model,
+      });
+      responseText = (result.text || "").trim();
+    } catch (error) {
+      logger.error("Unified analysis model call failed", { error });
+    }
+
+    // Step 4: Parse JSON
+    let emotion = "neutral";
+    let confidence = 0.5;
+    let enhancedPrompt = userMessage;
+
+    if (responseText) {
+      try {
+        const parsed = JSON.parse(responseText) as UnifiedNpuResponse;
+        // Prefer nested analysis object, then top-level fields
+        const parsedEmotion =
+          parsed?.analysis?.emotion ?? (parsed as any)?.emotion;
+        const parsedConfidence =
+          parsed?.analysis?.confidence ?? (parsed as any)?.confidence;
+        const vpuPrompt = parsed?.prompt_for_vpu;
+
+        if (typeof parsedEmotion === "string" && parsedEmotion.trim()) {
+          emotion = parsedEmotion.toLowerCase();
+        }
+        if (
+          typeof parsedConfidence === "number" &&
+          parsedConfidence >= 0 &&
+          parsedConfidence <= 1
+        ) {
+          confidence = parsedConfidence;
+        }
+        if (typeof vpuPrompt === "string" && vpuPrompt.trim()) {
+          enhancedPrompt = vpuPrompt;
+        } else {
+          // If not provided, fall back to creating an enhanced prompt that does not expose memory source
+          enhancedPrompt = this.formulateEnhancedPrompt(
+            userMessage,
+            memoryContext,
+            conversationContext,
+          );
+        }
+      } catch (error) {
+        logger.error("Failed to parse unified JSON response", {
+          error,
+          responseText,
+        });
+        // Fall back to original user message per design
+        enhancedPrompt = userMessage;
+      }
+    } else {
+      // Model gave no usable response
+      enhancedPrompt = userMessage;
+    }
+
+    return { emotion, confidence, retrievedMemories, enhancedPrompt };
   }
+
+  private buildUnifiedPrompt(
+    userMessage: string,
+    memoryContext: string,
+    conversationContext?: string,
+  ): string {
+    const ctxBlocks: string[] = [];
+    if (conversationContext?.trim()) {
+      ctxBlocks.push(`CURRENT CONVERSATION CONTEXT:\n${conversationContext}`);
+    }
+    if (memoryContext?.trim()) {
+      ctxBlocks.push(
+        `RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}`,
+      );
+    }
+
+    const contextSection = ctxBlocks.length
+      ? `\n\n${ctxBlocks.join("\n\n")}`
+      : "";
+
+    return [
+      "SYSTEM: You are an intelligent Neural Processing Unit (NPU). Your task is to analyze the user's message, assess their emotional state, and prepare a final prompt for a separate AI to respond to.",
+      "You MUST reply with a single, valid JSON object containing two keys: \"analysis\" and \"prompt_for_vpu\".",
+      "1. The \"analysis\" key must contain an object with two keys: \n   - \"emotion\": A single lowercase word describing the user's primary emotion from this list: [joy, sadness, anger, fear, surprise, neutral].\n   - \"confidence\": A float between 0.0 and 1.0 representing your confidence in the emotion detection.",
+      "2. The \"prompt_for_vpu\" key must contain the final, enhanced prompt string for the VPU (Vocal Processing Unit). This prompt should incorporate the provided context to help the VPU respond naturally. Do not mention the memories or context explicitly in this prompt.",
+      contextSection ? contextSection : undefined,
+      `USER'S MESSAGE:\n${userMessage}`,
+      "Respond ONLY with the JSON object, no markdown fences.",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
 
   /**
    * Formats retrieved memories into a clean context string for the prompt.
@@ -130,32 +217,6 @@ export class NPUService {
     return enhancedPrompt;
   }
 
-  /**
-   * Analyzes the emotional tone of a single user input for reactive TTS.
-   * This is designed to be a fast, lightweight operation.
-   */
-  async analyzeUserInputEmotion(text: string): Promise<string> {
-    if (!text || !text.trim()) {
-      return "neutral";
-    }
-
-    // Use the lightest, fastest model for this reactive task
-    const model = "gemini-2.5-flash-lite";
-    logger.debug("Analyzing user input emotion with model", { model });
-
-    try {
-      const prompt = this.createSingleTurnEmotionPrompt(text);
-      const result = await this.aiClient.models.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        model,
-      });
-      const emotion = result.text.toLowerCase().trim();
-      return emotion || "neutral";
-    } catch (error) {
-      logger.error("Error analyzing user input emotion:", { error, model });
-      return "neutral"; // Fallback to neutral on error
-    }
-  }
 
   /**
    * Analyzes the emotional tone of a conversation transcript.
@@ -199,39 +260,4 @@ export class NPUService {
     return `Analyze the overall emotion of the following conversation. Respond with a single word, such as: joy, sadness, anger, surprise, fear, or neutral.\n\n${conversation}`;
   }
 
-  /**
-   * Quickly analyze the user's latest input for primary emotion using a lightweight prompt and model.
-   * Returns a lowercase single-word emotion like 'joy', 'sadness', 'anger', 'fear', 'surprise', or 'neutral'.
-   */
-  async analyzeUserInputEmotion(text: string): Promise<string> {
-    const input = (text || "").trim();
-    if (!input) return "neutral";
-
-    const prompt = `Identify the primary emotion expressed by the user in the following text. Reply with one lowercase word from this set: joy, sadness, anger, fear, surprise, disgust, curiosity, frustration, affection, gratitude, or neutral. If uncertain, reply 'neutral'.\n\nUser: ${input}`;
-    try {
-      const result = await this.aiClient.models.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        model: "gemini-2.5-flash-lite",
-      });
-      const emotion = (result.text || "").toLowerCase().trim();
-      // Basic guard to map unexpected outputs to neutral
-      const allowed = new Set([
-        "joy",
-        "sadness",
-        "anger",
-        "fear",
-        "surprise",
-        "disgust",
-        "curiosity",
-        "frustration",
-        "affection",
-        "gratitude",
-        "neutral",
-      ]);
-      return allowed.has(emotion) ? emotion : "neutral";
-    } catch (error) {
-      logger.error("Error analyzing user input emotion:", { error });
-      return "neutral";
-    }
-  }
 }
