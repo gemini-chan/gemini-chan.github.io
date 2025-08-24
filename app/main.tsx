@@ -618,7 +618,7 @@ export class GdmLiveAudio extends LitElement {
         const inputBuffer = audioProcessingEvent.inputBuffer;
         const pcmData = inputBuffer.getChannelData(0);
         // Send audio to the active call session using session manager
-        if (this.activeMode === "calling" && this.callSession) {
+        if (this.activeMode === "calling" && this.callSessionManager && this.callSessionManager.isActive) {
           try {
             this.callSessionManager.sendRealtimeInput({
               media: createBlob(pcmData),
@@ -996,7 +996,7 @@ export class GdmLiveAudio extends LitElement {
     const ok = await this._initTextSession();
 
     // If session initialization fails, show an error and abort.
-    if (!ok) {
+    if (!ok || !this.textSessionManager || !this.textSessionManager.isActive) {
       this.updateError(
         "Unable to start text session (rate limited or network error)",
       );
@@ -1088,7 +1088,7 @@ export class GdmLiveAudio extends LitElement {
     ];
 
     // Ensure we have an active text session
-    if (!this.textSession) {
+    if (!this.textSessionManager || !this.textSessionManager.isActive) {
       this.updateStatus("Initializing text session...");
       const ok = await this._initTextSession();
       if (!ok || !this.textSession) {
@@ -1100,7 +1100,7 @@ export class GdmLiveAudio extends LitElement {
     }
 
     // Send message to text session using NPU-VPU flow (memory-augmented)
-    if (this.textSession) {
+    if (this.textSessionManager && this.textSessionManager.isActive) {
       try {
         // Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
         const personaId = this.personaManager.getActivePersona().id;
@@ -1133,7 +1133,7 @@ export class GdmLiveAudio extends LitElement {
 
         // Try to reinitialize the session and resend once.
         const ok = await this._initTextSession();
-        if (ok && this.textSession) {
+        if (ok && this.textSessionManager && this.textSessionManager.isActive) {
           try {
             const personaId = this.personaManager.getActivePersona().id;
             const conversationContext = (this.textTranscript || [])

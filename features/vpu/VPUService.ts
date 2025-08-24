@@ -344,15 +344,28 @@ export abstract class BaseSessionManager {
    * Simplified send: expects a fully prepared prompt.
    */
   public sendMessage(message: string): void {
-    if (this.session) {
-      try {
-        this.session.sendClientContent({ turns: message });
-      } catch (error) {
-        logger.error(`Error sending message to ${this.getSessionName()}:`, {
-          error,
-        });
-        this.updateError(`Failed to send message: ${error.message}`);
-      }
+    if (!this.session) {
+      this.updateError(`${this.getSessionName()} not initialized`);
+      return;
+    }
+    try {
+      logger.debug(`Sending message to ${this.getSessionName()}`, {
+        textLength: message.length,
+      });
+      this.session.sendClientContent({
+        turns: [
+          {
+            role: "user",
+            parts: [{ text: message }],
+          },
+        ],
+        turnComplete: true,
+      });
+    } catch (error) {
+      logger.error(`Error sending message to ${this.getSessionName()}:`, {
+        error,
+      });
+      this.updateError(`Failed to send message: ${(error as Error).message}`);
     }
   }
 
@@ -474,6 +487,14 @@ export class TextSessionManager extends BaseSessionManager {
     return {
       ...base,
       onmessage: async (message: LiveServerMessage) => {
+        const modelTurn = message.serverContent?.modelTurn;
+        const lastPart = modelTurn?.parts?.[modelTurn.parts.length - 1];
+        logger.debug(`${this.getSessionName()} onmessage (pre-base)`, {
+          hasModelTurn: !!modelTurn,
+          partsCount: modelTurn?.parts?.length || 0,
+          hasInlineAudio: !!modelTurn?.parts?.[0]?.inlineData,
+          hasText: !!lastPart?.text,
+        });
         // Always delegate to base to handle resumption/goAway/generationComplete/audio/interruption
         if (typeof base.onmessage === "function") {
           await base.onmessage(message);
@@ -639,6 +660,14 @@ export class CallSessionManager extends BaseSessionManager {
     return {
       ...base,
       onmessage: async (message: LiveServerMessage) => {
+        const modelTurn = message.serverContent?.modelTurn;
+        const lastPart = modelTurn?.parts?.[modelTurn.parts.length - 1];
+        logger.debug(`${this.getSessionName()} onmessage (pre-base)`, {
+          hasModelTurn: !!modelTurn,
+          partsCount: modelTurn?.parts?.length || 0,
+          hasInlineAudio: !!modelTurn?.parts?.[0]?.inlineData,
+          hasText: !!lastPart?.text,
+        });
         // Always delegate to base to handle resumption/goAway/generationComplete/audio/interruption
         if (typeof base.onmessage === "function") {
           await base.onmessage(message);
