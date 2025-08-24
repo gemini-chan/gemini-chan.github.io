@@ -5,5 +5,5 @@ public/assets
 dist/
 .vscode/
 coverage/
-CONTEXT.md
-models/
+live2d/models/fern/fern.moc3
+live2d/models/fern/fern.4096/
