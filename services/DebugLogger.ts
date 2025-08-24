@@ -87,24 +87,23 @@ class ConfigurationManager {
           ? __DEBUG__
           : process.env.NODE_ENV !== "production",
       components,
-      // In development, default to most verbose logging
+      // Simple flow: dev = full debug; prod = off
       logLevel:
-        (typeof __DEBUG__ !== "undefined" && __DEBUG__) || process.env.NODE_ENV !== "production"
-          ? "debug"
-          : "info",
+        typeof __DEBUG__ !== "undefined" && __DEBUG__ ? "debug" : "error",
       timestamp: true,
       prefix: true,
     };
 
-    for (const source of this.sources.slice().reverse()) {
-      const config = source.load();
-      const { components, ...rest } = config;
-      Object.assign(defaultConfig, rest);
-      if (components) {
-        Object.assign(defaultConfig.components, components);
-      }
+    // Simple mode: dev server = all debug on; prod = all debug off
+    if (defaultConfig.enabled) {
+      defaultConfig.components = { "*": true };
+      defaultConfig.logLevel = "debug";
+      return defaultConfig;
+    } else {
+      defaultConfig.components = {};
+      defaultConfig.logLevel = "error";
+      return defaultConfig;
     }
-    return defaultConfig;
   }
 
   /**

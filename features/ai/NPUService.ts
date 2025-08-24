@@ -73,6 +73,7 @@ export class NPUService {
           model,
         });
         responseText = (result.text || "").trim();
+        logger.debug("analyzeAndAdvise: model responded", { length: responseText.length, attempt });
         if (responseText) break;
       } catch (error) {
         logger.error("analyzeAndAdvise model call failed", { error, attempt });
@@ -84,7 +85,7 @@ export class NPUService {
     }
 
     // Parse
-    let payload: IntentionBridgePayload = {
+    const payload: IntentionBridgePayload = {
       emotion: "neutral",
       emotion_confidence: 0.5,
       advisory_prompt_for_vpu: userInput,
@@ -117,6 +118,11 @@ export class NPUService {
         const ap = parsed.advisory_prompt_for_vpu ?? parsed.prompt_for_vpu;
         if (typeof ap === "string" && ap.trim()) {
           payload.advisory_prompt_for_vpu = ap;
+        logger.info("analyzeAndAdvise: parsed intention", {
+          emotion: payload.emotion,
+          confidence: payload.emotion_confidence,
+          hasAdvisory: !!payload.advisory_prompt_for_vpu?.length,
+        });
         } else {
           payload.advisory_prompt_for_vpu = this.formulateEnhancedPrompt(userInput, memoryContext, conversationContext);
         }

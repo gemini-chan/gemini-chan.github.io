@@ -56,7 +56,7 @@ export class PersonaManager {
         const newPersona: Persona = {
           ...(personaData as Omit<Persona, "id" | "aeiEnabled">),
           id: uuidv4(),
-          aeiEnabled: (personaData as any).aeiEnabled ?? true,
+          aeiEnabled: (personaData as unknown as Partial<Persona>).aeiEnabled ?? true,
         };
         this.personas.push(newPersona);
         personasChanged = true;

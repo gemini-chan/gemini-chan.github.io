@@ -26,6 +26,12 @@ This epic defines the NPU's singular role as the interpreter of the user's true 
 
 ### User Stories
 
+- Memory integration practices from Core Memory v1 are preserved:
+  - Retrieval is per-turn and driven by the latest user input.
+  - Memories are used to enrich but never replace the user’s raw message.
+  - The VPU receives only the advisory prompt; internal context is never exposed.
+
+
 *   **Story 1.1: Holistic Input Analysis**
     *   **As the** Sourceress,
     *   **I want** the NPU to process user text input through a single, unified function,

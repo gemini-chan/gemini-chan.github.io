@@ -1005,9 +1005,14 @@ export class GdmLiveAudio extends LitElement {
 
     // With an active session, use unified NPU flow to prepare context and send.
     const personaId = this.personaManager.getActivePersona().id;
+    const conversationContext = (this.textTranscript || [])
+      .slice(Math.max(0, this.textTranscript.length - 5))
+      .map(t => `${t.speaker}: ${t.text}`)
+      .join("\n");
     const intention = await this.npuService.analyzeAndAdvise(
       message,
-      personaId
+      personaId,
+      conversationContext
     );
     this.currentEmotion = intention.emotion;
 
@@ -1099,6 +1104,10 @@ export class GdmLiveAudio extends LitElement {
       try {
         // Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
         const personaId = this.personaManager.getActivePersona().id;
+        const conversationContext = (this.textTranscript || [])
+          .slice(Math.max(0, this.textTranscript.length - 5))
+          .map(t => `${t.speaker}: ${t.text}`)
+          .join("\n");
         const intention = await this.npuService.analyzeAndAdvise(
           message,
           personaId
@@ -1127,6 +1136,10 @@ export class GdmLiveAudio extends LitElement {
         if (ok && this.textSession) {
           try {
             const personaId = this.personaManager.getActivePersona().id;
+            const conversationContext = (this.textTranscript || [])
+              .slice(Math.max(0, this.textTranscript.length - 5))
+              .map(t => `${t.speaker}: ${t.text}`)
+              .join("\n");
             const intention = await this.npuService.analyzeAndAdvise(
               message,
               personaId

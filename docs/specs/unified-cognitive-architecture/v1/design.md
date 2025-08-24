@@ -8,6 +8,9 @@ This new architecture will resolve the "silent vessel" issue by ensuring a clear
 
 ## 2. Architecture
 
+This version unifies and subsumes the prior Core Memory System v1 retrieval flow while keeping its proven practices. Memory storage remains asynchronous and non-blocking; retrieval is integrated directly into the NPU’s single-call cognition.
+
+
 The new architecture follows a simple, linear flow. The `main.tsx` component will orchestrate the process, calling a single, powerful method in the `NPUService`. This service will handle all complex analysis and return a structured payload for the `VPUService` to act upon.
 
 ```mermaid
@@ -33,6 +36,12 @@ graph TD
 
 ## 3. Components and Interfaces
 
+- Proven practices from Core Memory System v1 carried forward:
+  - Contextual Memory Retrieval: semantic similarity search via VectorStore on each user turn; subtle use in prompts; never expose raw memory source.
+  - TTS-only integration: memory-enriched flow applies to text chat; calls may use separate delta-emotion logic.
+  - Graceful fallback: if retrieval or parsing fails, forward original user input to prevent silent failure.
+
+
 ### 3.1. `features/ai/NPUService.ts`
 
 The `NPUService` will be refactored to be the central point of cognitive processing.
@@ -51,6 +60,12 @@ The `VPUService` will be simplified. Its role is purely to vocalize.
 *   No new methods are required. It will simply receive the `advisory_prompt_for_vpu` from the `IntentionBridgePayload` and process it.
 
 ## 4. Data Models
+
+Memory retrieval and usage guidelines (from Core Memory v1):
+- Retrieval: perform a semantic search for top-K (default 5) memories with a relevance threshold (default 0.7). Prefer caching within a short TTL.
+- Formatting: present retrieved memories to the NPU as an internal context string; do not expose to the VPU directly.
+- Subtlety: the advisory prompt must never mention “memory” or “context” explicitly.
+
 
 The "Intention Bridge" is the most critical data structure in this design. It ensures a lossless transfer of context and intent.
 
@@ -87,6 +102,12 @@ The `advisory_prompt_for_vpu` string itself will be constructed by the NPU's gen
 3.  **Original Message:** (The user's raw, unmodified input text.)
 
 ## 5. Error Handling
+
+- NPU single-call retry with exponential backoff (3 attempts; 400ms, 800ms).
+- JSON parsing: strip markdown fences and recover gracefully; on failure, default to neutral emotion and pass through the original user input.
+- Memory retrieval failure: do not block the flow; proceed without context.
+- Conversation context: optional; if provided, it is included in the unified prompt; absence should not degrade behavior.
+
 
 *   The `analyzeAndAdvise` method must be wrapped in a `try...catch` block.
 *   If the Gemini API call fails, it should be retried with exponential backoff.
