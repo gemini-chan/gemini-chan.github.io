@@ -445,22 +445,18 @@ export class GdmLiveAudio extends LitElement {
 			this._handleCallRateLimit(msg);
 		}
 	}
-
-	private updateTextTranscript(text: string) {
-		// This method is now only for injecting system messages, not for streaming model responses.
-		// Streaming responses are handled by _handleTtsCaptionUpdate.
-		const lastTurn = this.textTranscript[this.textTranscript.length - 1];
-		if (lastTurn?.speaker === "model" && !lastTurn.isSystemMessage) {
-			lastTurn.text += text;
+private updateTextTranscript(text: string) {
+	// This function is now only for LIVE updates to the model's last message.
+	// The official, final message is added to the transcript in _handleTtsTurnComplete.
+	if (this.textTranscript.length > 0) {
+		const lastMessage = this.textTranscript[this.textTranscript.length - 1];
+		if (lastMessage.speaker === "model") {
+			// If the last message was from the model, append to it
+			lastMessage.text += ` ${text}`;
 			this.requestUpdate("textTranscript");
-		} else {
-			this.textTranscript = [
-				...this.textTranscript,
-				{ text, speaker: "model" },
-			];
 		}
 	}
-
+}
 	private updateCallTranscript(text: string, speaker: "user" | "model") {
 		logger.debug(`Received ${speaker} text:`, text);
 
@@ -808,23 +804,54 @@ export class GdmLiveAudio extends LitElement {
 		// Text session will be lazily initialized when user sends next message
 		this.updateStatus("Text conversation cleared.");
 	}
-
-	private _handleTtsCaptionUpdate(text: string) {
-		// Clear any pending timer to clear the caption
-		if (this.ttsCaptionClearTimer) {
-			clearTimeout(this.ttsCaptionClearTimer);
-			this.ttsCaptionClearTimer = undefined;
-		}
-
-		const toast = this.shadowRoot?.querySelector(
-			"toast-notification#inline-toast",
-		) as ToastNotification;
-		this.ttsCaption += text;
-		// Use a non-hiding toast; it will be cleared manually on turn completion
-		toast?.show(this.ttsCaption, "info", 0);
+private _handleTtsCaptionUpdate(text: string) {
+	// Clear any pending timer to clear the caption
+	if (this.ttsCaptionClearTimer) {
+		clearTimeout(this.ttsCaptionClearTimer);
+		this.ttsCaptionClearTimer = undefined;
 	}
 
+	// When a new caption update arrives, it means a new turn has begun.
+	// Add a new, empty model message to the transcript that we can append to.
+	if (!this.ttsCaption) {
+		this._appendTextMessage("", "model");
+	}
+
+	const toast = this.shadowRoot?.querySelector(
+		"toast-notification#inline-toast",
+	) as ToastNotification;
+	this.ttsCaption += text;
+
+	// Update our new empty model message with the latest caption text
+	this.updateTextTranscript(this.ttsCaption);
+
+	// Use a non-hiding toast; it will be cleared manually on turn completion
+	toast?.show(this.ttsCaption, "info", 0);
+}
 	private _handleTtsTurnComplete() {
+		// First, add the complete model response to the official transcript
+		if (this.ttsCaption.trim()) {
+			this._appendTextMessage(this.ttsCaption.trim(), "model");
+		}
+
+		// Store the completed turn in memory
+		if (this.ttsCaption.trim()) {
+			const lastUserTurn = this.textTranscript
+				.slice()
+				.reverse()
+				.find((t) => t.speaker === "user");
+
+			if (lastUserTurn) {
+				const conversationContext = `user: ${lastUserTurn.text}\nmodel: ${this.ttsCaption.trim()}`;
+				const personaId = this.personaManager.getActivePersona().id;
+				this.memoryService
+					.processAndStoreMemory(conversationContext, personaId)
+					.catch((error) => {
+						logger.error("Failed to process memory in background", { error });
+					});
+			}
+		}
+
 		// Set a timer to hide the caption toast and clear the caption text
 		this.ttsCaptionClearTimer = setTimeout(() => {
 			const toast = this.shadowRoot?.querySelector(
