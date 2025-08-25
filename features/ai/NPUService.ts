@@ -4,6 +4,10 @@ import { createComponentLogger } from "@services/DebugLogger";
 import type { Turn, IntentionBridgePayload } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
 
+// Import prompt templates
+import emotionAnalysisPrompt from "@prompts/npu/emotion-analysis.prompt.md?raw";
+import unifiedPrompt from "@prompts/npu/unified.prompt.md?raw";
+
 const logger = createComponentLogger("NPUService");
 
 export interface RAGPrompt {
@@ -132,20 +136,10 @@ export class NPUService {
       ? `\n\n${ctxBlocks.join("\n\n")}`
       : "";
 
-    return [
-      "SYSTEM: You are an intelligent Neural Processing Unit (NPU). Your task is to analyze the user's message for its emotional content, considering the provided conversation context and memories.",
-      "Respond ONLY with a single, valid JSON object matching this TypeScript interface:",
-      "interface EmotionAnalysis { emotion: 'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'neutral' | 'curiosity'; emotion_confidence: number; }",
-      "Rules:",
-      "- Always include the exact keys: emotion, emotion_confidence.",
-      "- emotion must be lowercase and one of the allowed values.",
-      "- emotion_confidence must be a float between 0 and 1.",
-      contextSection ? contextSection : undefined,
-      `USER'S MESSAGE:\n${userMessage}`,
-      "Return ONLY the JSON object. No markdown fences, no commentary.",
-    ]
-      .filter(Boolean)
-      .join("\n\n");
+    // Use the markdown prompt template
+    return unifiedPrompt
+      .replace("{context}", contextSection)
+      .replace("{userMessage}", userMessage);
   }
 
 
@@ -228,7 +222,8 @@ export class NPUService {
     const model = "gemini-2.5-flash";
     
     try {
-      const prompt = `Analyze the overall emotion of the following conversation. Respond with a single word, such as: joy, sadness, anger, surprise, fear, or neutral.\n\n${conversation}`;
+      // Use the markdown prompt template
+      const prompt = emotionAnalysisPrompt.replace("{conversation}", conversation);
       
       const result = await this.aiClient.models.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
