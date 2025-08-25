@@ -7,6 +7,7 @@ import type { AIClient } from "./BaseAIService";
 // Import prompt templates
 import emotionAnalysisPrompt from "@prompts/npu/emotion-analysis.prompt.md?raw";
 import unifiedPrompt from "@prompts/npu/unified.prompt.md?raw";
+import combinedPrompt from "@prompts/npu/combined-npu.prompt.md?raw";
 
 const logger = createComponentLogger("NPUService");
 
@@ -43,18 +44,8 @@ export class NPUService {
       transcriptLength: transcript?.length ?? 0,
       hasConversationContext: !!conversationContext,
     });
-    // Step 1: Analyze emotion based on last 5 messages
-    let emotion: IntentionBridgePayload["emotion"] = "neutral";
-    const confidence = 0.5;
-    
-    try {
-      emotion = await this.analyzeTranscriptEmotion(transcript);
-      // Confidence is not directly returned by analyzeTranscriptEmotion, so we keep the default
-    } catch (error) {
-      logger.error("Failed to analyze emotion from transcript", { error, personaId });
-    }
 
-    // Step 2: Retrieve memories to inform prompt (not exposed directly to VPU)
+    // Step 1: Retrieve memories to inform prompt (not exposed directly to VPU)
     let memories: Memory[] = [];
     try {
       memories = await this.memoryService.retrieveRelevantMemories(userInput, personaId, 5);
@@ -65,18 +56,22 @@ export class NPUService {
     // Build prompt
     const memoryContext = this.formatMemoriesForContext(memories);
     logger.debug("analyzeAndAdvise: memories retrieved", { count: memories.length });
-    const enhancedPrompt = this.formulateEnhancedPrompt(userInput, memoryContext, emotion, confidence);
-    const unifiedPrompt = this.buildUnifiedPrompt(userInput, memoryContext, conversationContext);
-    logger.debug("analyzeAndAdvise: unified prompt built", { length: unifiedPrompt.length });
+    
+    // Create enhanced prompt for VPU (preserving original message)
+    const enhancedPrompt = this.formulateEnhancedPrompt(userInput, memoryContext, "neutral", 0.5);
+    
+    // Build combined prompt for Flash Lite model
+    const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext);
+    logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length });
 
-    // Call model with retry
+    // Call model with retry - single call to Flash Lite model
     const model = "gemini-2.5-flash";
     let responseText = "";
     const maxAttempts = 3;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const result = await this.aiClient.models.generateContent({
-          contents: [{ role: "user", parts: [{ text: unifiedPrompt }] }],
+          contents: [{ role: "user", parts: [{ text: combinedPromptText }] }],
           model,
         });
         responseText = (result.text || "").trim();
@@ -91,21 +86,52 @@ export class NPUService {
       }
     }
 
-    // Parse
+    // Parse the response from Flash Lite model
+    let emotion: IntentionBridgePayload["emotion"] = "neutral";
+    let confidence = 0.5;
+    let ragPromptForVpu = enhancedPrompt;
+    
+    if (responseText) {
+      try {
+        const parsedResponse = JSON.parse(responseText) as {
+          emotion: string;
+          emotion_confidence: number;
+          rag_prompt_for_vpu: string;
+        };
+        
+        // Validate emotion
+        const allowedEmotions = ["joy", "sadness", "anger", "fear", "surprise", "neutral", "curiosity"];
+        if (allowedEmotions.includes(parsedResponse.emotion)) {
+          emotion = parsedResponse.emotion as IntentionBridgePayload["emotion"];
+        }
+        
+        // Validate confidence
+        if (typeof parsedResponse.emotion_confidence === "number" &&
+            parsedResponse.emotion_confidence >= 0 &&
+            parsedResponse.emotion_confidence <= 1) {
+          confidence = parsedResponse.emotion_confidence;
+        }
+        
+        // Use the RAG prompt from the response if provided
+        if (parsedResponse.rag_prompt_for_vpu) {
+          ragPromptForVpu = parsedResponse.rag_prompt_for_vpu;
+        }
+      } catch (error) {
+        logger.error("Failed to parse Flash Lite model response", { error, responseText });
+      }
+    }
+
     const payload: IntentionBridgePayload = {
       emotion,
       emotion_confidence: confidence,
-      rag_prompt_for_vpu: enhancedPrompt,
+      rag_prompt_for_vpu: ragPromptForVpu,
     };
 
-    // Pass raw response to NPU instead of parsing
-    if (responseText) {
-      // NPU will handle the raw response
-      logger.info("analyzeAndAdvise: raw intention", {
-        hasResponseText: !!responseText.length,
-        hasRagPrompt: !!payload.rag_prompt_for_vpu?.length,
-      });
-    }
+    logger.info("analyzeAndAdvise: completed", {
+      hasResponseText: !!responseText.length,
+      emotion,
+      confidence,
+    });
 
     return payload;
   }
@@ -138,6 +164,32 @@ export class NPUService {
 
     // Use the markdown prompt template
     return unifiedPrompt
+      .replace("{context}", contextSection)
+      .replace("{userMessage}", userMessage);
+  }
+
+  // Build combined prompt for single Flash Lite model call
+  private buildCombinedPrompt(
+    userMessage: string,
+    memoryContext: string,
+    conversationContext?: string,
+  ): string {
+    const ctxBlocks: string[] = [];
+    if (conversationContext?.trim()) {
+      ctxBlocks.push(`CURRENT CONVERSATION CONTEXT:\n${conversationContext}`);
+    }
+    if (memoryContext?.trim()) {
+      ctxBlocks.push(
+        `RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}`,
+      );
+    }
+
+    const contextSection = ctxBlocks.length
+      ? `\n\n${ctxBlocks.join("\n\n")}`
+      : "";
+
+    // Use the combined markdown prompt template
+    return combinedPrompt
       .replace("{context}", contextSection)
       .replace("{userMessage}", userMessage);
   }
@@ -204,45 +256,5 @@ export class NPUService {
   }
  
  
- 
-  /**
-   * Analyzes the emotional tone of a conversation transcript.
-   */
-  public async analyzeTranscriptEmotion(transcript: Turn[]): Promise<IntentionBridgePayload["emotion"]> {
-    if (!transcript || transcript.length === 0) {
-      return "neutral";
-    }
-
-    // Build conversation context from transcript
-    const conversation = transcript
-      .map((turn) => `${turn.speaker}: ${turn.text}`)
-      .join("\n");
-
-    // Use the main NPU model for this cognitive task
-    const model = "gemini-2.5-flash";
-    
-    try {
-      // Use the markdown prompt template
-      const prompt = emotionAnalysisPrompt.replace("{conversation}", conversation);
-      
-      const result = await this.aiClient.models.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        model,
-      });
-      
-      const text = (result.text || "neutral").toLowerCase().trim();
-      
-      // Validate the emotion is one of the allowed values
-      const allowed = ["joy", "sadness", "anger", "fear", "surprise", "neutral", "curiosity"];
-      if (allowed.includes(text)) {
-        return text as IntentionBridgePayload["emotion"];
-      }
-      
-      return "neutral";
-    } catch (error) {
-      logger.error("Error analyzing emotion from transcript:", { error });
-      return "neutral"; // Fallback to neutral on error
-    }
-  }
  
  }
