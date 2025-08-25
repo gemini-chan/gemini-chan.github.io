@@ -1,0 +1,3 @@
+- [] Reviewing component lifecycle methods to ensure properties aren't modified in updated or firstUpdated
+- [] Optimizing the Live2D model initialization to prevent race conditions
+- [] Investigating the cause of the frame drop during initial rendering
