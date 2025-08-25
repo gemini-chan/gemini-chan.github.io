@@ -109,18 +109,7 @@ export abstract class BaseSessionManager {
           extendedMessage.serverContent?.sessionResumptionUpdate;
         if (resumptionUpdate?.resumable && resumptionUpdate?.newHandle) {
           this.currentHandle = resumptionUpdate.newHandle as string;
-          // Optionally persist the handle if needed by the app.
-          try {
-            const storageKey = this.getResumptionStorageKey();
-            if (storageKey) {
-              localStorage.setItem(storageKey, this.currentHandle);
-            }
-          } catch (e) {
-            console.warn(
-              `Failed to persist session handle to localStorage for ${this.getSessionName()}:`,
-              e,
-            );
-          }
+          // The handle is now only stored in memory for the current session.
           this.updateStatus(
             `${this.getSessionName()}: received resumption handle`,
           );
@@ -198,7 +187,6 @@ export abstract class BaseSessionManager {
   protected abstract getModel(): string;
   protected abstract getConfig(): Record<string, unknown>;
   protected abstract getSessionName(): string;
-  protected abstract getResumptionStorageKey(): string | null;
 
   private async _connect(handle: string | null): Promise<Error | null> {
     try {
@@ -228,21 +216,7 @@ export abstract class BaseSessionManager {
   }
 
   public async initSession(resumptionHandle?: string | null): Promise<boolean> {
-    // Load persisted handle if none provided and none stored in memory
-    if (resumptionHandle == null && this.currentHandle == null) {
-      try {
-        const storageKey = this.getResumptionStorageKey();
-        if (storageKey) {
-          this.currentHandle = localStorage.getItem(storageKey);
-        }
-      } catch (e) {
-        console.warn(
-          `Failed to read session handle from localStorage for ${this.getSessionName()}:`,
-          e,
-        );
-      }
-    }
-    // Merge resumption handle preference: explicit arg > stored handle > null
+    // Merge resumption handle preference: explicit arg > in-memory handle > null
     const handleToUse = resumptionHandle ?? this.currentHandle ?? null;
 
     // Guard to prevent auto-reconnect in onclose during intentional re-init
@@ -407,17 +381,6 @@ export abstract class BaseSessionManager {
    */
   public clearResumptionHandle(): void {
     this.currentHandle = null;
-    try {
-      const storageKey = this.getResumptionStorageKey();
-      if (storageKey) {
-        localStorage.removeItem(storageKey);
-      }
-    } catch (e) {
-      console.warn(
-        `Failed to remove session handle from localStorage for ${this.getSessionName()}:`,
-        e,
-      );
-    }
   }
 
   /**
@@ -466,9 +429,6 @@ export abstract class BaseSessionManager {
 }
 
 export class TextSessionManager extends BaseSessionManager {
-  protected getResumptionStorageKey(): string | null {
-    return "gdm:text-session-handle";
-  }
   constructor(
     outputAudioContext: AudioContext,
     outputNode: GainNode,
@@ -599,9 +559,6 @@ export class TextSessionManager extends BaseSessionManager {
 }
 
 export class CallSessionManager extends BaseSessionManager {
-  protected getResumptionStorageKey(): string | null {
-    return "gdm:call-session-handle";
-  }
   constructor(
     outputAudioContext: AudioContext,
     outputNode: GainNode,
