@@ -614,10 +614,8 @@ export class CallSessionManager extends BaseSessionManager {
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
-      // Conditionally enable affective dialog based on STS energy level
-      ...(energyBarService.isAffectiveDialogEnabled() && {
-        enableAffectiveDialog: true,
-      }),
+      // Always enable affective dialog
+      enableAffectiveDialog: true,
     };
 
     return config;

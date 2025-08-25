@@ -11,7 +11,6 @@ export interface Persona {
   systemPrompt: string;
   live2dModelUrl: string;
   isDefault: boolean;
-  aeiEnabled: boolean;
 }
 
 /**
@@ -54,9 +53,8 @@ export class PersonaManager {
       const exists = this.personas.some((p) => p.name === personaData.name);
       if (!exists) {
         const newPersona: Persona = {
-          ...(personaData as Omit<Persona, "id" | "aeiEnabled">),
+          ...(personaData as Omit<Persona, "id">),
           id: uuidv4(),
-          aeiEnabled: (personaData as unknown as Partial<Persona>).aeiEnabled ?? true,
         };
         this.personas.push(newPersona);
         personasChanged = true;
@@ -150,7 +148,6 @@ export class PersonaManager {
       systemPrompt: basePersona?.systemPrompt || "",
       live2dModelUrl: basePersona?.live2dModelUrl || "",
       isDefault: false,
-      aeiEnabled: false,
     };
     this.personas.push(newPersona);
     this._savePersonas();

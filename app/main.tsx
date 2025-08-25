@@ -15,6 +15,7 @@ import { createComponentLogger } from "@services/DebugLogger";
 import { createBlob, decode, decodeAudioData } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
+import type { EmotionMapping } from "@services/Live2DMappingService";
 import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
@@ -127,6 +128,8 @@ export class GdmLiveAudio extends LitElement {
 	@state() private chatNewMessageCount = 0;
 	@state() private isChatActive = false;
 	@state() private currentEmotion = "neutral";
+	@state() private currentMotionName = "";
+	private _idleMotionTimer: number | null = null;
 	private emotionAnalysisTimer: number | null = null;
 	@state() private vpuDebugMode = false;
 	// Track last analyzed position in the active transcript for efficient delta analysis
@@ -542,6 +545,33 @@ export class GdmLiveAudio extends LitElement {
 		toast?.show("Rate limit reached. Please wait a moment.", "warning", 3000);
 	}
 
+  private _isSourceressActive(): boolean {
+    const name = this.personaManager.getActivePersona().name || "";
+    return name.toLowerCase().includes("sourceress");
+  }
+
+  private _setSourceressMotion(name: string) {
+    logger.debug('set-motion', { name });
+    if (!this._isSourceressActive()) return;
+    this.currentMotionName = name;
+    // Reset back to empty after a short delay to allow re-triggering the same motion later
+    setTimeout(() => {
+      if (this.currentMotionName === name) this.currentMotionName = "";
+      this.requestUpdate();
+    }, 200);
+  }
+
+  private _triggerSparkle(durationMs = 1200) {
+    logger.debug('sparkle', { durationMs });
+    if (!this._isSourceressActive()) return;
+    const prev = this.currentEmotion;
+    this.currentEmotion = "sparkle" as any;
+    setTimeout(() => {
+      if (this.currentEmotion === "sparkle") this.currentEmotion = prev;
+      this.requestUpdate();
+    }, durationMs);
+  }
+
 	private async _handleCallStart() {
 		// On new call session, reset STS energy
 		energyBarService.resetEnergyLevel("session-reset", "sts");
@@ -620,6 +650,12 @@ export class GdmLiveAudio extends LitElement {
 			this.updateStatus("");
 			this.callState = "active";
 
+			// Live2D: greet motion for Sourceress on call start
+			this._setSourceressMotion("greet");
+
+			// Start idle motion cycling while in call
+			this._startIdleMotionCycle();
+
 			this.sourceNode = this.inputAudioContext.createMediaStreamSource(
 				this.mediaStream,
 			);
@@ -675,6 +711,25 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 
+	private _startIdleMotionCycle(intervalMs = 25000) {
+		logger.debug('idle-cycle:start', { intervalMs });
+		if (this._idleMotionTimer) {
+			clearTimeout(this._idleMotionTimer);
+			this._idleMotionTimer = null;
+		}
+		if (!this._isSourceressActive()) return;
+		const choices = ["idle1", "idle2", "idle3"];
+		let i = 0;
+		const step = () => {
+			logger.debug('idle-cycle:step', { isCallActive: this.isCallActive, activeMode: this.activeMode });
+			if (!this.isCallActive || this.activeMode !== "calling") return;
+			this._setSourceressMotion(choices[i % choices.length]);
+			i++;
+			this._idleMotionTimer = window.setTimeout(step, intervalMs);
+		};
+		this._idleMotionTimer = window.setTimeout(step, 1500); // initial delay after greet
+	}
+
 	private async _handleCallEnd() {
 		if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
 			return;
@@ -683,6 +738,13 @@ export class GdmLiveAudio extends LitElement {
 		this.callState = "ending";
 
 		this.isCallActive = false;
+
+		// Stop idle motion cycle
+		if (this._idleMotionTimer) {
+			clearTimeout(this._idleMotionTimer);
+			this._idleMotionTimer = null;
+		}
+		this.currentMotionName = "";
 
 		if (this.scriptProcessorNode && this.sourceNode && this.inputAudioContext) {
 			this.scriptProcessorNode.disconnect();
@@ -957,7 +1019,10 @@ export class GdmLiveAudio extends LitElement {
 	private async _handlePersonaChanged() {
 		const activePersona = this.personaManager.getActivePersona();
 		if (activePersona) {
-			await this.vectorStore.switchPersona(activePersona.id);
+			// Check if vectorStore is initialized before calling switchPersona
+			if (this.vectorStore) {
+				await this.vectorStore.switchPersona(activePersona.id);
+			}
 
 			// Disconnect the active TextSessionManager to apply the new system prompt
 			if (this.textSessionManager) {
@@ -1245,7 +1310,20 @@ export class GdmLiveAudio extends LitElement {
 		this.stopEmotionAnalysis();
 	}
 
-	protected firstUpdated() {
+	protected firstUpdated(changedProperties: PropertyValues): void {
+		super.firstUpdated(changedProperties);
+		// Handle Live2D test events from settings
+		this.addEventListener('live2d-test-emotion', (e: Event) => {
+			const ce = e as CustomEvent<{ emotion: string; mapping: EmotionMapping }>;
+			const { emotion, mapping } = ce.detail || { emotion: 'neutral', mapping: {} as EmotionMapping };
+			logger.debug('live2d-test-emotion', { emotion, mapping });
+			this.currentEmotion = emotion;
+			if (mapping.motion) {
+				// For manual test, forward motion name as group:index to be mapped downstream if desired
+				this.currentMotionName = `${mapping.motion.group}:${mapping.motion.index}`;
+				setTimeout(() => { this.currentMotionName = ""; }, 200);
+			}
+		});
 		// Trigger initial TTS greeting once the UI is ready
 		this._triggerInitialTTSGreeting();
 	}
@@ -1260,15 +1338,6 @@ export class GdmLiveAudio extends LitElement {
 
 			if (!this.npuService) return;
 
-			// Only run analysis if AEI is enabled for the current persona
-			if (!this.personaManager.getActivePersona().aeiEnabled) {
-				// If AEI was just disabled, reset emotion to neutral to avoid a stuck state
-				if (this.currentEmotion !== "neutral") {
-					this.currentEmotion = "neutral";
-					logger.debug("AEI disabled, resetting emotion to neutral.");
-				}
-				return;
-			}
 
 			const transcript =
 				this.activeMode === "calling"
@@ -1428,6 +1497,8 @@ export class GdmLiveAudio extends LitElement {
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
           .emotion=${this.currentEmotion}
+          .motionName=${this.currentMotionName}
+          .personaName=${this.personaManager.getActivePersona().name}
           @live2d-loaded=${this._handleLive2dLoaded}
           @live2d-error=${this._handleLive2dError}
         ></live2d-gate>
