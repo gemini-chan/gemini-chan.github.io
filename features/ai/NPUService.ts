@@ -5,7 +5,6 @@ import type { Turn, IntentionBridgePayload } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
 
 // Import prompt templates
-import unifiedPrompt from "@prompts/npu/unified.prompt.md?raw";
 import combinedPrompt from "@prompts/npu/combined-npu.prompt.md?raw";
 
 const logger = createComponentLogger("NPUService");
@@ -107,31 +106,6 @@ export class NPUService {
 
 
   // v1 unified prompt for model to return IntentionBridgePayload JSON
-  private buildUnifiedPrompt(
-    userMessage: string,
-    memoryContext: string,
-    conversationContext?: string,
-  ): string {
-    const ctxBlocks: string[] = [];
-    if (conversationContext?.trim()) {
-      ctxBlocks.push(`CURRENT CONVERSATION CONTEXT:\n${conversationContext}`);
-    }
-    if (memoryContext?.trim()) {
-      ctxBlocks.push(
-        `RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}`,
-      );
-    }
-
-    const contextSection = ctxBlocks.length
-      ? `\n\n${ctxBlocks.join("\n\n")}`
-      : "";
-
-    // Use the markdown prompt template
-    return unifiedPrompt
-      .replace("{context}", contextSection)
-      .replace("{userMessage}", userMessage);
-  }
-
   // Build combined prompt for single Flash Lite model call
   private buildCombinedPrompt(
     userMessage: string,
