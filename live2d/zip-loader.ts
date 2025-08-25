@@ -3,7 +3,7 @@ import type { ModelSettings } from "pixi-live2d-display/cubism4";
 import { Cubism4ModelSettings, ZipLoader } from "pixi-live2d-display/cubism4";
 
 // Configure the zip reader to use JSZip
-ZipLoader.zipReader = (data: Blob, _url: string) => JSZip.loadAsync(data);
+ZipLoader.zipReader = (data: Blob) => JSZip.loadAsync(data);
 
 const defaultCreateSettings = ZipLoader.createSettings;
 

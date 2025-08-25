@@ -1,4 +1,5 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
+import "./Live2DModelMapper";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
@@ -996,6 +997,7 @@ export class SettingsMenu extends LitElement {
               "name",
               (e.target as HTMLInputElement).value,
             )}
+          @blur=${() => this._onSavePersona()}
         />
         <textarea
           .value=${this._editingPersona.systemPrompt}
@@ -1004,6 +1006,7 @@ export class SettingsMenu extends LitElement {
               "systemPrompt",
               (e.target as HTMLTextAreaElement).value,
             )}
+          @blur=${() => this._onSavePersona()}
           placeholder="System Prompt"
         ></textarea>
         <div class="input-group">
@@ -1017,6 +1020,7 @@ export class SettingsMenu extends LitElement {
               );
               this._validateLive2dUrl((e.target as HTMLInputElement).value);
             }}
+            @blur=${() => this._onSavePersona()}
             placeholder="Live2D Model URL"
           />
           <div
@@ -1061,29 +1065,40 @@ export class SettingsMenu extends LitElement {
             </svg>
           </button>
         </div>
-        <div class="persona-form-buttons">
-          ${
-            !this._editingPersona.isDefault
-              ? html`
+        
+        ${this._editingPersona.live2dModelUrl ? html`
+        <details style="margin-top: 1em;">
+          <summary>Live2D Mapping (per model)</summary>
+          <div style="margin-top: 12px;">
+            <live2d-model-mapper .modelUrl=${this._editingPersona.live2dModelUrl}></live2d-model-mapper>
+          </div>
+        </details>
+        ` : html`
+          <div style="margin-top: 1em; padding: 0.5em; background: var(--cp-surface-strong); border-radius: 8px; border: 1px solid var(--cp-surface-border);">
+            <p style="margin: 0; font-size: 0.9em; color: var(--cp-muted);">
+              Set a Live2D model URL above to enable emotion mapping configuration.
+            </p>
+          </div>
+        `}
+        ${
+          !this._editingPersona.isDefault
+            ? html`
+          <div style="margin-top: 1em;">
             <button class="danger" @click=${this._onDeletePersona}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.5rem;">
                 <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
               </svg>
-              Delete
+              Delete Persona
             </button>
-          `
-              : ""
-          }
-          <div class="right-buttons">
-            <button @click=${this._cancelPersonaEdit}>Cancel</button>
-            <button class="primary" @click=${this._onSavePersona}>Save</button>
           </div>
-        </div>
+        `
+            : ""
+        }
       </div>
     `;
   }
 
-  private _handlePersonaFormInput(field: keyof Persona, value: string) {
+  private _handlePersonaFormInput(field: keyof Persona, value: string | boolean) {
     if (this._editingPersona) {
       this._editingPersona = { ...this._editingPersona, [field]: value };
     }
@@ -1658,7 +1673,7 @@ export class SettingsMenu extends LitElement {
 
       // All other cases pass - let the Live2D loader handle it
       return true;
-    } catch (_err) {
+    } catch {
       this._error = "Invalid URL format.";
       this.dispatchEvent(
         new CustomEvent("model-url-error", {

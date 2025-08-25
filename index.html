@@ -16,18 +16,14 @@
     try {
       let theme = localStorage.getItem('theme');
       if (!theme) {
-        // Define available themes
-        const darkThemes = ['dystopia', 'tron', 'matrix', 'noir', 'cyberpunk'];
-        const lightThemes = ['synthwave'];
-
         // Check user's system preference
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-        // Select a random theme based on preference
+        // Set theme based on preference
         if (prefersDark) {
-          theme = darkThemes[Math.floor(Math.random() * darkThemes.length)];
+          theme = 'dystopia';
         } else {
-          theme = lightThemes[Math.floor(Math.random() * lightThemes.length)];
+          theme = 'cyberpunk';
         }
         localStorage.setItem('theme', theme);
       }

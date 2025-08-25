@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from "uuid";
-import prompts from "@prompts/personas/energy-level-prompts.json";
 import defaultPersonas from "@prompts/personas/default-personas.json";
+import prompts from "@prompts/personas/energy-level-prompts.json";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Defines the structure for a persona.
@@ -46,8 +46,37 @@ export class PersonaManager {
 
   constructor() {
     this.personas = this._loadPersonas();
-    if (this.personas.length === 0) {
-      this._createDefaultPersona();
+    let personasChanged = false;
+
+    // Sync default personas to add any that are missing from storage.
+    for (const personaData of defaultPersonas) {
+      const exists = this.personas.some((p) => p.name === personaData.name);
+      if (!exists) {
+        const newPersona: Persona = {
+          ...(personaData as Omit<Persona, "id">),
+          id: uuidv4(),
+        };
+        this.personas.push(newPersona);
+        personasChanged = true;
+      }
+    }
+
+    // Ensure an active persona is set if one doesn't exist or is invalid.
+    const activeId = localStorage.getItem(
+      PersonaManager.ACTIVE_PERSONA_ID_STORAGE_KEY,
+    );
+    const activePersona = this.personas.find((p) => p.id === activeId);
+
+    if (!activePersona) {
+      // If no active persona is set, default to the one marked as default.
+      const defaultPersona = this.personas.find((p) => p.isDefault);
+      if (defaultPersona) {
+        this.setActivePersona(defaultPersona.id);
+      }
+    }
+
+    if (personasChanged) {
+      this._savePersonas();
     }
   }
 
@@ -105,16 +134,19 @@ export class PersonaManager {
   }
 
   /**
-   * Creates a new persona with a given name.
+   * Creates a new persona. Can optionally be based on an existing persona.
    * @param name - The name for the new persona.
+   * @param basePersonaId - Optional ID of a persona to use as a template.
    * @returns The newly created persona.
    */
-  createPersona(name: string): Persona {
+  createPersona(name: string, basePersonaId?: string): Persona {
+    const basePersona = this.personas.find((p) => p.id === basePersonaId);
+
     const newPersona: Persona = {
       id: uuidv4(),
       name,
-      systemPrompt: "",
-      live2dModelUrl: "",
+      systemPrompt: basePersona?.systemPrompt || "",
+      live2dModelUrl: basePersona?.live2dModelUrl || "",
       isDefault: false,
     };
     this.personas.push(newPersona);
@@ -191,26 +223,4 @@ export class PersonaManager {
     );
   }
 
-  /**
-   * Creates and saves the default personas from the external JSON file.
-   */
-  private _createDefaultPersona(): void {
-    const createdPersonas: Persona[] = [];
-
-    for (const personaData of defaultPersonas) {
-      const newPersona: Persona = {
-        ...(personaData as Omit<Persona, "id">),
-        id: uuidv4(),
-      };
-      this.personas.push(newPersona);
-      createdPersonas.push(newPersona);
-    }
-    this._savePersonas();
-
-    // Set VTuber as the default active persona for better UX
-    const vtuberPersona = createdPersonas.find((p) => p.name === "VTuber");
-    if (vtuberPersona) {
-      this.setActivePersona(vtuberPersona.id);
-    }
-  }
 }

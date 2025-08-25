@@ -32,11 +32,11 @@ export interface EmbeddingResponse {
 /**
  * Type guard to check if a client supports embeddings
  */
-export function isEmbeddingClient(client: any): client is EmbeddingClient {
+export function isEmbeddingClient(
+  client: unknown,
+): client is EmbeddingClient {
   return (
-    client &&
-    typeof client === "object" &&
-    client.models &&
-    typeof client.models.embedContent === "function"
+    typeof (client as { models?: { embedContent?: unknown } })?.models
+      ?.embedContent === "function"
   );
 }

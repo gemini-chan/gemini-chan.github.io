@@ -9,7 +9,7 @@ declare const __DEBUG_COMPONENTS__: string[];
 export interface DebugLoggerConfig {
   enabled: boolean;
   components: Record<string, boolean>;
-  logLevel: "debug" | "info" | "warn" | "error";
+  logLevel: "trace" | "debug" | "info" | "warn" | "error";
   timestamp: boolean;
   prefix: boolean;
 }
@@ -19,7 +19,7 @@ export interface DebugLoggerConfig {
  */
 export interface LogEntry {
   component: string;
-  level: "debug" | "info" | "warn" | "error";
+  level: "trace" | "debug" | "info" | "warn" | "error";
   message: string;
   data?: unknown;
   timestamp: Date;
@@ -33,11 +33,12 @@ export interface ComponentLogger {
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
   error(message: string, data?: unknown): void;
-  trace(methodName: string, ...args: unknown[]): void;
+  trace(message: string, data?: unknown): void;
   time(label: string): () => void;
 }
 
 const LOG_LEVELS: Record<string, number> = {
+  trace: -1,
   debug: 0,
   info: 1,
   warn: 2,
@@ -87,20 +88,23 @@ class ConfigurationManager {
           ? __DEBUG__
           : process.env.NODE_ENV !== "production",
       components,
-      logLevel: "info",
+      // Simple flow: dev = full debug; prod = off
+      logLevel:
+        typeof __DEBUG__ !== "undefined" && __DEBUG__ ? "debug" : "error",
       timestamp: true,
       prefix: true,
     };
 
-    for (const source of this.sources.slice().reverse()) {
-      const config = source.load();
-      const { components, ...rest } = config;
-      Object.assign(defaultConfig, rest);
-      if (components) {
-        Object.assign(defaultConfig.components, components);
-      }
+    // Simple mode: dev server = all debug on; prod = all debug off
+    if (defaultConfig.enabled) {
+      defaultConfig.components = { "*": true };
+      defaultConfig.logLevel = "debug";
+      return defaultConfig;
+    } else {
+      defaultConfig.components = {};
+      defaultConfig.logLevel = "error";
+      return defaultConfig;
     }
-    return defaultConfig;
   }
 
   /**
@@ -157,7 +161,8 @@ export class DebugLogger {
         const params = new URLSearchParams(window.location.search);
         const debugParam = params.get("debug");
 
-        if (debugParam !== null) {
+        // In development builds, ignore URL narrowing (production-only narrowing)
+        if (debugParam !== null && process.env.NODE_ENV === 'production') {
           config.enabled = true;
           config.components = {};
           if (debugParam === "*") {
@@ -243,7 +248,7 @@ export class DebugLogger {
   }
 
   private log(
-    level: "debug" | "info" | "warn" | "error",
+    level: "trace" | "debug" | "info" | "warn" | "error",
     component: string,
     message: string,
     data?: unknown,
@@ -372,8 +377,8 @@ export class DebugLogger {
         this.warn(component, message, data),
       error: (message: string, data?: unknown) =>
         this.error(component, message, data),
-      trace: (methodName: string, ...args: unknown[]) =>
-        this.debug(component, `Entering ${methodName}`, { args }),
+      trace: (message: string, data?: unknown) =>
+        this.log("trace", component, message, data),
       time: (label: string) => {
         const startTime =
           typeof performance !== "undefined" ? performance.now() : Date.now();

@@ -5,9 +5,19 @@ import {
   isEmbeddingClient,
 } from "./EmbeddingClient";
 
+export interface GenerateContentRequest {
+  model: string;
+  contents: Array<{
+    role: string;
+    parts: Array<{ text: string }>;
+  }>;
+}
+
 export interface AIClient {
   models: {
-    generateContent: (request: any) => Promise<{ text: string }>;
+    generateContent: (
+      request: GenerateContentRequest,
+    ) => Promise<{ text: string }>;
   };
 }
 

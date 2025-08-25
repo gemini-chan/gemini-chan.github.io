@@ -6,6 +6,7 @@ import { customElement, property, state } from "lit/decorators.js";
 interface Turn {
   text: string;
   author: "user" | "model";
+  isSystemMessage?: boolean;
 }
 
 const log = createComponentLogger("ChatView");
@@ -112,6 +113,16 @@ export class ChatView extends LitElement {
       box-shadow: var(--cp-glow-magenta);
       color: var(--cp-text);
       align-self: flex-start;
+    }
+
+    .turn.system {
+      align-self: center;
+      background: var(--cp-surface-strong);
+      border-color: var(--cp-surface-border-2);
+      color: var(--cp-muted);
+      font-size: 14px;
+      font-style: italic;
+      max-width: 90%;
     }
 
     .header {
@@ -308,7 +319,7 @@ export class ChatView extends LitElement {
     // Auto-resize textarea
     this._resizeTextarea(target);
 
-    log.debug("Input value changed");
+    log.trace("Input value changed");
   }
 
   private _handleFocus() {
@@ -510,7 +521,13 @@ export class ChatView extends LitElement {
                 `
               : this.transcript.map(
                   (turn) => html`
-                    <div class="turn ${turn.author}">${turn.text}</div>
+                    <div
+                      class="turn ${turn.author} ${turn.isSystemMessage
+                        ? "system"
+                        : ""}"
+                    >
+                      ${turn.text}
+                    </div>
                   `,
                 )
           }

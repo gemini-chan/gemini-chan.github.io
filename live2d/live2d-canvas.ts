@@ -108,7 +108,7 @@ export class Live2DCanvas extends LitElement {
       // stop ticker and destroy app if available
       this._app?.ticker?.stop?.();
       this._app?.destroy?.(true);
-    } catch (_e) {
+    } catch {
       // ignore
     } finally {
       this._app = undefined;

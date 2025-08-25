@@ -1,10 +1,12 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import "@features/tts/TtsEnergyBar";
+import "./MemoryView";
 
 @customElement("tab-view")
 export class TabView extends LitElement {
-  @property({ type: String }) activeTab: "chat" | "call-history" = "chat";
+  @property({ type: String }) activeTab: "chat" | "call-history" | "memory" =
+    "chat";
   @property({ type: Boolean, reflect: true }) visible = true;
 
   static styles = css`
@@ -64,7 +66,7 @@ export class TabView extends LitElement {
     }
   `;
 
-  _switchTab(tab: "chat" | "call-history") {
+  _switchTab(tab: "chat" | "call-history" | "memory") {
     this.dispatchEvent(
       new CustomEvent("tab-switch", {
         detail: { tab },
@@ -89,6 +91,12 @@ export class TabView extends LitElement {
             @click=${() => this._switchTab("call-history")}
           >
             Call History
+          </div>
+          <div
+            class="tab ${this.activeTab === "memory" ? "active" : ""}"
+            @click=${() => this._switchTab("memory")}
+          >
+            Memory
           </div>
         </div>
         <div class="tab-indicators">
