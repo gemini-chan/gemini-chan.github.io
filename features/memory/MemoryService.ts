@@ -41,30 +41,28 @@ export class MemoryService extends BaseAIService implements IMemoryService {
         transcriptLength: transcript.length,
       });
 
-      // Parse the transcript to extract individual turns
-      const turns = transcript.split('\n');
+      // Only store user messages in memory, not model responses (which are shown as toasts)
+      const lines = transcript.split('\n');
+      const userMessages = lines.filter(line => line.trim().startsWith('user:')).map(line => line.trim());
       
-      // Process each turn separately
-      for (const turn of turns) {
-        const trimmedTurn = turn.trim();
-        if (trimmedTurn) {
-          // Instead of extracting facts, we pass each turn directly to the vector store
-          // The vector store will handle generating embeddings
-          await this.vectorStore.saveMemory({
-            fact_key: `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            fact_value: trimmedTurn,
-            confidence_score: 0.8, // Default confidence score
-            permanence_score: "contextual", // Default permanence score
-            personaId: sessionId,
-            timestamp: new Date(),
-            conversation_turn: trimmedTurn,
-          });
-        }
+      // Process each user message separately
+      for (const message of userMessages) {
+        // Instead of extracting facts, we pass each user message directly to the vector store
+        // The vector store will handle generating embeddings
+        await this.vectorStore.saveMemory({
+          fact_key: `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          fact_value: message,
+          confidence_score: 0.8, // Default confidence score
+          permanence_score: "contextual", // Default permanence score
+          personaId: sessionId,
+          timestamp: new Date(),
+          conversation_turn: message,
+        });
       }
 
       logger.info("Memory processing completed for session", {
         sessionId,
-        turnCount: turns.length,
+        userMessageCount: userMessages.length,
       });
     } catch (error) {
       logger.error("Failed to process and store memory", { error, sessionId });
