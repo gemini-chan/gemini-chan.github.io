@@ -198,17 +198,6 @@ export class MemoryView extends LitElement {
     }
   }
 
-  private _handleDebugToggle(e: Event) {
-    const target = e.target as HTMLInputElement;
-    this.vpuDebugMode = target.checked;
-    this.dispatchEvent(
-      new CustomEvent("vpu-debug-toggle", {
-        detail: { enabled: this.vpuDebugMode },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
 
   render() {
     if (this.isLoading) {
@@ -221,14 +210,6 @@ export class MemoryView extends LitElement {
 
     return html`
       <div class="controls">
-        <label class="debug-toggle">
-          <input
-            type="checkbox"
-            .checked=${this.vpuDebugMode}
-            @change=${this._handleDebugToggle}
-          />
-          VPU Debug Mode
-        </label>
         <button class="btn btn-danger" @click=${this.deleteAllMemories}>
           Forget Everything
         </button>

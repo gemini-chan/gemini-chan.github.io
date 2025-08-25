@@ -1239,8 +1239,6 @@ export class GdmLiveAudio extends LitElement {
 				);
 				this.currentEmotion = intention.emotion;
 
-				// The advisory prompt is now the user's direct input, so the debug message is redundant.
-
 				this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
 			} catch (error) {
 				logger.error("Error sending message to text session (unified flow):", {
