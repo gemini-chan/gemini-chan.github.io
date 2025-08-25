@@ -11,6 +11,9 @@ const log = createComponentLogger("live2d-gate");
  */
 @customElement("live2d-gate")
 export class Live2DGate extends LitElement {
+  @property({ type: String }) emotion: string = "neutral";
+  @property({ type: String }) personaName: string = "";
+  @property({ type: String }) motionName: string = "";
   @property({ type: String }) modelUrl = "";
   @property({ attribute: false }) inputNode?: AudioNode;
   @property({ attribute: false }) outputNode?: AudioNode;
@@ -25,18 +28,21 @@ export class Live2DGate extends LitElement {
   `;
 
   private _onLoaded = () => {
+    log.debug('live2d-ready');
     log.debug("live2d loaded event received");
     // Live2D reported loaded, hide/remove fallback
     this._live2dReady = true;
   };
 
   private _onError = (e: CustomEvent<{ error: string }>) => {
+    log.warn('live2d-error', e.detail);
     log.warn("live2d error event received", e.detail);
     this._live2dError = e.detail?.error || "Live2D failed";
     this._live2dReady = false;
   };
 
   protected async updated(changed?: Map<string, unknown>) {
+    log.debug('gate updated', Object.fromEntries(changed || []));
     if (changed?.has("modelUrl")) {
       log.debug("modelUrl changed", { url: this.modelUrl });
     }
@@ -70,6 +76,9 @@ export class Live2DGate extends LitElement {
         .modelUrl=${this.modelUrl}
         .inputNode=${this.inputNode}
         .outputNode=${this.outputNode}
+        .emotion=${this.emotion}
+        .motionName=${this.motionName}
+        persona-name=${this.personaName}
         @live2d-loaded=${this._onLoaded}
         @live2d-error=${this._onError}
       ></live2d-visual>

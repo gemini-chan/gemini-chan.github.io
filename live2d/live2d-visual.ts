@@ -17,6 +17,7 @@ interface PixiReadyEvent extends CustomEvent {
 
 @customElement("live2d-visual")
 export class Live2DVisual extends LitElement {
+  @property({ type: String }) motionName = "";
   @state() private _status: "idle" | "loading" | "ready" | "error" = "idle";
   @state() private _error = "";
   @state() private _app?: PixiApplicationLike;
@@ -45,12 +46,14 @@ export class Live2DVisual extends LitElement {
     this._error = e.detail?.error || "Load error";
   };
   private _onPixiReady = () => {
+    log.debug('pixi-ready');
     if (this._status === "idle") this._status = "loading";
   };
 
   render() {
     return html`
       ${this._status !== "idle" ? html`<div class="status">${this._status}${this._error ? `: ${this._error}` : ""}</div>` : ""}
+      ${this._status !== "idle" ? log.debug('status', { status: this._status, error: this._error }) : ''}
       <live2d-canvas @pixi-ready=${(e: PixiReadyEvent) => {
         log.debug("pixi-ready", e.detail);
         this._onPixiReady();
@@ -63,7 +66,8 @@ export class Live2DVisual extends LitElement {
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
           .emotion=${this.emotion}
-          .skipWatermark=${true}
+          .motionName=${this.motionName}
+          .personaName=${this.getAttribute('persona-name') || ''}
           .app=${this._app}
           .containerWidth=${this._containerWidth}
           .containerHeight=${this._containerHeight}

@@ -3,6 +3,7 @@ import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { AudioToAnimationMapper } from "./audio-mapper";
 import { IdleEyeFocus } from "./idle-eye-focus";
+import { Live2DMappingService } from "@services/Live2DMappingService";
 import type {
   Live2DModelLike,
   PixiApplicationLike,
@@ -25,6 +26,8 @@ export class Live2DModelComponent extends LitElement {
 
   @property({ type: String }) url = "";
   @property({ type: String }) emotion = "neutral";
+  @property({ type: String }) motionName = "";
+  @property({ type: String }) personaName = "";
   @property({ type: Number }) scale = 1.0;
   @property({ type: Array }) anchor: [number, number] = [0.5, 0.5];
   @property({ type: Boolean }) fitToCanvas = true;
@@ -32,7 +35,6 @@ export class Live2DModelComponent extends LitElement {
   @property({ type: Number }) containerHeight = 0;
   @property({ type: Number }) xOffset = 0;
   @property({ type: Number }) yOffset = -80;
-  @property({ type: Boolean }) skipWatermark = true;
 
   // Guarded restart for animation loop after errors
   private _loopRestartDelay = 1000; // ms
@@ -40,6 +42,10 @@ export class Live2DModelComponent extends LitElement {
 
   // Ticker callback reference for start/stop control
   private _loopCb?: (delta: number) => void;
+  private _lastMotionNameApplied: string = "";
+  private _lastLoggedEmotion: string = "";
+  private _lastLoggedMappingTag: string = "";
+  private _lastParamsAlwaysSignature: string = "";
 
   // Audio nodes for future integration
   @property({ attribute: false }) inputNode?: AudioNode;
@@ -342,6 +348,7 @@ export class Live2DModelComponent extends LitElement {
       this._mapper?.update();
       this._idle?.update(dt);
       const internal = this._model?.internalModel as {
+        motionManager?: { startMotion: (group: string, index: number, priority?: number) => void },
         coreModel?: {
           setParameterValueById: (id: string, value: number) => void;
         };
@@ -382,12 +389,69 @@ export class Live2DModelComponent extends LitElement {
           );
         }
 
+       // Load user-defined mapping for this model url
+       const mapping = Live2DMappingService.get(this.url)?.emotions;
+
         // Emotion Overrides
         const time = performance.now() / 1000;
 
-        // Always hide the watermark by default. This is a persistent spell.
-        if (this.skipWatermark) {
-          internal?.coreModel?.setParameterValueById?.("Param33", 0); // Watermark
+        // Apply user-defined params for current emotion
+        if (mapping) {
+          if (this._lastLoggedMappingTag !== 'active') {
+            log.debug('live2d mapping active', { url: this.url, emotion: this.emotion, motion: this.motionName });
+            this._lastLoggedMappingTag = 'active';
+          }
+          const applied: Record<string, number> = {};
+          const em = this.emotion?.toLowerCase();
+          const rules = em ? mapping[em] : undefined;
+          rules?.params?.forEach(({ id, value }) => {
+            internal?.coreModel?.setParameterValueById?.(id, value);
+            applied[id] = value;
+          });
+          const sig = JSON.stringify(applied);
+          if (sig && sig !== this._lastParamsAlwaysSignature) {
+            log.debug('paramsAlways applied', applied);
+            this._lastParamsAlwaysSignature = sig;
+          }
+        }
+
+        // No persona-based rules anymore; mapping above handles params and motion for the current emotion
+
+        // Trigger motions by name (if provided)
+        if (this.motionName && this.motionName !== this._lastMotionNameApplied) {
+          const raw = this.motionName.trim();
+          const name = raw.toLowerCase();
+          // Common motion groups in Cubism: "Idle", "TapBody", but can be custom.
+          // We'll map some friendly names to (group, index) for Fern-like rigs.
+          const motionMap: Record<string, { group: string; index: number }> = {
+            idle1: { group: "Idle", index: 0 },
+            idle2: { group: "Idle", index: 1 },
+            idle3: { group: "Idle", index: 2 },
+            greet: { group: "TapBody", index: 0 },
+            tap: { group: "TapBody", index: 0 },
+            pose1: { group: "TapBody", index: 1 },
+            pose2: { group: "TapBody", index: 2 },
+          };
+          // Support explicit group:index format
+          const colonIdx = raw.indexOf(":");
+          let hit: { group: string; index: number } | undefined = undefined;
+          if (colonIdx > 0) {
+            const group = raw.slice(0, colonIdx);
+            const idxNum = Number.parseInt(raw.slice(colonIdx + 1), 10);
+            if (!Number.isNaN(idxNum)) hit = { group, index: idxNum };
+          }
+          if (!hit) hit = motionMap[name];
+          if (hit) {
+            try {
+              log.info('trigger motion', { name: this.motionName, map: hit });
+              internal?.motionManager?.startMotion?.(hit.group, hit.index, 2);
+              this._lastMotionNameApplied = this.motionName;
+            } catch (e) {
+              log.warn('startMotion failed', { error: e });
+            }
+          } else {
+            log.debug('no motion mapped', { name });
+          }
         }
 
         switch (this.emotion?.toLowerCase()) {
@@ -413,12 +477,10 @@ export class Live2DModelComponent extends LitElement {
             );
             internal?.coreModel?.setParameterValueById?.("ParamBrowLY", -0.5);
             internal?.coreModel?.setParameterValueById?.("ParamBrowRY", -0.5);
-            // Gloomy face for Fern
-            internal?.coreModel?.setParameterValueById?.("Param34", 1);
+            // Gloomy face mapping removed; rely on user mapping
             break;
           case "displeased":
-            // Gloomy face for Fern
-            internal?.coreModel?.setParameterValueById?.("Param34", 1);
+            // Gloomy face mapping removed; rely on user mapping
             internal?.coreModel?.setParameterValueById?.(
               "ParamMouthForm",
               -0.5,
@@ -426,8 +488,7 @@ export class Live2DModelComponent extends LitElement {
             break;
           case "angry":
           case "anger":
-            // Use Fern's specific anger parameter
-            internal?.coreModel?.setParameterValueById?.("Param32", 1);
+            // persona-specific anger mapping removed; rely on user mapping
             internal?.coreModel?.setParameterValueById?.("ParamBrowLY", -0.8);
             internal?.coreModel?.setParameterValueById?.("ParamBrowRY", -0.8);
             internal?.coreModel?.setParameterValueById?.(
