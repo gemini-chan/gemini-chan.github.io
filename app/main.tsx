@@ -1131,6 +1131,7 @@ export class GdmLiveAudio extends LitElement {
 		const intention = await this.npuService.analyzeAndAdvise(
 			message,
 			personaId,
+			this.textTranscript,
 			conversationContext,
 		);
 		this.currentEmotion = intention.emotion;
@@ -1234,6 +1235,7 @@ export class GdmLiveAudio extends LitElement {
 				const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
+					this.textTranscript,
 				);
 				this.currentEmotion = intention.emotion;
 
@@ -1259,6 +1261,7 @@ export class GdmLiveAudio extends LitElement {
 						const intention = await this.npuService.analyzeAndAdvise(
 							message,
 							personaId,
+							this.textTranscript,
 						);
 						this.currentEmotion = intention.emotion;
 
@@ -1351,7 +1354,7 @@ export class GdmLiveAudio extends LitElement {
 			}
 
 			const ttsEnergy = energyBarService.getCurrentEnergyLevel("tts");
-			const emotion = await this.npuService.analyzeEmotion(newTurns, ttsEnergy);
+			const emotion = await this.npuService.analyzeTranscriptEmotion(newTurns);
 			if (emotion && emotion !== this.currentEmotion) {
 				logger.debug("Emotion updated (delta analysis)", {
 					from: this.currentEmotion,
