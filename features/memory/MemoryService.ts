@@ -32,37 +32,31 @@ export class MemoryService extends BaseAIService implements IMemoryService {
    * @param sessionId The user session ID
    */
   async processAndStoreMemory(
-    transcript: string,
+    conversationPair: string,
     sessionId: string,
   ): Promise<void> {
     try {
       logger.debug("Processing memory for session", {
         sessionId,
-        transcriptLength: transcript.length,
+        conversationLength: conversationPair.length,
       });
 
-      // Only store user messages in memory, not model responses (which are shown as toasts)
-      const lines = transcript.split('\n');
-      const userMessages = lines.filter(line => line.trim().startsWith('user:')).map(line => line.trim());
-      
-      // Process each user message separately
-      for (const message of userMessages) {
-        // Instead of extracting facts, we pass each user message directly to the vector store
-        // The vector store will handle generating embeddings
+      // Store the complete conversation pair (user message + model response) as it appears in toast
+      // This provides better context for future conversations
+      if (conversationPair.trim()) {
         await this.vectorStore.saveMemory({
           fact_key: `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          fact_value: message,
+          fact_value: conversationPair.trim(),
           confidence_score: 0.8, // Default confidence score
           permanence_score: "contextual", // Default permanence score
           personaId: sessionId,
           timestamp: new Date(),
-          conversation_turn: message,
+          conversation_turn: conversationPair.trim(),
         });
       }
 
       logger.info("Memory processing completed for session", {
         sessionId,
-        userMessageCount: userMessages.length,
       });
     } catch (error) {
       logger.error("Failed to process and store memory", { error, sessionId });
