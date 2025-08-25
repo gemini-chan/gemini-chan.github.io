@@ -1133,7 +1133,7 @@ export class SettingsMenu extends LitElement {
       // Delete the persona
       this.personaManager.deletePersona(personaToDelete.id);
 
-      // If we deleted the active persona, switch to default persona
+      // If we deleted the active persona, switch to default VTuber persona
       if (wasActive) {
         const defaultPersona = this.personaManager
           .getPersonas()
@@ -1173,7 +1173,7 @@ export class SettingsMenu extends LitElement {
             Are you sure you want to delete "${this._editingPersona.name}"? This action cannot be undone.
             ${
               this._activePersona?.id === this._editingPersona.id
-                ? html`<br><br><strong>Note:</strong> This is your currently active persona. You will be switched to the default persona.`
+                ? html`<br><br><strong>Note:</strong> This is your currently active persona. You will be switched to the default VTuber persona.`
                 : ""
             }
           </div>
