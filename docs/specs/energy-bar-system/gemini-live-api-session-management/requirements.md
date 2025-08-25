@@ -1,7 +1,7 @@
 # Feature: Gemini Live API Session Management
 
 ## 1. Introduction
-This feature manages session lifecycle for Gemini Live API, including resumption across connection resets, graceful reconnection (GoAway), and context window compression. The client maintains a resumption handle per session type and surfaces non-intrusive UX to the user.
+This feature manages session lifecycle for Gemini Live API, including resumption across connection resets, graceful reconnection (GoAway), and context window compression. The client maintains an in-memory resumption handle per session type and surfaces non-intrusive UX to the user.
 
 **Integration with Energy Bar System:** This feature must coordinate with the **Energy Bar System** (see `../energy-bar-system/requirements.md`) to handle model transitions based on energy levels. Not all models support session resumption, requiring fallback mechanisms when energy levels change.
 
@@ -10,7 +10,7 @@ Constraints and decisions:
 - Per-mode behavior: Both Call (STS) and Text (TTS) sessions attempt resume first; if resume fails, a new session is started and the user is notified via toast.
 - Transcript UX: New call -> empty transcript; resumed call -> previously summarized transcript is pre-populated. Text chat maintains persistent transcript across resumptions.
 - Model compatibility: Resumption handles from higher energy models (3, 2 for STS; 2 for TTS) are incompatible with lower energy models (1) due to different model capabilities.
-- TTS Context Preservation: As per dual-input-mode requirements, text conversations are preserved independently and persist across the application lifecycle.
+- TTS Transcript Preservation: As per dual-input-mode requirements, the text conversation transcript is preserved across the application lifecycle, but the session resumption handle is ephemeral and does not persist across page reloads.
 
 This document outlines the requirements for managing persistent connections (sessions) in the Gemini Live API. The goal is to handle the unique challenges of the API, such as time limits and connection terminations, to provide a stable and seamless user experience. While `contextWindowCompression` is implemented, sessions still drop, indicating that the primary issue is related to the underlying connection lifecycle.
 
@@ -106,7 +106,7 @@ Scenario: Summarize a long transcript on fallback
 Scenario: TTS session persists across reconnection
   Given I have an active TTS session with conversation history
   When the connection is reset due to GoAway or network issues
-  Then the system automatically resumes the TTS session with the stored handle
+  Then the system automatically resumes the TTS session with the in-memory handle
   And my previous text conversation context is maintained.
 
 Scenario: TTS session handles energy fallback

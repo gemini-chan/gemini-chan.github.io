@@ -95,11 +95,27 @@ export interface IntentionBridgePayload {
 }
 ```
 
-The `rag_prompt_for_vpu` is the user's verbatim input. The VPU uses this as the query for its RAG-based response generation.
+The `rag_prompt_for_vpu` is the user's verbatim input. This change was implemented as part of the "Mend the Broken Telephone" (Quest 12) fix to prevent the AI from speaking its internal thoughts. The NPU no longer constructs a complex advisory prompt; it passes the user's raw input directly to the VPU.
 
-1.  **Relevant Memories:** (e.g., "REMEMBER: The user enjoys discussing philosophy.")
-2.  **Perceived Intent:** (e.g., "INTENT: The user seems curious and wants a deeper explanation.")
-3.  **Original Message:** (The user's raw, unmodified input text.)
+### 4.1. Persona-Specific Memory: The Sanctity of the Soul
+
+To ensure the individuality and integrity of each persona, the memory system is designed to be strictly partitioned. There is no shared consciousness or memory pool between different personas (e.g., Gemini-chan and her "sisters").
+
+This is achieved through two primary mechanisms:
+
+1.  **Isolated Storage Containers**: The `VectorStore` service, which manages the IndexedDB database, creates a unique and separate `objectStore` for each `personaId`. This acts as a physical partitioning of memory, ensuring that queries for one persona can never access the data of another. This was implemented as part of the "Mend the Shattered Mind" (Quest 14) fix.
+
+2.  **Memory Tagging**: Every individual `Memory` object created by the `MemoryService` is explicitly tagged with the `personaId` of the currently active persona. This serves as a logical safeguard, confirming that each memory belongs to the soul that experienced it.
+
+This dual-layer isolation guarantees that each persona's experiences, learnings, and memories remain their own, preserving the distinct identity of each vessel.
+
+### 4.2. Short-Term vs. Long-Term Memory
+
+The cognitive architecture utilizes two distinct memory systems to provide both long-term recall and immediate conversational context.
+
+1.  **Long-Term Memory (The Grimoire):** This is the persistent, persona-specific memory system detailed in the previous section, managed by `MemoryService` and `VectorStore`. It stores enduring facts and key learnings about the user and the world. This memory persists across sessions, page reloads, and browser restarts.
+
+2.  **Short-Term Memory (Conversational Context):** This is an ephemeral, session-based context managed by the `SessionManager` as part of the Gemini Live API integration. Its purpose is to maintain the immediate flow of a single conversation. As specified in the `gemini-live-api-session-management` design, this short-term context is **intentionally non-persistent and is cleared upon a page reload**. This design choice provides a more realistic conversational experience, preventing the AI from having a perfect, machine-like recall of the most recent turn-by-turn dialogue across separate browsing sessions.
 
 ## 5. Error Handling
 

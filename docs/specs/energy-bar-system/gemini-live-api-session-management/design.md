@@ -9,12 +9,11 @@ This document outlines the technical design for the **Gemini Live API Session Ma
 ### Architecture
 
 Key decisions:
-- Do not resume across page reloads. The resumption handle is only used within the current page lifecycle to simplify UX. The handle may be temporarily persisted per mode to facilitate resume within the same tab/session, but on explicit reset or reload it is not honored for resume.
+- Do not resume across page reloads. The resumption handle is stored in-memory within the `SessionManager` instance and is only used within the current page lifecycle. It does not persist across page reloads.
 - Dual-mode resume flow: Both TTS (text chat) and STS (call) sessions attempt resume first; on failure a new session is started with a clear toast.
 - Transcript display is coupled to session action: fresh call clears the transcript, resumed call pre-populates with last summarized transcript. Text chat maintains persistent transcript as per dual-input-mode requirements.
 - Model compatibility checks: The session manager must verify handle compatibility with the current energy level's model before attempting resumption.
-- Separate storage keys: Text and Call sessions use different storage keys (`gdm:text-session-handle` and `gdm:call-session-handle`) to prevent conflicts.
-- TTS Persistence: Text sessions maintain their context across the application lifecycle as defined in dual-input-mode specs. **Note:** The TTS reconnect feature is currently broken and has been temporarily disabled.
+- TTS Persistence: Text sessions maintain their *transcript* across the application lifecycle as defined in dual-input-mode specs, but the *session handle* itself is ephemeral and does not persist across reloads. **Note:** The TTS reconnect feature is currently broken and has been temporarily disabled.
 
 
 The proposed architecture extends the existing `BaseSessionManager` to handle session resumption and graceful connection termination. This approach reuses the existing session management infrastructure while adding the necessary resilience.
@@ -85,15 +84,11 @@ sequenceDiagram
     *   `reconnectSession(): Promise<void>`: A new method to handle reconnection logic.
     *   `handleFallback(transcript: Turn[]): Promise<string>`: A new method to summarize the transcript and return the context to be injected.
     *   `getContextFromCallHistory(): Promise<string | null>`: A new method to retrieve context from the most recent call summary.
-    *   `clearResumptionHandle(): void`: Clears stored resumption handle when incompatible with new energy level.
-    *   `getResumptionStorageKey(): string | null`: Abstract method for subclasses to provide mode-specific storage keys.
+    *   `clearResumptionHandle(): void`: Clears the in-memory resumption handle when incompatible with new energy level.
     *   The `onmessage` callback within `getCallbacks()` will be updated to parse `sessionResumptionUpdate` and `goAway` messages.
 
 #### 2. TextSessionManager & CallSessionManager (Subclasses)
 *   **Responsibility:** These classes will inherit the new session management capabilities from `BaseSessionManager` with mode-specific behaviors.
-*   **Mode-specific storage keys:**
-    *   TextSessionManager: `getResumptionStorageKey()` returns `"gdm:text-session-handle"`
-    *   CallSessionManager: `getResumptionStorageKey()` returns `"gdm:call-session-handle"`
 *   **Context management:**
     *   TextSessionManager: Maintains persistent transcript across session resumptions (as per dual-input-mode requirements)
     *   CallSessionManager: Creates ephemeral sessions with fresh context for each call
