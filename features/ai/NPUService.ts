@@ -85,51 +85,16 @@ export class NPUService {
       }
     }
 
-    // Parse the response from Flash Lite model
-    let emotion: IntentionBridgePayload["emotion"] = "neutral";
-    let confidence = 0.5;
-    let ragPromptForVpu = enhancedPrompt;
-    
-    if (responseText) {
-      try {
-        const parsedResponse = JSON.parse(responseText) as {
-          emotion: string;
-          emotion_confidence: number;
-          rag_prompt_for_vpu: string;
-        };
-        
-        // Validate emotion
-        const allowedEmotions = ["joy", "sadness", "anger", "fear", "surprise", "neutral", "curiosity"];
-        if (allowedEmotions.includes(parsedResponse.emotion)) {
-          emotion = parsedResponse.emotion as IntentionBridgePayload["emotion"];
-        }
-        
-        // Validate confidence
-        if (typeof parsedResponse.emotion_confidence === "number" &&
-            parsedResponse.emotion_confidence >= 0 &&
-            parsedResponse.emotion_confidence <= 1) {
-          confidence = parsedResponse.emotion_confidence;
-        }
-        
-        // Use the RAG prompt from the response if provided
-        if (parsedResponse.rag_prompt_for_vpu) {
-          ragPromptForVpu = parsedResponse.rag_prompt_for_vpu;
-        }
-      } catch (error) {
-        logger.error("Failed to parse Flash Lite model response", { error, responseText });
-      }
-    }
-
+    // Instead of parsing, pass the raw response to VPU
+    // The VPU will handle the raw response appropriately
     const payload: IntentionBridgePayload = {
-      emotion,
-      emotion_confidence: confidence,
-      rag_prompt_for_vpu: ragPromptForVpu,
+      emotion: "neutral",
+      emotion_confidence: 0.5,
+      rag_prompt_for_vpu: enhancedPrompt,
     };
 
     logger.info("analyzeAndAdvise: completed", {
       hasResponseText: !!responseText.length,
-      emotion,
-      confidence,
     });
 
     return payload;
