@@ -52,14 +52,10 @@ export class NPUService {
     }
 
     // Build prompt
-    const memoryContext = this.formatMemoriesForContext(memories);
     logger.debug("analyzeAndAdvise: memories retrieved", { count: memories.length });
     
-    // Create enhanced prompt for VPU (preserving original message)
-    const enhancedPrompt = this.formulateEnhancedPrompt(userInput, memoryContext, "neutral", 0.5);
-    
     // Build combined prompt for Flash Lite model
-    const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext);
+    const combinedPromptText = this.buildCombinedPrompt(userInput, "", conversationContext);
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length });
 
     // Call model with retry - single call to Flash Lite model
@@ -89,7 +85,7 @@ export class NPUService {
     const payload: IntentionBridgePayload = {
       emotion: "neutral",
       emotion_confidence: 0.5,
-      rag_prompt_for_vpu: enhancedPrompt,
+      rag_prompt_for_vpu: userInput, // Pass original user input, VPU will handle context
     };
 
     logger.info("analyzeAndAdvise: completed", {
@@ -136,63 +132,6 @@ export class NPUService {
   /**
    * Formats retrieved memories into a clean context string for the prompt.
    */
-  // v1: supplementary helpers retained for fallback or alt prompts
-  private formatMemoriesForContext(memories: Memory[]): string {
-    if (memories.length === 0) {
-      return "";
-    }
-
-    const memoryStrings = memories.map((memory, index) => {
-      return `[${index + 1}] ${memory.fact_value}`;
-    });
-
-    return memoryStrings.join("\n");
-  }
-
-  /**
-   * Creates an enhanced prompt by combining the user's original message with memory context.
-   * Preserves the original message exactly while adding relevant context.
-   */
-  private formulateEnhancedPrompt(
-    userMessage: string,
-    memoryContext: string,
-    emotion: IntentionBridgePayload["emotion"],
-    emotionConfidence: number,
-  ): string {
-    // If no memory context, return original message as-is
-    if (!memoryContext.trim()) {
-      return userMessage;
-    }
-
-    // Create enhanced prompt that preserves original message
-    let enhancedPrompt = `USER'S MESSAGE: ${userMessage}\n\n`;
-
-    // Add emotional context
-    enhancedPrompt += `USER'S EMOTIONAL STATE: ${emotion} (confidence: ${emotionConfidence})\n\n`;
-
-    if (memoryContext) {
-      enhancedPrompt += `RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}\n\n`;
-    }
-
-    enhancedPrompt += `INSTRUCTIONS FOR AI:
-- Respond to the user's message above
-- Consider the user's emotional state when crafting your response
-- Use the context provided to make your response more relevant and personalized
-- Keep your response natural and conversational
-- Do NOT explicitly mention "memories" or "context" in your response
-- If the context is relevant, weave it naturally into your response`;
-
-    logger.debug("Created enhanced prompt preserving original message", {
-      originalMessage: userMessage,
-      emotion,
-      emotionConfidence,
-      hasMemoryContext: !!memoryContext.trim(),
-      enhancedPromptLength: enhancedPrompt.length,
-    });
-
-    return enhancedPrompt;
-  }
- 
  
  
  }
