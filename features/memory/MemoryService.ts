@@ -41,20 +41,30 @@ export class MemoryService extends BaseAIService implements IMemoryService {
         transcriptLength: transcript.length,
       });
 
-      // Instead of extracting facts, we pass the transcript directly to the vector store
-      // The vector store will handle generating embeddings
-      await this.vectorStore.saveMemory({
-        fact_key: `conversation_${Date.now()}`,
-        fact_value: transcript,
-        confidence_score: 0.8, // Default confidence score
-        permanence_score: "contextual", // Default permanence score
-        personaId: sessionId,
-        timestamp: new Date(),
-        conversation_turn: transcript,
-      });
+      // Parse the transcript to extract individual turns
+      const turns = transcript.split('\n');
+      
+      // Process each turn separately
+      for (const turn of turns) {
+        const trimmedTurn = turn.trim();
+        if (trimmedTurn) {
+          // Instead of extracting facts, we pass each turn directly to the vector store
+          // The vector store will handle generating embeddings
+          await this.vectorStore.saveMemory({
+            fact_key: `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            fact_value: trimmedTurn,
+            confidence_score: 0.8, // Default confidence score
+            permanence_score: "contextual", // Default permanence score
+            personaId: sessionId,
+            timestamp: new Date(),
+            conversation_turn: trimmedTurn,
+          });
+        }
+      }
 
       logger.info("Memory processing completed for session", {
         sessionId,
+        turnCount: turns.length,
       });
     } catch (error) {
       logger.error("Failed to process and store memory", { error, sessionId });
