@@ -492,24 +492,34 @@ export class TextSessionManager extends BaseSessionManager {
 
   private processMemoryAfterTurn() {
     const transcript = this.getTranscript();
-    // Get only the last two turns (user and model) for memory processing
-    const lastTwoTurns = transcript.slice(-2);
-    const transcriptForMemory = lastTwoTurns
-      .map((t) => `${t.speaker}: ${t.text}`)
-      .join("\n");
-    const personaId = this.personaManager.getActivePersona().id;
+    // Ensure we have at least a user and a model turn
+    if (transcript.length < 2) {
+      return;
+    }
 
-    if (transcriptForMemory) {
-      logger.debug("Processing memory for last turn", {
-        personaId,
-        transcriptSnippet: transcriptForMemory.slice(0, 100),
-      });
-      // Fire and forget
-      this.memoryService
-        .processAndStoreMemory(transcriptForMemory, personaId)
-        .catch((error) => {
-          logger.error("Failed to process memory in background", { error });
+    const lastTurn = transcript[transcript.length - 1];
+    const secondLastTurn = transcript[transcript.length - 2];
+
+    // Check if the last two turns are a user-model pair
+    if (secondLastTurn.speaker === "user" && lastTurn.speaker === "model") {
+      const transcriptForMemory = [secondLastTurn, lastTurn]
+        .map((t) => `${t.speaker}: ${t.text}`)
+        .join("\n");
+
+      const personaId = this.personaManager.getActivePersona().id;
+
+      if (transcriptForMemory) {
+        logger.debug("Processing memory for last turn", {
+          personaId,
+          transcriptSnippet: transcriptForMemory.slice(0, 100),
         });
+        // Fire and forget
+        this.memoryService
+          .processAndStoreMemory(transcriptForMemory, personaId)
+          .catch((error) => {
+            logger.error("Failed to process memory in background", { error });
+          });
+      }
     }
   }
 
