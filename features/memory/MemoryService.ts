@@ -80,11 +80,11 @@ export class MemoryService extends BaseAIService implements IMemoryService {
       const prompt = await this.loadExtractionPrompt(transcript);
 
       // Call the AI model to extract facts
-      const responseText = await this.callAIModel(prompt);
+      // Instead of parsing, we pass raw response to NPU
+      await this.callAIModel(prompt);
 
-      // Parse and validate the response
-      const facts = this.parseExtractionResponse(responseText);
-      return facts;
+      // For now, return empty array as NPU will handle the raw response
+      return [];
     } catch (error) {
       logger.error("Failed to extract facts from transcript", {
         error,
@@ -116,36 +116,9 @@ export class MemoryService extends BaseAIService implements IMemoryService {
    * @returns Array of validated Memory objects
    */
   private parseExtractionResponse(
-    responseText: string,
   ): Omit<Memory, "personaId" | "timestamp" | "conversation_turn">[] {
-    try {
-      // Try to parse the response as JSON
-      const facts =
-        this.parseJsonResponse<
-          Omit<Memory, "personaId" | "timestamp" | "conversation_turn">[]
-        >(responseText);
-
-      if (facts && Array.isArray(facts)) {
-        return facts.filter(
-          (fact) =>
-            fact.fact_key &&
-            fact.fact_value &&
-            typeof fact.confidence_score === "number" &&
-            ["permanent", "temporary", "contextual"].includes(
-              fact.permanence_score,
-            ),
-        );
-      }
-
-      logger.warn("Invalid response format from AI model", { responseText });
-      return [];
-    } catch (error) {
-      logger.error("Failed to parse extraction response", {
-        error,
-        responseText,
-      });
-      return [];
-    }
+    // Removed parser as NPU will handle raw response
+    return [];
   }
 
   /**
