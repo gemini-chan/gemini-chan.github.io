@@ -26,16 +26,6 @@ export interface UnifiedContext {
   enhancedPrompt: string;
 }
 
-// The model will now only return emotion analysis.
-interface ModelEmotionAnalysisLike {
-  emotion?: IntentionBridgePayload["emotion"] | string;
-  emotion_confidence?: number;
-  // Back-compat keys the model might return
-  analysis?: { emotion?: string; confidence?: number };
-  confidence?: number;
-  rag_prompt_for_vpu?: string;
-  prompt_for_vpu?: string;
-}
 
 export class NPUService {
   /**
@@ -51,7 +41,7 @@ export class NPUService {
     });
     // Step 1: Analyze emotion based on last 5 messages
     let emotion: IntentionBridgePayload["emotion"] = "neutral";
-    let confidence = 0.5;
+    const confidence = 0.5;
     
     try {
       emotion = await this.analyzeTranscriptEmotion(transcript);
@@ -104,40 +94,13 @@ export class NPUService {
       rag_prompt_for_vpu: enhancedPrompt,
     };
 
+    // Pass raw response to NPU instead of parsing
     if (responseText) {
-      try {
-        const cleaned = responseText
-          .replace(/^```json\s*/, "")
-          .replace(/^```\s*/, "")
-          .replace(/```$/, "")
-          .trim();
-        const parsed = JSON.parse(cleaned) as ModelEmotionAnalysisLike;
-
-        // emotion
-        let em = parsed.emotion ?? parsed?.analysis?.emotion;
-        const allowed = ["joy","sadness","anger","fear","surprise","neutral","curiosity"];
-        if (typeof em === "string") {
-          em = em.toLowerCase();
-          if (allowed.includes(em)) payload.emotion = em as IntentionBridgePayload["emotion"];
-        }
-
-        // confidence
-        const conf = parsed.emotion_confidence ?? parsed.confidence ?? parsed?.analysis?.confidence;
-        if (typeof conf === "number" && conf >= 0 && conf <= 1) {
-          payload.emotion_confidence = conf;
-        }
-
-        // Per user instruction, the prompt for the VPU is now the enhanced prompt with context.
-        payload.rag_prompt_for_vpu = enhancedPrompt;
-
-        logger.info("analyzeAndAdvise: parsed intention", {
-          emotion: payload.emotion,
-          confidence: payload.emotion_confidence,
-          hasRagPrompt: !!payload.rag_prompt_for_vpu?.length,
-        });
-      } catch (error) {
-        logger.error("Failed to parse analyzeAndAdvise JSON", { error, responseText });
-      }
+      // NPU will handle the raw response
+      logger.info("analyzeAndAdvise: raw intention", {
+        hasResponseText: !!responseText.length,
+        hasRagPrompt: !!payload.rag_prompt_for_vpu?.length,
+      });
     }
 
     return payload;
