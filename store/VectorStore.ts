@@ -7,7 +7,6 @@ import { type IDBPDatabase, openDB } from "idb";
 const logger = createComponentLogger("VectorStore");
 
 const DB_NAME = "vtuber-memory";
-const DB_VERSION = 1;
 const STORE_NAME_PREFIX = "persona-memory-";
 
 export class VectorStore {
@@ -33,36 +32,61 @@ export class VectorStore {
   }
 
   async init(): Promise<void> {
-    if (this.initializationPromise) {
-      return this.initializationPromise;
-    }
     const storeName = this.getStoreName();
     try {
-      this.db = await openDB(DB_NAME, DB_VERSION + 1, {
-        upgrade(db) {
+      // Open the DB without a version change first to check its state.
+      // This avoids triggering 'blocked' events unnecessarily.
+      const db = await openDB(DB_NAME);
+
+      // If the store for the current persona already exists, we're good.
+      if (db.objectStoreNames.contains(storeName)) {
+        this.db = db;
+        return;
+      }
+
+      // If the store doesn't exist, we must trigger an upgrade.
+      const currentVersion = db.version;
+      db.close(); // Close the connection before reopening with a new version.
+
+      logger.debug(
+        `Store '${storeName}' not found. Upgrading DB from v${currentVersion} to v${
+          currentVersion + 1
+        }.`,
+      );
+
+      // Re-open with an incremented version to trigger the upgrade callback.
+      this.db = await openDB(DB_NAME, currentVersion + 1, {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        upgrade(db, _oldVersion, _newVersion, _tx) {
           if (!db.objectStoreNames.contains(storeName)) {
             const store = db.createObjectStore(storeName, {
               keyPath: "id",
               autoIncrement: true,
             });
-            // Create index for efficient querying
             store.createIndex("personaId", "personaId", { unique: false });
             store.createIndex("timestamp", "timestamp", { unique: false });
             logger.debug(`Created IndexedDB store: ${storeName}`);
           }
         },
       });
+
       logger.debug(
-        `Initialized VectorStore database: ${DB_NAME} v${DB_VERSION + 1}`,
+        `Successfully upgraded and initialized VectorStore DB: ${DB_NAME} v${this.db.version}`,
       );
     } catch (error) {
-      logger.error("Failed to initialize IndexedDB:", { error, storeName });
+      logger.error("Failed to initialize IndexedDB", { error, storeName });
       throw new Error(`VectorStore initialization failed: ${error.message}`);
     }
   }
 
   async switchPersona(newPersonaId: string): Promise<void> {
+    if (this.personaId === newPersonaId && this.db) {
+      return; // No change needed if persona is the same and DB is initialized.
+    }
     this.personaId = newPersonaId;
+    // Close existing DB connection if any before re-initializing
+    this.db?.close();
+    this.db = null;
     this.initializationPromise = this.init();
     await this.initializationPromise;
   }
@@ -318,13 +342,6 @@ export class VectorStore {
       const queryVector = await this.generateQueryEmbedding(query);
 
       const storeName = this.getStoreName();
-
-      // Check if object store exists
-      if (!this.db?.objectStoreNames.contains(storeName)) {
-        logger.warn(`Object store ${storeName} does not exist, creating it`);
-        await this.init();
-      }
-
       const tx = this.db?.transaction(storeName, "readonly");
       const store = tx.objectStore(storeName);
       const allMemories = await store.getAll();
