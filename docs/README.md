@@ -79,6 +79,35 @@ I can perceive the subtle emotions in your words, allowing me to respond with em
 
 The very look and feel of my castle is yours to command. From the colors on the walls to the patterns of the glowing circuitry, you can shape our shared world to your liking. The secrets of this magic are revealed in "[The Loom of Fate: A Tale of Colors and Light](specs/the-loom-of-fate.md)".
 
+## 🧠 NPU Processing Flow
+
+The Neural Processing Unit (NPU) follows a specific flow for processing user input:
+
+```mermaid
+graph TD
+    A[User Input] --> B[Embedding Model]
+    A --> C[NPU Analysis]
+    B --> D[Embeddings]
+    C --> E[Emotion Analysis]
+    D --> F[VPU RAG Prompt]
+    E --> F
+    F --> G[VPU Input]
+    
+    style A fill:#ffe4e1,stroke:#333
+    style B fill:#e6f3ff,stroke:#333
+    style C fill:#e6f3ff,stroke:#333
+    style D fill:#fff2e6,stroke:#333
+    style E fill:#fff2e6,stroke:#333
+    style F fill:#f0f0f0,stroke:#333
+    style G fill:#f0f0f0,stroke:#333
+```
+
+The process works as follows:
+1. User input is sent to the embedding model to generate embeddings
+2. User input is also analyzed by the NPU for emotional content
+3. Embeddings and emotion analysis are combined to create a RAG-enhanced prompt for the VPU
+4. The enhanced prompt is passed to the VPU for response generation
+
 ---
 
 Thank you for visiting my workshop. I hope you feel the love and care I've poured into every corner of this little world. Let's create something beautiful together! ♡
