@@ -9,7 +9,7 @@ declare const __DEBUG_COMPONENTS__: string[];
 export interface DebugLoggerConfig {
   enabled: boolean;
   components: Record<string, boolean>;
-  logLevel: "debug" | "info" | "warn" | "error";
+  logLevel: "trace" | "debug" | "info" | "warn" | "error";
   timestamp: boolean;
   prefix: boolean;
 }
@@ -19,7 +19,7 @@ export interface DebugLoggerConfig {
  */
 export interface LogEntry {
   component: string;
-  level: "debug" | "info" | "warn" | "error";
+  level: "trace" | "debug" | "info" | "warn" | "error";
   message: string;
   data?: unknown;
   timestamp: Date;
@@ -33,11 +33,12 @@ export interface ComponentLogger {
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
   error(message: string, data?: unknown): void;
-  trace(methodName: string, ...args: unknown[]): void;
+  trace(message: string, data?: unknown): void;
   time(label: string): () => void;
 }
 
 const LOG_LEVELS: Record<string, number> = {
+  trace: -1,
   debug: 0,
   info: 1,
   warn: 2,
@@ -247,7 +248,7 @@ export class DebugLogger {
   }
 
   private log(
-    level: "debug" | "info" | "warn" | "error",
+    level: "trace" | "debug" | "info" | "warn" | "error",
     component: string,
     message: string,
     data?: unknown,
@@ -376,8 +377,8 @@ export class DebugLogger {
         this.warn(component, message, data),
       error: (message: string, data?: unknown) =>
         this.error(component, message, data),
-      trace: (methodName: string, ...args: unknown[]) =>
-        this.debug(component, `Entering ${methodName}`, { args }),
+      trace: (message: string, data?: unknown) =>
+        this.log("trace", component, message, data),
       time: (label: string) => {
         const startTime =
           typeof performance !== "undefined" ? performance.now() : Date.now();

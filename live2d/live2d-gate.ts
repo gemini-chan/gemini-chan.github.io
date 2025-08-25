@@ -42,7 +42,14 @@ export class Live2DGate extends LitElement {
   };
 
   protected async updated(changed?: Map<string, unknown>) {
-    log.debug('gate updated', Object.fromEntries(changed || []));
+    // Filter out undefined values to reduce log noise
+    const changedEntries = Object.fromEntries(changed || []);
+    const filteredEntries = Object.fromEntries(
+      Object.entries(changedEntries).filter(([_, value]) => value !== undefined)
+    );
+    if (Object.keys(filteredEntries).length > 0) {
+      log.debug('gate updated', filteredEntries);
+    }
     if (changed?.has("modelUrl")) {
       log.debug("modelUrl changed", { url: this.modelUrl });
     }

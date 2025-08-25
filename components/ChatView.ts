@@ -319,7 +319,7 @@ export class ChatView extends LitElement {
     // Auto-resize textarea
     this._resizeTextarea(target);
 
-    log.debug("Input value changed");
+    log.trace("Input value changed");
   }
 
   private _handleFocus() {

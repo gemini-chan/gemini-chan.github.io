@@ -80,14 +80,11 @@ export class TranscriptAutoScroll {
     // Always scroll for the first message to show initial content
     const isFirstMessage = oldLength === 0 && newLength > 0;
 
-    logger.debug("Update", {
-      oldLength,
-      newLength,
-      isFirstMessage,
-    });
-
     if (isFirstMessage) {
-      logger.debug("First message - scrolling to show initial content");
+      logger.debug("Transcript update - first message, scrolling to show initial content", {
+        oldLength,
+        newLength,
+      });
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
         this.scrollToBottom(element, true);
@@ -101,8 +98,6 @@ export class TranscriptAutoScroll {
       this.wasAtBottomBeforeUpdate.get(element) ??
       this.shouldAutoScroll(element);
 
-    logger.debug("Update scroll state", { wasAtBottom });
-
     // If user was at bottom before the update, continue auto-scrolling
     // If user scrolled up to read past content, don't interrupt them
     if (wasAtBottom) {
@@ -110,13 +105,22 @@ export class TranscriptAutoScroll {
       requestAnimationFrame(() => {
         // Detect rapid updates (multiple messages at once)
         const isRapidUpdate = newLength - oldLength > 1;
-        logger.debug("Auto-scrolling", { smooth: !isRapidUpdate });
+        logger.debug("Transcript update - auto-scrolling", {
+          oldLength,
+          newLength,
+          smooth: !isRapidUpdate,
+          wasAtBottom
+        });
         this.scrollToBottom(element, !isRapidUpdate);
         // Update the state after scrolling
         this.wasAtBottomBeforeUpdate.set(element, true);
       });
     } else {
-      logger.debug("User scrolled up to read past content - not interrupting");
+      logger.debug("Transcript update - user scrolled up to read past content, not interrupting", {
+        oldLength,
+        newLength,
+        wasAtBottom
+      });
       // Just update the tracking state for button visibility
       this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element));
     }

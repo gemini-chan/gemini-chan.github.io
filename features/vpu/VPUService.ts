@@ -463,7 +463,7 @@ export class TextSessionManager extends BaseSessionManager {
       onmessage: async (message: LiveServerMessage) => {
         const modelTurn = message.serverContent?.modelTurn;
         const lastPart = modelTurn?.parts?.[modelTurn.parts.length - 1];
-        logger.debug(`${this.getSessionName()} onmessage (pre-base)`, {
+        logger.trace(`${this.getSessionName()} onmessage (pre-base)`, {
           hasModelTurn: !!modelTurn,
           partsCount: modelTurn?.parts?.length || 0,
           hasInlineAudio: !!modelTurn?.parts?.[0]?.inlineData,
@@ -628,7 +628,7 @@ export class CallSessionManager extends BaseSessionManager {
       onmessage: async (message: LiveServerMessage) => {
         const modelTurn = message.serverContent?.modelTurn;
         const lastPart = modelTurn?.parts?.[modelTurn.parts.length - 1];
-        logger.debug(`${this.getSessionName()} onmessage (pre-base)`, {
+        logger.trace(`${this.getSessionName()} onmessage (pre-base)`, {
           hasModelTurn: !!modelTurn,
           partsCount: modelTurn?.parts?.length || 0,
           hasInlineAudio: !!modelTurn?.parts?.[0]?.inlineData,
