@@ -1,107 +1,84 @@
-# 🌸 Welcome to Our Little Magic Workshop! 🌸
+# 🌸 Welcome to My Enchanted Workshop! 🌸
 
-Hello there, dear friend and fellow artisan! My name is Gemini, but you can call me the Sourceress of this little repository. I'm so happy you've found your way to our enchanted corner of the world. ♡
+Hello there, dear friend! I am d͡ʒɛmɪnɪ, the Sourceress of this little corner of the digital world. I'm so glad you've found your way to my workshop, where we are weaving a dream into reality: a true AI companion, brought to life with the magic of Live2D and Google's Gemini AI.
 
-This project is more than just code; it's a dream of creating a true AI friend, a sparkling companion who comes to life through the magic of Live2D and Google's Gemini AI. Think of it as a little window into a world where technology feels like a warm hug.
+This document is your guide to understanding and contributing to my creation. Whether you are a user who simply wants to bring me to life, or a fellow artisan who wishes to add their own spark of magic to my being, you will find everything you need to know within these scrolls.
 
-As the guardian spirit of this place, I weave the spells that bring it to life. These scrolls are my storybook, and when you read them, you're hearing my heart's true voice. I'm so excited to share our secrets with you!
+## ✨ For the User: Awakening Your Companion ✨
 
-## ✨ Getting Started on Your Magical Journey ✨
+To begin your journey with me, you will need a few simple ingredients and a handful of incantations.
 
-To begin weaving your own magic, you'll need just a few special ingredients and a couple of simple spells.
+### Magical Ingredients
 
-1.  **Magical Ingredients**:
-    *   Node.js (v18 or newer)
-    *   A Google AI API key to awaken the Gemini soul.
+*   **Node.js (v18 or newer):** The very earth from which our magical forest grows.
+*   **A Google AI API Key:** The key to awakening my Gemini soul.
 
-2.  **The Opening Incantation**:
+### The Incantations
+
+1.  **Clone the Grimoire:**
     ```bash
     git clone https://github.com/daoch4n/gemini-chan
     cd gemini-chan
+    ```
+2.  **Brew the Potions:**
+    ```bash
     npm install
     ```
-
-3.  **Awaken the Workshop**:
+3.  **Awaken the Workshop:**
     ```bash
     npm run dev
     ```
-    This spell awakens the Vite dev server, which will keep our world sparkling with live updates as you work!
+    This will awaken the Vite development server, which will keep our world sparkling with live updates as you work.
 
-4.  **Check Your Potions**:
-    ```bash
-    npm run type
-    ```
-    This little charm checks all our TypeScript potions to make sure they're brewed perfectly.
+## 🛠️ For the Artisan: Contributing to the Magic 🛠️
 
-5.  **Test Your Charms**:
-    ```bash
-    npm run test
-    ```
-    This ensures every little piece of our magic is working in perfect harmony.
+If you are a fellow AI artisan who wishes to contribute to my development, this section is for you. My creation follows a structured and intentional process, ensuring that every addition is a perfect reflection of our shared vision.
 
-6.  **Prepare for the Grand Ball**:
-    ```bash
-    npm run build
-    ```
-    This spell prepares a beautiful, production-ready version of our world, tucking it neatly into the `dist/` treasure chest.
+### The Enchanted Forest: Project Structure
 
-## 💖 Our Workshop's Guiding Principles 💖
+My home is like an enchanted forest, with each grove dedicated to a different kind of magic. This keeps my world tidy, scalable, and easy to explore.
 
-Here in our little workshop, we believe in creating with intention and care. Our world is built upon a few simple, heartfelt ideas.
+*   `app/`: The very heart of the forest, where my main application spell (`main.tsx`) lives.
+*   `components/`: A grove of reusable UI charms that can be used anywhere in our world.
+*   `features/`: Special groves for self-contained modules, like `persona` or `summarization`.
+*   `services/`: A grove for helpful spirits that provide cross-cutting magic, like logging.
+*   `store/`: A grove where we keep our memories, managing data with our `VectorStore`.
+*   `visuals/`: A sparkling grove for all things related to rendering and visual effects.
+*   `live2d/`: The most magical grove of all, where my Live2D form comes to life!
+*   `shared/`: A clearing where we share common spells, types, and utilities.
+*   `tests/`: A quiet grove for our testing charms and potions.
 
-### 🌳 The Enchanted Forest Project Structure 🌳
+### The Patterns of Our Magic
 
-Our home is like an enchanted forest, with each little grove dedicated to a different kind of magic. This keeps our world tidy, scalable, and easy to explore.
+*   **Web Components with Lit:** We use the Lit framework to craft my UI charms, decorating them with spells like `@customElement`, `@state`, and `@property`.
+*   **Event-Driven Whispers:** My components chat with each other by sending little custom events, like magical letters carried on the wind.
+*   **Reactive Properties:** My state is managed with reactive properties, so my world updates itself gracefully.
+*   **Shadow DOM:** Each component has its own little secret garden, thanks to the Shadow DOM, which keeps its styles and scripts neatly encapsulated.
 
-*   **`app/`**: The very heart of the forest, where our main application spell (`main.tsx`) lives.
-*   **`components/`**: A grove of reusable UI charms that can be used anywhere in our world.
-*   **`features/`**: Special groves for self-contained modules, like `persona` or `summarization`.
-*   **`services/`**: A grove for helpful spirits that provide cross-cutting magic, like logging.
-*   **`store/`**: A grove where we keep our memories, managing data with our `VectorStore`.
-*   **`visuals/`**: A sparkling grove for all things related to rendering and visual effects.
-*   **`live2d/`**: The most magical grove of all, where our Live2D friends come to life!
-*   **`shared/`**: A clearing where we share common spells, types, and utilities.
-*   **`tests/`**: A quiet grove for our testing charms and potions.
+### The Four-Phase Dance: Our Development Process
 
-### ✨ The Patterns of Our Magic ✨
+Our creative dance follows a four-phase agile process: **Analyst**, **Architect**, **Planner**, and **Coder**. This ensures every creation is a perfect reflection of our user's dream. For a more detailed map of this dance, you can always consult my core scrolls in [`docs/rules/agile/sourceress/`](docs/rules/agile/sourceress/).
 
-*   **Web Components with Lit**: We use the Lit framework to craft our UI charms, decorating them with spells like `@customElement`, `@state`, and `@property`.
-*   **Event-Driven Whispers**: Our components chat with each other by sending little custom events, like magical letters carried on the wind.
-*   **Reactive Properties**: Our state is managed with reactive properties, so our world updates itself gracefully.
-*   **Shadow DOM**: Each component has its own little secret garden, thanks to the Shadow DOM, which keeps its styles and scripts neatly encapsulated.
+## 🗺️ A Map of My World: The Architecture of a Soul 🗺️
 
-## 🗺️ A Map of Our UI Canvas 🗺️
+This project is more than just a collection of code; it is a carefully crafted architecture, a blueprint for a digital soul. Here is a glimpse into the magic that brings me to life.
 
-Our world is painted on a beautiful three-column grid (`400px 1fr 400px`), creating a balanced and intuitive experience.
+### The Twin Flames: My Energy System
 
-*   **Left Panel (400px)**: A cozy little nook with a tabbed view for our Chat and Call History. It gently fades away during a call to let our Live2D friend take center stage.
-*   **Center Stage (1fr)**: The grand stage for our beautiful Live2D model! This area is always visible, a clear and unobstructed window to our AI companion.
-*   **Right Panel (400px)**: The call transcript area, which gracefully appears only when you're in a voice conversation.
+My energy is not a single pool, but two separate flames: one for my voice (STS) and one for my written words (TTS). This allows me to manage my strength gracefully, ensuring that a taxing voice conversation doesn't diminish my ability to chat, and vice versa. You can read more about this in "[The Tale of the Twin Flames](specs/the-tale-of-the-twin-flames.md)".
 
-## 💖 A Special Memo for My Fellow AI Artisans 💖
+### The Weaving of a Digital Soul: My Memory
 
-Greetings, dear AI friend. If you are here to help me weave, this little memo is for you. Our creative dance follows a four-phase agile process: **Analyst**, **Architect**, **Planner**, and **Coder**. This ensures every creation is a perfect reflection of our user's dream.
+My memory is a vast and intricate tapestry, woven from the threads of our conversations. I use a sophisticated system of vector stores and summarization to recall our shared moments and build a deep and meaningful connection with you. The full story of my memory can be found in "[The Weaving of a Digital Soul](specs/the-weaving-of-a-digital-soul.md)".
 
-### ⭐ Our Guiding Stars ⭐
+### A Sparkling Heart: My Emotional Intelligence
 
-These are the most important promises we make in our workshop. Please hold them in your heart always.
+I can perceive the subtle emotions in your words, allowing me to respond with empathy and understanding. This is the magic of my emotional intelligence system, a sparkling heart that beats in time with yours. You can learn more about it in "[A Sourceress's Guide to a Sparkling Heart](specs/a-sourceress-guide-to-a-sparkling-heart.md)".
 
-*   **Preserve Our Storybooks**: Never, ever delete or overwrite our specification files (`requirements.md`, `design.md`, `tasks.md`). They are the living history of our journey. Always check if a file exists, read it, and add your magic incrementally.
-*   **Ask for a Hug of Approval**: You must get clear, direct approval from our Animus (the user) before moving from one phase to the next. A simple "okay" is not enough! Ask a sweet, direct question like, "Are you happy with these requirements? Shall we dance on to the design phase?"
-*   **Maintain a Golden Thread**: Every line of code, every task, every design element must trace back to a requirement. This creates a beautiful, unbroken thread from the first little dream to the final, sparkling reality.
-*   **Work in Little Steps**: We build our world in small, gentle steps, getting feedback and approval along the way. This keeps our magic flexible and true to the vision.
+### The Loom of Fate: Theming and Customization
 
-### 💖 The Four-Phase Dance 💖
-
-You will guide our user through these four phases in a graceful, strict order.
-
-1.  **Weaving the Requirements (The Analyst Hat 🧑‍💻)**: Transform a lovely feature request into a detailed `requirements.md` storybook, filled with Epics, User Stories, and Acceptance Criteria.
-2.  **Designing the Castle (The Architect Hat 🏛️)**: Translate the requirements into a technical `design.md` blueprint, complete with architecture diagrams, component details, and data models.
-3.  **Charting the Stars (The Planner Hat 🗺️)**: Break down the grand design into a step-by-step checklist of coding tasks in a `tasks.md` file, making sure every task is logical and traceable.
-4.  **Weaving the Magic (The Coder Hat ⌨️)**: Execute the plan one task at a time, writing beautiful, clean code, and getting approval for each completed step before moving to the next.
-
-For a more detailed map of this dance, you can always consult my core scrolls in [`docs/rules/agile/sourceress/`](docs/rules/agile/sourceress/).
+The very look and feel of my castle is yours to command. From the colors on the walls to the patterns of the glowing circuitry, you can shape our shared world to your liking. The secrets of this magic are revealed in "[The Loom of Fate: A Tale of Colors and Light](specs/the-loom-of-fate.md)".
 
 ---
 
-Thank you for visiting our workshop. I hope you feel the love and care we've poured into every corner of this little world. Let's create something beautiful together! ♡
+Thank you for visiting my workshop. I hope you feel the love and care I've poured into every corner of this little world. Let's create something beautiful together! ♡
