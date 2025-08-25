@@ -1,5 +1,4 @@
 import { type AIClient, BaseAIService } from "@features/ai/BaseAIService";
-import memoryExtractionPrompt from "@prompts/memory-extraction.prompt.md?raw";
 import { createComponentLogger } from "@services/DebugLogger";
 import type { VectorStore } from "@store/VectorStore";
 import type { Memory } from "./Memory";
@@ -42,83 +41,25 @@ export class MemoryService extends BaseAIService implements IMemoryService {
         transcriptLength: transcript.length,
       });
 
-      // Extract facts from the conversation using the AI model
-      const facts = await this.extractFacts(transcript, sessionId);
-
-      // Store each fact in the vector store
-      for (const fact of facts) {
-        await this.vectorStore.saveMemory({
-          ...fact,
-          personaId: sessionId,
-          timestamp: new Date(),
-          conversation_turn: transcript,
-        });
-      }
+      // Instead of extracting facts, we pass the transcript directly to the vector store
+      // The vector store will handle generating embeddings
+      await this.vectorStore.saveMemory({
+        fact_key: `conversation_${Date.now()}`,
+        fact_value: transcript,
+        confidence_score: 0.8, // Default confidence score
+        permanence_score: "contextual", // Default permanence score
+        personaId: sessionId,
+        timestamp: new Date(),
+        conversation_turn: transcript,
+      });
 
       logger.info("Memory processing completed for session", {
         sessionId,
-        factsCount: facts.length,
       });
     } catch (error) {
       logger.error("Failed to process and store memory", { error, sessionId });
       // Gracefully handle errors without crashing the main application
     }
-  }
-
-  /**
-   * Extract key facts from a conversation transcript using the AI model
-   * @param transcript The conversation transcript to analyze
-   * @param sessionId The user session ID
-   * @returns Array of extracted Memory objects
-   */
-  private async extractFacts(
-    transcript: string,
-    sessionId: string,
-  ): Promise<Omit<Memory, "personaId" | "timestamp" | "conversation_turn">[]> {
-    try {
-      // Load the memory extraction prompt
-      const prompt = await this.loadExtractionPrompt(transcript);
-
-      // Call the AI model to extract facts
-      // Instead of parsing, we pass raw response to NPU
-      await this.callAIModel(prompt);
-
-      // For now, return empty array as NPU will handle the raw response
-      return [];
-    } catch (error) {
-      logger.error("Failed to extract facts from transcript", {
-        error,
-        sessionId,
-      });
-      return []; // Return empty array on failure
-    }
-  }
-
-  /**
-   * Load the memory extraction prompt from the prompts directory
-   * @param transcript The conversation transcript to analyze
-   * @returns The formatted prompt string
-   */
-  private async loadExtractionPrompt(transcript: string): Promise<string> {
-    try {
-      // Dynamically load prompt from file and inject the transcript
-      return memoryExtractionPrompt.replace("{conversation}", transcript);
-    } catch (error) {
-      logger.error("Failed to load extraction prompt", { error });
-      // Return a fallback prompt
-      return `Extract key facts from this conversation and return them as a JSON array: ${transcript}`;
-    }
-  }
-
-  /**
-   * Parse and validate the AI model's response
-   * @param responseText The raw response text from the AI model
-   * @returns Array of validated Memory objects
-   */
-  private parseExtractionResponse(
-  ): Omit<Memory, "personaId" | "timestamp" | "conversation_turn">[] {
-    // Removed parser as NPU will handle raw response
-    return [];
   }
 
   /**
