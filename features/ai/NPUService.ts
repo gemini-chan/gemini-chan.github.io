@@ -5,7 +5,6 @@ import type { Turn, IntentionBridgePayload } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
 
 // Import prompt templates
-import emotionAnalysisPrompt from "@prompts/npu/emotion-analysis.prompt.md?raw";
 import unifiedPrompt from "@prompts/npu/unified.prompt.md?raw";
 import combinedPrompt from "@prompts/npu/combined-npu.prompt.md?raw";
 
