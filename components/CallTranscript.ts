@@ -21,7 +21,7 @@ export class CallTranscript extends LitElement {
   visible = false;
 
   @property({ type: String })
-  activePersonaName = "VTuber";
+  activePersonaName = "default";
 
   @property({ type: String })
   callState: "idle" | "connecting" | "active" | "ending" = "idle";

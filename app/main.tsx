@@ -820,7 +820,7 @@ export class GdmLiveAudio extends LitElement {
     if (activePersona.name === "Assistant") {
       return "Please provide your API key from AI Studio to proceed with the task.";
     }
-    if (activePersona.name === "VTuber") {
+    if (activePersona.name === "default") {
       return "P-please tell me ur API key from AI Studio 👉🏻👈🏻";
     }
     // Generic prompt for custom personas
