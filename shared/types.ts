@@ -29,10 +29,6 @@ export interface EmotionEvent {
  * This serves as the "Intention Bridge" to the VPU.
  */
 export interface IntentionBridgePayload {
-  /** The primary emotion detected in the user's input. */
-  emotion: "joy" | "sadness" | "anger" | "fear" | "surprise" | "neutral" | "curiosity";
-  /** The model's confidence in the detected emotion, from 0.0 to 1.0. */
-  emotion_confidence: number;
   /** The user's verbatim input, to be used as the prompt for the VPU's RAG response. */
   rag_prompt_for_vpu: string;
 }

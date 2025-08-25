@@ -82,8 +82,6 @@ export class NPUService {
 
     // The VPU will handle the raw response appropriately
     const payload: IntentionBridgePayload = {
-      emotion: "neutral", // VPU will handle actual emotional state from Flash Lite response
-      emotion_confidence: 0.5, // VPU will handle actual confidence from Flash Lite response
       rag_prompt_for_vpu: userInput, // Pass original user input, VPU will handle context
     };
 
