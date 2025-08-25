@@ -20,7 +20,7 @@ graph TD
         direction LR
         B1[1. Analyze Emotion]
         B2[2. Retrieve Relevant Memories]
-        B3[3. Construct Advisory Prompt]
+        B3[3. Prepare User Prompt for VPU]
         B1 --> B3;
         B2 --> B3;
     end
@@ -28,7 +28,7 @@ graph TD
     C -->|Sends enriched prompt to| D[VPUService];
     subgraph VPUService [VPU: The Voice of the Soul]
         direction LR
-        D1[Receives Advisory Prompt]
+        D1[Receives User Prompt]
         D2[Generates Speech & Expression]
     end
     D --> E[Vessel Speaks];
@@ -57,14 +57,14 @@ The `NPUService` will be refactored to be the central point of cognitive process
 
 The `VPUService` will be simplified. Its role is purely to vocalize.
 
-*   No new methods are required. It will simply receive the `advisory_prompt_for_vpu` from the `IntentionBridgePayload` and process it.
+*   No new methods are required. It will simply receive the `rag_prompt_for_vpu` from the `IntentionBridgePayload` and process it.
 
 ## 4. Data Models
 
 Memory retrieval and usage guidelines (from Core Memory v1):
 - Retrieval: perform a semantic search for top-K (default 5) memories with a relevance threshold (default 0.7). Prefer caching within a short TTL.
 - Formatting: present retrieved memories to the NPU as an internal context string; do not expose to the VPU directly.
-- Subtlety: the advisory prompt must never mention “memory” or “context” explicitly.
+- Subtlety: the context provided to the NPU must not be mentioned in the VPU's final response.
 
 
 The "Intention Bridge" is the most critical data structure in this design. It ensures a lossless transfer of context and intent.
@@ -91,11 +91,11 @@ export interface IntentionBridgePayload {
    * The final, structured prompt to be sent to the VPU.
    * This is not just a string, but a carefully constructed set of instructions.
    */
-  advisory_prompt_for_vpu: string;
+  rag_prompt_for_vpu: string;
 }
 ```
 
-The `advisory_prompt_for_vpu` string itself will be constructed by the NPU's generative model call, following the template defined in the requirements:
+The `rag_prompt_for_vpu` is the user's verbatim input. The VPU uses this as the query for its RAG-based response generation.
 
 1.  **Relevant Memories:** (e.g., "REMEMBER: The user enjoys discussing philosophy.")
 2.  **Perceived Intent:** (e.g., "INTENT: The user seems curious and wants a deeper explanation.")
@@ -115,7 +115,7 @@ The `advisory_prompt_for_vpu` string itself will be constructed by the NPU's gen
 *   In a fallback scenario, the `analyzeAndAdvise` method will construct a "default" `IntentionBridgePayload`.
     *   `emotion` will be set to `"neutral"`.
     *   `emotion_confidence` will be set to `0.5`.
-    *   `advisory_prompt_for_vpu` will simply be the original, unmodified `userInput`.
+    *   `rag_prompt_for_vpu` will simply be the original, unmodified `userInput`.
 *   This ensures that even if the NPU's complex analysis fails, the VPU still receives a valid prompt, preventing the "silent vessel" issue and allowing the conversation to continue.
 
 ## 6. Testing Strategy

@@ -26,15 +26,15 @@ export interface UnifiedContext {
   enhancedPrompt: string;
 }
 
-// New v1 Intention Bridge shape for model output
-interface ModelIntentionBridgePayloadLike {
+// The model will now only return emotion analysis.
+interface ModelEmotionAnalysisLike {
   emotion?: IntentionBridgePayload["emotion"] | string;
   emotion_confidence?: number;
-  advisory_prompt_for_vpu?: string;
   // Back-compat keys the model might return
   analysis?: { emotion?: string; confidence?: number };
-  prompt_for_vpu?: string;
   confidence?: number;
+  rag_prompt_for_vpu?: string;
+  prompt_for_vpu?: string;
 }
 
 export class NPUService {
@@ -88,7 +88,7 @@ export class NPUService {
     const payload: IntentionBridgePayload = {
       emotion: "neutral",
       emotion_confidence: 0.5,
-      advisory_prompt_for_vpu: userInput,
+      rag_prompt_for_vpu: userInput,
     };
 
     if (responseText) {
@@ -98,7 +98,7 @@ export class NPUService {
           .replace(/^```\s*/, "")
           .replace(/```$/, "")
           .trim();
-        const parsed = JSON.parse(cleaned) as ModelIntentionBridgePayloadLike;
+        const parsed = JSON.parse(cleaned) as ModelEmotionAnalysisLike;
 
         // emotion
         let em = parsed.emotion ?? parsed?.analysis?.emotion;
@@ -114,18 +114,14 @@ export class NPUService {
           payload.emotion_confidence = conf;
         }
 
-        // advisory prompt
-        const ap = parsed.advisory_prompt_for_vpu ?? parsed.prompt_for_vpu;
-        if (typeof ap === "string" && ap.trim()) {
-          payload.advisory_prompt_for_vpu = ap;
+        // Per user instruction, the prompt for the VPU is now the original user input.
+        payload.rag_prompt_for_vpu = userInput;
+
         logger.info("analyzeAndAdvise: parsed intention", {
           emotion: payload.emotion,
           confidence: payload.emotion_confidence,
-          hasAdvisory: !!payload.advisory_prompt_for_vpu?.length,
+          hasRagPrompt: !!payload.rag_prompt_for_vpu?.length,
         });
-        } else {
-          payload.advisory_prompt_for_vpu = this.formulateEnhancedPrompt(userInput, memoryContext, conversationContext);
-        }
       } catch (error) {
         logger.error("Failed to parse analyzeAndAdvise JSON", { error, responseText });
       }
@@ -206,7 +202,7 @@ export class NPUService {
           .replace(/^```\s*/, "")
           .replace(/```$/, "")
           .trim();
-        const parsed = JSON.parse(cleanedResponseText) as ModelIntentionBridgePayloadLike;
+        const parsed = JSON.parse(cleanedResponseText) as ModelEmotionAnalysisLike;
 
         // Extract emotion
         let parsedEmotion = parsed.emotion ?? parsed?.analysis?.emotion;
@@ -237,7 +233,7 @@ export class NPUService {
         }
 
         // Extract advisory prompt
-        const vpuPrompt = parsed.advisory_prompt_for_vpu ?? parsed.prompt_for_vpu;
+        const vpuPrompt = parsed.rag_prompt_for_vpu ?? parsed.prompt_for_vpu;
         if (typeof vpuPrompt === "string" && vpuPrompt.trim()) {
           enhancedPrompt = vpuPrompt;
         } else {
@@ -285,14 +281,13 @@ export class NPUService {
       : "";
 
     return [
-      "SYSTEM: You are an intelligent Neural Processing Unit (NPU). Analyze the user's message, assess their emotion, recall relevant memories, and construct a single IntentionBridgePayload JSON.",
+      "SYSTEM: You are an intelligent Neural Processing Unit (NPU). Your task is to analyze the user's message for its emotional content, considering the provided conversation context and memories.",
       "Respond ONLY with a single, valid JSON object matching this TypeScript interface:",
-      "interface IntentionBridgePayload { emotion: 'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'neutral' | 'curiosity'; emotion_confidence: number; advisory_prompt_for_vpu: string; }",
+      "interface EmotionAnalysis { emotion: 'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'neutral' | 'curiosity'; emotion_confidence: number; }",
       "Rules:",
-      "- Always include the exact keys: emotion, emotion_confidence, advisory_prompt_for_vpu.",
+      "- Always include the exact keys: emotion, emotion_confidence.",
       "- emotion must be lowercase and one of the allowed values.",
       "- emotion_confidence must be a float between 0 and 1.",
-      "- advisory_prompt_for_vpu must preserve the user's original message verbatim, enriched with relevant context, without explicitly mentioning memories.",
       contextSection ? contextSection : undefined,
       `USER'S MESSAGE:\n${userMessage}`,
       "Return ONLY the JSON object. No markdown fences, no commentary.",

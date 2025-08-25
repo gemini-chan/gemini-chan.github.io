@@ -21,7 +21,7 @@ This phase focuses on reshaping the NPU and VPU services to align with the new, 
     *   **Traceability:** `Ref: Design sections 3.1, 5`
 
 *   [ ] **Task 1.4: Implement the Unified Gemini API Prompt**
-    *   **Description:** Create a new private method within `NPUService.ts` that constructs the complex prompt for the Gemini API. This prompt must instruct the model to perform emotion analysis, memory recall, and advisory prompt construction, returning a single JSON object.
+    *   **Description:** Create a new private method within `NPUService.ts` that constructs the prompt for the Gemini API. This prompt must instruct the model to perform emotion analysis and return a single JSON object containing `emotion` and `emotion_confidence`.
     *   **Traceability:** `Ref: Requirement 1.1, 1.3, Design section 3.1`
 
 *   [ ] **Task 1.5: Implement the Core `analyzeAndAdvise` Logic**
@@ -37,7 +37,7 @@ This phase wires the newly refactored services into the main application control
     *   **Traceability:** `Ref: Design section 2`
 
 *   [ ] **Task 2.2: Pass the Enriched Prompt to the VPU**
-    *   **Description:** In `app/main.tsx`, take the `advisory_prompt_for_vpu` from the returned `IntentionBridgePayload` and pass it to the `textSessionManager.sendMessage` method (which communicates with the VPU).
+    *   **Description:** In `app/main.tsx`, take the `rag_prompt_for_vpu` from the returned `IntentionBridgePayload` and pass it to the `textSessionManager.sendMessage` method (which communicates with the VPU).
     *   **Traceability:** `Ref: Design section 2, 3.2`
 
 *   [ ] **Task 2.3: Update Live2D with Unified Emotion Data**

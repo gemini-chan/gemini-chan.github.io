@@ -29,7 +29,7 @@ This epic defines the NPU's singular role as the interpreter of the user's true 
 - Memory integration practices from Core Memory v1 are preserved:
   - Retrieval is per-turn and driven by the latest user input.
   - Memories are used to enrich but never replace the user’s raw message.
-  - The VPU receives only the advisory prompt; internal context is never exposed.
+  - The VPU receives the user's verbatim input as the `rag_prompt_for_vpu`; internal context is never exposed.
 
 
 *   **Story 1.1: Holistic Input Analysis**
@@ -53,7 +53,7 @@ This epic defines the NPU's singular role as the interpreter of the user's true 
 
 *   **Story 1.3: Advising the VPU with an Enriched Prompt**
     *   **As the** Sourceress,
-    *   **I want** the NPU to construct an advisory prompt for the VPU that enriches, but does not replace, my original message,
+    *   **I want** the NPU to pass my original message verbatim to the VPU in the `rag_prompt_for_vpu` field,
     *   **so that** the VPU receives my unmodified intent, framed by relevant context, preventing any "broken telephone" distortion and ensuring a natural, non-uncanny response.
     *   **Acceptance Criteria:**
         *   **Given** the NPU has analyzed the input and retrieved memories,

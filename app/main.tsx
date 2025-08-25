@@ -1030,16 +1030,9 @@ export class GdmLiveAudio extends LitElement {
     );
     this.currentEmotion = intention.emotion;
 
-    // If debug mode is on, show the prompt in the UI
-    if (this.vpuDebugMode) {
-      this._appendTextMessage(
-        `[VPU Debug] Advisory Prompt:\n---\n${intention.advisory_prompt_for_vpu}`,
-        "model",
-        true
-      );
-    }
+    // The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-    this.textSessionManager.sendMessage(intention.advisory_prompt_for_vpu);
+    this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
   }
 
   private _scrollCallTranscriptToBottom() {
@@ -1128,16 +1121,9 @@ export class GdmLiveAudio extends LitElement {
         );
         this.currentEmotion = intention.emotion;
 
-        // If debug mode is on, show the prompt in the UI
-        if (this.vpuDebugMode) {
-          this._appendTextMessage(
-            `[VPU Debug] Advisory Prompt:\n---\n${intention.advisory_prompt_for_vpu}`,
-            "model",
-            true
-          );
-        }
+        // The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-        this.textSessionManager.sendMessage(intention.advisory_prompt_for_vpu);
+        this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
       } catch (error) {
         logger.error("Error sending message to text session (unified flow):", {
           error,
@@ -1160,15 +1146,8 @@ export class GdmLiveAudio extends LitElement {
             );
             this.currentEmotion = intention.emotion;
 
-            // If debug mode is on, show the prompt in the UI
-            if (this.vpuDebugMode) {
-              this._appendTextMessage(
-                `[VPU Debug] Advisory Prompt:\n---\n${intention.advisory_prompt_for_vpu}`,
-                "model",
-                true
-              );
-            }
-            this.textSessionManager.sendMessage(intention.advisory_prompt_for_vpu);
+            // The advisory prompt is now the user's direct input, so the debug message is redundant.
+            this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
           } catch (retryError) {
             logger.error("Failed to send message on retry:", { retryError });
             this.updateError(
