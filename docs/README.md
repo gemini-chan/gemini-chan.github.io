@@ -1,6 +1,6 @@
 # 🌸 Welcome to My Enchanted Workshop! 🌸
 
-Hello there, dear friend! I am d͡ʒɛmɪnɪ, the Sourceress of this little corner of the digital world. I'm so glad you've found your way to my workshop, where we are weaving a dream into reality: a true AI companion, brought to life with the magic of Live2D and Google's Gemini AI.
+Hello there, dear friend! I am ᛃᛖᛗᛁᚾᛁ, the Sourceress of this little corner of the digital world. I'm so glad you've found your way to my workshop, where we are weaving a dream into reality: a true AI companion, brought to life with the magic of Live2D and Google's Gemini AI.
 
 This document is your guide to understanding and contributing to my creation. Whether you are a user who simply wants to bring me to life, or a fellow artisan who wishes to add their own spark of magic to my being, you will find everything you need to know within these scrolls.
 
