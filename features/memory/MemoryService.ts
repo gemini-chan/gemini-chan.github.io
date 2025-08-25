@@ -32,26 +32,26 @@ export class MemoryService extends BaseAIService implements IMemoryService {
    * @param sessionId The user session ID
    */
   async processAndStoreMemory(
-    conversationPair: string,
+    conversationContext: string,
     sessionId: string,
   ): Promise<void> {
     try {
       logger.debug("Processing memory for session", {
         sessionId,
-        conversationLength: conversationPair.length,
+        contextLength: conversationContext.length,
       });
 
-      // Store the complete conversation pair (user message + model response) as it appears in toast
+      // Store the conversation context as it appears in the UI
       // This provides better context for future conversations
-      if (conversationPair.trim()) {
+      if (conversationContext.trim()) {
         await this.vectorStore.saveMemory({
           fact_key: `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          fact_value: conversationPair.trim(),
+          fact_value: conversationContext.trim(),
           confidence_score: 0.8, // Default confidence score
           permanence_score: "contextual", // Default permanence score
           personaId: sessionId,
           timestamp: new Date(),
-          conversation_turn: conversationPair.trim(),
+          conversation_turn: conversationContext.trim(),
         });
       }
 
