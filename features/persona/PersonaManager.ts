@@ -70,10 +70,10 @@ export class PersonaManager {
     const activePersona = this.personas.find((p) => p.id === activeId);
 
     if (!activePersona) {
-      // Default to VTuber for a good first-time experience.
-      const vtuberPersona = this.personas.find((p) => p.name === "VTuber");
-      if (vtuberPersona) {
-        this.setActivePersona(vtuberPersona.id);
+      // If no active persona is set, default to the one marked as default.
+      const defaultPersona = this.personas.find((p) => p.isDefault);
+      if (defaultPersona) {
+        this.setActivePersona(defaultPersona.id);
       }
     }
 
