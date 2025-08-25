@@ -85,28 +85,33 @@ The Neural Processing Unit (NPU) follows a specific flow for processing user inp
 
 ```mermaid
 graph TD
-    A[User Input] --> B[Embedding Model]
-    A --> C[NPU Analysis]
-    B --> D[Embeddings]
-    C --> E[Emotion Analysis]
-    D --> F[VPU RAG Prompt]
-    E --> F
-    F --> G[VPU Input]
+    A[User Input] --> B[NPUService]
+    B --> C[MemoryService.retrieveRelevantMemories]
+    C --> D[VectorStore.searchMemories]
+    D --> E[VectorStore.generateQueryEmbedding]
+    B --> F[Gemini Flash Lite Model]
+    C --> F
+    F --> G[Optimized RAG Emotionally Enriched Prompt]
+    B --> H[VPUService]
+    G --> H
+    A --> H
     
     style A fill:#ffe4e1,stroke:#333
     style B fill:#e6f3ff,stroke:#333
     style C fill:#e6f3ff,stroke:#333
     style D fill:#fff2e6,stroke:#333
     style E fill:#fff2e6,stroke:#333
-    style F fill:#f0f0f0,stroke:#333
+    style F fill:#e6f3ff,stroke:#333
     style G fill:#f0f0f0,stroke:#333
+    style H fill:#f0f0f0,stroke:#333
 ```
 
 The process works as follows:
-1. User input is sent to the embedding model to generate embeddings
-2. User input is also analyzed by the NPU for emotional content
-3. Embeddings and emotion analysis are combined to create a RAG-enhanced prompt for the VPU
-4. The enhanced prompt is passed to the VPU for response generation
+1. User input is sent to the NPUService
+2. NPUService retrieves relevant memories using the MemoryService. VectorStore generates embeddings for the raw user query and compares them to stored memory embeddings
+3. NPUService queries gemini flash lite model with the transcript of LAST 5 user and 5 assistant turns and raw embeddings from memory service
+4. Flash lite should output optimized RAG emotionally enriched prompt
+5. NPUService sends the prompt from gemini flash lite to the VPUService together with the initial RAW user message so the anime girl (Gemini Live) can respond appropriately
 
 ---
 
