@@ -1134,7 +1134,7 @@ export class GdmLiveAudio extends LitElement {
 			this.textTranscript,
 			conversationContext,
 		);
-		this.currentEmotion = intention.emotion;
+		// Removed usage of intention.emotion as it's no longer part of the interface
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
@@ -1237,7 +1237,7 @@ export class GdmLiveAudio extends LitElement {
 					personaId,
 					this.textTranscript,
 				);
-				this.currentEmotion = intention.emotion;
+				// Removed usage of intention.emotion as it's no longer part of the interface
 
 				this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
 			} catch (error) {
@@ -1261,7 +1261,7 @@ export class GdmLiveAudio extends LitElement {
 							personaId,
 							this.textTranscript,
 						);
-						this.currentEmotion = intention.emotion;
+						// Removed usage of intention.emotion as it's no longer part of the interface
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
 						this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
@@ -1352,16 +1352,8 @@ export class GdmLiveAudio extends LitElement {
 			}
 
 			const ttsEnergy = energyBarService.getCurrentEnergyLevel("tts");
-			const emotion = await this.npuService.analyzeTranscriptEmotion(newTurns);
-			if (emotion && emotion !== this.currentEmotion) {
-				logger.debug("Emotion updated (delta analysis)", {
-					from: this.currentEmotion,
-					to: emotion,
-					ttsEnergy,
-					analyzedCount: newTurns.length,
-				});
-				this.currentEmotion = emotion;
-			}
+			// Removed usage of analyzeTranscriptEmotion as it's no longer part of the NPUService
+			// No emotion analysis is performed here anymore
 
 			// Update the index to the full length after processing
 			this.lastAnalyzedTranscriptIndex = transcript.length;
