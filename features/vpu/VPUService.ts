@@ -477,6 +477,7 @@ export class TextSessionManager extends BaseSessionManager {
     updateError: (msg: string) => void,
     onRateLimit: (msg: string) => void,
     private updateTranscript: (text: string) => void,
+    private onTurnComplete: () => void,
     private personaManager: PersonaManager,
     private npuService: NPUService,
     private memoryService: MemoryService,
@@ -513,13 +514,9 @@ export class TextSessionManager extends BaseSessionManager {
           await base.onmessage(message);
         }
 
-        // Handle text response for transcript (after base processing)
-        if (modelTurn) {
-          const lastPart = modelTurn.parts[modelTurn.parts.length - 1];
-          const text = lastPart.text;
-          if (text) {
-            this.updateTranscript(text);
-          }
+        // Handle audio transcription for captions
+        if (message.serverContent?.outputTranscription?.text) {
+          this.updateTranscript(message.serverContent.outputTranscription.text);
         }
 
         // After turn is complete, process for memory storage
@@ -527,6 +524,7 @@ export class TextSessionManager extends BaseSessionManager {
         const genComplete = extendedMessage.serverContent?.generationComplete;
         if (genComplete) {
           this.processMemoryAfterTurn();
+          this.onTurnComplete();
         }
       },
     };
@@ -577,6 +575,7 @@ export class TextSessionManager extends BaseSessionManager {
 
     return {
       responseModalities: [Modality.AUDIO],
+      outputAudioTranscription: {}, // Enable transcription of model's audio output
       contextWindowCompression: { slidingWindow: {} },
       systemInstruction,
       speechConfig: {

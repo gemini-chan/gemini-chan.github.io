@@ -68,6 +68,8 @@ export class GdmLiveAudio extends LitElement {
   @state() status = "";
   @state() error = "";
   @state() private _toastVisible = false;
+  private ttsCaption = "";
+  private ttsCaptionClearTimer: ReturnType<typeof setTimeout> | undefined;
   private _statusHideTimer: ReturnType<typeof setTimeout> | undefined =
     undefined;
   private _statusClearTimer: ReturnType<typeof setTimeout> | undefined =
@@ -310,7 +312,8 @@ export class GdmLiveAudio extends LitElement {
         this.updateStatus.bind(this),
         this.updateError.bind(this),
         this._handleTextRateLimit.bind(this),
-        this.updateTextTranscript.bind(this),
+        this._handleTtsCaptionUpdate.bind(this),
+        this._handleTtsTurnComplete.bind(this),
         this.personaManager,
         this.npuService,
         this.memoryService,
@@ -441,8 +444,10 @@ export class GdmLiveAudio extends LitElement {
   }
 
   private updateTextTranscript(text: string) {
+    // This method is now only for injecting system messages, not for streaming model responses.
+    // Streaming responses are handled by _handleTtsCaptionUpdate.
     const lastTurn = this.textTranscript[this.textTranscript.length - 1];
-    if (lastTurn?.speaker === "model") {
+    if (lastTurn?.speaker === "model" && !lastTurn.isSystemMessage) {
       lastTurn.text += text;
       this.requestUpdate("textTranscript");
     } else {
@@ -735,6 +740,33 @@ export class GdmLiveAudio extends LitElement {
 
     // Text session will be lazily initialized when user sends next message
     this.updateStatus("Text conversation cleared.");
+  }
+
+  private _handleTtsCaptionUpdate(text: string) {
+    // Clear any pending timer to clear the caption
+    if (this.ttsCaptionClearTimer) {
+      clearTimeout(this.ttsCaptionClearTimer);
+      this.ttsCaptionClearTimer = undefined;
+    }
+
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification#inline-toast",
+    ) as ToastNotification;
+    this.ttsCaption += text;
+    // Use a non-hiding toast; it will be cleared manually on turn completion
+    toast?.show(this.ttsCaption, "info", 0);
+  }
+
+  private _handleTtsTurnComplete() {
+    // Set a timer to hide the caption toast and clear the caption text
+    this.ttsCaptionClearTimer = setTimeout(() => {
+      const toast = this.shadowRoot?.querySelector(
+        "toast-notification#inline-toast",
+      ) as ToastNotification;
+      toast?.hide();
+      this.ttsCaption = "";
+      this.ttsCaptionClearTimer = undefined;
+    }, 2500); // Keep caption on screen for 2.5s after speech ends
   }
 
   private _resetCallContext() {
@@ -1086,6 +1118,17 @@ export class GdmLiveAudio extends LitElement {
     if (!this._checkApiKeyExists()) {
       this._showApiKeyPrompt(() => this._handleSendMessage(e));
       return;
+    }
+
+    // Clear any existing captions when the user sends a new message
+    this.ttsCaption = "";
+    const toast = this.shadowRoot?.querySelector(
+      "toast-notification#inline-toast",
+    ) as ToastNotification;
+    toast?.hide();
+    if (this.ttsCaptionClearTimer) {
+      clearTimeout(this.ttsCaptionClearTimer);
+      this.ttsCaptionClearTimer = undefined;
     }
 
     // Add message to text transcript

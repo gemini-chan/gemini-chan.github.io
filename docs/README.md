@@ -330,6 +330,7 @@ When working with our specifications, please always check for existing versions 
 | Missing information for implementation | Conduct research and create a `research-summary.md` | Ensures informed design decisions before coding begins |
 | Performance issues with memory retrieval | Implement timeout mechanisms and graceful degradation | Maintains user experience even when systems are slow |
 | API rate limits | Implement energy bar system with model switching | Provides clear feedback and optimizes resource usage |
+| Requesting both TTS audio and text transcript | Request `Modality.AUDIO` and enable `outputAudioTranscription` separately. | The Gemini Live API does not support requesting `Modality.TEXT` and `Modality.AUDIO` in the same `responseModalities` call for TTS. |
 
 ---
 
