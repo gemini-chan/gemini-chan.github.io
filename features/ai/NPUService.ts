@@ -80,11 +80,10 @@ export class NPUService {
       }
     }
 
-    // Instead of parsing, pass the raw response to VPU
     // The VPU will handle the raw response appropriately
     const payload: IntentionBridgePayload = {
-      emotion: "neutral",
-      emotion_confidence: 0.5,
+      emotion: "neutral", // VPU will handle actual emotional state from Flash Lite response
+      emotion_confidence: 0.5, // VPU will handle actual confidence from Flash Lite response
       rag_prompt_for_vpu: userInput, // Pass original user input, VPU will handle context
     };
 
@@ -100,8 +99,6 @@ export class NPUService {
     private memoryService: MemoryService,
   ) {}
 
-
-  // v1 unified prompt for model to return IntentionBridgePayload JSON
   // Build combined prompt for single Flash Lite model call
   private buildCombinedPrompt(
     userMessage: string,
@@ -127,11 +124,5 @@ export class NPUService {
       .replace("{context}", contextSection)
       .replace("{userMessage}", userMessage);
   }
-
-
-  /**
-   * Formats retrieved memories into a clean context string for the prompt.
-   */
- 
  
  }
