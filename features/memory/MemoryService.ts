@@ -90,7 +90,7 @@ Additionally, infer an "emotional_flavor" (e.g., joy, sadness, anger, calm, anxi
 The user's emotional state is: ${emotionalFlavor || "neutral"}
 The model's emotional state is: ${modelEmotion || "neutral"}
 
-For each fact, also identify whether it's about the user ("user"), about the model's responses ("model"), or about the interaction between user and model ("interaction").
+For each fact, also identify whether it's about the user ("user") or about the model's responses ("model").
 
 If EMOTIONAL CONTEXT is provided, use it to bias your inference. If not, infer from the turn text itself.
 
@@ -116,7 +116,7 @@ JSON array of facts:`;
         permanence_score: string;
         emotional_flavor?: string;
         emotion_confidence?: number;
-        source?: "user" | "model" | "interaction";
+        source?: "user" | "model";
       }
       
       let facts: ExtractedFact[] = [];
