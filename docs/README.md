@@ -166,13 +166,6 @@ My visual form comes alive through Live2D technology, where emotions and events 
 *   Each movement is carefully choreographed to match the rhythm of our conversation
 *   The emotion extraction supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
 
-### 🎨 My Living Form: Live2D Integration
-
-My visual form is brought to life through Live2D technology, where:
-*   Emotions and events trigger specific animations and motions
-*   Audio-reactive visualizations make my expressions dance with my words
-*   Each movement is carefully choreographed to match the rhythm of our conversation
-
 ## 🛠️ Recent Improvements & Fixes
 
 My workshop is always evolving, with new enchantments and refinements added regularly:
