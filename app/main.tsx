@@ -1176,6 +1176,7 @@ private _handleTtsCaptionUpdate(text: string) {
 		  undefined,
 		);
 		// Removed usage of intention.emotion as it's no longer part of the interface
+		this.lastAdvisorContext = intention?.advisor_context || "";
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
@@ -1278,6 +1279,7 @@ private _handleTtsCaptionUpdate(text: string) {
 					undefined,
 				);
 				// Removed usage of intention.emotion as it's no longer part of the interface
+				this.lastAdvisorContext = intention?.advisor_context || "";
 
 				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
 			} catch (error) {
@@ -1301,6 +1303,7 @@ private _handleTtsCaptionUpdate(text: string) {
 							undefined,
 						);
 						// Removed usage of intention.emotion as it's no longer part of the interface
+						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
 						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
