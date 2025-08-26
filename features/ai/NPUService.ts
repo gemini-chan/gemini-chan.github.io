@@ -161,7 +161,7 @@ export class NPUService {
     }
 
     try {
-      // Parse the plain text response
+      // Parse the plain text response with more robust error handling
       const lines = responseText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
       
       // Initialize default values
@@ -169,45 +169,59 @@ export class NPUService {
       let modelEmotion: { label?: string; confidence?: number } = { label: "neutral", confidence: 0.5 };
       let advisorContext = "";
       
-      // Parse USER_EMOTION line
+      // Parse USER_EMOTION line with more robust regex
       const userEmotionLine = lines.find(line => line.startsWith("USER_EMOTION:"));
       if (userEmotionLine) {
-        const userEmotionMatch = userEmotionLine.match(/USER_EMOTION:\s*(\w+)\s*\(confidence=([0-9.]+)\)/);
-        if (userEmotionMatch) {
-          userEmotion = {
-            label: userEmotionMatch[1],
-            confidence: parseFloat(userEmotionMatch[2])
-          };
+        // More robust regex that handles various whitespace scenarios
+        const userEmotionMatch = userEmotionLine.match(/USER_EMOTION:\s*([\w\-]+)\s*\(\s*confidence\s*=\s*([0-9.]+)\s*\)/i);
+        if (userEmotionMatch && userEmotionMatch.length >= 3) {
+          const confidence = parseFloat(userEmotionMatch[2]);
+          if (!isNaN(confidence) && confidence >= 0 && confidence <= 1) {
+            userEmotion = {
+              label: userEmotionMatch[1].toLowerCase(),
+              confidence: confidence
+            };
+          }
         }
       }
       
-      // Parse MODEL_EMOTION line
+      // Parse MODEL_EMOTION line with more robust regex
       const modelEmotionLine = lines.find(line => line.startsWith("MODEL_EMOTION:"));
       if (modelEmotionLine) {
-        const modelEmotionMatch = modelEmotionLine.match(/MODEL_EMOTION:\s*(\w+)\s*\(confidence=([0-9.]+)\)/);
-        if (modelEmotionMatch) {
-          modelEmotion = {
-            label: modelEmotionMatch[1],
-            confidence: parseFloat(modelEmotionMatch[2])
-          };
+        // More robust regex that handles various whitespace scenarios
+        const modelEmotionMatch = modelEmotionLine.match(/MODEL_EMOTION:\s*([\w\-]+)\s*\(\s*confidence\s*=\s*([0-9.]+)\s*\)/i);
+        if (modelEmotionMatch && modelEmotionMatch.length >= 3) {
+          const confidence = parseFloat(modelEmotionMatch[2]);
+          if (!isNaN(confidence) && confidence >= 0 && confidence <= 1) {
+            modelEmotion = {
+              label: modelEmotionMatch[1].toLowerCase(),
+              confidence: confidence
+            };
+          }
         }
       }
       
-      // Parse ADVISOR_CONTEXT section
+      // Parse ADVISOR_CONTEXT section with improved logic
       const advisorContextStartIndex = lines.findIndex(line => line.startsWith("ADVISOR_CONTEXT:"));
       if (advisorContextStartIndex !== -1) {
-        // Get all lines after ADVISOR_CONTEXT until we hit another section or end
-        const advisorLines = lines.slice(advisorContextStartIndex + 1);
-        // Filter out empty lines and lines that look like new sections
-        const contextLines = advisorLines.filter(line =>
-          line.startsWith("•") ||
-          (!line.includes(":") && !line.startsWith("USER_EMOTION:") && !line.startsWith("MODEL_EMOTION:"))
-        );
+        // Collect lines until we hit another section header or reach the end
+        const contextLines: string[] = [];
+        for (let i = advisorContextStartIndex + 1; i < lines.length; i++) {
+          const line = lines[i];
+          // Stop if we encounter another section header
+          if (line.startsWith("USER_EMOTION:") || line.startsWith("MODEL_EMOTION:")) {
+            break;
+          }
+          // Add bullet points or non-empty lines that don't look like section headers
+          if (line.startsWith("•") || (!line.includes(":") && line.trim())) {
+            contextLines.push(line);
+          }
+        }
         advisorContext = contextLines.join("\n");
       }
       
       // If no advisor context was parsed, use fallback
-      if (!advisorContext.trim()) {
+      if (!advisorContext.trim() || advisorContext.trim().toLowerCase() === "none") {
         advisorContext = fallbackContext;
       }
       
