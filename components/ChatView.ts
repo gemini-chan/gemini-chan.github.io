@@ -441,37 +441,38 @@ export class ChatView extends LitElement {
       }
     }
   }
+private async _updateScrollToBottomState() {
+  // Await a microtask to allow the DOM to update before we measure it
+  await new Promise(resolve => setTimeout(resolve, 0));
 
-  private _updateScrollToBottomState() {
-    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-    if (transcriptEl) {
-      const state = defaultAutoScroll.getScrollToBottomState(
-        transcriptEl,
-        this.transcript.length,
-        this.lastSeenMessageCount,
-      );
-      this.newMessageCount = state.newMessageCount;
-      log.debug("Scroll to bottom state updated", {
-        showButton: state.showButton,
-        newMessageCount: state.newMessageCount,
-      });
+  const transcriptEl = this.shadowRoot?.querySelector(".transcript");
+  if (transcriptEl) {
+    const state = defaultAutoScroll.getScrollToBottomState(
+      transcriptEl,
+      this.transcript.length,
+      this.lastSeenMessageCount,
+    );
+    this.newMessageCount = state.newMessageCount;
+    log.debug("Scroll to bottom state updated", {
+      showButton: state.showButton,
+      newMessageCount: state.newMessageCount,
+    });
 
-      // Dispatch event to notify parent component of scroll state changes
-      const detail = {
-        showButton: state.showButton,
-        newMessageCount: state.newMessageCount,
-      };
-      log.debug("Scroll state changed", detail);
-      this.dispatchEvent(
-        new CustomEvent("scroll-state-changed", {
-          detail,
-          bubbles: true,
-          composed: true,
-        }),
-      );
-    }
+    // Dispatch event to notify parent component of scroll state changes
+    const detail = {
+      showButton: state.showButton,
+      newMessageCount: state.newMessageCount,
+    };
+    log.debug("Scroll state changed", detail);
+    this.dispatchEvent(
+      new CustomEvent("scroll-state-changed", {
+        detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
-
+}
   private _scrollToBottom() {
     log.debug("Scrolling to bottom");
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");

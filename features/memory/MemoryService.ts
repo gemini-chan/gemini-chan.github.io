@@ -16,6 +16,7 @@ export interface IMemoryService {
   getAllMemories(): Promise<Memory[]>;
   deleteMemory(memoryId: number): Promise<void>;
   deleteAllMemories(): Promise<void>;
+  extractAndStoreFacts(turns: string, sessionId: string): Promise<void>; // New method
 }
 
 export class MemoryService extends BaseAIService implements IMemoryService {
@@ -61,6 +62,65 @@ export class MemoryService extends BaseAIService implements IMemoryService {
     } catch (error) {
       logger.error("Failed to process and store memory", { error, sessionId });
       // Gracefully handle errors without crashing the main application
+    }
+  }
+
+  /**
+   * Extract facts from a conversation turn and store them
+   * @param turns The conversation turns to process
+   * @param sessionId The user session ID
+   */
+  async extractAndStoreFacts(
+    turns: string,
+    sessionId: string,
+  ): Promise<void> {
+    try {
+      logger.debug("Extracting facts from turns", {
+        sessionId,
+        turnsLength: turns.length,
+      });
+
+      // Use Flash Lite to extract facts
+      const prompt = `Extract key facts from the following conversation turn. Return a JSON array of facts with keys "fact_key", "fact_value", "confidence_score", and "permanence_score".
+Examples of facts:
+- "user_name": "Alex"
+- "user_occupation": "software developer"
+- "user_emotional_state": "nervous"
+- "user_current_mood": "tired"
+
+Conversation turn:
+${turns}
+
+JSON array of facts:`;
+
+      const response = await this.callAIModel(prompt);
+      let facts;
+      try {
+        facts = JSON.parse(response);
+      } catch (parseError) {
+        logger.error("Failed to parse facts from Flash Lite response", { parseError, response });
+        return;
+      }
+
+      // Store each fact
+      for (const fact of facts) {
+        await this.vectorStore.saveMemory({
+          fact_key: fact.fact_key,
+          fact_value: fact.fact_value,
+          confidence_score: fact.confidence_score,
+          permanence_score: fact.permanence_score,
+          personaId: sessionId,
+          timestamp: new Date(),
+          conversation_turn: turns,
+        });
+      }
+
+      logger.info("Fact extraction and storage completed for session", {
+        sessionId,
+        factCount: facts.length,
+      });
+    } catch (error) {
+      logger.error("Failed to extract and store facts", { error, sessionId });
     }
   }
 
