@@ -19,6 +19,7 @@ import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
 import "@components/SettingsMenu";
+import { parseModelEmotion } from "@live2d/model-emotion-parser";
 import "@components/ChatView";
 import "@components/CallTranscript";
 import type { EnergyLevelChangedDetail } from "@services/EnergyBarService";
@@ -128,8 +129,7 @@ export class GdmLiveAudio extends LitElement {
 	@state() callState: "idle" | "connecting" | "active" | "ending" = "idle";
 	@state() private chatNewMessageCount = 0;
 	@state() private isChatActive = false;
-// Removed legacy UI-driven emotion; emotions will be inferred by NPU when needed
-	// @state() private currentEmotion = "neutral";
+	@state() private currentEmotion = "neutral";
 	@state() private currentMotionName = "";
 	private _idleMotionTimer: number | null = null;
 	private emotionAnalysisTimer: number | null = null;
@@ -1375,7 +1375,21 @@ private _handleTtsCaptionUpdate(text: string) {
 				return; // Nothing new to analyze
 			}
 
-			// No emotion analysis is performed here anymore
+			// Parse emotion from the last advisor context
+			if (this.lastAdvisorContext) {
+				const parsedEmotion = parseModelEmotion(this.lastAdvisorContext);
+				if (parsedEmotion !== this.currentEmotion) {
+					this.currentEmotion = parsedEmotion;
+					logger.debug("Updated model emotion", { emotion: parsedEmotion });
+					
+					// Dispatch event to update Live2D model
+					this.dispatchEvent(new CustomEvent('model-emotion-change', {
+						detail: { emotion: parsedEmotion },
+						bubbles: true,
+						composed: true
+					}));
+				}
+			}
 
 			// Update the index to the full length after processing
 			this.lastAnalyzedTranscriptIndex = transcript.length;
@@ -1531,7 +1545,7 @@ private _handleTtsCaptionUpdate(text: string) {
           .modelUrl=${this.personaManager.getActivePersona().live2dModelUrl || ""}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
-          .emotion=${"neutral"}
+          .emotion=${this.currentEmotion}
           .motionName=${this.currentMotionName}
           .personaName=${this.personaManager.getActivePersona().name}
           @live2d-loaded=${this._handleLive2dLoaded}
