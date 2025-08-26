@@ -12,6 +12,7 @@
     type Session,
   } from "@google/genai";
   import { createComponentLogger } from "@services/DebugLogger";
+  import { healthMetricsService } from "@services/HealthMetricsService";
   import { energyBarService } from "@services/EnergyBarService";
   import type { Turn } from "@shared/types";
   import { decode, decodeAudioData } from "@shared/utils";
@@ -46,6 +47,10 @@
     protected sources = new Set<AudioBufferSourceNode>();
     protected session: Session | null = null;
     protected fallbackPrompt: string | null = null;
+    
+    // VPU latency tracking properties
+    protected vpuStartTimer: (() => void) | null = null;
+    protected firstOutputReceived = false;
   
     constructor(
       protected outputAudioContext: AudioContext,
@@ -329,30 +334,39 @@
      * Simplified send: expects a fully prepared prompt.
      */
     public sendMessage(message: string): void {
-      if (!this.session) {
-        this.updateError(`${this.getSessionName()} not initialized`);
-        return;
-      }
-      try {
-        logger.debug(`Sending message to ${this.getSessionName()}`, {
-          textLength: message.length,
-        });
-        this.session.sendClientContent({
-          turns: [
-            {
-              role: "user",
-              parts: [{ text: message }],
-            },
-          ],
-          turnComplete: true,
-        });
-      } catch (error) {
-        logger.error(`Error sending message to ${this.getSessionName()}:`, {
-          error,
-        });
-        this.updateError(`Failed to send message: ${(error as Error).message}`);
-      }
-    }
+     if (!this.session) {
+       this.updateError(`${this.getSessionName()} not initialized`);
+       return;
+     }
+     try {
+       // Start VPU latency timer
+       this.vpuStartTimer = healthMetricsService.timeVPUStart();
+       this.firstOutputReceived = false;
+       
+       logger.debug(`Sending message to ${this.getSessionName()}`, {
+         textLength: message.length,
+       });
+       this.session.sendClientContent({
+         turns: [
+           {
+             role: "user",
+             parts: [{ text: message }],
+           },
+         ],
+         turnComplete: true,
+       });
+     } catch (error) {
+       logger.error(`Error sending message to ${this.getSessionName()}:`, {
+         error,
+       });
+       // Stop the timer on error
+       if (this.vpuStartTimer) {
+         this.vpuStartTimer();
+         this.vpuStartTimer = null;
+       }
+       this.updateError(`Failed to send message: ${(error as Error).message}`);
+     }
+   }
   
     public sendRealtimeInput(input: {
       media: { data?: string; mimeType?: string };
@@ -427,6 +441,7 @@
   }
   
   export class TextSessionManager extends BaseSessionManager {
+    
     constructor(
       outputAudioContext: AudioContext,
       outputNode: GainNode,
@@ -468,6 +483,22 @@
             await base.onmessage(message);
           }
   
+          // Track VPU start latency on first output transcription or inline audio
+          if (!this.firstOutputReceived && this.vpuStartTimer) {
+            const hasOutputTranscription = !!message.serverContent?.outputTranscription?.text;
+            const hasInlineAudio = !!message.serverContent?.modelTurn?.parts?.[0]?.inlineData;
+            
+            if (hasOutputTranscription || hasInlineAudio) {
+              this.firstOutputReceived = true;
+              this.vpuStartTimer();
+              this.vpuStartTimer = null;
+              logger.debug("VPU start latency tracked", {
+                hasOutputTranscription,
+                hasInlineAudio,
+              });
+            }
+          }
+          
           // Handle audio transcription for captions
           if (message.serverContent?.outputTranscription?.text) {
             this.updateTranscript(message.serverContent.outputTranscription.text);
@@ -527,6 +558,7 @@
   }
   
   export class CallSessionManager extends BaseSessionManager {
+    
     constructor(
       outputAudioContext: AudioContext,
       outputNode: GainNode,

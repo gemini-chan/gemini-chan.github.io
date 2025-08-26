@@ -318,7 +318,7 @@ JSON array of facts:`;
       // Note: searchMemories uses similarity threshold (0.8 default), not topK
       const relevantMemories = await this.vectorStore.searchMemories(
         query,
-        0.7, // Slightly lower threshold to collect more candidates for re-ranking
+        0.6, // Lower threshold to collect more candidates for re-ranking
       );
 
       // Re-rank by composite score: similarity, recency, reinforcement, and optional emotion bias

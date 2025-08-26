@@ -27,6 +27,9 @@ export class ChatView extends LitElement {
 
   @state()
   private isChatActive = false;
+  
+  // Debounce timer for scroll events
+  private scrollDebounceTimer: number | null = null;
 
   private lastSeenMessageCount = 0;
   private textareaRef: HTMLTextAreaElement | null = null;
@@ -386,11 +389,19 @@ export class ChatView extends LitElement {
     const transcriptEl = this.shadowRoot?.querySelector(".transcript");
     if (transcriptEl) {
       transcriptEl.addEventListener("scroll", () => {
-        const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
-        if (isAtBottom) {
-          this.lastSeenMessageCount = this.transcript.length;
+        // Debounce scroll events to reduce UI churn
+        if (this.scrollDebounceTimer) {
+          clearTimeout(this.scrollDebounceTimer);
         }
-        this._updateScrollToBottomState();
+        
+        this.scrollDebounceTimer = window.setTimeout(() => {
+          const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
+          if (isAtBottom) {
+            this.lastSeenMessageCount = this.transcript.length;
+          }
+          this._updateScrollToBottomState();
+          this.scrollDebounceTimer = null;
+        }, 100); // Debounce for 100ms
       });
     }
 

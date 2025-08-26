@@ -11,7 +11,6 @@ import {
 	type Session,
 } from "@google/genai";
 import { createComponentLogger } from "@services/DebugLogger";
-import { healthMetricsService } from "@services/HealthMetricsService";
 import { createBlob } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
@@ -1180,9 +1179,7 @@ private _handleTtsCaptionUpdate(text: string) {
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-		const stopVPUTimer = healthMetricsService.timeVPUStart();
 		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
-		stopVPUTimer();
 	}
 
 	private _scrollCallTranscriptToBottom() {
