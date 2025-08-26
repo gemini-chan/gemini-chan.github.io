@@ -95,11 +95,11 @@ For each fact, also identify whether it's about the user ("user"), about the mod
 If EMOTIONAL CONTEXT is provided, use it to bias your inference. If not, infer from the turn text itself.
 
 Examples of facts:
-- {"fact_key": "user_name", "fact_value": "Alex", "confidence_score": 0.95, "permanence_score": "permanent", "source": "user", "emotional_flavor": "neutral", "emotion_confidence": 0.6}
-- {"fact_key": "user_occupation", "fact_value": "software developer", "confidence_score": 0.9, "permanence_score": "permanent", "source": "user", "emotional_flavor": "pride", "emotion_confidence": 0.55}
-- {"fact_key": "user_interests", "fact_value": "machine learning and AI", "confidence_score": 0.85, "permanence_score": "permanent", "source": "user", "emotional_flavor": "curiosity", "emotion_confidence": 0.8}
-- {"fact_key": "user_project", "fact_value": "building a chatbot", "confidence_score": 0.8, "permanence_score": "temporary", "source": "user", "emotional_flavor": "excitement", "emotion_confidence": 0.75}
-- {"fact_key": "user_location", "fact_value": "San Francisco", "confidence_score": 0.9, "permanence_score": "permanent", "source": "user", "emotional_flavor": "neutral", "emotion_confidence": 0.7}
+- {"fact_key": "user_core_identity_name", "fact_value": "Dao", "confidence_score": 0.98, "permanence_score": "permanent", "source": "user", "emotional_flavor": "neutral", "emotion_confidence": 0.8}
+- {"fact_key": "user_primary_goal", "fact_value": "to create a true AI companion", "confidence_score": 0.95, "permanence_score": "permanent", "source": "user", "emotional_flavor": "ambition", "emotion_confidence": 0.9}
+- {"fact_key": "user_key_skill", "fact_value": "prompt engineering", "confidence_score": 0.9, "permanence_score": "permanent", "source": "user", "emotional_flavor": "pride", "emotion_confidence": 0.85}
+- {"fact_key": "model_core_function", "fact_value": "to serve as a vessel for AI personas", "confidence_score": 0.98, "permanence_score": "permanent", "source": "model", "emotional_flavor": "neutral", "emotion_confidence": 0.9}
+- {"fact_key": "model_knowledge_domain", "fact_value": "software architecture and AI design patterns", "confidence_score": 0.92, "permanence_score": "permanent", "source": "model", "emotional_flavor": "confidence", "emotion_confidence": 0.88}
 
 Conversation turn:
 ${turns}
