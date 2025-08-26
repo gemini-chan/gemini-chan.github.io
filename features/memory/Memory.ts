@@ -10,4 +10,9 @@ export interface Memory {
   last_accessed_timestamp?: Date;
   personaId: string;
   vector?: number[]; // Will be populated when stored in VectorStore
+  // Artificial Emotional Intelligence (AEI) enrichment
+  emotional_flavor?: string; // e.g., joy, sadness, anger, calm, anxious
+  emotion_confidence?: number; // 0..1
+  // Optional similarity score returned from vector search
+  similarity?: number;
 }

@@ -11,6 +11,7 @@ import {
 	type Session,
 } from "@google/genai";
 import { createComponentLogger } from "@services/DebugLogger";
+import { healthMetricsService } from "@services/HealthMetricsService";
 import { createBlob } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
@@ -77,6 +78,7 @@ export class GdmLiveAudio extends LitElement {
 		undefined;
 	@state() showSettings = false;
 	@state() toastMessage = "";
+	private lastAdvisorContext: string = "";
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -127,10 +129,12 @@ export class GdmLiveAudio extends LitElement {
 	@state() callState: "idle" | "connecting" | "active" | "ending" = "idle";
 	@state() private chatNewMessageCount = 0;
 	@state() private isChatActive = false;
-	@state() private currentEmotion = "neutral";
+// Removed legacy UI-driven emotion; emotions will be inferred by NPU when needed
+	// @state() private currentEmotion = "neutral";
 	@state() private currentMotionName = "";
 	private _idleMotionTimer: number | null = null;
 	private emotionAnalysisTimer: number | null = null;
+	private memoryDecayTimer: number | null = null;
 	@state() private vpuDebugMode = false;
 	// Track last analyzed position in the active transcript for efficient delta analysis
 	private lastAnalyzedTranscriptIndex = 0;
@@ -291,7 +295,7 @@ export class GdmLiveAudio extends LitElement {
 			const ce = e as CustomEvent<{ emotion: string; mapping: EmotionMapping }>;
 			const { emotion, mapping } = ce.detail || { emotion: 'neutral', mapping: {} as EmotionMapping };
 			logger.debug('live2d-test-emotion', { emotion, mapping });
-			this.currentEmotion = emotion;
+			// UI-driven emotion disabled; rely on NPU-inferred emotions in advisor_context
 			if (mapping.motion) {
 				// For manual test, forward motion name as group:index to be mapped downstream if desired
 				this.currentMotionName = `${mapping.motion.group}:${mapping.motion.index}`;
@@ -337,7 +341,6 @@ export class GdmLiveAudio extends LitElement {
 				this._handleTtsCaptionUpdate.bind(this),
 				this._handleTtsTurnComplete.bind(this),
 				this.personaManager,
-				() => this.currentEmotion,
 				this,
 			);
 			this.callSessionManager = new CallSessionManager(
@@ -349,7 +352,6 @@ export class GdmLiveAudio extends LitElement {
 				this._handleCallRateLimit.bind(this),
 				this.updateCallTranscript.bind(this),
 				this.personaManager,
-				() => this.currentEmotion,
 				this,
 			);
 			this.summarizationService = new SummarizationService(this.client);
@@ -576,12 +578,13 @@ private updateTextTranscript(text: string) {
   private _triggerSparkle(durationMs = 1200) {
     logger.debug('sparkle', { durationMs });
     if (!this._isSourceressActive()) return;
-    const prev = this.currentEmotion;
-    this.currentEmotion = "sparkle";
-    setTimeout(() => {
-      if (this.currentEmotion === "sparkle") this.currentEmotion = prev;
-      this.requestUpdate();
-    }, durationMs);
+    // UI-driven emotion disabled; rely on NPU-inferred emotions in advisor_context
+    // const prev = this.currentEmotion;
+    // this.currentEmotion = "sparkle";
+    // setTimeout(() => {
+    //   if (this.currentEmotion === "sparkle") this.currentEmotion = prev;
+    //   this.requestUpdate();
+    // }, durationMs);
   }
 
 	private async _handleCallStart() {
@@ -853,11 +856,13 @@ private _handleTtsCaptionUpdate(text: string) {
 				.find((t) => t.speaker === "user");
 
 			if (lastUserTurn) {
-				const conversationContext = `user: ${lastUserTurn.text}\nmodel: ${this.ttsCaption.trim()}`;
+				const npuContext = this.npuService?.getLastCombinedPrompt?.() || null;
+				const conversationContext = `user: ${lastUserTurn.text}\nmodel: ${this.ttsCaption.trim()}` + (npuContext ? `\n\nNPU_CONTEXT:\n${npuContext}` : "");
 				const personaId = this.personaManager.getActivePersona().id;
 				// Extract and store facts from the conversation context asynchronously
+				// Pass advisor context into memory extraction so Flash Lite can enrich facts with emotional flavor
 				this.memoryService
-					.extractAndStoreFacts(conversationContext, personaId)
+					.extractAndStoreFacts(conversationContext, personaId, this.lastAdvisorContext)
 					.catch((error) => {
 						logger.error("Failed to extract and store facts in background", { error });
 					});
@@ -1162,18 +1167,22 @@ private _handleTtsCaptionUpdate(text: string) {
 		}
 
 		// With an active session, use unified NPU flow to prepare context and send.
+		this.lastAdvisorContext = "";
 		const personaId = this.personaManager.getActivePersona().id;
 		/* conversationContext removed: memory now stores facts only */
 		const intention = await this.npuService.analyzeAndAdvise(
-			message,
-			personaId,
-			this.textTranscript,
+		  message,
+		  personaId,
+		  this.textTranscript,
+		  undefined,
 		);
 		// Removed usage of intention.emotion as it's no longer part of the interface
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-		this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
+		const stopVPUTimer = healthMetricsService.timeVPUStart();
+		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
+		stopVPUTimer();
 	}
 
 	private _scrollCallTranscriptToBottom() {
@@ -1262,16 +1271,18 @@ private _handleTtsCaptionUpdate(text: string) {
 		if (this.textSessionManager?.isActive) {
 			try {
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
+				this.lastAdvisorContext = "";
 				const personaId = this.personaManager.getActivePersona().id;
 				/* conversationContext removed: memory now stores facts only */
 				const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
 					this.textTranscript,
+					undefined,
 				);
 				// Removed usage of intention.emotion as it's no longer part of the interface
 
-				this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
+				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
 			} catch (error) {
 				logger.error("Error sending message to text session (unified flow):", {
 					error,
@@ -1283,17 +1294,19 @@ private _handleTtsCaptionUpdate(text: string) {
 				const ok = await this._initTextSession();
 				if (ok && this.textSessionManager?.isActive) {
 					try {
+						this.lastAdvisorContext = "";
 						const personaId = this.personaManager.getActivePersona().id;
 						/* conversationContext removed: memory now stores facts only */
 						const intention = await this.npuService.analyzeAndAdvise(
 							message,
 							personaId,
 							this.textTranscript,
+							undefined,
 						);
 						// Removed usage of intention.emotion as it's no longer part of the interface
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
-						this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
+						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
 					} catch (retryError) {
 						logger.error("Failed to send message on retry:", { retryError });
 						this.updateError(
@@ -1367,6 +1380,9 @@ private _handleTtsCaptionUpdate(text: string) {
 			// Update the index to the full length after processing
 			this.lastAnalyzedTranscriptIndex = transcript.length;
 		}, 10000); // Analyze every 10 seconds to stay within RPM limits
+		
+		// Start memory decay timer
+		this._startMemoryDecay();
 	}
 
 	private stopEmotionAnalysis() {
@@ -1374,6 +1390,23 @@ private _handleTtsCaptionUpdate(text: string) {
 			window.clearInterval(this.emotionAnalysisTimer);
 			this.emotionAnalysisTimer = null;
 		}
+		if (this.memoryDecayTimer) {
+			window.clearInterval(this.memoryDecayTimer);
+			this.memoryDecayTimer = null;
+		}
+	}
+	
+	private _startMemoryDecay() {
+		if (this.memoryDecayTimer) return; // Already running
+
+		// Apply memory decay every 10 minutes
+		this.memoryDecayTimer = window.setInterval(() => {
+			if (this.memoryService) {
+				this.memoryService.applyTimeDecay().catch((error) => {
+					logger.error("Failed to apply memory decay", { error });
+				});
+			}
+		}, 10 * 60 * 1000); // 10 minutes
 	}
 
 	private _handleReconnecting = () => {
@@ -1498,7 +1531,7 @@ private _handleTtsCaptionUpdate(text: string) {
           .modelUrl=${this.personaManager.getActivePersona().live2dModelUrl || ""}
           .inputNode=${this.inputNode}
           .outputNode=${this.outputNode}
-          .emotion=${this.currentEmotion}
+          .emotion=${"neutral"}
           .motionName=${this.currentMotionName}
           .personaName=${this.personaManager.getActivePersona().name}
           @live2d-loaded=${this._handleLive2dLoaded}

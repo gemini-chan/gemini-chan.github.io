@@ -44,8 +44,8 @@ Remove custom parsers and rely on the NPU to produce standardized, ready-to-use 
 
 ### Implementation
 1.  **Parser Removal**: The `parseJsonResponse` method in `BaseAIService` was effectively removed (made to return `null`).
-2.  **NPU Standardization**: The NPU's prompt (`prompts/npu/combined-npu.prompt.md`) was updated to instruct the model to return a specific JSON format (`{ emotion: string, rag_prompt_for_vpu: string }`).
-3.  **VPU Consumption**: The VPU consumes the `rag_prompt_for_vpu` directly as intended.
+2.  **NPU Standardization**: The NPU's prompt (`prompts/npu/combined-npu.prompt.md`) now returns a plain-text advisory format with three sections: USER_EMOTION, MODEL_EMOTION, and ADVISOR_CONTEXT (no JSON).
+3.  **VPU Consumption**: The VPU receives `advisor_context + raw user message` concatenated; the user message is always verbatim and last.
 
 ### Rationale
 This simplifies the codebase, reduces potential points of failure, and leverages the LLM's ability to produce structured output reliably.

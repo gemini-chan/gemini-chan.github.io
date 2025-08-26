@@ -437,7 +437,6 @@
       private updateTranscript: (text: string) => void,
       private onTurnComplete: () => void,
       private personaManager: PersonaManager,
-      private getCurrentEmotion: () => string,
       hostElement: HTMLElement,
     ) {
       super(
@@ -495,15 +494,12 @@
   
     protected getConfig(): Record<string, unknown> {
       const basePrompt = this.personaManager.getActivePersona().systemPrompt;
-      let systemInstruction = this.getSystemInstruction(
+      const systemInstruction = this.getSystemInstruction(
         basePrompt,
         this.fallbackPrompt,
       );
   
-      const currentEmotion = this.getCurrentEmotion();
-      if (currentEmotion && currentEmotion !== "neutral") {
-        systemInstruction += `\n\n[System Note: Your current emotional state is ${currentEmotion}. Please deliver your response with a tone that reflects this emotion.]`;
-      }
+      // Removed legacy UI-driven emotion; emotions will be inferred by NPU when needed
   
       return {
         responseModalities: [Modality.AUDIO],
@@ -543,7 +539,6 @@
         speaker: "user" | "model",
       ) => void,
       private personaManager: PersonaManager,
-      private getCurrentEmotion: () => string,
       hostElement: HTMLElement,
     ) {
       super(
@@ -567,15 +562,12 @@
   
     protected getConfig(): Record<string, unknown> {
       const basePrompt = this.personaManager.getActivePersona().systemPrompt;
-      let systemInstruction = this.getSystemInstruction(
+      const systemInstruction = this.getSystemInstruction(
         basePrompt,
         this.fallbackPrompt,
       );
   
-      const currentEmotion = this.getCurrentEmotion();
-      if (currentEmotion && currentEmotion !== "neutral") {
-        systemInstruction += `\n\n[System Note: Your current emotional state is ${currentEmotion}. Please deliver your response with a tone that reflects this emotion.]`;
-      }
+      // Removed legacy UI-driven emotion; emotions will be inferred by NPU when needed
   
       const config = {
         responseModalities: [Modality.AUDIO],
