@@ -99,7 +99,7 @@ Examples of facts:
 - {"fact_key": "user_occupation", "fact_value": "software developer", "confidence_score": 0.9, "permanence_score": "permanent", "source": "user", "emotional_flavor": "pride", "emotion_confidence": 0.55}
 - {"fact_key": "user_interests", "fact_value": "machine learning and AI", "confidence_score": 0.85, "permanence_score": "permanent", "source": "user", "emotional_flavor": "curiosity", "emotion_confidence": 0.8}
 - {"fact_key": "user_project", "fact_value": "building a chatbot", "confidence_score": 0.8, "permanence_score": "temporary", "source": "user", "emotional_flavor": "excitement", "emotion_confidence": 0.75}
-- {"fact_key": "model_response_style", "fact_value": "helpful and encouraging", "confidence_score": 0.9, "permanence_score": "contextual", "source": "model", "emotional_flavor": "joy", "emotion_confidence": 0.8}
+- {"fact_key": "model_communication_approach", "fact_value": "helpful and encouraging", "confidence_score": 0.9, "permanence_score": "contextual", "source": "model", "emotional_flavor": "joy", "emotion_confidence": 0.8}
 
 Conversation turn:
 ${turns}
