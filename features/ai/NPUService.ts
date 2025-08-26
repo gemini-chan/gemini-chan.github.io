@@ -16,11 +16,6 @@ export interface RAGPrompt {
   memoryContext: string;
 }
 
-export interface UnifiedNpuResponse {
-  user_emotion?: { label?: string; confidence?: number };
-  model_emotion?: { label?: string; confidence?: number };
-  advisor_context?: string;
-}
 
 export class NPUService {
   private lastCombinedPrompt: string | null = null;
@@ -83,10 +78,8 @@ export class NPUService {
       }
     }
 
-    // Parse the plain text response
-    const parsedResponse = this.parseNpuResponse(responseText, memoryContext);
-    
-    const advisorContext = parsedResponse.advisor_context || memoryContext || "";
+    // Use the raw response text as the advisor context, with fallback to memory context
+    const advisorContext = responseText || memoryContext || "";
     
     const payload: IntentionBridgePayload = {
       advisor_context: advisorContext,
@@ -144,100 +137,4 @@ export class NPUService {
       .replace("{userMessage}", userMessage);
   }
  
-  /**
-   * Parse the plain text response from the NPU model.
-   * @param responseText The raw response from the model
-   * @param fallbackContext The fallback context if parsing fails
-   * @returns Parsed response with user emotion, model emotion, and advisor context
-   */
-  private parseNpuResponse(responseText: string, fallbackContext: string): UnifiedNpuResponse {
-    // If response is empty, return fallback
-    if (!responseText?.trim()) {
-      return {
-        user_emotion: { label: "neutral", confidence: 0.5 },
-        model_emotion: { label: "neutral", confidence: 0.5 },
-        advisor_context: fallbackContext,
-      };
-    }
-
-    try {
-      // Parse the plain text response with more robust error handling
-      const lines = responseText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      
-      // Initialize default values
-      let userEmotion: { label?: string; confidence?: number } = { label: "neutral", confidence: 0.5 };
-      let modelEmotion: { label?: string; confidence?: number } = { label: "neutral", confidence: 0.5 };
-      let advisorContext = "";
-      
-      // Parse USER_EMOTION line with more robust regex
-      const userEmotionLine = lines.find(line => line.startsWith("USER_EMOTION:"));
-      if (userEmotionLine) {
-        // More robust regex that handles various whitespace scenarios
-        const userEmotionMatch = userEmotionLine.match(/USER_EMOTION:\s*([\w\-]+)\s*\(\s*confidence\s*=\s*([0-9.]+)\s*\)/i);
-        if (userEmotionMatch && userEmotionMatch.length >= 3) {
-          const confidence = parseFloat(userEmotionMatch[2]);
-          if (!isNaN(confidence) && confidence >= 0 && confidence <= 1) {
-            userEmotion = {
-              label: userEmotionMatch[1].toLowerCase(),
-              confidence: confidence
-            };
-          }
-        }
-      }
-      
-      // Parse MODEL_EMOTION line with more robust regex
-      const modelEmotionLine = lines.find(line => line.startsWith("MODEL_EMOTION:"));
-      if (modelEmotionLine) {
-        // More robust regex that handles various whitespace scenarios
-        const modelEmotionMatch = modelEmotionLine.match(/MODEL_EMOTION:\s*([\w\-]+)\s*\(\s*confidence\s*=\s*([0-9.]+)\s*\)/i);
-        if (modelEmotionMatch && modelEmotionMatch.length >= 3) {
-          const confidence = parseFloat(modelEmotionMatch[2]);
-          if (!isNaN(confidence) && confidence >= 0 && confidence <= 1) {
-            modelEmotion = {
-              label: modelEmotionMatch[1].toLowerCase(),
-              confidence: confidence
-            };
-          }
-        }
-      }
-      
-      // Parse ADVISOR_CONTEXT section with improved logic
-      const advisorContextStartIndex = lines.findIndex(line => line.startsWith("ADVISOR_CONTEXT:"));
-      if (advisorContextStartIndex !== -1) {
-        // Collect lines until we hit another section header or reach the end
-        const contextLines: string[] = [];
-        for (let i = advisorContextStartIndex + 1; i < lines.length; i++) {
-          const line = lines[i];
-          // Stop if we encounter another section header
-          if (line.startsWith("USER_EMOTION:") || line.startsWith("MODEL_EMOTION:")) {
-            break;
-          }
-          // Add bullet points or non-empty lines that don't look like section headers
-          if (line.startsWith("•") || (!line.includes(":") && line.trim())) {
-            contextLines.push(line);
-          }
-        }
-        advisorContext = contextLines.join("\n");
-      }
-      
-      // If no advisor context was parsed, use fallback
-      if (!advisorContext.trim() || advisorContext.trim().toLowerCase() === "none") {
-        advisorContext = fallbackContext;
-      }
-      
-      return {
-        user_emotion: userEmotion,
-        model_emotion: modelEmotion,
-        advisor_context: advisorContext,
-      };
-    } catch (error) {
-      logger.error("Failed to parse NPU response, using fallback", { error, responseText });
-      // On parse failure, fall back to defaults
-      return {
-        user_emotion: { label: "neutral", confidence: 0.5 },
-        model_emotion: { label: "neutral", confidence: 0.5 },
-        advisor_context: fallbackContext,
-      };
-    }
-  }
  }
