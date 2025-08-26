@@ -14,6 +14,7 @@ export interface IMemoryService {
     topK?: number,
     options?: { emotionBias?: string }
   ): Promise<Memory[]>;
+  getLastModelEmotion(): string;
   getAllMemories(): Promise<Memory[]>;
   deleteMemory(memoryId: number): Promise<void>;
   deleteAllMemories(): Promise<void>;
@@ -36,6 +37,17 @@ export class MemoryService extends BaseAIService implements IMemoryService {
    * @param turns The conversation turns to process
    * @param sessionId The user session ID
    */
+  // Store the last model emotion for Live2D animation
+  private lastModelEmotion: string = "neutral";
+  
+  /**
+   * Get the last model emotion detected by the NPU
+   * @returns The last model emotion or "neutral" if none detected
+   */
+  getLastModelEmotion(): string {
+    return this.lastModelEmotion;
+  }
+  
   async extractAndStoreFacts(
     turns: string,
     sessionId: string,
@@ -51,13 +63,23 @@ export class MemoryService extends BaseAIService implements IMemoryService {
 
       // Extract emotional context from advisor context if available
       let emotionalFlavor = "";
+      let modelEmotion = "neutral";
       if (advisorContext) {
         // Look for USER_EMOTION line in advisor context
-        const emotionLine = advisorContext.split('\n').find(line => line.startsWith('USER_EMOTION:'));
-        if (emotionLine) {
-          const emotionMatch = emotionLine.match(/USER_EMOTION:\s*(\w+)/);
+        const userEmotionLine = advisorContext.split('\n').find(line => line.startsWith('USER_EMOTION:'));
+        if (userEmotionLine) {
+          const emotionMatch = userEmotionLine.match(/USER_EMOTION:\s*(\w+)/);
           if (emotionMatch) {
             emotionalFlavor = emotionMatch[1];
+          }
+        }
+        
+        // Look for MODEL_EMOTION line in advisor context
+        const modelEmotionLine = advisorContext.split('\n').find(line => line.startsWith('MODEL_EMOTION:'));
+        if (modelEmotionLine) {
+          const emotionMatch = modelEmotionLine.match(/MODEL_EMOTION:\s*(\w+)/);
+          if (emotionMatch) {
+            modelEmotion = emotionMatch[1];
           }
         }
       }
@@ -142,6 +164,9 @@ JSON array of facts:`;
         sessionId,
         factCount: facts.length,
       });
+      
+      // Store the model emotion for Live2D animation
+      this.lastModelEmotion = modelEmotion;
     } catch (error) {
       logger.error("Failed to extract and store facts", { error, sessionId });
     } finally {

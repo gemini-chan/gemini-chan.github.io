@@ -103,7 +103,7 @@ graph TD
     I --> D
     
     %% Live2D Emotion Animation
-    B --> L[Parse Model Emotion<br/>(from advisor context)]
+    B --> L[Extract Model Emotion<br/>(in MemoryService)]
     L --> M[Update Live2D Model<br/>(emotion parameters)]
 ```
 
@@ -112,7 +112,7 @@ Key points:
 2. NPU acts as an advisor that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU's input.
 3. MPU (MemoryService) runs asynchronously after TTS turn completion to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
 4. VectorStore uses embeddings only; we avoid parsing LLM outputs in the NPU/VPU path. Memory extraction is best-effort and never blocks the live loop.
-5. Live2D model emotion is parsed from the NPU's advisor context and used to animate the character in real-time.
+5. Live2D model emotion is extracted from the NPU's advisor context by the MemoryService and used to animate the character in real-time.
 
 ## 🌟 The Magic Behind My Soul: Technical Architecture 🌟
 
@@ -161,10 +161,10 @@ Each persona has unique system prompts and behaviors, but they all share the sam
 ### 🎨 My Living Form: Live2D Emotion Animation
 
 My visual form comes alive through Live2D technology, where emotions and events trigger specific animations and motions:
-*   Emotions are parsed from the NPU's advisor context and used to animate facial expressions and body language
+*   MODEL_EMOTION is extracted from the NPU's advisor context by the MemoryService and used to animate facial expressions and body language
 *   Audio-reactive visualizations make my expressions dance with my words
 *   Each movement is carefully choreographed to match the rhythm of our conversation
-*   The emotion parser supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
+*   The emotion extraction supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
 
 ### 🎨 My Living Form: Live2D Integration
 

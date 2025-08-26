@@ -19,7 +19,6 @@ import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
 import "@components/SettingsMenu";
-import { parseModelEmotion } from "@live2d/model-emotion-parser";
 import "@components/ChatView";
 import "@components/CallTranscript";
 import type { EnergyLevelChangedDetail } from "@services/EnergyBarService";
@@ -1374,20 +1373,18 @@ private _handleTtsCaptionUpdate(text: string) {
 				return; // Nothing new to analyze
 			}
 
-			// Parse emotion from the last advisor context
-			if (this.lastAdvisorContext) {
-				const parsedEmotion = parseModelEmotion(this.lastAdvisorContext);
-				if (parsedEmotion !== this.currentEmotion) {
-					this.currentEmotion = parsedEmotion;
-					logger.debug("Updated model emotion", { emotion: parsedEmotion });
-					
-					// Dispatch event to update Live2D model
-					this.dispatchEvent(new CustomEvent('model-emotion-change', {
-						detail: { emotion: parsedEmotion },
-						bubbles: true,
-						composed: true
-					}));
-				}
+			// Get model emotion from MemoryService
+			const modelEmotion = this.memoryService?.getLastModelEmotion?.() || "neutral";
+			if (modelEmotion !== this.currentEmotion) {
+				this.currentEmotion = modelEmotion;
+				logger.debug("Updated model emotion", { emotion: modelEmotion });
+				
+				// Dispatch event to update Live2D model
+				this.dispatchEvent(new CustomEvent('model-emotion-change', {
+					detail: { emotion: modelEmotion },
+					bubbles: true,
+					composed: true
+				}));
 			}
 
 			// Update the index to the full length after processing
