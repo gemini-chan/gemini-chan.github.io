@@ -58,7 +58,7 @@
       protected client: GoogleGenAI,
       protected updateStatus: (msg: string) => void,
       protected updateError: (msg: string) => void,
-      protected onRateLimit: (msg: string) => void,
+      protected onRateLimit: () => void,
       protected hostElement: HTMLElement,
     ) {}
   
@@ -163,7 +163,7 @@
           const msg = e.message || "";
           const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
           if (isRateLimited) {
-            this.onRateLimit(msg);
+            this.onRateLimit();
           }
           this.updateError(`${this.getSessionName()} error: ${e.message}`);
         },
@@ -171,7 +171,7 @@
           const msg = e.reason || "";
           const isRateLimited = /rate[- ]?limit|quota/i.test(msg);
           if (isRateLimited) {
-            this.onRateLimit(msg);
+            this.onRateLimit();
           }
           this.updateStatus(`${this.getSessionName()} closed: ${e.reason}`);
           this.session = null;
@@ -448,7 +448,7 @@
       client: GoogleGenAI,
       updateStatus: (msg: string) => void,
       updateError: (msg: string) => void,
-      onRateLimit: (msg: string) => void,
+      onRateLimit: () => void,
       private updateTranscript: (text: string) => void,
       private onTurnComplete: () => void,
       private personaManager: PersonaManager,
@@ -565,7 +565,7 @@
       client: GoogleGenAI,
       updateStatus: (msg: string) => void,
       updateError: (msg: string) => void,
-      onRateLimit: (msg: string) => void,
+      onRateLimit: () => void,
       private updateCallTranscript: (
         text: string,
         speaker: "user" | "model",
