@@ -200,10 +200,6 @@ JSON array of facts:`;
       case "peaceful":
         return "neutral";
       default:
-        // Return as-is if it's already in our canonical set
-        if (["joy", "sadness", "anger", "fear", "surprise", "neutral", "curiosity"].includes(normalized)) {
-          return normalized;
-        }
         // Default to neutral for unrecognized emotions
         return "neutral";
     }
