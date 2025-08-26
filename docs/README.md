@@ -81,7 +81,7 @@ The very look and feel of my castle is yours to command. From the colors on the 
 
 ## 🧠 Cortex–Actor–Memory Flow (Advisor NPU, Actor VPU, Async MPU)
 
-The pipeline separates responsibilities cleanly to avoid “broken telephone” and to keep memory work fully async.
+The pipeline separates responsibilities cleanly to avoid "broken telephone" and to keep memory work fully async.
 
 ```mermaid
 graph TD
@@ -89,34 +89,24 @@ graph TD
     B --> C[MemoryService.retrieveRelevantMemories]
     C --> D[VectorStore.searchMemories]
     D --> E[Embeddings (gemini-embedding-001)]
-    B --> F[Build Combined Advisory Context\n(no guidance to VPU)]
-    F --> J[Last Combined Prompt\n(for AEI enrichment only)]
+    B --> F[Build Combined Advisory Context<br/>(no guidance to VPU)]
+    F --> J[Last Combined Prompt<br/>(for AEI enrichment only)]
 
     %% VPU always receives the original unmodified user input
     A --> H[VPUService (Actor)]
-    B -. does NOT instruct .-> H
+    B -.->|does NOT instruct| H
 
     %% Async memory enrichment on TTS turn completion
-    K[TTS Turn Complete] --> I[MemoryService.extractAndStoreFacts\n(async, Flash Lite)]
-    J -. emotional bias .-> I
-    H -. captions .-> K
+    K[TTS Turn Complete] --> I[MemoryService.extractAndStoreFacts<br/>(async, Flash Lite)]
+    J -.->|emotional bias| I
+    H -.->|captions| K
     I --> D
-
-    style A fill:#ffe4e1,stroke:#333
-    style B fill:#e6f3ff,stroke:#333
-    style C fill:#e6f3ff,stroke:#333
-    style D fill:#fff2e6,stroke:#333
-    style E fill:#fff2e6,stroke:#333
-    style F fill:#e6f3ff,stroke:#333
-    style J fill:#f0f0f0,stroke:#333
-    style H fill:#f0f0f0,stroke:#333
-    style I fill:#e6f3ff,stroke:#333
 ```
 
 Key points:
 1. VPU receives the original user input verbatim. The NPU never instructs the VPU how to speak.
-2. NPU acts as an advisor that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU’s input.
-3. MPU (MemoryService) runs asynchronously after TTS turn completion to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU’s last combined prompt as bias.
+2. NPU acts as an advisor that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU's input.
+3. MPU (MemoryService) runs asynchronously after TTS turn completion to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
 4. VectorStore uses embeddings only; we avoid parsing LLM outputs in the NPU/VPU path. Memory extraction is best-effort and never blocks the live loop.
 
 ## 🌟 The Magic Behind My Soul: Technical Architecture 🌟
