@@ -241,8 +241,8 @@ export class MemoryView extends LitElement {
     if (!this.memoryService) return;
     try {
       await this.memoryService.pinMemory(id);
-      // Refresh the memory list to show updated permanence score
-      this.memories = await this.memoryService.getAllMemories();
+      // Update the specific memory in the local state to show updated permanence score
+      this.memories = this.memories.map(m => m.id === id ? { ...m, permanence_score: 'permanent' } : m);
     } catch (e) {
       logger.error("Failed to pin memory", { id, error: e });
     }
@@ -252,8 +252,8 @@ export class MemoryView extends LitElement {
     if (!this.memoryService) return;
     try {
       await this.memoryService.unpinMemory(id);
-      // Refresh the memory list to show updated permanence score
-      this.memories = await this.memoryService.getAllMemories();
+      // Update the specific memory in the local state to show updated permanence score
+      this.memories = this.memories.map(m => m.id === id ? { ...m, permanence_score: 'contextual' } : m);
     } catch (e) {
       logger.error("Failed to unpin memory", { id, error: e });
     }
