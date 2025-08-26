@@ -8,7 +8,6 @@ const logger = createComponentLogger("MemoryService");
 const MODEL_NAME = "gemini-2.5-flash-lite";
 
 export interface IMemoryService {
-  processAndStoreMemory(transcript: string, sessionId: string): Promise<void>;
   retrieveRelevantMemories(
     query: string,
     sessionId: string,
@@ -30,44 +29,6 @@ export class MemoryService extends BaseAIService implements IMemoryService {
   constructor(vectorStore: VectorStore, client: AIClient) {
     super(client, MODEL_NAME);
     this.vectorStore = vectorStore;
-  }
-
-  /**
-   * Process conversation transcript and store key facts in the vector store
-   * @param transcript The conversation transcript to process
-   * @param sessionId The user session ID
-   */
-  async processAndStoreMemory(
-    conversationContext: string,
-    sessionId: string,
-  ): Promise<void> {
-    try {
-      logger.debug("Processing memory for session", {
-        sessionId,
-        contextLength: conversationContext.length,
-      });
-
-      // Store the conversation context as it appears in the UI
-      // This provides better context for future conversations
-      if (conversationContext.trim()) {
-        await this.vectorStore.saveMemory({
-          fact_key: `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          fact_value: conversationContext.trim(),
-          confidence_score: 0.8, // Default confidence score
-          permanence_score: "contextual", // Default permanence score
-          personaId: sessionId,
-          timestamp: new Date(),
-          conversation_turn: conversationContext.trim(),
-        });
-      }
-
-      logger.info("Memory processing completed for session", {
-        sessionId,
-      });
-    } catch (error) {
-      logger.error("Failed to process and store memory", { error, sessionId });
-      // Gracefully handle errors without crashing the main application
-    }
   }
 
   /**
