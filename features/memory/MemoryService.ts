@@ -85,18 +85,21 @@ export class MemoryService extends BaseAIService implements IMemoryService {
       }
 
       // Use Flash Lite to extract facts. Include emotional context when available so each fact can be enriched with an emotional flavor.
-      const prompt = `Extract key facts from the following conversation turn. Return a JSON array of facts with keys "fact_key", "fact_value", "confidence_score", and "permanence_score".
-Additionally, infer an "emotional_flavor" (e.g., joy, sadness, anger, calm, anxious) and an "emotion_confidence" (0..1) for each fact, based on the user's perceived emotional state.
+      const prompt = `Extract key facts from the following conversation turn. Return a JSON array of facts with keys "fact_key", "fact_value", "confidence_score", "permanence_score", "source", and "emotional_flavor".
+Additionally, infer an "emotional_flavor" (e.g., joy, sadness, anger, calm, anxious) and an "emotion_confidence" (0..1) for each fact, based on the emotional context.
+The user's emotional state is: ${emotionalFlavor || "neutral"}
+The model's emotional state is: ${modelEmotion || "neutral"}
+
+For each fact, also identify whether it's about the user ("user"), about the model's responses ("model"), or about the interaction between user and model ("interaction").
 
 If EMOTIONAL CONTEXT is provided, use it to bias your inference. If not, infer from the turn text itself.
 
-EMOTIONAL CONTEXT (optional): ${emotionalFlavor || "<none>"}
-
 Examples of facts:
-- {"fact_key": "user_name", "fact_value": "Alex", "confidence_score": 0.95, "permanence_score": "permanent", "emotional_flavor": "neutral", "emotion_confidence": 0.6}
-- {"fact_key": "user_occupation", "fact_value": "software developer", "confidence_score": 0.9, "permanence_score": "permanent", "emotional_flavor": "pride", "emotion_confidence": 0.55}
-- {"fact_key": "user_emotional_state", "fact_value": "nervous", "confidence_score": 0.8, "permanence_score": "temporary", "emotional_flavor": "anxious", "emotion_confidence": 0.85}
-- {"fact_key": "user_current_mood", "fact_value": "tired", "confidence_score": 0.7, "permanence_score": "temporary", "emotional_flavor": "fatigue", "emotion_confidence": 0.7}
+- {"fact_key": "user_name", "fact_value": "Alex", "confidence_score": 0.95, "permanence_score": "permanent", "source": "user", "emotional_flavor": "neutral", "emotion_confidence": 0.6}
+- {"fact_key": "user_occupation", "fact_value": "software developer", "confidence_score": 0.9, "permanence_score": "permanent", "source": "user", "emotional_flavor": "pride", "emotion_confidence": 0.55}
+- {"fact_key": "user_emotional_state", "fact_value": "nervous", "confidence_score": 0.8, "permanence_score": "temporary", "source": "user", "emotional_flavor": "anxious", "emotion_confidence": 0.85}
+- {"fact_key": "user_current_mood", "fact_value": "tired", "confidence_score": 0.7, "permanence_score": "temporary", "source": "user", "emotional_flavor": "fatigue", "emotion_confidence": 0.7}
+- {"fact_key": "model_response_style", "fact_value": "helpful and encouraging", "confidence_score": 0.9, "permanence_score": "contextual", "source": "model", "emotional_flavor": "joy", "emotion_confidence": 0.8}
 
 Conversation turn:
 ${turns}
@@ -113,6 +116,7 @@ JSON array of facts:`;
         permanence_score: string;
         emotional_flavor?: string;
         emotion_confidence?: number;
+        source?: "user" | "model" | "interaction";
       }
       
       let facts: ExtractedFact[] = [];
@@ -157,6 +161,9 @@ JSON array of facts:`;
           conversation_turn: turns,
           emotional_flavor: this.normalizeEmotionLabel(fact.emotional_flavor) || this.normalizeEmotionLabel(emotionalFlavor) || undefined,
           emotion_confidence: fact.emotion_confidence || (emotionalFlavor ? 0.7 : undefined),
+          user_emotion: emotionalFlavor || undefined,
+          model_emotion: modelEmotion || undefined,
+          source: fact.source || undefined,
         });
       }
 
