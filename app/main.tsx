@@ -855,8 +855,7 @@ private _handleTtsCaptionUpdate(text: string) {
 				.find((t) => t.speaker === "user");
 
 			if (lastUserTurn) {
-				const npuContext = this.npuService?.getLastCombinedPrompt?.() || null;
-				const conversationContext = `user: ${lastUserTurn.text}\nmodel: ${this.ttsCaption.trim()}` + (npuContext ? `\n\nNPU_CONTEXT:\n${npuContext}` : "");
+				const conversationContext = `user: ${lastUserTurn.text}\nmodel: ${this.ttsCaption.trim()}`;
 				const personaId = this.personaManager.getActivePersona().id;
 				// Extract and store facts from the conversation context asynchronously
 				// Pass advisor context into memory extraction so Flash Lite can enrich facts with emotional flavor
