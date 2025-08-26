@@ -58,8 +58,8 @@ export class NPUService {
     const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext);
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length, memoryLines: memories.length });
 
-    // Save for MPU (MemoryService) AEI use
-    this.lastCombinedPrompt = combinedPromptText;
+    // The full prompt is no longer needed after this point, so no need to store it.
+
 
     // Call model with retry - single call to Flash Lite model
     const model = "gemini-2.5-flash";
