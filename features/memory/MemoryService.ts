@@ -71,7 +71,7 @@ export class MemoryService extends BaseAIService implements IMemoryService {
   }
 
   /**
-   * Extract facts from a conversation turn and store them
+   * Extract facts from conversation turns and store them
    * @param turns The conversation turns to process
    * @param sessionId The user session ID
    */
