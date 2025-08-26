@@ -408,6 +408,23 @@ export class VectorStore {
   }
 
   /**
+   * Retrieve a single memory by its ID
+   * @param memoryId The ID of the memory to retrieve
+   * @returns The memory object if found, undefined otherwise
+   */
+  async getMemoryById(memoryId: number): Promise<Memory | undefined> {
+    await this.initializationPromise;
+
+    const storeName = this.getStoreName();
+    const tx = this.db?.transaction(storeName, "readonly");
+    const store = tx.objectStore(storeName);
+    const memory = await store.get(memoryId);
+    await tx.done;
+
+    return memory;
+  }
+
+  /**
    * Search for similar memories based on content using vector similarity
    * @param query The search query
    * @param threshold Similarity threshold (0-1)

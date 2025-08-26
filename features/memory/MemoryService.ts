@@ -485,7 +485,7 @@ JSON array of facts:`;
   async pinMemory(memoryId: number): Promise<void> {
     try {
       logger.debug("Pinning memory", { memoryId });
-      const memory = (await this.getAllMemories()).find(m => m.id === memoryId);
+      const memory = await this.vectorStore.getMemoryById(memoryId);
       if (memory) {
         // Update the permanence score to "permanent" to prevent decay
         memory.permanence_score = "permanent";
@@ -503,7 +503,7 @@ JSON array of facts:`;
   async unpinMemory(memoryId: number): Promise<void> {
     try {
       logger.debug("Unpinning memory", { memoryId });
-      const memory = (await this.getAllMemories()).find(m => m.id === memoryId);
+      const memory = await this.vectorStore.getMemoryById(memoryId);
       if (memory) {
         // Update the permanence score to "contextual" to allow normal decay
         memory.permanence_score = "contextual";
