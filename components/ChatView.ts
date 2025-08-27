@@ -37,6 +37,12 @@ export class ChatView extends LitElement {
   @property({ type: Boolean })
   thinkingOpen: boolean = false;
   
+  @property({ type: Number })
+  npuProcessingTime: number | null = null;
+  
+  @property({ type: Number })
+  vpuProcessingTime: number | null = null;
+  
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;
 
@@ -316,8 +322,43 @@ export class ChatView extends LitElement {
     }
     .thinking-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--cp-text); }
     .thinking-badge { font-size: 12px; padding: 2px 6px; border-radius: 999px; background: var(--cp-surface-strong); border: 1px solid var(--cp-surface-border-2); }
+    .thinking-badge.active { display: inline-flex; align-items: center; gap: 4px; }
+    .thinking-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
     .thinking-body { margin-top: 8px; max-height: 240px; overflow: auto; white-space: pre-wrap; }
     .thinking-body code { white-space: pre-wrap; }
+    .thinking-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--cp-surface-border-2);
+      font-size: 12px;
+      color: var(--cp-muted);
+    }
+    .thinking-copy-button {
+      background: var(--cp-surface-strong);
+      border: 1px solid var(--cp-surface-border-2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--cp-text);
+    }
+    .thinking-copy-button:hover {
+      background: var(--cp-surface-border);
+    }
 
     .transcript-container {
       position: relative;
@@ -378,14 +419,56 @@ export class ChatView extends LitElement {
     );
   }
 
-  private _toggleThinking = () => {
-    this.thinkingOpen = !this.thinkingOpen;
-    this.dispatchEvent(new CustomEvent('thinking-open-changed', {
-      detail: { open: this.thinkingOpen },
-      bubbles: true,
-      composed: true,
-    }));
-  }
+   // Active states that should show a spinner
+   private _isActiveState(status: string): boolean {
+     const activeStates = new Set([
+       "Thinking…",
+       "Searching memory…",
+       "Building prompt…",
+       "Preparing advisor…",
+       "Calling model…",
+       "Sending to VPU…",
+       "Receiving response…"
+     ]);
+     return activeStates.has(status);
+   }
+   
+   // Format thinking status with processing times
+   private _formatThinkingStatus(): string {
+     // If we have processing times and the status is "Done", show the times
+     if (this.thinkingStatus === "Done" && (this.npuProcessingTime || this.vpuProcessingTime)) {
+       const npuTime = this.npuProcessingTime ? `${(this.npuProcessingTime / 1000).toFixed(1)}s` : '';
+       const vpuTime = this.vpuProcessingTime ? `${(this.vpuProcessingTime / 1000).toFixed(1)}s` : '';
+       
+       if (npuTime && vpuTime) {
+         return `Done in ${npuTime}+${vpuTime}`;
+       } else if (npuTime) {
+         return `Done in ${npuTime}`;
+       } else if (vpuTime) {
+         return `Done in ${vpuTime}`;
+       }
+     }
+     
+     // Otherwise, show the regular status
+     return this.thinkingStatus || (this.thinkingOpen ? 'open' : 'closed');
+   }
+ 
+   private _toggleThinking = () => {
+     this.thinkingOpen = !this.thinkingOpen;
+     this.dispatchEvent(new CustomEvent('thinking-open-changed', {
+       detail: { open: this.thinkingOpen },
+       bubbles: true,
+       composed: true,
+     }));
+   }
+   
+   private _copyThinkingLog = () => {
+     if (this.thinkingText) {
+       navigator.clipboard.writeText(this.thinkingText).catch((err) => {
+         console.error('Failed to copy thinking log: ', err);
+       });
+     }
+   }
 
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
     // Reset height to recalculate
@@ -559,10 +642,19 @@ private async _updateScrollToBottomState() {
              </svg>
              <span>Thinking</span>
            </div>
-           <span class="thinking-badge">${this.thinkingStatus || (this.thinkingOpen ? 'open' : 'closed')}</span>
+           <span class="thinking-badge ${this._isActiveState(this.thinkingStatus) ? 'active' : ''}">
+             ${this._isActiveState(this.thinkingStatus) ? html`<div class="thinking-spinner"></div>` : ''}
+             ${this._formatThinkingStatus()}
+           </span>
          </div>
-         ${this.thinkingOpen ? html`<div class="thinking-body"><code>${this.thinkingText || ''}</code></div>` : ''}
-       </div>` : ''}
+          ${this.thinkingOpen ? html`
+            <div class="thinking-body"><code>${this.thinkingText || ''}</code></div>
+            <div class="thinking-footer">
+              <span>${new Date().toLocaleTimeString()}</span>
+              <button class="thinking-copy-button" @click=${this._copyThinkingLog}>Copy</button>
+            </div>
+          ` : ''}
+        </div>` : ''}
       <div class="transcript-container">
         <div class="transcript">
           ${

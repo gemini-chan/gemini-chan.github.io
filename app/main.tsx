@@ -63,15 +63,73 @@ type ActiveMode = "texting" | "calling" | null;
 
 const logger = createComponentLogger("GdmLiveAudio");
 
-interface NpuProgressEvent {
+interface BaseProgressEvent {
   type: string;
-  [key: string]: unknown;
+  ts: number;
+  data?: Record<string, unknown>;
 }
 
-interface VpuProgressEvent {
-  type: string;
-  [key: string]: unknown;
-}
+type NpuProgressEvent = BaseProgressEvent & {
+  type:
+    | "npu:start"
+    | "npu:memories:start"
+    | "npu:memories:done"
+    | "npu:prompt:partial"
+    | "npu:prompt:build"
+    | "npu:prompt:built"
+    | "npu:model:start"
+    | "npu:model:attempt"
+    | "npu:model:response"
+    | "npu:model:error"
+    | "npu:advisor:ready"
+    | "npu:complete";
+};
+
+type VpuProgressEvent = BaseProgressEvent & {
+  type:
+    | "vpu:message:sending"
+    | "vpu:message:error"
+    | "vpu:response:transcription"
+    | "vpu:response:complete";
+};
+
+// Centralized mapping from events to status strings
+const EVENT_STATUS_MAP: Record<string, string> = {
+  "npu:start": "Thinking…",
+  "npu:memories:start": "Searching memory…",
+  "npu:memories:done": "Memory search complete",
+  "npu:prompt:build": "Building prompt…",
+  "npu:prompt:built": "Prompt built",
+  "npu:model:start": "Preparing advisor…",
+  "npu:model:attempt": "Calling model…",
+  "npu:advisor:ready": "Sending to VPU…",
+  "npu:complete": "NPU complete",
+ "vpu:message:sending": "Sending to VPU…",
+  "vpu:message:error": "VPU error",
+  "vpu:response:transcription": "Receiving response…",
+  "vpu:response:complete": "Done"
+};
+
+// Active states that should show a spinner
+// const ACTIVE_STATES = new Set([
+//   "npu:start",
+//   "npu:memories:start",
+//   "npu:prompt:build",
+//   "npu:model:start",
+//   "npu:model:attempt",
+//   "vpu:message:sending",
+//   "vpu:response:transcription"
+// ]);
+
+// Auto-expand rules
+const AUTO_EXPAND_RULES = new Set([
+  "npu:memories:start",
+  "npu:prompt:partial",
+  "npu:model:start",
+  "npu:model:attempt",
+  "vpu:message:sending",
+  "vpu:response:transcription"
+]);
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -95,6 +153,19 @@ export class GdmLiveAudio extends LitElement {
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
+	
+	// Settings
+	@state() private showInternalPrompts: boolean = false;
+	
+	// Metrics
+	@state() private npuProcessingTime: number | null = null;
+	@state() private vpuProcessingTime: number | null = null;
+	private npuStartTime: number | null = null;
+	private vpuStartTime: number | null = null;
+	
+	// Debouncing for vpu:response:transcription events
+	private transcriptionDebounceTimer: number | null = null;
+	private pendingTranscriptionText: string = "";
 
 	// Track current API key for smart change detection
 	private currentApiKey = "";
@@ -288,6 +359,19 @@ export class GdmLiveAudio extends LitElement {
 		super();
 		this.personaManager = new PersonaManager();
 		// MemoryService will be initialized after the GoogleGenAI client is created
+		
+		// Load persisted collapsed state from localStorage
+		try {
+			const savedCollapsed = localStorage.getItem('npuPersistCollapsed');
+			if (savedCollapsed !== null) {
+				this.npuPersistCollapsed = JSON.parse(savedCollapsed);
+			}
+		} catch (error) {
+			// If there's an error parsing, default to false
+			console.warn('Failed to parse npuPersistCollapsed from localStorage:', error);
+			this.npuPersistCollapsed = false;
+		}
+		
 		this.initClient();
 
 		// Debug: Check initial TTS energy state
@@ -1195,32 +1279,34 @@ this.updateTextTranscript(this.ttsCaption);
 			// Log the event for debugging
 			logger.debug("VPU Progress Event", ev);
 			
-			switch (ev.type) {
-				case "vpu:message:sending":
-					this.npuStatus = "Sending to VPU…";
-					this.npuThinkingLog += "\n[Sending message to VPU]";
-					// Force a re-render to update the UI
-					this.requestUpdate();
-					break;
-				case "vpu:message:error":
-					this.npuStatus = `VPU error: ${ev.error}`;
-					this.npuThinkingLog += `\n[VPU Error: ${ev.error}]`;
-					// Force a re-render to update the UI
-					this.requestUpdate();
-					break;
-				case "vpu:response:transcription":
-					this.npuStatus = "Receiving response…";
-					this.npuThinkingLog += `\n[model]: ${ev.text}`;
-					// Force a re-render to update the UI
-					this.requestUpdate();
-					break;
-				case "vpu:response:complete":
-					this.npuStatus = "Response complete";
-					this.npuThinkingLog += "\n[Response complete]";
-					// Force a re-render to update the UI
-					this.requestUpdate();
-					break;
-			}
+			   // Map event to status string
+			   if (EVENT_STATUS_MAP[ev.type]) {
+			     this.npuStatus = EVENT_STATUS_MAP[ev.type];
+			     // Add data details for specific events
+			     if (ev.type === "vpu:message:error" && ev.data?.error) {
+			       this.npuStatus = `VPU error: ${ev.data.error}`;
+			     }
+			     // Force a re-render to update the UI
+			     this.requestUpdate();
+			   }
+			   
+			   // Handle log updates
+			   if (ev.type === "vpu:message:sending") {
+			     this.npuThinkingLog += "\n[Sending message to VPU]";
+			     // Force a re-render to update the UI
+			     this.requestUpdate();
+			   } else if (ev.type === "vpu:message:error" && ev.data?.error) {
+			     this.npuThinkingLog += `\n[VPU Error: ${ev.data.error}]`;
+			     // Force a re-render to update the UI
+			     this.requestUpdate();
+			   } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
+			     // Use debounced transcription updates
+			     this._handleDebouncedTranscription(ev.data.text as string);
+			   } else if (ev.type === "vpu:response:complete") {
+			     this.npuThinkingLog += "\n[Response complete]";
+			     // Force a re-render to update the UI
+			     this.requestUpdate();
+			   }
 		});
 	}
 
@@ -1264,7 +1350,38 @@ this.updateTextTranscript(this.ttsCaption);
 	private _handleChatActiveChanged(e: CustomEvent) {
 		this.isChatActive = e.detail.isChatActive;
 	}
-
+	
+	// Handle debounced transcription updates
+	private _handleDebouncedTranscription(text: string) {
+		// Accumulate text until debounce period expires
+		this.pendingTranscriptionText += text;
+		
+		// Clear existing timer
+		if (this.transcriptionDebounceTimer) {
+			clearTimeout(this.transcriptionDebounceTimer);
+		}
+		
+		// Set new timer
+		this.transcriptionDebounceTimer = window.setTimeout(() => {
+			// Update the thinking log with accumulated text
+			if (this.pendingTranscriptionText) {
+				this.npuThinkingLog += `\n[model]: ${this.pendingTranscriptionText}`;
+				this.pendingTranscriptionText = "";
+				// Force a re-render to update the UI
+				this.requestUpdate();
+			}
+			this.transcriptionDebounceTimer = null;
+		}, 100); // 100ms debounce
+	}
+	
+	// Clear thinking UI
+	private _clearThinkingUI() {
+		this.npuStatus = "";
+		this.npuThinkingLog = "";
+		// Force a re-render to update the UI
+		this.requestUpdate();
+	}
+	
 	private async _handleSendMessage(e: CustomEvent) {
     let userExpanded = false;
     // Track when the user manually opens the panel
@@ -1335,74 +1452,89 @@ this.updateTextTranscript(this.ttsCaption);
            // Log the event for debugging
            logger.debug("NPU Progress Event", ev);
            
-           switch (ev.type) {
-             case "start":
-               this.npuStatus = "Thinking…";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "memories:start":
-               this.npuStatus = "Searching memory…";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               // auto-expand only if user has NOT persisted collapsed
-               if (!this.npuPersistCollapsed && userExpanded) this.npuThinkingOpen = true;
-               break;
-             case "memories:done":
-               this.npuStatus = "Memory search complete";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "prompt:partial":
-               this.npuThinkingLog += ev.delta || "";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               if (!this.npuPersistCollapsed && userExpanded) this.npuThinkingOpen = true;
-               break;
-             case "prompt:build":
-               this.npuStatus = "Building prompt…";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "prompt:built":
-               this.npuStatus = "Prompt built";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               // Optionally, keep partial stream; or replace with full prompt
-               // this.npuThinkingLog = ev.fullPrompt || this.npuThinkingLog;
-               break;
-             case "model:start":
-               this.npuStatus = `Calling model: ${ev.model}`;
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "model:attempt":
-               this.npuStatus = `Calling model (attempt ${ev.attempt})…`;
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "model:response":
+           // Map event to status string
+           if (EVENT_STATUS_MAP[ev.type]) {
+             this.npuStatus = EVENT_STATUS_MAP[ev.type];
+             // Add data details for specific events
+             if (ev.type === "npu:start") {
+               // Start timing
+               this.npuStartTime = Date.now();
+             } else if (ev.type === "npu:model:start" && ev.data?.model) {
+               this.npuStatus = `Preparing advisor (${ev.data.model})…`;
+             } else if (ev.type === "npu:model:attempt" && ev.data?.attempt) {
+               this.npuStatus = `Calling model (attempt ${ev.data.attempt})…`;
+             } else if (ev.type === "npu:model:error" && ev.data?.attempt && ev.data?.error) {
+               this.npuStatus = `Model error (attempt ${ev.data.attempt}): ${ev.data.error}`;
+               // Clear any pending transcription timers on error
+               if (this.transcriptionDebounceTimer) {
+                 clearTimeout(this.transcriptionDebounceTimer);
+                 this.transcriptionDebounceTimer = null;
+                 this.pendingTranscriptionText = "";
+               }
+               // Calculate processing time on error
+               if (this.npuStartTime) {
+                 this.npuProcessingTime = Date.now() - this.npuStartTime;
+                 this.npuStartTime = null;
+               }
+             } else if (ev.type === "npu:model:response" && ev.data?.length) {
                this.npuStatus = "Advisor ready";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "model:error":
-               this.npuStatus = `Model error (attempt ${ev.attempt}): ${ev.error}`;
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "advisor:ready":
-               this.npuStatus = "Advisor ready - Sending to VPU…";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
-             case "complete":
-               // Auto-collapse after complete, but only if user hadn't manually expanded
-               if (!userExpanded) this.npuThinkingOpen = false;
-               this.npuStatus = "NPU complete";
-               // Force a re-render to update the UI
-               this.requestUpdate();
-               break;
+             } else if (ev.type === "npu:complete") {
+               // Calculate processing time on completion
+               if (this.npuStartTime) {
+                 this.npuProcessingTime = Date.now() - this.npuStartTime;
+                 this.npuStartTime = null;
+               }
+             }
+             // Force a re-render to update the UI
+             this.requestUpdate();
+           }
+           
+           // Handle auto-expand rules
+           if (AUTO_EXPAND_RULES.has(ev.type)) {
+             // auto-expand only if user has NOT persisted collapsed
+             if (!this.npuPersistCollapsed && userExpanded) {
+               this.npuThinkingOpen = true;
+               // Save to localStorage when expanding
+               try {
+                 localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
+               } catch (error) {
+                 // Ignore storage errors
+                 console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
+               }
+             }
+           }
+           
+           // Handle prompt partial updates
+           if (ev.type === "npu:prompt:partial" && ev.data?.delta) {
+             this.npuThinkingLog += ev.data.delta;
+             // Force a re-render to update the UI
+             this.requestUpdate();
+             if (!this.npuPersistCollapsed && userExpanded) {
+               this.npuThinkingOpen = true;
+               // Save to localStorage when expanding
+               try {
+                 localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
+               } catch (error) {
+                 // Ignore storage errors
+                 console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
+               }
+             }
+           }
+           
+           // Handle prompt built with optional full prompt display
+           if (ev.type === "npu:prompt:built" && ev.data?.fullPrompt) {
+             // Optionally, keep partial stream; or replace with full prompt
+             if (this.showInternalPrompts) {
+               this.npuThinkingLog = ev.data.fullPrompt as string;
+             }
+           }
+           
+           // Handle completion
+           if (ev.type === "npu:complete") {
+             // Auto-collapse after complete, but only if user hadn't manually expanded
+             if (!userExpanded) this.npuThinkingOpen = false;
+             // Force a re-render to update the UI
+             this.requestUpdate();
            }
          }
 				);
@@ -1417,32 +1549,54 @@ this.updateTextTranscript(this.ttsCaption);
 					// Log the event for debugging
 					logger.debug("VPU Progress Event (summary)", ev);
 					
-					switch (ev.type) {
-						case "vpu:message:sending":
-							this.npuStatus = "Sending to VPU…";
-							this.npuThinkingLog += "\n[Sending message to VPU]";
-							// Force a re-render to update the UI
-							this.requestUpdate();
-							break;
-						case "vpu:message:error":
-							this.npuStatus = `VPU error: ${ev.error}`;
-							this.npuThinkingLog += `\n[VPU Error: ${ev.error}]`;
-							// Force a re-render to update the UI
-							this.requestUpdate();
-							break;
-						case "vpu:response:transcription":
-							this.npuStatus = "Receiving response…";
-							this.npuThinkingLog += `\n[model]: ${ev.text}`;
-							// Force a re-render to update the UI
-							this.requestUpdate();
-							break;
-						case "vpu:response:complete":
-							this.npuStatus = "Response complete";
-							this.npuThinkingLog += "\n[Response complete]";
-							// Force a re-render to update the UI
-							this.requestUpdate();
-							break;
-					}
+					     // Map event to status string
+					     if (EVENT_STATUS_MAP[ev.type]) {
+					       this.npuStatus = EVENT_STATUS_MAP[ev.type];
+					       // Add data details for specific events
+					       if (ev.type === "vpu:message:sending") {
+					         // Start timing
+					         this.vpuStartTime = Date.now();
+					       } else if (ev.type === "vpu:message:error" && ev.data?.error) {
+					         this.npuStatus = `VPU error: ${ev.data.error}`;
+					         // Clear any pending transcription timers on error
+					         if (this.transcriptionDebounceTimer) {
+					           clearTimeout(this.transcriptionDebounceTimer);
+					           this.transcriptionDebounceTimer = null;
+					           this.pendingTranscriptionText = "";
+					         }
+					         // Calculate processing time on error
+					         if (this.vpuStartTime) {
+					           this.vpuProcessingTime = Date.now() - this.vpuStartTime;
+					           this.vpuStartTime = null;
+					         }
+					       } else if (ev.type === "vpu:response:complete") {
+					         // Calculate processing time on completion
+					         if (this.vpuStartTime) {
+					           this.vpuProcessingTime = Date.now() - this.vpuStartTime;
+					           this.vpuStartTime = null;
+					         }
+					       }
+					       // Force a re-render to update the UI
+					       this.requestUpdate();
+					     }
+					     
+					     // Handle log updates
+					     if (ev.type === "vpu:message:sending") {
+					       this.npuThinkingLog += "\n[Sending message to VPU]";
+					       // Force a re-render to update the UI
+					       this.requestUpdate();
+					     } else if (ev.type === "vpu:message:error" && ev.data?.error) {
+					       this.npuThinkingLog += `\n[VPU Error: ${ev.data.error}]`;
+					       // Force a re-render to update the UI
+					       this.requestUpdate();
+					     } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
+					       // Use debounced transcription updates
+					       this._handleDebouncedTranscription(ev.data.text as string);
+					     } else if (ev.type === "vpu:response:complete") {
+					       this.npuThinkingLog += "\n[Response complete]";
+					       // Force a re-render to update the UI
+					       this.requestUpdate();
+					     }
 				});
 			} catch (error) {
 				logger.error("Error sending message to text session (unified flow):", {
@@ -1472,32 +1626,48 @@ this.updateTextTranscript(this.ttsCaption);
 							// Log the event for debugging
 							logger.debug("VPU Progress Event (retry)", ev);
 							
-							switch (ev.type) {
-								case "vpu:message:sending":
-									this.npuStatus = "Sending to VPU (retry)…";
-									this.npuThinkingLog += "\n[Sending message to VPU (retry)]";
-									// Force a re-render to update the UI
-									this.requestUpdate();
-									break;
-								case "vpu:message:error":
-									this.npuStatus = `VPU error (retry): ${ev.error}`;
-									this.npuThinkingLog += `\n[VPU Error (retry): ${ev.error}]`;
-									// Force a re-render to update the UI
-									this.requestUpdate();
-									break;
-								case "vpu:response:transcription":
-									this.npuStatus = "Receiving response (retry)…";
-									this.npuThinkingLog += `\n[model]: ${ev.text}`;
-									// Force a re-render to update the UI
-									this.requestUpdate();
-									break;
-								case "vpu:response:complete":
-									this.npuStatus = "Response complete (retry)";
-									this.npuThinkingLog += "\n[Response complete (retry)]";
-									// Force a re-render to update the UI
-									this.requestUpdate();
-									break;
-							}
+							       // Map event to status string
+							       if (EVENT_STATUS_MAP[ev.type]) {
+							         this.npuStatus = EVENT_STATUS_MAP[ev.type];
+							         // Add "(retry)" suffix for retry events
+							         if (ev.type === "vpu:message:sending") {
+							           this.npuStatus = "Sending to VPU (retry)…";
+							         } else if (ev.type === "vpu:response:transcription") {
+							           this.npuStatus = "Receiving response (retry)…";
+							         } else if (ev.type === "vpu:response:complete") {
+							           this.npuStatus = "Response complete (retry)";
+							         }
+							         // Add data details for specific events
+							         if (ev.type === "vpu:message:error" && ev.data?.error) {
+							           this.npuStatus = `VPU error (retry): ${ev.data.error}`;
+							           // Clear any pending transcription timers on error
+							           if (this.transcriptionDebounceTimer) {
+							             clearTimeout(this.transcriptionDebounceTimer);
+							             this.transcriptionDebounceTimer = null;
+							             this.pendingTranscriptionText = "";
+							           }
+							         }
+							         // Force a re-render to update the UI
+							         this.requestUpdate();
+							       }
+							       
+							       // Handle log updates
+							       if (ev.type === "vpu:message:sending") {
+							         this.npuThinkingLog += "\n[Sending message to VPU (retry)]";
+							         // Force a re-render to update the UI
+							         this.requestUpdate();
+							       } else if (ev.type === "vpu:message:error" && ev.data?.error) {
+							         this.npuThinkingLog += `\n[VPU Error (retry): ${ev.data.error}]`;
+							         // Force a re-render to update the UI
+							         this.requestUpdate();
+							       } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
+							         // Use debounced transcription updates
+							         this._handleDebouncedTranscription(ev.data.text as string);
+							       } else if (ev.type === "vpu:response:complete") {
+							         this.npuThinkingLog += "\n[Response complete (retry)]";
+							         // Force a re-render to update the UI
+							         this.requestUpdate();
+							       }
 						});
 					} catch (retryError) {
 						logger.error("Failed to send message on retry:", { retryError });
@@ -1759,11 +1929,25 @@ this.updateTextTranscript(this.ttsCaption);
                   .thinkingStatus=${this.npuStatus}
                   .thinkingText=${this.npuThinkingLog}
                   .thinkingOpen=${this.npuThinkingOpen}
+                  .npuProcessingTime=${this.npuProcessingTime}
+                  .vpuProcessingTime=${this.vpuProcessingTime}
                   @send-message=${this._handleSendMessage}
                   @reset-text=${this._resetTextContext}
                   @scroll-state-changed=${this._handleChatScrollStateChanged}
                   @chat-active-changed=${this._handleChatActiveChanged}
-                  @thinking-open-changed=${(e: CustomEvent) => { this.npuThinkingOpen = e.detail.open; if (!e.detail.open) this.npuPersistCollapsed = true; }}
+                  @thinking-open-changed=${(e: CustomEvent) => {
+                    this.npuThinkingOpen = e.detail.open;
+                    if (!e.detail.open) {
+                      this.npuPersistCollapsed = true;
+                      // Save to localStorage
+                      try {
+                        localStorage.setItem('npuPersistCollapsed', JSON.stringify(true));
+                      } catch (error) {
+                        // Ignore storage errors
+                        console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
+                      }
+                    }
+                  }}
                 >
                 </chat-view>
               `

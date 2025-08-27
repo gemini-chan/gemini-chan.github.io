@@ -502,7 +502,7 @@
           
           // Emit progress event for first output transcription
           if (message.serverContent?.outputTranscription?.text) {
-            this.progressCb?.({ type: "vpu:response:transcription", text: message.serverContent.outputTranscription.text });
+            this.progressCb?.({ type: "vpu:response:transcription", ts: Date.now(), data: { text: message.serverContent.outputTranscription.text } });
             this.updateTranscript(message.serverContent.outputTranscription.text);
           }
 
@@ -510,7 +510,7 @@
           const extendedMessage = message as ExtendedLiveServerMessage;
           const genComplete = extendedMessage.serverContent?.generationComplete;
           if (genComplete) {
-            this.progressCb?.({ type: "vpu:response:complete" });
+            this.progressCb?.({ type: "vpu:response:complete", ts: Date.now() });
             this.onTurnComplete();
           }
         },
@@ -558,7 +558,7 @@
      * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
      * then VPU (the session) responds with the enhanced context.
      */
-    public sendMessage(message: string, progressCb?: (event: Record<string, unknown>) => void): void {
+    public sendMessage(message: string, progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void): void {
       if (!this.session) {
         this.updateError(`${this.getSessionName()} not initialized`);
         return;
@@ -572,7 +572,7 @@
         this.firstOutputReceived = false;
         
         // Emit progress event for message sending
-        this.progressCb?.({ type: "vpu:message:sending", messageLength: message.length });
+        this.progressCb?.({ type: "vpu:message:sending", ts: Date.now(), data: { messageLength: message.length } });
         
         logger.debug(`Sending message to ${this.getSessionName()}`, {
           textLength: message.length,
@@ -595,7 +595,7 @@
           this.vpuStartTimer();
           this.vpuStartTimer = null;
         }
-        this.progressCb?.({ type: "vpu:message:error", error: String((error as Error)?.message || error) });
+        this.progressCb?.({ type: "vpu:message:error", ts: Date.now(), data: { error: String((error as Error)?.message || error) } });
         this.updateError(`Failed to send message: ${(error as Error).message}`);
       }
     }
