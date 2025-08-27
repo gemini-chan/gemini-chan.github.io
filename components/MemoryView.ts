@@ -21,6 +21,11 @@ export class MemoryView extends LitElement {
   @state() private healthMetrics: Partial<HealthMetrics> = {};
 
   static styles = css`
+    @keyframes stable-pulse {
+      0% { box-shadow: var(--cp-glow-purple); }
+      50% { box-shadow: 0 0 12px rgba(0, 229, 255, 0.55), 0 0 20px rgba(124, 77, 255, 0.35); }
+      100% { box-shadow: var(--cp-glow-purple); }
+    }
     :host {
       display: flex;
       flex-direction: column;
@@ -169,6 +174,7 @@ export class MemoryView extends LitElement {
     }
 
     li {
+      position: relative;
       padding: 12px;
       border-radius: 10px;
       display: flex;
@@ -180,6 +186,8 @@ export class MemoryView extends LitElement {
       box-shadow: var(--cp-glow-purple);
       color: var(--cp-text);
     }
+
+   li.stable { animation: stable-pulse 2.6s ease-in-out infinite; }
 
     .memory-content {
       flex: 1;
@@ -213,7 +221,15 @@ export class MemoryView extends LitElement {
     this.isLoading = true;
     this.error = null;
     try {
-      this.memories = await this.memoryService.getAllMemories();
+     const raw = await this.memoryService.getAllMemories();
+     // Sort by persistence: permanence (permanent first), then reinforcement_count desc, then recency desc
+     const score = (m: Memory) => {
+       const permanenceBoost = m.permanence_score === 'permanent' ? 2 : m.permanence_score === 'temporary' ? 0.5 : 1;
+       const reinforcement = m.reinforcement_count || 0;
+       const recency = m.timestamp ? new Date(m.timestamp).getTime() : 0;
+       return permanenceBoost * 1000 + reinforcement * 100 + recency / 1e10;
+     };
+     this.memories = raw.sort((a,b) => score(b) - score(a));
       // Update health metrics when fetching memories
       this.healthMetrics = healthMetricsService.getAverageMetrics();
     } catch (e) {
@@ -343,12 +359,29 @@ export class MemoryView extends LitElement {
         ${this.memories.length === 0
           ? html`<p>No memories found.</p>`
           : this.memories.map(
-              (memory) => html`
-                <li>
+            (memory) => {
+              // Stability score (derived): permanence weight + reinforcement + recency factor
+              const permanenceWeight = memory.permanence_score === 'permanent' ? 2 : memory.permanence_score === 'temporary' ? 0.5 : 1;
+              const reinforcement = memory.reinforcement_count || 0;
+              const recency = memory.timestamp ? (Date.now() - new Date(memory.timestamp).getTime()) : Number.MAX_SAFE_INTEGER;
+              const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (1000 * 60 * 60 * 24 * 30)) : 1; // decay over ~30 days
+              const stabilityScore = (permanenceWeight * 1.0) + (reinforcement * 0.5) + (recencyScore * 0.5);
+
+              const titleStr = this.showHealthMetrics
+                ? `reinforce: ${reinforcement.toFixed(2)} | stability: ${stabilityScore.toFixed(2)}`
+                : `${memory.fact_key}: ${memory.fact_value}`;
+              const cls = stabilityScore >= 2.5 ? 'stable' : '';
+
+              return html`
+                <li title=${titleStr} class=${cls}>
                   <div class="memory-content">
                     <span class="memory-key">${memory.fact_key}:</span>
                     <span>${memory.fact_value}</span>
                   </div>
+                  ${this.showHealthMetrics ? html`<div style="display:flex;gap:8px;align-items:center;">
+                      <span style="font-size:12px;color:var(--cp-text);opacity:0.8;">reinforce: ${(memory.reinforcement_count||0).toFixed(2)}</span>
+                      <span style="font-size:12px;color:var(--cp-cyan);font-weight:600;">stability: ${stabilityScore.toFixed(2)}</span>
+                    </div>` : ""}
                   <div class="memory-actions">
                     ${memory.permanence_score === "permanent"
                       ? html`<button class="btn" @click=${() => this.unpinMemory(memory.id!)}>Unpin</button>`
@@ -358,8 +391,9 @@ export class MemoryView extends LitElement {
                     </button>
                   </div>
                 </li>
-              `
-            )}
+              `;
+            })
+      }
       </ul>
     `;
   }

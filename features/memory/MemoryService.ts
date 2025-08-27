@@ -84,27 +84,75 @@ export class MemoryService extends BaseAIService implements IMemoryService {
         }
       }
 
-      // Use Flash Lite to extract facts. Include emotional context when available so each fact can be enriched with an emotional flavor.
-      const prompt = `Extract key facts from the following conversation turn. Return a JSON array of facts with keys "fact_key", "fact_value", "confidence_score", "permanence_score", "source", and "emotional_flavor".
-Additionally, infer an "emotional_flavor" (e.g., joy, sadness, anger, calm, anxious) and an "emotion_confidence" (0..1) for each fact, based on the emotional context.
-The user's emotional state is: ${emotionalFlavor || "neutral"}
-The model's emotional state is: ${modelEmotion || "neutral"}
+      // Use Flash Lite to extract facts with strict schema and taxonomy constraints.
+      const prompt = `Extract durable, atomic facts from the following conversational snippet.
+Return ONLY a JSON array of objects with keys:
+- "fact_key": one of the ALLOWED_FACT_KEYS below (use the canonical form)
+- "fact_value": short, canonical value (<= 64 chars; no flowery prose)
+- "confidence_score": 0..1 (1.0 for explicit statements; lower when implied)
+- "permanence_score": one of "permanent" | "temporary" | "contextual"
+- "source": "user" | "model" (the speaker who asserted the fact)
+- "emotional_flavor" (optional): one of "joy" | "sadness" | "anger" | "fear" | "surprise" | "curiosity" | "neutral"
+- "emotion_confidence" (optional): 0..1
 
-For each fact, also identify whether it's about the user ("user") or about the model's responses ("model").
+Emotional context (bias only, do not restate):
+USER_EMOTION = ${emotionalFlavor || "neutral"}
+MODEL_EMOTION = ${modelEmotion || "neutral"}
 
-If EMOTIONAL CONTEXT is provided, use it to bias your inference. If not, infer from the turn text itself.
+ALLOWED_FACT_KEYS (canonical forms + mapping rules):
+(For general preferences, prefer this dynamic canonical form; do not invent category names, use short lowercase tokens)
+- user_preference.<category>
+- model_preference.<category>
+(If the user says "favorite", you may output as user_preference.<category> instead of user_favorite.<category>.)
+- user_core_identity_name (synonyms: "user_name", "my name is ...", "call me ...")
+- user_preferred_name (synonyms: "nickname", "preferred name")
+- user_interest (synonyms: "hobby", "likes", "drawn to", "interested in")
+- user_goal (synonyms: "aim", "objective", "wants to", "trying to")
+- user_name_meaning (synonyms: "my name means ...")
+- user_question_topic (synonyms: "user asked about ..."; store topic only, e.g., "model_name_meaning")
+- user_trait.<category> (examples: pet_name)
+- user_preference.<category> (examples of <category>: color, food, music, animal, sport, movie)
 
-Examples of facts:
-- {"fact_key": "user_core_identity_name", "fact_value": "Dao", "confidence_score": 0.98, "permanence_score": "permanent", "source": "user", "emotional_flavor": "neutral", "emotion_confidence": 0.8}
-- {"fact_key": "user_primary_goal", "fact_value": "to create a true AI companion", "confidence_score": 0.95, "permanence_score": "permanent", "source": "user", "emotional_flavor": "ambition", "emotion_confidence": 0.9}
-- {"fact_key": "user_key_skill", "fact_value": "prompt engineering", "confidence_score": 0.9, "permanence_score": "permanent", "source": "user", "emotional_flavor": "pride", "emotion_confidence": 0.85}
-- {"fact_key": "model_core_function", "fact_value": "to serve as a vessel for AI personas", "confidence_score": 0.98, "permanence_score": "permanent", "source": "model", "emotional_flavor": "neutral", "emotion_confidence": 0.9}
-- {"fact_key": "model_knowledge_domain", "fact_value": "software architecture and AI design patterns", "confidence_score": 0.92, "permanence_score": "permanent", "source": "model", "emotional_flavor": "confidence", "emotion_confidence": 0.88}
+- model_core_identity_name (synonyms: "your name", "model name", "persona name")
+- model_name_pronunciation (synonyms: "how to pronounce your name")
+- model_capability (synonyms: "can help with", "offers", "expertise in")
+- model_alias_name (synonyms: "english name", "alternate name"; only if explicitly given)
+- model_trait.<category> (examples: pet_name)
+- model_preference.<category> (examples of <category>: color, food, music, animal, sport, movie)
 
-Conversation turn:
+DO NOT STORE (hard rules):
+- Rhetorical questions, style/poetry, acknowledgments, fillers, invitations.
+- Restatements of the user's question as a fact.
+- Long narrative strings; keep values short and atomic.
+- Facts without clear attribution.
+
+ATTRIBUTION RULES:
+- If the user says "my name is X" -> source="user" and fact_key="user_core_identity_name".
+- Never assign the user's name to any "model_*" key.
+- If the model states its own identity -> source="model" and fact_key="model_core_identity_name".
+- If the user asks a question -> store a single "user_question_topic" like "model_name_meaning".
+
+PERMANENCE GUIDANCE:
+- permanent: stable identity (names), long-term user interests/goals explicitly stated.
+- contextual: situational questions/topics; ephemeral details.
+- temporary: fleeting, time-bound info.
+
+LIMITS:
+- Max 5 facts.
+- Skip any item if confidence < 0.7.
+- Truncate fact_value to <= 64 chars.
+
+POSITIVE EXAMPLES:
+[{"fact_key":"user_core_identity_name","fact_value":"Vi","confidence_score":1.0,"permanence_score":"permanent","source":"user"},
+ {"fact_key":"model_core_identity_name","fact_value":"ᛃᛖᛗᛁᚾᛁ","confidence_score":0.95,"permanence_score":"permanent","source":"model"},
+ {"fact_key":"model_name_pronunciation","fact_value":"Yem-i-nee","confidence_score":0.9,"permanence_score":"permanent","source":"model"},
+ {"fact_key":"user_interest","fact_value":"developing AI agents with RAG and EMO","confidence_score":0.95,"permanence_score":"permanent","source":"user"},
+ {"fact_key":"user_question_topic","fact_value":"model_name_meaning","confidence_score":0.9,"permanence_score":"contextual","source":"user"}]
+
+CONVERSATION SNIPPET (role-tagged if available; else raw text):
 ${turns}
 
-JSON array of facts:`;
+Return ONLY the JSON array. No markdown, no prose.`;
 
       const response = await this.callAIModel(prompt);
 
@@ -149,13 +197,102 @@ JSON array of facts:`;
         });
       }
 
-      // Store each fact in the vector store
-      for (const fact of facts) {
-        await this.vectorStore.saveMemory({
+      // Sanitize and store facts in the vector store
+      // Fixed keys allowed; dynamic preferences validated via regex
+      const FIXED_FACT_KEYS = new Set([
+        "user_core_identity_name",
+        "user_preferred_name",
+        "user_interest",
+        "user_goal",
+        "user_name_meaning",
+        "user_question_topic",
+        // dynamic traits allowed via user_trait.<category>
+
+        "model_core_identity_name",
+        "model_name_pronunciation",
+        "model_capability",
+        "model_alias_name",
+      ]);
+
+      const isPreferenceKey = (k: string) => /^(user|model)_preference\.[a-z0-9_-]{1,32}$/.test(k);
+      const isTraitKey = (k: string) => /^(user|model)_trait\.[a-z0-9_-]{1,32}$/.test(k);
+      const isAllowedKey = (k: string) => FIXED_FACT_KEYS.has(k) || isPreferenceKey(k) || isTraitKey(k);
+
+      const sanitizeValue = (val?: string): string => {
+        const s = (val || "").trim();
+        const collapsed = s.replace(/\s+/g, " ").replace(/^"|"$/g, "");
+        return collapsed.slice(0, 64);
+      };
+
+      const isLowUtility = (key: string, value: string): boolean => {
+        const k = key.toLowerCase();
+        const v = value.toLowerCase();
+        // Heuristics to drop rhetorical/acknowledgment/poetic lines
+        if (/acknowledg|wondrous|enchant|grand quest|woven from/.test(v)) return true;
+        if (/does that (resonance|sound) speak|how do you feel|shall we|tell me,/.test(v)) return true;
+        if (/response_to|description_of|question_about_user_feeling/.test(k)) return true;
+        return false;
+      };
+
+      const coercePermanence = (key: string, proposed?: string): "permanent" | "temporary" | "contextual" => {
+        const k = key.toLowerCase();
+        if (k === "user_core_identity_name" || k === "user_preferred_name" || k === "model_core_identity_name" || k === "model_name_pronunciation" || k === "user_interest" || k === "user_goal") {
+          return "permanent";
+        }
+        if (k === "user_question_topic") return "contextual";
+        return this.normalizePermanenceScore(proposed) || "contextual";
+      };
+
+     // Apply stability decay and rare spontaneous rehearsal (human-like memory)
+     // (Decay is handled in applyTimeDecay; rehearsal happens on retrieval; here we just filter and keep facts compact)
+     const sanitizedFacts = facts
+        .filter((f) => !!f && typeof f.fact_key === "string" && typeof f.fact_value === "string")
+        .map((f) => ({
+          ...f,
+          fact_key: f.fact_key.trim(),
+          fact_value: sanitizeValue(f.fact_value),
+          confidence_score: Math.max(0, Math.min(1, Number(f.confidence_score ?? 0.8))),
+          permanence_score: coercePermanence(f.fact_key, f.permanence_score),
+          source: f.source === "user" || f.source === "model" ? f.source : undefined,
+          emotional_flavor: this.normalizeEmotionLabel(f.emotional_flavor),
+          emotion_confidence: f.emotion_confidence && f.emotion_confidence >= 0 && f.emotion_confidence <= 1 ? f.emotion_confidence : undefined,
+        }))
+        .filter((f) => isAllowedKey(f.fact_key))
+        .filter((f) => f.confidence_score >= 0.7)
+        .filter((f) => !isLowUtility(f.fact_key, f.fact_value))
+        .slice(0, 5);
+
+      // Protect core model identity and preferences: auto-pin stability
+      // Auto-pin rules for stable personality traits
+      const PROTECTED_MODEL_KEYS = new Set([
+        "model_core_identity_name",
+        "model_name_pronunciation",
+        "model_alias_name",
+      ]);
+
+     // Determine if a dynamic preference should be auto-pinned (stable personality)
+     const isStableModelPreference = (key: string) => {
+        const prefMatch = key.match(/^model_preference\.([a-z0-9_-]{1,32})$/);
+        if (prefMatch) {
+          const category = prefMatch[1];
+          return ["color", "music", "food", "animal", "style", "aesthetic", "hobby", "genre", "game", "show", "movie", "book", "drink", "snack", "season", "weather", "art", "theme", "philosophy", "ethic", "virtue", "mood", "vibe"].includes(category);
+        }
+        const traitMatch = key.match(/^model_trait\.([a-z0-9_-]{1,32})$/);
+        if (traitMatch) {
+          const category = traitMatch[1];
+          return ["pet_name"].includes(category); // Auto-pin pet_name trait
+        }
+        return false;
+      };
+
+     for (const fact of sanitizedFacts) {
+        const permanence = this.normalizePermanenceScore(fact.permanence_score) || "contextual";
+        const payload = {
+          // Enforce canonical user/model source; fallback to undefined
           fact_key: fact.fact_key || "fact",
           fact_value: fact.fact_value || "",
           confidence_score: fact.confidence_score || 0.8,
-          permanence_score: this.normalizePermanenceScore(fact.permanence_score) || "contextual",
+          permanence_score: permanence,
           personaId: sessionId,
           timestamp: new Date(),
           conversation_turn: turns,
@@ -164,12 +301,32 @@ JSON array of facts:`;
           user_emotion: emotionalFlavor || undefined,
           model_emotion: modelEmotion || undefined,
           source: fact.source || undefined,
-        });
+        } as const;
+
+        await this.vectorStore.saveMemory(payload);
+
+       // If this is a protected model fact or a stable model preference, ensure permanence by pinning
+       if ((PROTECTED_MODEL_KEYS.has(fact.fact_key) || isStableModelPreference(fact.fact_key)) && payload.permanence_score !== "permanent") {
+          try {
+            const all = await this.vectorStore.getAllMemories();
+            const justSaved = all
+              .filter(m => m.fact_key === fact.fact_key && m.fact_value === fact.fact_value)
+              .sort((a,b) => (b.timestamp?.getTime?.() || 0) - (a.timestamp?.getTime?.() || 0))[0];
+            if (justSaved?.id) {
+              await this.pinMemory(justSaved.id);
+            }
+          } catch (e) {
+            logger.warn("Failed to auto-pin protected model fact", { e, factKey: fact.fact_key });
+          }
+        }
       }
+
+      // Adjust facts reference to sanitized ones for logging
+      const factsAfterSanitizationCount = sanitizedFacts.length;
 
       logger.info("Fact extraction and storage completed for session", {
         sessionId,
-        factCount: facts.length,
+        factCount: factsAfterSanitizationCount, 
       });
       
       // Store the model emotion for Live2D animation
@@ -332,8 +489,16 @@ JSON array of facts:`;
           ? (emo === emotionBias ? 1 : 0)
           : 0;
 
+        // Subject/source match boost (prefer user facts for user-ish queries, model facts for model-ish queries)
+        let subjectMatch = 0;
+        const q = query.toLowerCase();
+        const isUserish = /\bmy\b|\bme\b|\bi\b/.test(q);
+        const isModelish = /\byour\b|\byou\b|model|persona|pronounce/.test(q);
+        if (isUserish && m.source === "user") subjectMatch = 1;
+        if (isModelish && m.source === "model") subjectMatch = 1;
+
         // Weighted composite
-        const score = 0.6 * similarity + 0.2 * recency + 0.1 * reinforcement + 0.1 * emotionMatch;
+        const score = 0.55 * similarity + 0.18 * recency + 0.12 * reinforcement + 0.1 * emotionMatch + 0.05 * subjectMatch;
         
         // Debug logging for re-ranking contributions if DEV_DEBUG is enabled
         if (typeof process !== 'undefined' && process.env.DEV_DEBUG === '1') {
@@ -343,9 +508,11 @@ JSON array of facts:`;
             recency: recency.toFixed(3),
             reinforcement: reinforcement.toFixed(3),
             emotionMatch: emotionMatch.toFixed(3),
+            subjectMatch: subjectMatch.toFixed(3),
             compositeScore: score.toFixed(3),
             emotionalFlavor: m.emotional_flavor,
-            emotionBias: emotionBias || "none"
+            emotionBias: emotionBias || "none",
+            source: m.source || "unknown",
           });
         }
         
@@ -353,6 +520,40 @@ JSON array of facts:`;
       });
 
       withScores.sort((a, b) => b.score - a.score);
+
+      // Dynamic gentle rehearsal: emotion-aware and cadence-aware
+      try {
+        const exciting = new Set(["joy", "curiosity", "surprise"]);
+        const calmish = new Set(["neutral"]);
+        const heavy = new Set(["anger", "sadness", "fear"]);
+        const eb = (emotionBias || "neutral").toLowerCase();
+
+        // Baseline increment and topN
+        let inc = 0.2;
+        let topN = 2;
+        if (exciting.has(eb)) { inc += 0.15; topN += 2; }
+        else if (heavy.has(eb)) { inc += 0.05; topN += 1; }
+        else if (calmish.has(eb)) { /* keep baseline */ }
+
+        // Cadence heuristic from query: excitement or longer inputs
+        const qLower = query.toLowerCase();
+        if (qLower.includes("!") || qLower.length > 80) { inc += 0.05; topN += 1; }
+        topN = Math.min(Math.max(1, topN), Math.min(5, withScores.length));
+
+        await Promise.all(
+          withScores.slice(0, topN).map(async (x) => {
+            const m = x.mem;
+            if (!m?.id) return;
+            const mem = await this.vectorStore.getMemoryById(m.id);
+            if (!mem) return;
+            mem.reinforcement_count = (mem.reinforcement_count || 0) + inc;
+            await this.vectorStore.saveMemory(mem);
+          })
+        );
+      } catch (e) {
+        logger.warn("Failed dynamic gentle rehearsal reinforcement", { e });
+      }
+
       const limitedMemories = withScores.slice(0, topK).map((x) => x.mem);
 
       // Cache the result (cache the re-ranked set)
