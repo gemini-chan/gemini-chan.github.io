@@ -271,19 +271,26 @@ Return ONLY the JSON array. No markdown, no prose.`;
       ]);
 
      // Determine if a dynamic preference should be auto-pinned (stable personality)
+     const STABLE_MODEL_PREFERENCE_CATEGORIES = new Set([
+       "color", "music", "food", "animal", "style", "aesthetic", "hobby",
+       "genre", "game", "show", "movie", "book", "drink", "snack", "season",
+       "weather", "art", "theme", "philosophy", "ethic", "virtue", "mood", "vibe"
+     ]);
+     const STABLE_MODEL_TRAIT_CATEGORIES = new Set(["pet_name"]);
+     
      const isStableModelPreference = (key: string) => {
-        const prefMatch = key.match(/^model_preference\.([a-z0-9_-]{1,32})$/);
-        if (prefMatch) {
-          const category = prefMatch[1];
-          return ["color", "music", "food", "animal", "style", "aesthetic", "hobby", "genre", "game", "show", "movie", "book", "drink", "snack", "season", "weather", "art", "theme", "philosophy", "ethic", "virtue", "mood", "vibe"].includes(category);
-        }
-        const traitMatch = key.match(/^model_trait\.([a-z0-9_-]{1,32})$/);
-        if (traitMatch) {
-          const category = traitMatch[1];
-          return ["pet_name"].includes(category); // Auto-pin pet_name trait
-        }
-        return false;
-      };
+       const prefMatch = key.match(/^model_preference\.([a-z0-9_-]{1,32})$/);
+       if (prefMatch) {
+         const category = prefMatch[1];
+         return STABLE_MODEL_PREFERENCE_CATEGORIES.has(category);
+       }
+       const traitMatch = key.match(/^model_trait\.([a-z0-9_-]{1,32})$/);
+       if (traitMatch) {
+         const category = traitMatch[1];
+         return STABLE_MODEL_TRAIT_CATEGORIES.has(category); // Auto-pin pet_name trait
+       }
+       return false;
+     };
 
      for (const fact of sanitizedFacts) {
        const permanence = this.normalizePermanenceScore(fact.permanence_score) || "contextual";
