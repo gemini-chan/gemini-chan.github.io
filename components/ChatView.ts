@@ -2,6 +2,7 @@ import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
 import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { ACTIVE_STATES } from "@shared/progress";
 
 interface Turn {
   text: string;
@@ -10,6 +11,9 @@ interface Turn {
 }
 
 const log = createComponentLogger("ChatView");
+
+// Maximum characters to display in the thinking log
+const MAX_THINKING_CHARS = 20000;
 
 @customElement("chat-view")
 export class ChatView extends LitElement {
@@ -321,7 +325,14 @@ export class ChatView extends LitElement {
       user-select: none;
     }
     .thinking-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--cp-text); }
-    .thinking-badge { font-size: 12px; padding: 2px 6px; border-radius: 999px; background: var(--cp-surface-strong); border: 1px solid var(--cp-surface-border-2); }
+    .thinking-badge { 
+      font-size: 12px; 
+      padding: 2px 6px; 
+      border-radius: 999px; 
+      background: var(--cp-surface-strong); 
+      border: 1px solid var(--cp-surface-border-2);
+      aria-live: polite;
+    }
     .thinking-badge.active { display: inline-flex; align-items: center; gap: 4px; }
     .thinking-spinner {
       width: 12px;
@@ -421,16 +432,7 @@ export class ChatView extends LitElement {
 
    // Active states that should show a spinner
    private _isActiveState(status: string): boolean {
-     const activeStates = new Set([
-       "Thinking…",
-       "Searching memory…",
-       "Building prompt…",
-       "Preparing advisor…",
-       "Calling model…",
-       "Sending to VPU…",
-       "Receiving response…"
-     ]);
-     return activeStates.has(status);
+     return ACTIVE_STATES.has(status as any);
    }
    
    // Format thinking status with processing times
@@ -462,7 +464,8 @@ export class ChatView extends LitElement {
      }));
    }
    
-   private _copyThinkingLog = () => {
+   private _copyThinkingLog = (e: Event) => {
+     e.stopPropagation(); // Prevent toggling the panel when copying
      if (this.thinkingText) {
        navigator.clipboard.writeText(this.thinkingText).catch((err) => {
          console.error('Failed to copy thinking log: ', err);
@@ -648,10 +651,13 @@ private async _updateScrollToBottomState() {
            </span>
          </div>
           ${this.thinkingOpen ? html`
-            <div class="thinking-body"><code>${this.thinkingText || ''}</code></div>
+            <div class="thinking-body"><code>${(this.thinkingText || '').substring(0, MAX_THINKING_CHARS) + (this.thinkingText?.length > MAX_THINKING_CHARS ? '\n\n[Log truncated for display]' : '')}</code></div>
             <div class="thinking-footer">
               <span>${new Date().toLocaleTimeString()}</span>
-              <button class="thinking-copy-button" @click=${this._copyThinkingLog}>Copy</button>
+              <div>
+                <button class="thinking-copy-button" @click=${this._copyThinkingLog}>Copy</button>
+                <button class="thinking-copy-button" @click=${this._openFullLog}>Open full</button>
+              </div>
             </div>
           ` : ''}
         </div>` : ''}
@@ -710,5 +716,23 @@ private async _updateScrollToBottomState() {
         </button>
       </div>
     `;
+  }
+
+  private _openFullLog = (e: Event) => {
+    e.stopPropagation(); // Prevent toggling the panel when opening full log
+    
+    if (!this.thinkingText) return;
+    
+    // Create a Blob with the full thinking text
+    const blob = new Blob([this.thinkingText], { type: 'text/plain' });
+    
+    // Create a URL for the Blob
+    const url = URL.createObjectURL(blob);
+    
+    // Open the URL in a new tab
+    window.open(url, '_blank');
+    
+    // Clean up the URL object after a delay
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 }

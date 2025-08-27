@@ -42,12 +42,6 @@ declare global {
 	}
 }
 
-declare global {
-	interface Window {
-		webkitAudioContext: typeof AudioContext;
-	}
-}
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ExtendedLiveServerMessage extends LiveServerMessage {
 	sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
@@ -63,73 +57,19 @@ type ActiveMode = "texting" | "calling" | null;
 
 const logger = createComponentLogger("GdmLiveAudio");
 
-interface BaseProgressEvent {
-  type: string;
-  ts: number;
-  data?: Record<string, unknown>;
-}
-
-type NpuProgressEvent = BaseProgressEvent & {
-  type:
-    | "npu:start"
-    | "npu:memories:start"
-    | "npu:memories:done"
-    | "npu:prompt:partial"
-    | "npu:prompt:build"
-    | "npu:prompt:built"
-    | "npu:model:start"
-    | "npu:model:attempt"
-    | "npu:model:response"
-    | "npu:model:error"
-    | "npu:advisor:ready"
-    | "npu:complete";
-};
-
-type VpuProgressEvent = BaseProgressEvent & {
-  type:
-    | "vpu:message:sending"
-    | "vpu:message:error"
-    | "vpu:response:transcription"
-    | "vpu:response:complete";
-};
-
-// Centralized mapping from events to status strings
-const EVENT_STATUS_MAP: Record<string, string> = {
-  "npu:start": "Thinking…",
-  "npu:memories:start": "Searching memory…",
-  "npu:memories:done": "Memory search complete",
-  "npu:prompt:build": "Building prompt…",
-  "npu:prompt:built": "Prompt built",
-  "npu:model:start": "Preparing advisor…",
-  "npu:model:attempt": "Calling model…",
-  "npu:advisor:ready": "Sending to VPU…",
-  "npu:complete": "NPU complete",
- "vpu:message:sending": "Sending to VPU…",
-  "vpu:message:error": "VPU error",
-  "vpu:response:transcription": "Receiving response…",
-  "vpu:response:complete": "Done"
-};
-
-// Active states that should show a spinner
-// const ACTIVE_STATES = new Set([
-//   "npu:start",
-//   "npu:memories:start",
-//   "npu:prompt:build",
-//   "npu:model:start",
-//   "npu:model:attempt",
-//   "vpu:message:sending",
-//   "vpu:response:transcription"
-// ]);
-
-// Auto-expand rules
-const AUTO_EXPAND_RULES = new Set([
-  "npu:memories:start",
-  "npu:prompt:partial",
-  "npu:model:start",
-  "npu:model:attempt",
-  "vpu:message:sending",
-  "vpu:response:transcription"
-]);
+// Import progress event types and mappings
+import type {
+  BaseProgressEvent,
+  NpuProgressEvent,
+  VpuProgressEvent,
+  NpuEventType,
+  VpuEventType
+} from "@shared/progress";
+import {
+  EVENT_STATUS_MAP,
+  AUTO_EXPAND_RULES,
+  ACTIVE_STATES
+} from "@shared/progress";
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
