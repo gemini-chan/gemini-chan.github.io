@@ -27,10 +27,23 @@ export interface IMemoryService {
 export class MemoryService extends BaseAIService implements IMemoryService {
   private vectorStore: VectorStore;
 
-  constructor(vectorStore: VectorStore, client: AIClient) {
-    super(client, MODEL_NAME);
-    this.vectorStore = vectorStore;
-  }
+  // Constants for dynamic gentle rehearsal logic
+  private readonly BASELINE_REINFORCEMENT_INCREMENT = 0.2;
+  private readonly BASELINE_TOP_N = 2;
+  private readonly EXCITING_EMOTION_INCREMENT = 0.15;
+  private readonly HEAVY_EMOTION_INCREMENT = 0.05;
+  private readonly CADENCE_HEURISTIC_INCREMENT = 0.05;
+  private readonly QUERY_LENGTH_THRESHOLD = 80;
+  private readonly MIN_TOP_N = 1;
+  private readonly MAX_TOP_N = 5;
+  private readonly EXCITING_TOP_N_INCREMENT = 2;
+  private readonly HEAVY_TOP_N_INCREMENT = 1;
+  private readonly CADENCE_TOP_N_INCREMENT = 1;
+
+   constructor(vectorStore: VectorStore, client: AIClient) {
+     super(client, MODEL_NAME);
+     this.vectorStore = vectorStore;
+   }
 
   /**
    * Extract facts from conversation turns and store them
@@ -535,18 +548,27 @@ Return ONLY the JSON array. No markdown, no prose.`;
         const calmish = new Set(["neutral"]);
         const heavy = new Set(["anger", "sadness", "fear"]);
         const eb = (emotionBias || "neutral").toLowerCase();
-
+        
         // Baseline increment and topN
-        let inc = 0.2;
-        let topN = 2;
-        if (exciting.has(eb)) { inc += 0.15; topN += 2; }
-        else if (heavy.has(eb)) { inc += 0.05; topN += 1; }
+        let inc = this.BASELINE_REINFORCEMENT_INCREMENT;
+        let topN = this.BASELINE_TOP_N;
+        if (exciting.has(eb)) {
+          inc += this.EXCITING_EMOTION_INCREMENT;
+          topN += this.EXCITING_TOP_N_INCREMENT;
+        }
+        else if (heavy.has(eb)) {
+          inc += this.HEAVY_EMOTION_INCREMENT;
+          topN += this.HEAVY_TOP_N_INCREMENT;
+        }
         else if (calmish.has(eb)) { /* keep baseline */ }
-
+        
         // Cadence heuristic from query: excitement or longer inputs
         const qLower = query.toLowerCase();
-        if (qLower.includes("!") || qLower.length > 80) { inc += 0.05; topN += 1; }
-        topN = Math.min(Math.max(1, topN), Math.min(5, withScores.length));
+        if (qLower.includes("!") || qLower.length > this.QUERY_LENGTH_THRESHOLD) {
+          inc += this.CADENCE_HEURISTIC_INCREMENT;
+          topN += this.CADENCE_TOP_N_INCREMENT;
+        }
+        topN = Math.min(Math.max(this.MIN_TOP_N, topN), Math.min(this.MAX_TOP_N, withScores.length));
 
         await Promise.all(
           withScores.slice(0, topN).map(async (x) => {
