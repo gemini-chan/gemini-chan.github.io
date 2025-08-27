@@ -20,17 +20,26 @@ export class MemoryView extends LitElement {
   @state() private showHealthMetrics = false;
   @state() private healthMetrics: Partial<HealthMetrics> = {};
 
-  // Constants for scoring weights and multipliers
-  private readonly PERMANENCE_PERMANENT_BOOST = 2;
-  private readonly PERMANENCE_TEMPORARY_BOOST = 0.5;
-  private readonly PERMANENCE_CONTEXTUAL_BOOST = 1;
-  private readonly REINFORCEMENT_MULTIPLIER = 100;
-  private readonly RECENCY_DIVISOR = 1e10;
-  private readonly STABILITY_PERMANENCE_WEIGHT = 1.0;
-  private readonly STABILITY_REINFORCEMENT_WEIGHT = 0.5;
-  private readonly STABILITY_RECENCY_WEIGHT = 0.5;
-  private readonly STABILITY_THRESHOLD = 2.5; // Threshold for stable memories
-  private readonly RECENCY_DECAY_DAYS = 30; // Days for recency score decay
+  // Config object for memory scoring constants
+  private readonly MEMORY_SCORING_CONFIG = {
+    // Permanence weights
+    PERMANENCE_PERMANENT_BOOST: 2,
+    PERMANENCE_TEMPORARY_BOOST: 0.5,
+    PERMANENCE_CONTEXTUAL_BOOST: 1,
+    
+    // Multipliers for sorting
+    REINFORCEMENT_MULTIPLIER: 100,
+    RECENCY_DIVISOR: 1e10,
+    
+    // Stability scoring weights
+    STABILITY_PERMANENCE_WEIGHT: 1.0,
+    STABILITY_REINFORCEMENT_WEIGHT: 0.5,
+    STABILITY_RECENCY_WEIGHT: 0.5,
+    STABILITY_THRESHOLD: 2.5, // Threshold for stable memories
+    
+    // Recency decay
+    RECENCY_DECAY_DAYS: 30 // Days for recency score decay
+  };
 
   static styles = css`
     @keyframes stable-pulse {
@@ -388,13 +397,13 @@ export class MemoryView extends LitElement {
               const permanenceWeight = this.getPermanenceWeight(memory.permanence_score);
               const reinforcement = memory.reinforcement_count || 0;
               const recency = memory.timestamp ? (Date.now() - new Date(memory.timestamp).getTime()) : Number.MAX_SAFE_INTEGER;
-              const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (1000 * 60 * 60 * 24 * this.RECENCY_DECAY_DAYS)) : 1; // decay over specified days
-              const stabilityScore = (permanenceWeight * this.STABILITY_PERMANENCE_WEIGHT) + (reinforcement * this.STABILITY_REINFORCEMENT_WEIGHT) + (recencyScore * this.STABILITY_RECENCY_WEIGHT);
+              const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (1000 * 60 * 60 * 24 * this.MEMORY_SCORING_CONFIG.RECENCY_DECAY_DAYS)) : 1; // decay over specified days
+              const stabilityScore = (permanenceWeight * this.MEMORY_SCORING_CONFIG.STABILITY_PERMANENCE_WEIGHT) + (reinforcement * this.MEMORY_SCORING_CONFIG.STABILITY_REINFORCEMENT_WEIGHT) + (recencyScore * this.MEMORY_SCORING_CONFIG.STABILITY_RECENCY_WEIGHT);
 
               const titleStr = this.showHealthMetrics
                 ? `reinforce: ${reinforcement.toFixed(2)} | stability: ${stabilityScore.toFixed(2)}`
                 : `${memory.fact_key}: ${memory.fact_value}`;
-              const cls = stabilityScore >= this.STABILITY_THRESHOLD ? 'stable' : '';
+              const cls = stabilityScore >= this.MEMORY_SCORING_CONFIG.STABILITY_THRESHOLD ? 'stable' : '';
 
               return html`
                 <li title=${titleStr} class=${cls}>
@@ -430,12 +439,12 @@ export class MemoryView extends LitElement {
   private getPermanenceWeight(permanenceScore?: string): number {
     switch (permanenceScore) {
       case 'permanent':
-        return this.PERMANENCE_PERMANENT_BOOST;
+        return this.MEMORY_SCORING_CONFIG.PERMANENCE_PERMANENT_BOOST;
       case 'temporary':
-        return this.PERMANENCE_TEMPORARY_BOOST;
+        return this.MEMORY_SCORING_CONFIG.PERMANENCE_TEMPORARY_BOOST;
       case 'contextual':
       default:
-        return this.PERMANENCE_CONTEXTUAL_BOOST;
+        return this.MEMORY_SCORING_CONFIG.PERMANENCE_CONTEXTUAL_BOOST;
     }
   }
 
@@ -452,7 +461,7 @@ export class MemoryView extends LitElement {
     const permanenceBoost = this.getPermanenceWeight(memory.permanence_score);
     const reinforcement = memory.reinforcement_count || 0;
     const recency = memory.timestamp ? new Date(memory.timestamp).getTime() : 0;
-    return permanenceBoost * 1000 + reinforcement * this.REINFORCEMENT_MULTIPLIER + recency / this.RECENCY_DIVISOR;
+    return permanenceBoost * 1000 + reinforcement * this.MEMORY_SCORING_CONFIG.REINFORCEMENT_MULTIPLIER + recency / this.MEMORY_SCORING_CONFIG.RECENCY_DIVISOR;
   }
 }
 
