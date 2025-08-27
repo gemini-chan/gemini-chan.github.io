@@ -462,16 +462,21 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 private updateTextTranscript(text: string) {
-	// This function is now only for LIVE updates to the model's last message.
-	// The official, final message is added to the transcript in _handleTtsTurnComplete.
-	if (this.textTranscript.length > 0) {
-		const lastMessage = this.textTranscript[this.textTranscript.length - 1];
-		if (lastMessage.speaker === "model") {
-			// If the last message was from the model, update it
-			lastMessage.text = text;
-			this.requestUpdate("textTranscript");
-		}
-	}
+// This function is now only for LIVE updates to the model's last message.
+// The official, final message is added to the transcript in _handleTtsTurnComplete.
+if (this.textTranscript.length > 0) {
+const lastMessage = this.textTranscript[this.textTranscript.length - 1];
+if (lastMessage.speaker === "model") {
+	// If the last message was from the model, update it
+	// Create a new array to ensure Lit detects the change
+	const updatedTranscript = [...this.textTranscript];
+	updatedTranscript[updatedTranscript.length - 1] = {
+		...lastMessage,
+		text: text,
+	};
+	this.textTranscript = updatedTranscript;
+}
+}
 }
 	private updateCallTranscript(text: string, speaker: "user" | "model") {
 		logger.debug(`Received ${speaker} text:`, text);
@@ -822,28 +827,22 @@ private updateTextTranscript(text: string) {
 		this.updateStatus("Text conversation cleared.");
 	}
 private _handleTtsCaptionUpdate(text: string) {
-	// Clear any pending timer to clear the caption
-	if (this.ttsCaptionClearTimer) {
-		clearTimeout(this.ttsCaptionClearTimer);
-		this.ttsCaptionClearTimer = undefined;
-	}
+// Clear any pending timer to clear the caption
+if (this.ttsCaptionClearTimer) {
+clearTimeout(this.ttsCaptionClearTimer);
+this.ttsCaptionClearTimer = undefined;
+}
 
-	// When a new caption update arrives, it means a new turn has begun.
-	// Add a new, empty model message to the transcript that we can append to.
-	if (!this.ttsCaption) {
-		this._appendTextMessage("", "model");
-	}
+// When a new caption update arrives, it means a new turn has begun.
+// Add a new, empty model message to the transcript that we can append to.
+if (!this.ttsCaption) {
+this._appendTextMessage("", "model");
+}
 
-	const toast = this.shadowRoot?.querySelector(
-		"toast-notification#inline-toast",
-	) as ToastNotification;
-	this.ttsCaption += text;
+this.ttsCaption += text;
 
-	// Update our new empty model message with the latest caption text
-	this.updateTextTranscript(this.ttsCaption);
-
-	// Use a non-hiding toast; it will be cleared manually on turn completion
-	toast?.show(this.ttsCaption, "info", 0);
+// Update our new empty model message with the latest caption text
+this.updateTextTranscript(this.ttsCaption);
 }
 	private _handleTtsTurnComplete() {
 		// Store the completed turn in memory
