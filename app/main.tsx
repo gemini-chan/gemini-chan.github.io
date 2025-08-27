@@ -1443,8 +1443,6 @@ this.updateTextTranscript(this.ttsCaption);
                  this.npuStartTime = null;
                }
              }
-             // Force a re-render to update the UI
-             this.requestUpdate();
            }
            
            // Handle auto-expand rules
@@ -1465,8 +1463,6 @@ this.updateTextTranscript(this.ttsCaption);
            // Handle prompt partial updates
            if (ev.type === "npu:prompt:partial" && ev.data?.delta) {
              this.npuThinkingLog += ev.data.delta;
-             // Force a re-render to update the UI
-             this.requestUpdate();
              if (!this.npuPersistCollapsed && userExpanded) {
                this.npuThinkingOpen = true;
                // Save to localStorage when expanding
@@ -1491,8 +1487,6 @@ this.updateTextTranscript(this.ttsCaption);
            if (ev.type === "npu:complete") {
              // Auto-collapse after complete, but only if user hadn't manually expanded
              if (!userExpanded) this.npuThinkingOpen = false;
-             // Force a re-render to update the UI
-             this.requestUpdate();
            }
          }
 				);
@@ -1564,31 +1558,21 @@ this.updateTextTranscript(this.ttsCaption);
 					           this.vpuStartTime = null;
 					         }
 					       }
-					       // Force a re-render to update the UI
-					       this.requestUpdate();
 					     }
 					     
 					     // Handle log updates
 					     if (ev.type === "vpu:message:sending") {
 					       this.npuThinkingLog += "\n[Sending message to VPU]";
-					       // Force a re-render to update the UI
-					       this.requestUpdate();
 					     } else if (ev.type === "vpu:message:error" && ev.data?.error) {
 					       this.npuThinkingLog += `\n[VPU Error: ${ev.data.error}]`;
-					       // Force a re-render to update the UI
-					       this.requestUpdate();
 					     } else if (ev.type === "vpu:response:first-output") {
 					       this.npuStatus = "Receiving response…";
 					       this.npuThinkingLog += "\n[First output received]";
-					       // Force a re-render to update the UI
-					       this.requestUpdate();
 					     } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
 					       // Use debounced transcription updates
 					       this._handleDebouncedTranscription(ev.data.text as string);
 					     } else if (ev.type === "vpu:response:complete") {
 					       this.npuThinkingLog += "\n[Response complete]";
-					       // Force a re-render to update the UI
-					       this.requestUpdate();
 					     }
 				});
 			} catch (error) {
@@ -1681,31 +1665,21 @@ this.updateTextTranscript(this.ttsCaption);
 							         if (ev.type === "vpu:message:error" && ev.data?.error) {
 							           this.npuStatus = `VPU error (retry): ${ev.data.error}`;
 							         }
-							         // Force a re-render to update the UI
-							         this.requestUpdate();
 							       }
 							       
 							       // Handle log updates
 							       if (ev.type === "vpu:message:sending") {
 							         this.npuThinkingLog += "\n[Sending message to VPU (retry)]";
-							         // Force a re-render to update the UI
-							         this.requestUpdate();
 							       } else if (ev.type === "vpu:message:error" && ev.data?.error) {
 							         this.npuThinkingLog += `\n[VPU Error (retry): ${ev.data.error}]`;
-							         // Force a re-render to update the UI
-							         this.requestUpdate();
 							       } else if (ev.type === "vpu:response:first-output") {
 							         this.npuStatus = "Receiving response (retry)…";
 							         this.npuThinkingLog += "\n[First output received (retry)]";
-							         // Force a re-render to update the UI
-							         this.requestUpdate();
 							       } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
 							         // Use debounced transcription updates
 							         this._handleDebouncedTranscription(ev.data.text as string);
 							       } else if (ev.type === "vpu:response:complete") {
 							         this.npuThinkingLog += "\n[Response complete (retry)]";
-							         // Force a re-render to update the UI
-							         this.requestUpdate();
 							       }
 						});
 					} catch (retryError) {
