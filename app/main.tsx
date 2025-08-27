@@ -91,6 +91,7 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuStatus: string = "";
   @state() private npuPersistCollapsed: boolean = false;
   @state() private currentTurnId: string | null = null;
+  @state() private isTurnInFlight = false;
   private vpuWaitTimer: number | null = null;
 
 	// Track pending user action for API key validation flow
@@ -108,6 +109,39 @@ export class GdmLiveAudio extends LitElement {
 	// Debouncing for vpu:response:transcription events
 	private transcriptionDebounceTimer: number | null = null;
 	private pendingTranscriptionText: string = "";
+
+	// Clear all thinking UI and timers
+	private _clearThinkingAll() {
+		// Clear thinking UI
+		this._clearThinkingUI();
+		
+		// Clear timers
+		if (this.vpuWaitTimer) {
+			clearTimeout(this.vpuWaitTimer);
+			this.vpuWaitTimer = null;
+		}
+		
+		if (this.transcriptionDebounceTimer) {
+			clearTimeout(this.transcriptionDebounceTimer);
+			this.transcriptionDebounceTimer = null;
+		}
+		
+		// Reset transcription state
+		this.pendingTranscriptionText = "";
+		
+		// Reset status and log
+		this.npuStatus = "";
+		this.npuThinkingLog = "";
+		
+		// Clear correlation
+		this.currentTurnId = null;
+		
+		// Mark not in-flight
+		this.isTurnInFlight = false;
+		
+		// Force a re-render to update the UI
+		this.requestUpdate();
+	}
 
 	// Track current API key for smart change detection
 	private currentApiKey = "";
@@ -863,6 +897,9 @@ if (lastMessage.speaker === "model") {
 		this.textTranscript = [];
 		this.lastAnalyzedTranscriptIndex = 0;
 
+		// Clear thinking UI and timers
+		this._clearThinkingAll();
+
 		// Text session will be lazily initialized when user sends next message
 		this.updateStatus("Text conversation cleared.");
 	}
@@ -943,6 +980,9 @@ this.updateTextTranscript(this.ttsCaption);
 		if (callT) {
 			callT.rateLimited = false;
 		}
+
+		// Clear thinking UI and timers
+		this._clearThinkingAll();
 
 		// Reinitialize call session if we're currently in a call
 		if (this.isCallActive) {
@@ -1097,6 +1137,9 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 
 	private async _handlePersonaChanged() {
+		// Clear thinking UI and timers before changing persona
+		this._clearThinkingAll();
+
 		const activePersona = this.personaManager.getActivePersona();
 		if (activePersona) {
 			// Check if vectorStore is initialized before calling switchPersona
@@ -1331,6 +1374,12 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 	
 	private async _handleSendMessage(e: CustomEvent) {
+		// Block re-entrant sends
+		if (this.isTurnInFlight) {
+			this.npuStatus = "Finishing previous response…";
+			return;
+		}
+
     let userExpanded = false;
     // Track when the user manually opens the panel
     const chatViewEl = this.shadowRoot?.querySelector('chat-view') as (HTMLElement & { thinkingOpen?: boolean }) | null;
@@ -1384,6 +1433,7 @@ this.updateTextTranscript(this.ttsCaption);
 				// Create turn ID for correlation
 				const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
 				this.currentTurnId = turnId;
+				this.isTurnInFlight = true;
 				
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
 				this.lastAdvisorContext = "";
@@ -1540,6 +1590,10 @@ this.updateTextTranscript(this.ttsCaption);
 							this.transcriptionDebounceTimer = null;
 							this.pendingTranscriptionText = "";
 						}
+						// Mark turn as complete
+						if (ev.data?.turnId === this.currentTurnId) {
+							this.isTurnInFlight = false;
+						}
 					}
 					
 					     // Map event to status string
@@ -1689,7 +1743,11 @@ this.updateTextTranscript(this.ttsCaption);
 								(retryError as Error).message
 							}`,
 						);
+						// Mark turn as complete on retry failure
+						this.isTurnInFlight = false;
 					}
+					// Mark turn as complete on NPU error
+					this.isTurnInFlight = false;
 				}
 			}
 		} else {
@@ -1944,6 +2002,7 @@ this.updateTextTranscript(this.ttsCaption);
                   .thinkingOpen=${this.npuThinkingOpen}
                   .npuProcessingTime=${this.npuProcessingTime}
                   .vpuProcessingTime=${this.vpuProcessingTime}
+                  .disableInput=${this.isTurnInFlight}
                   @send-message=${this._handleSendMessage}
                   @reset-text=${this._resetTextContext}
                   @scroll-state-changed=${this._handleChatScrollStateChanged}
