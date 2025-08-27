@@ -288,6 +288,8 @@ export class VectorStore {
         }
       }
 
+      let savedMemoryId: number | undefined;
+      
       if (duplicate) {
         // Update existing memory (reinforcement)
         duplicate.reinforcement_count =
@@ -300,8 +302,8 @@ export class VectorStore {
           reinforcementCount: duplicate.reinforcement_count,
         });
       } else {
-        // Save new memory
-        await store.add(memoryWithVector);
+        // Save new memory and capture the auto-generated ID
+        savedMemoryId = await store.add(memoryWithVector) as number;
         logger.debug("Saved new memory", { factKey: canonicalFactKey });
       }
 
@@ -311,14 +313,8 @@ export class VectorStore {
       if (duplicate) {
         return duplicate;
       } else {
-        // For new memories, we need to retrieve the ID after saving
-        const allMemories = await this.getAllMemories();
-        const savedMemory = allMemories.find(m =>
-          m.fact_key === memoryWithVector.fact_key &&
-          m.fact_value === memoryWithVector.fact_value &&
-          m.timestamp.getTime() === memoryWithVector.timestamp.getTime()
-        );
-        return savedMemory || memoryWithVector;
+        // For new memories, use the ID returned by store.add
+        return { ...memoryWithVector, id: savedMemoryId };
       }
     } catch (error) {
       logger.error("Failed to save memory", { error, memory });
