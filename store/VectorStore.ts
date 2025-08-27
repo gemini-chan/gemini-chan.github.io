@@ -138,6 +138,7 @@ export class VectorStore {
             });
             store.createIndex("personaId", "personaId", { unique: false });
             store.createIndex("timestamp", "timestamp", { unique: false });
+            store.createIndex("fact_key", "fact_key", { unique: false });
             logger.debug(`Created IndexedDB store: ${storeName}`);
           }
         },
@@ -242,7 +243,14 @@ export class VectorStore {
       const isPreference = /^(user|model)_preference\.[a-z0-9_-]{1,32}$/.test(canonicalFactKey);
 
       // Check for duplicates based on fact_key and fact_value
-      const existingMemories = await store.getAll();
+      let existingMemories: Memory[] = [];
+      if (isPreference) {
+        // For preferences, use the fact_key index for efficient retrieval
+        existingMemories = await store.index("fact_key").getAll(canonicalFactKey);
+      } else {
+        // For non-preferences, check all memories
+        existingMemories = await store.getAll();
+      }
       // Use semantic similarity to find duplicates
       let bestMatch: Memory | null = null;
       let highestSimilarity = -1;
