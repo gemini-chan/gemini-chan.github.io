@@ -53,20 +53,20 @@ export class NPUService {
 
     // Build prompt
     logger.debug("analyzeAndAdvise: memories retrieved", { count: memories.length });
-    progressCb?.({ type: "npu:memories:done", ts: Date.now(), data: { count: memories.length, memories } });
+    progressCb?.({ type: "npu:memories:done", ts: Date.now(), data: { count: memories.length, memories, turnId } });
     
     // Build memory context string from retrieved memories with partial progress
     const memoryLines = memories
       .map(m => `- ${m.fact_key}: ${m.fact_value} (conf=${(m.confidence_score ?? 0).toFixed(2)}, perm=${m.permanence_score})`);
     for (const line of memoryLines) {
-      progressCb?.({ type: "npu:prompt:partial", ts: Date.now(), data: { delta: line + "\n" } });
+      progressCb?.({ type: "npu:prompt:partial", ts: Date.now(), data: { delta: line + "\n", turnId } });
     }
     const memoryContext = memoryLines.join("\n");
 
     // Build combined prompt for Flash Lite model
-    progressCb?.({ type: "npu:prompt:build", ts: Date.now() });
+    progressCb?.({ type: "npu:prompt:build", ts: Date.now(), data: { turnId } });
     const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext);
-    progressCb?.({ type: "npu:prompt:built", ts: Date.now(), data: { promptPreview: combinedPromptText.slice(0, 500), fullPrompt: combinedPromptText } });
+    progressCb?.({ type: "npu:prompt:built", ts: Date.now(), data: { promptPreview: combinedPromptText.slice(0, 500), fullPrompt: combinedPromptText, turnId } });
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length, memoryLines: memories.length });
 
     // The full prompt is no longer needed after this point, so no need to store it.
@@ -74,23 +74,23 @@ export class NPUService {
 
     // Call model with retry - single call to Flash Lite model
     const model = "gemini-2.5-flash";
-    progressCb?.({ type: "npu:model:start", ts: Date.now(), data: { model } });
+    progressCb?.({ type: "npu:model:start", ts: Date.now(), data: { model, turnId } });
     let responseText = "";
     const maxAttempts = 3;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        progressCb?.({ type: "npu:model:attempt", ts: Date.now(), data: { attempt } });
+        progressCb?.({ type: "npu:model:attempt", ts: Date.now(), data: { attempt, turnId } });
         const result = await this.aiClient.models.generateContent({
           contents: [{ role: "user", parts: [{ text: combinedPromptText }] }],
           model,
         });
         responseText = (result.text || "").trim();
-        progressCb?.({ type: "npu:model:response", ts: Date.now(), data: { length: responseText.length } });
+        progressCb?.({ type: "npu:model:response", ts: Date.now(), data: { length: responseText.length, turnId } });
         logger.debug("analyzeAndAdvise: model responded", { length: responseText.length, attempt });
         if (responseText) break;
       } catch (error) {
         logger.error("analyzeAndAdvise model call failed", { error, attempt });
-        progressCb?.({ type: "npu:model:error", ts: Date.now(), data: { attempt, error: String((error as Error)?.message || error) } });
+        progressCb?.({ type: "npu:model:error", ts: Date.now(), data: { attempt, error: String((error as Error)?.message || error), turnId } });
         if (attempt < maxAttempts) {
           await new Promise((res) => setTimeout(res, Math.pow(2, attempt) * 200));
           continue;
