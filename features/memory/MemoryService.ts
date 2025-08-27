@@ -307,17 +307,14 @@ Return ONLY the JSON array. No markdown, no prose.`;
           source: fact.source || undefined,
         } as const;
 
-        await this.vectorStore.saveMemory(payload);
+        // Save the memory and get the saved memory object with its ID
+        const savedMemory = await this.vectorStore.saveMemory(payload);
 
-       // If this is a protected model fact or a stable model preference, ensure permanence by pinning
-       if ((PROTECTED_MODEL_KEYS.has(fact.fact_key) || isStableModelPreference(fact.fact_key)) && payload.permanence_score !== "permanent") {
+        // If this is a protected model fact or a stable model preference, ensure permanence by pinning
+        if ((PROTECTED_MODEL_KEYS.has(fact.fact_key) || isStableModelPreference(fact.fact_key)) && payload.permanence_score !== "permanent") {
           try {
-            const all = await this.vectorStore.getAllMemories();
-            const justSaved = all
-              .filter(m => m.fact_key === fact.fact_key && m.fact_value === fact.fact_value)
-              .sort((a,b) => (b.timestamp?.getTime?.() || 0) - (a.timestamp?.getTime?.() || 0))[0];
-            if (justSaved?.id) {
-              await this.pinMemory(justSaved.id);
+            if (savedMemory?.id) {
+              await this.pinMemory(savedMemory.id);
             }
           } catch (e) {
             logger.warn("Failed to auto-pin protected model fact", { e, factKey: fact.fact_key });

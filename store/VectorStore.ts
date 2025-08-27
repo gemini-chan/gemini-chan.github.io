@@ -207,7 +207,7 @@ export class VectorStore {
    * Save a memory entry to the vector store
    * @param memory The memory object to save
    */
-  async saveMemory(memory: Omit<Memory, "vector">): Promise<void> {
+  async saveMemory(memory: Omit<Memory, "vector">): Promise<Memory> {
     await this.initializationPromise;
 
     try {
@@ -298,6 +298,20 @@ export class VectorStore {
       }
 
       await tx.done;
+      
+      // Return the saved memory with its ID
+      if (duplicate) {
+        return duplicate;
+      } else {
+        // For new memories, we need to retrieve the ID after saving
+        const allMemories = await this.getAllMemories();
+        const savedMemory = allMemories.find(m =>
+          m.fact_key === memoryWithVector.fact_key &&
+          m.fact_value === memoryWithVector.fact_value &&
+          m.timestamp.getTime() === memoryWithVector.timestamp.getTime()
+        );
+        return savedMemory || memoryWithVector;
+      }
     } catch (error) {
       logger.error("Failed to save memory", { error, memory });
       throw error;
