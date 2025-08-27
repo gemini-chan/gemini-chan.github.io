@@ -286,12 +286,16 @@ Return ONLY the JSON array. No markdown, no prose.`;
       };
 
      for (const fact of sanitizedFacts) {
-        const permanence = this.normalizePermanenceScore(fact.permanence_score) || "contextual";
-        const payload = {
-          // Enforce canonical user/model source; fallback to undefined
-          fact_key: fact.fact_key || "fact",
-          fact_value: fact.fact_value || "",
-          confidence_score: fact.confidence_score || 0.8,
+       const permanence = this.normalizePermanenceScore(fact.permanence_score) || "contextual";
+       
+       // Sanitize malformed preference keys (e.g., user_preference_preference.animal -> user_preference.animal)
+       const sanitizedFactKey = (fact.fact_key || "fact").replace(/_preference_preference\./, "_preference.");
+
+       const payload = {
+         // Enforce canonical user/model source; fallback to undefined
+         fact_key: sanitizedFactKey,
+         fact_value: fact.fact_value || "",
+         confidence_score: fact.confidence_score || 0.8,
           permanence_score: permanence,
           personaId: sessionId,
           timestamp: new Date(),
