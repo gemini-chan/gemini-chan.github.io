@@ -442,6 +442,7 @@
   
   export class TextSessionManager extends BaseSessionManager {
     private progressCb?: (event: Record<string, unknown>) => void;
+    private progressTurnId?: string | null = null;
     
     constructor(
       outputAudioContext: AudioContext,
@@ -493,6 +494,8 @@
               this.firstOutputReceived = true;
               this.vpuStartTimer();
               this.vpuStartTimer = null;
+              // Emit first output event
+              this.progressCb?.({ type: "vpu:response:first-output", ts: Date.now(), data: { turnId: this.progressTurnId } });
               logger.debug("VPU start latency tracked", {
                 hasOutputTranscription,
                 hasInlineAudio,
@@ -502,7 +505,7 @@
           
           // Emit progress event for first output transcription
           if (message.serverContent?.outputTranscription?.text) {
-            this.progressCb?.({ type: "vpu:response:transcription", ts: Date.now(), data: { text: message.serverContent.outputTranscription.text } });
+            this.progressCb?.({ type: "vpu:response:transcription", ts: Date.now(), data: { text: message.serverContent.outputTranscription.text, turnId: this.progressTurnId } });
             this.updateTranscript(message.serverContent.outputTranscription.text);
           }
 
@@ -510,7 +513,10 @@
           const extendedMessage = message as ExtendedLiveServerMessage;
           const genComplete = extendedMessage.serverContent?.generationComplete;
           if (genComplete) {
-            this.progressCb?.({ type: "vpu:response:complete", ts: Date.now() });
+            this.progressCb?.({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
+            // Clear progress callback and turn ID on completion
+            this.progressCb = undefined;
+            this.progressTurnId = null;
             this.onTurnComplete();
           }
         },
@@ -558,21 +564,22 @@
      * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
      * then VPU (the session) responds with the enhanced context.
      */
-    public sendMessage(message: string, progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void): void {
+    public sendMessage(message: string, turnId?: string, progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void): void {
       if (!this.session) {
         this.updateError(`${this.getSessionName()} not initialized`);
         return;
       }
       try {
-        // Store progress callback for use in onmessage handler
+        // Store progress callback and turn ID for use in onmessage handler
         this.progressCb = progressCb;
+        this.progressTurnId = turnId;
         
         // Start VPU latency timer
         this.vpuStartTimer = healthMetricsService.timeVPUStart();
         this.firstOutputReceived = false;
         
         // Emit progress event for message sending
-        this.progressCb?.({ type: "vpu:message:sending", ts: Date.now(), data: { messageLength: message.length } });
+        this.progressCb?.({ type: "vpu:message:sending", ts: Date.now(), data: { messageLength: message.length, turnId } });
         
         logger.debug(`Sending message to ${this.getSessionName()}`, {
           textLength: message.length,
@@ -595,7 +602,10 @@
           this.vpuStartTimer();
           this.vpuStartTimer = null;
         }
-        this.progressCb?.({ type: "vpu:message:error", ts: Date.now(), data: { error: String((error as Error)?.message || error) } });
+        this.progressCb?.({ type: "vpu:message:error", ts: Date.now(), data: { error: String((error as Error)?.message || error), turnId } });
+        // Clear progress callback and turn ID on error
+        this.progressCb = undefined;
+        this.progressTurnId = null;
         this.updateError(`Failed to send message: ${(error as Error).message}`);
       }
     }

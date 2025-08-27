@@ -29,11 +29,12 @@ export class NPUService {
     transcript: Turn[],
     conversationContext?: string,
     emotionBias?: string,
+    turnId?: string,
     progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void,
   ): Promise<IntentionBridgePayload> {
     const stopTimer = healthMetricsService.timeNPUProcessing();
     
-    progressCb?.({ type: "npu:start", ts: Date.now(), data: { personaId, userInput, transcriptLength: transcript?.length ?? 0 } });
+    progressCb?.({ type: "npu:start", ts: Date.now(), data: { personaId, userInput, transcriptLength: transcript?.length ?? 0, turnId } });
     logger.debug("analyzeAndAdvise: start", {
       personaId,
       userInputLength: userInput?.length ?? 0,
@@ -43,7 +44,7 @@ export class NPUService {
 
     // Step 1: Retrieve memories to inform prompt (not exposed directly to VPU)
     let memories: Memory[] = [];
-    progressCb?.({ type: "npu:memories:start", ts: Date.now() });
+    progressCb?.({ type: "npu:memories:start", ts: Date.now(), data: { turnId } });
     try {
       memories = await this.memoryService.retrieveRelevantMemories(userInput, personaId, 5, { emotionBias });
     } catch (error) {
@@ -99,7 +100,7 @@ export class NPUService {
 
     // Use the raw response text as the advisor context, with fallback to memory context
     const advisorContext = responseText || memoryContext || "";
-    progressCb?.({ type: "npu:advisor:ready", ts: Date.now(), data: { length: advisorContext.length } });
+    progressCb?.({ type: "npu:advisor:ready", ts: Date.now(), data: { length: advisorContext.length, turnId } });
     
     const payload: IntentionBridgePayload = {
       advisor_context: advisorContext,
@@ -111,7 +112,7 @@ export class NPUService {
     logger.info("analyzeAndAdvise: completed", {
       hasResponseText: !!responseText.length,
     });
-    progressCb?.({ type: "npu:complete", ts: Date.now(), data: { hasResponseText: !!responseText.length } });
+    progressCb?.({ type: "npu:complete", ts: Date.now(), data: { hasResponseText: !!responseText.length, turnId } });
 
     stopTimer();
     return payload;

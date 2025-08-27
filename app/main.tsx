@@ -150,6 +150,8 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuThinkingLog: string = "";
   @state() private npuStatus: string = "";
   @state() private npuPersistCollapsed: boolean = false;
+  @state() private currentTurnId: string | null = null;
+  private vpuWaitTimer: number | null = null;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -1300,6 +1302,12 @@ this.updateTextTranscript(this.ttsCaption);
 			     // Force a re-render to update the UI
 			     this.requestUpdate();
 			   } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
+			     // Flip status to "Receiving response..." exactly once
+			     if (this.npuStatus !== "Receiving response…") {
+			       this.npuStatus = "Receiving response…";
+			       // Force a re-render to update the UI
+			       this.requestUpdate();
+			     }
 			     // Use debounced transcription updates
 			     this._handleDebouncedTranscription(ev.data.text as string);
 			   } else if (ev.type === "vpu:response:complete") {
@@ -1371,7 +1379,7 @@ this.updateTextTranscript(this.ttsCaption);
 				this.requestUpdate();
 			}
 			this.transcriptionDebounceTimer = null;
-		}, 100); // 100ms debounce
+		}, 150); // 150ms debounce
 	}
 	
 	// Clear thinking UI
@@ -1433,6 +1441,10 @@ this.updateTextTranscript(this.ttsCaption);
 		// Send message to text session using NPU-VPU flow (memory-augmented)
 		if (this.textSessionManager?.isActive) {
 			try {
+				// Create turn ID for correlation
+				const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
+				this.currentTurnId = turnId;
+				
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
 				this.lastAdvisorContext = "";
 				const personaId = this.personaManager.getActivePersona().id;
@@ -1448,7 +1460,13 @@ this.updateTextTranscript(this.ttsCaption);
 					this.textTranscript,
 					undefined,
           undefined,
+          turnId,
           (ev: NpuProgressEvent) => {
+           // Ignore events for other turns
+           if (ev.data?.turnId && ev.data.turnId !== this.currentTurnId) {
+             return;
+           }
+           
            // Log the event for debugging
            logger.debug("NPU Progress Event", ev);
            
@@ -1545,9 +1563,50 @@ this.updateTextTranscript(this.ttsCaption);
 				// Note: We don't set npuStatus here anymore as it's handled by the advisor:ready event
 				// this.npuStatus = "Sending to VPU…";
 				
-				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, (ev: VpuProgressEvent) => {
+				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
+					// Ignore events for other turns
+					if (ev.data?.turnId && ev.data.turnId !== this.currentTurnId) {
+						return;
+					}
+					
 					// Log the event for debugging
 					logger.debug("VPU Progress Event (summary)", ev);
+					
+					// Handle fallback timer for "Waiting for response..."
+					if (ev.type === "vpu:message:sending") {
+						// Clear any existing timer
+						if (this.vpuWaitTimer) {
+							clearTimeout(this.vpuWaitTimer);
+							this.vpuWaitTimer = null;
+						}
+						// Set new timer
+						if (this.currentTurnId === turnId) {
+							this.vpuWaitTimer = window.setTimeout(() => {
+								if (this.currentTurnId === turnId) {
+									this.npuStatus = "Waiting for response…";
+								}
+								this.vpuWaitTimer = null;
+							}, 800);
+						}
+					} else if (ev.type === "vpu:response:first-output" || ev.type === "vpu:response:transcription") {
+						// Clear the fallback timer when we get first output
+						if (this.vpuWaitTimer) {
+							clearTimeout(this.vpuWaitTimer);
+							this.vpuWaitTimer = null;
+						}
+					} else if (ev.type === "vpu:response:complete" || ev.type === "vpu:message:error") {
+						// Clear the fallback timer on completion or error
+						if (this.vpuWaitTimer) {
+							clearTimeout(this.vpuWaitTimer);
+							this.vpuWaitTimer = null;
+						}
+						// Clear transcription state
+						if (this.transcriptionDebounceTimer) {
+							clearTimeout(this.transcriptionDebounceTimer);
+							this.transcriptionDebounceTimer = null;
+							this.pendingTranscriptionText = "";
+						}
+					}
 					
 					     // Map event to status string
 					     if (EVENT_STATUS_MAP[ev.type]) {
@@ -1558,17 +1617,6 @@ this.updateTextTranscript(this.ttsCaption);
 					         this.vpuStartTime = Date.now();
 					       } else if (ev.type === "vpu:message:error" && ev.data?.error) {
 					         this.npuStatus = `VPU error: ${ev.data.error}`;
-					         // Clear any pending transcription timers on error
-					         if (this.transcriptionDebounceTimer) {
-					           clearTimeout(this.transcriptionDebounceTimer);
-					           this.transcriptionDebounceTimer = null;
-					           this.pendingTranscriptionText = "";
-					         }
-					         // Calculate processing time on error
-					         if (this.vpuStartTime) {
-					           this.vpuProcessingTime = Date.now() - this.vpuStartTime;
-					           this.vpuStartTime = null;
-					         }
 					       } else if (ev.type === "vpu:response:complete") {
 					         // Calculate processing time on completion
 					         if (this.vpuStartTime) {
@@ -1587,6 +1635,11 @@ this.updateTextTranscript(this.ttsCaption);
 					       this.requestUpdate();
 					     } else if (ev.type === "vpu:message:error" && ev.data?.error) {
 					       this.npuThinkingLog += `\n[VPU Error: ${ev.data.error}]`;
+					       // Force a re-render to update the UI
+					       this.requestUpdate();
+					     } else if (ev.type === "vpu:response:first-output") {
+					       this.npuStatus = "Receiving response…";
+					       this.npuThinkingLog += "\n[First output received]";
 					       // Force a re-render to update the UI
 					       this.requestUpdate();
 					     } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
@@ -1609,6 +1662,10 @@ this.updateTextTranscript(this.ttsCaption);
 				const ok = await this._initTextSession();
 				if (ok && this.textSessionManager?.isActive) {
 					try {
+						// Create turn ID for correlation
+						const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
+						this.currentTurnId = turnId;
+						
 						this.lastAdvisorContext = "";
 						const personaId = this.personaManager.getActivePersona().id;
 						/* conversationContext removed: memory now stores facts only */
@@ -1617,14 +1674,57 @@ this.updateTextTranscript(this.ttsCaption);
 							personaId,
 							this.textTranscript,
 							undefined,
+              undefined,
+              turnId,
 						);
 						// Removed usage of intention.emotion as it's no longer part of the interface
 						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
-						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, (ev: VpuProgressEvent) => {
+						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
+							// Ignore events for other turns
+							if (ev.data?.turnId && ev.data.turnId !== this.currentTurnId) {
+								return;
+							}
+							
 							// Log the event for debugging
 							logger.debug("VPU Progress Event (retry)", ev);
+							
+							// Handle fallback timer for "Waiting for response..."
+							if (ev.type === "vpu:message:sending") {
+								// Clear any existing timer
+								if (this.vpuWaitTimer) {
+									clearTimeout(this.vpuWaitTimer);
+									this.vpuWaitTimer = null;
+								}
+								// Set new timer
+								if (this.currentTurnId === turnId) {
+									this.vpuWaitTimer = window.setTimeout(() => {
+										if (this.currentTurnId === turnId) {
+											this.npuStatus = "Waiting for response…";
+										}
+										this.vpuWaitTimer = null;
+									}, 800);
+								}
+							} else if (ev.type === "vpu:response:first-output" || ev.type === "vpu:response:transcription") {
+								// Clear the fallback timer when we get first output
+								if (this.vpuWaitTimer) {
+									clearTimeout(this.vpuWaitTimer);
+									this.vpuWaitTimer = null;
+								}
+							} else if (ev.type === "vpu:response:complete" || ev.type === "vpu:message:error") {
+								// Clear the fallback timer on completion or error
+								if (this.vpuWaitTimer) {
+									clearTimeout(this.vpuWaitTimer);
+									this.vpuWaitTimer = null;
+								}
+								// Clear transcription state
+								if (this.transcriptionDebounceTimer) {
+									clearTimeout(this.transcriptionDebounceTimer);
+									this.transcriptionDebounceTimer = null;
+									this.pendingTranscriptionText = "";
+								}
+							}
 							
 							       // Map event to status string
 							       if (EVENT_STATUS_MAP[ev.type]) {
@@ -1640,12 +1740,6 @@ this.updateTextTranscript(this.ttsCaption);
 							         // Add data details for specific events
 							         if (ev.type === "vpu:message:error" && ev.data?.error) {
 							           this.npuStatus = `VPU error (retry): ${ev.data.error}`;
-							           // Clear any pending transcription timers on error
-							           if (this.transcriptionDebounceTimer) {
-							             clearTimeout(this.transcriptionDebounceTimer);
-							             this.transcriptionDebounceTimer = null;
-							             this.pendingTranscriptionText = "";
-							           }
 							         }
 							         // Force a re-render to update the UI
 							         this.requestUpdate();
@@ -1658,6 +1752,11 @@ this.updateTextTranscript(this.ttsCaption);
 							         this.requestUpdate();
 							       } else if (ev.type === "vpu:message:error" && ev.data?.error) {
 							         this.npuThinkingLog += `\n[VPU Error (retry): ${ev.data.error}]`;
+							         // Force a re-render to update the UI
+							         this.requestUpdate();
+							       } else if (ev.type === "vpu:response:first-output") {
+							         this.npuStatus = "Receiving response (retry)…";
+							         this.npuThinkingLog += "\n[First output received (retry)]";
 							         // Force a re-render to update the UI
 							         this.requestUpdate();
 							       } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
