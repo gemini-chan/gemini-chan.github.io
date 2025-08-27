@@ -63,6 +63,16 @@ type ActiveMode = "texting" | "calling" | null;
 
 const logger = createComponentLogger("GdmLiveAudio");
 
+interface NpuProgressEvent {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface VpuProgressEvent {
+  type: string;
+  [key: string]: unknown;
+}
+
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
 	@state() isCallActive = false;
@@ -78,6 +88,10 @@ export class GdmLiveAudio extends LitElement {
 	@state() showSettings = false;
 	@state() toastMessage = "";
 	private lastAdvisorContext: string = "";
+  @state() private npuThinkingOpen = false;
+  @state() private npuThinkingLog: string = "";
+  @state() private npuStatus: string = "";
+  @state() private npuPersistCollapsed: boolean = false;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -1177,7 +1191,37 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
+		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, (ev: VpuProgressEvent) => {
+			// Log the event for debugging
+			logger.debug("VPU Progress Event", ev);
+			
+			switch (ev.type) {
+				case "vpu:message:sending":
+					this.npuStatus = "Sending to VPU…";
+					this.npuThinkingLog += "\n[Sending message to VPU]";
+					// Force a re-render to update the UI
+					this.requestUpdate();
+					break;
+				case "vpu:message:error":
+					this.npuStatus = `VPU error: ${ev.error}`;
+					this.npuThinkingLog += `\n[VPU Error: ${ev.error}]`;
+					// Force a re-render to update the UI
+					this.requestUpdate();
+					break;
+				case "vpu:response:transcription":
+					this.npuStatus = "Receiving response…";
+					this.npuThinkingLog += `\n[model]: ${ev.text}`;
+					// Force a re-render to update the UI
+					this.requestUpdate();
+					break;
+				case "vpu:response:complete":
+					this.npuStatus = "Response complete";
+					this.npuThinkingLog += "\n[Response complete]";
+					// Force a re-render to update the UI
+					this.requestUpdate();
+					break;
+			}
+		});
 	}
 
 	private _scrollCallTranscriptToBottom() {
@@ -1222,6 +1266,13 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 
 	private async _handleSendMessage(e: CustomEvent) {
+    let userExpanded = false;
+    // Track when the user manually opens the panel
+    const chatViewEl = this.shadowRoot?.querySelector('chat-view') as (HTMLElement & { thinkingOpen?: boolean }) | null;
+    if (chatViewEl) {
+      const current = chatViewEl.thinkingOpen;
+      userExpanded = !!current;
+    }
 		const message = e.detail;
 		if (!message || !message.trim()) {
 			return;
@@ -1269,16 +1320,130 @@ this.updateTextTranscript(this.ttsCaption);
 				this.lastAdvisorContext = "";
 				const personaId = this.personaManager.getActivePersona().id;
 				/* conversationContext removed: memory now stores facts only */
-				const intention = await this.npuService.analyzeAndAdvise(
+				this.npuThinkingLog = "";
+        this.npuStatus = "Thinking…";
+        // Respect user's preference; default collapsed
+        // If user ever collapsed it, persist collapsed. Otherwise respect current open.
+        this.npuThinkingOpen = this.npuPersistCollapsed ? false : userExpanded;
+        const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
 					this.textTranscript,
 					undefined,
+          undefined,
+          (ev: NpuProgressEvent) => {
+           // Log the event for debugging
+           logger.debug("NPU Progress Event", ev);
+           
+           switch (ev.type) {
+             case "start":
+               this.npuStatus = "Thinking…";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "memories:start":
+               this.npuStatus = "Searching memory…";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               // auto-expand only if user has NOT persisted collapsed
+               if (!this.npuPersistCollapsed && userExpanded) this.npuThinkingOpen = true;
+               break;
+             case "memories:done":
+               this.npuStatus = "Memory search complete";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "prompt:partial":
+               this.npuThinkingLog += ev.delta || "";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               if (!this.npuPersistCollapsed && userExpanded) this.npuThinkingOpen = true;
+               break;
+             case "prompt:build":
+               this.npuStatus = "Building prompt…";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "prompt:built":
+               this.npuStatus = "Prompt built";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               // Optionally, keep partial stream; or replace with full prompt
+               // this.npuThinkingLog = ev.fullPrompt || this.npuThinkingLog;
+               break;
+             case "model:start":
+               this.npuStatus = `Calling model: ${ev.model}`;
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "model:attempt":
+               this.npuStatus = `Calling model (attempt ${ev.attempt})…`;
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "model:response":
+               this.npuStatus = "Advisor ready";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "model:error":
+               this.npuStatus = `Model error (attempt ${ev.attempt}): ${ev.error}`;
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "advisor:ready":
+               this.npuStatus = "Advisor ready - Sending to VPU…";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+             case "complete":
+               // Auto-collapse after complete, but only if user hadn't manually expanded
+               if (!userExpanded) this.npuThinkingOpen = false;
+               this.npuStatus = "NPU complete";
+               // Force a re-render to update the UI
+               this.requestUpdate();
+               break;
+           }
+         }
 				);
 				// Removed usage of intention.emotion as it's no longer part of the interface
 				this.lastAdvisorContext = intention?.advisor_context || "";
 
-				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
+				// NPU advisor ready — now sending to VPU
+				// Note: We don't set npuStatus here anymore as it's handled by the advisor:ready event
+				// this.npuStatus = "Sending to VPU…";
+				
+				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, (ev: VpuProgressEvent) => {
+					// Log the event for debugging
+					logger.debug("VPU Progress Event (summary)", ev);
+					
+					switch (ev.type) {
+						case "vpu:message:sending":
+							this.npuStatus = "Sending to VPU…";
+							this.npuThinkingLog += "\n[Sending message to VPU]";
+							// Force a re-render to update the UI
+							this.requestUpdate();
+							break;
+						case "vpu:message:error":
+							this.npuStatus = `VPU error: ${ev.error}`;
+							this.npuThinkingLog += `\n[VPU Error: ${ev.error}]`;
+							// Force a re-render to update the UI
+							this.requestUpdate();
+							break;
+						case "vpu:response:transcription":
+							this.npuStatus = "Receiving response…";
+							this.npuThinkingLog += `\n[model]: ${ev.text}`;
+							// Force a re-render to update the UI
+							this.requestUpdate();
+							break;
+						case "vpu:response:complete":
+							this.npuStatus = "Response complete";
+							this.npuThinkingLog += "\n[Response complete]";
+							// Force a re-render to update the UI
+							this.requestUpdate();
+							break;
+					}
+				});
 			} catch (error) {
 				logger.error("Error sending message to text session (unified flow):", {
 					error,
@@ -1303,7 +1468,37 @@ this.updateTextTranscript(this.ttsCaption);
 						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
-						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
+						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, (ev: VpuProgressEvent) => {
+							// Log the event for debugging
+							logger.debug("VPU Progress Event (retry)", ev);
+							
+							switch (ev.type) {
+								case "vpu:message:sending":
+									this.npuStatus = "Sending to VPU (retry)…";
+									this.npuThinkingLog += "\n[Sending message to VPU (retry)]";
+									// Force a re-render to update the UI
+									this.requestUpdate();
+									break;
+								case "vpu:message:error":
+									this.npuStatus = `VPU error (retry): ${ev.error}`;
+									this.npuThinkingLog += `\n[VPU Error (retry): ${ev.error}]`;
+									// Force a re-render to update the UI
+									this.requestUpdate();
+									break;
+								case "vpu:response:transcription":
+									this.npuStatus = "Receiving response (retry)…";
+									this.npuThinkingLog += `\n[model]: ${ev.text}`;
+									// Force a re-render to update the UI
+									this.requestUpdate();
+									break;
+								case "vpu:response:complete":
+									this.npuStatus = "Response complete (retry)";
+									this.npuThinkingLog += "\n[Response complete (retry)]";
+									// Force a re-render to update the UI
+									this.requestUpdate();
+									break;
+							}
+						});
 					} catch (retryError) {
 						logger.error("Failed to send message on retry:", { retryError });
 						this.updateError(
@@ -1561,10 +1756,14 @@ this.updateTextTranscript(this.ttsCaption);
                 <chat-view
                   .transcript=${this.textTranscript}
                   .visible=${this.activeMode !== "calling"}
+                  .thinkingStatus=${this.npuStatus}
+                  .thinkingText=${this.npuThinkingLog}
+                  .thinkingOpen=${this.npuThinkingOpen}
                   @send-message=${this._handleSendMessage}
                   @reset-text=${this._resetTextContext}
                   @scroll-state-changed=${this._handleChatScrollStateChanged}
                   @chat-active-changed=${this._handleChatActiveChanged}
+                  @thinking-open-changed=${(e: CustomEvent) => { this.npuThinkingOpen = e.detail.open; if (!e.detail.open) this.npuPersistCollapsed = true; }}
                 >
                 </chat-view>
               `

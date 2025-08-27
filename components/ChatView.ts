@@ -27,6 +27,15 @@ export class ChatView extends LitElement {
 
   @state()
   private isChatActive = false;
+
+  @property({ type: String })
+  thinkingStatus: string = "";
+
+  @property({ type: String })
+  thinkingText: string = "";
+
+  @property({ type: Boolean })
+  thinkingOpen: boolean = false;
   
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;
@@ -288,6 +297,28 @@ export class ChatView extends LitElement {
       border: 2px solid rgba(255, 255, 255, 0.8);
     }
 
+    .thinking {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-surface-border);
+      border-radius: 10px;
+      box-shadow: var(--cp-glow-purple);
+      padding: 8px 10px;
+      font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: var(--cp-muted);
+    }
+    .thinking-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .thinking-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--cp-text); }
+    .thinking-badge { font-size: 12px; padding: 2px 6px; border-radius: 999px; background: var(--cp-surface-strong); border: 1px solid var(--cp-surface-border-2); }
+    .thinking-body { margin-top: 8px; max-height: 240px; overflow: auto; white-space: pre-wrap; }
+    .thinking-body code { white-space: pre-wrap; }
+
     .transcript-container {
       position: relative;
       flex: 1;
@@ -345,6 +376,15 @@ export class ChatView extends LitElement {
         composed: true,
       }),
     );
+  }
+
+  private _toggleThinking = () => {
+    this.thinkingOpen = !this.thinkingOpen;
+    this.dispatchEvent(new CustomEvent('thinking-open-changed', {
+      detail: { open: this.thinkingOpen },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
@@ -510,6 +550,19 @@ private async _updateScrollToBottomState() {
           </button>
         </div>
       </div>
+      ${this.thinkingStatus || this.thinkingText ? html`
+       <div class="thinking" @click=${this._toggleThinking}>
+         <div class="thinking-header">
+           <div class="thinking-title">
+             <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+               <path d="M160-160v-560h640v560H160Zm80-80h480v-400H240v400Zm80-80h80v-80h-80v80Zm160 0h160v-80H480v80Zm-160-160h320v-80H320v80Z"/>
+             </svg>
+             <span>Thinking</span>
+           </div>
+           <span class="thinking-badge">${this.thinkingStatus || (this.thinkingOpen ? 'open' : 'closed')}</span>
+         </div>
+         ${this.thinkingOpen ? html`<div class="thinking-body"><code>${this.thinkingText || ''}</code></div>` : ''}
+       </div>` : ''}
       <div class="transcript-container">
         <div class="transcript">
           ${

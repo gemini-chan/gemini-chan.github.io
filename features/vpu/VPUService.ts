@@ -441,6 +441,7 @@
   }
   
   export class TextSessionManager extends BaseSessionManager {
+    private progressCb?: (event: Record<string, unknown>) => void;
     
     constructor(
       outputAudioContext: AudioContext,
@@ -482,7 +483,7 @@
           if (typeof base.onmessage === "function") {
             await base.onmessage(message);
           }
-  
+
           // Track VPU start latency on first output transcription or inline audio
           if (!this.firstOutputReceived && this.vpuStartTimer) {
             const hasOutputTranscription = !!message.serverContent?.outputTranscription?.text;
@@ -499,15 +500,17 @@
             }
           }
           
-          // Handle audio transcription for captions
+          // Emit progress event for first output transcription
           if (message.serverContent?.outputTranscription?.text) {
+            this.progressCb?.({ type: "vpu:response:transcription", text: message.serverContent.outputTranscription.text });
             this.updateTranscript(message.serverContent.outputTranscription.text);
           }
-  
+
           // After turn is complete, trigger turn complete handler
           const extendedMessage = message as ExtendedLiveServerMessage;
           const genComplete = extendedMessage.serverContent?.generationComplete;
           if (genComplete) {
+            this.progressCb?.({ type: "vpu:response:complete" });
             this.onTurnComplete();
           }
         },
@@ -555,6 +558,47 @@
      * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
      * then VPU (the session) responds with the enhanced context.
      */
+    public sendMessage(message: string, progressCb?: (event: Record<string, unknown>) => void): void {
+      if (!this.session) {
+        this.updateError(`${this.getSessionName()} not initialized`);
+        return;
+      }
+      try {
+        // Store progress callback for use in onmessage handler
+        this.progressCb = progressCb;
+        
+        // Start VPU latency timer
+        this.vpuStartTimer = healthMetricsService.timeVPUStart();
+        this.firstOutputReceived = false;
+        
+        // Emit progress event for message sending
+        this.progressCb?.({ type: "vpu:message:sending", messageLength: message.length });
+        
+        logger.debug(`Sending message to ${this.getSessionName()}`, {
+          textLength: message.length,
+        });
+        this.session.sendClientContent({
+          turns: [
+            {
+              role: "user",
+              parts: [{ text: message }],
+            },
+          ],
+          turnComplete: true,
+        });
+      } catch (error) {
+        logger.error(`Error sending message to ${this.getSessionName()}:`, {
+          error,
+        });
+        // Stop the timer on error
+        if (this.vpuStartTimer) {
+          this.vpuStartTimer();
+          this.vpuStartTimer = null;
+        }
+        this.progressCb?.({ type: "vpu:message:error", error: String((error as Error)?.message || error) });
+        this.updateError(`Failed to send message: ${(error as Error).message}`);
+      }
+    }
   }
   
   export class CallSessionManager extends BaseSessionManager {
