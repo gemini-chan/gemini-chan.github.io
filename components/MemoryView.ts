@@ -20,6 +20,18 @@ export class MemoryView extends LitElement {
   @state() private showHealthMetrics = false;
   @state() private healthMetrics: Partial<HealthMetrics> = {};
 
+  // Constants for scoring weights and multipliers
+  private readonly PERMANENCE_PERMANENT_BOOST = 2;
+  private readonly PERMANENCE_TEMPORARY_BOOST = 0.5;
+  private readonly PERMANENCE_CONTEXTUAL_BOOST = 1;
+  private readonly REINFORCEMENT_MULTIPLIER = 100;
+  private readonly RECENCY_DIVISOR = 1e10;
+  private readonly STABILITY_PERMANENCE_WEIGHT = 1.0;
+  private readonly STABILITY_REINFORCEMENT_WEIGHT = 0.5;
+  private readonly STABILITY_RECENCY_WEIGHT = 0.5;
+  private readonly STABILITY_THRESHOLD = 2.5; // Threshold for stable memories
+  private readonly RECENCY_DECAY_DAYS = 30; // Days for recency score decay
+
   static styles = css`
     @keyframes stable-pulse {
       0% { box-shadow: var(--cp-glow-purple); }
@@ -224,10 +236,10 @@ export class MemoryView extends LitElement {
      const raw = await this.memoryService.getAllMemories();
      // Sort by persistence: permanence (permanent first), then reinforcement_count desc, then recency desc
      const score = (m: Memory) => {
-       const permanenceBoost = m.permanence_score === 'permanent' ? 2 : m.permanence_score === 'temporary' ? 0.5 : 1;
+       const permanenceBoost = this.getPermanenceWeight(m.permanence_score);
        const reinforcement = m.reinforcement_count || 0;
        const recency = m.timestamp ? new Date(m.timestamp).getTime() : 0;
-       return permanenceBoost * 1000 + reinforcement * 100 + recency / 1e10;
+       return permanenceBoost * 1000 + reinforcement * this.REINFORCEMENT_MULTIPLIER + recency / this.RECENCY_DIVISOR;
      };
      this.memories = raw.sort((a,b) => score(b) - score(a));
       // Update health metrics when fetching memories
@@ -361,16 +373,16 @@ export class MemoryView extends LitElement {
           : this.memories.map(
             (memory) => {
               // Stability score (derived): permanence weight + reinforcement + recency factor
-              const permanenceWeight = memory.permanence_score === 'permanent' ? 2 : memory.permanence_score === 'temporary' ? 0.5 : 1;
+              const permanenceWeight = this.getPermanenceWeight(memory.permanence_score);
               const reinforcement = memory.reinforcement_count || 0;
               const recency = memory.timestamp ? (Date.now() - new Date(memory.timestamp).getTime()) : Number.MAX_SAFE_INTEGER;
-              const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (1000 * 60 * 60 * 24 * 30)) : 1; // decay over ~30 days
-              const stabilityScore = (permanenceWeight * 1.0) + (reinforcement * 0.5) + (recencyScore * 0.5);
+              const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (1000 * 60 * 60 * 24 * this.RECENCY_DECAY_DAYS)) : 1; // decay over specified days
+              const stabilityScore = (permanenceWeight * this.STABILITY_PERMANENCE_WEIGHT) + (reinforcement * this.STABILITY_REINFORCEMENT_WEIGHT) + (recencyScore * this.STABILITY_RECENCY_WEIGHT);
 
               const titleStr = this.showHealthMetrics
                 ? `reinforce: ${reinforcement.toFixed(2)} | stability: ${stabilityScore.toFixed(2)}`
                 : `${memory.fact_key}: ${memory.fact_value}`;
-              const cls = stabilityScore >= 2.5 ? 'stable' : '';
+              const cls = stabilityScore >= this.STABILITY_THRESHOLD ? 'stable' : '';
 
               return html`
                 <li title=${titleStr} class=${cls}>
@@ -396,6 +408,23 @@ export class MemoryView extends LitElement {
       }
       </ul>
     `;
+  }
+
+  /**
+   * Calculate the permanence weight for a memory based on its permanence score
+   * @param permanenceScore The permanence score of the memory
+   * @returns The calculated permanence weight
+   */
+  private getPermanenceWeight(permanenceScore?: string): number {
+    switch (permanenceScore) {
+      case 'permanent':
+        return this.PERMANENCE_PERMANENT_BOOST;
+      case 'temporary':
+        return this.PERMANENCE_TEMPORARY_BOOST;
+      case 'contextual':
+      default:
+        return this.PERMANENCE_CONTEXTUAL_BOOST;
+    }
   }
 }
 
