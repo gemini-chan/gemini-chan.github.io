@@ -71,6 +71,33 @@ export class VectorStore {
     this.addCanonicalForm("user's preferences", "user_preferences");
     this.addCanonicalForm("preferences", "user_preferences");
     this.addCanonicalForm("likes", "user_preferences");
+
+   // Normalizations to align with stricter memory taxonomy
+   this.addCanonicalForm("model_persona_name", "model_core_identity_name");
+   this.addCanonicalForm("model_name", "model_core_identity_name");
+   this.addCanonicalForm("user_name", "user_core_identity_name");
+   this.addCanonicalForm("user_enquiry_model_name", "user_question_topic");
+   this.addCanonicalForm("user_question_about_name_meaning", "user_question_topic");
+   this.addCanonicalForm("english name", "model_alias_name");
+   this.addCanonicalForm("model_offered_service", "model_capability");
+
+    // Pets / favorites / preferences
+    // Map legacy phrasings to dynamic trait/preference forms
+    this.addCanonicalForm("my pet is", "user_trait.pet_name");
+    this.addCanonicalForm("my pet's name is", "user_trait.pet_name");
+    this.addCanonicalForm("dog name", "user_trait.pet_name");
+    this.addCanonicalForm("cat name", "user_trait.pet_name");
+    this.addCanonicalForm("your pet is", "model_trait.pet_name");
+    this.addCanonicalForm("your pet's name is", "model_trait.pet_name");
+    this.addCanonicalForm("i love cats", "user_preference.animal");
+    this.addCanonicalForm("i love dogs", "user_preference.animal");
+    this.addCanonicalForm("you love cats", "model_preference.animal");
+    this.addCanonicalForm("you love dogs", "model_preference.animal");
+    this.addCanonicalForm("favorite color", "user_preference.color");
+    this.addCanonicalForm("color i like", "user_preference.color");
+    this.addCanonicalForm("your favorite color", "model_preference.color");
+    // ... add any other desired preference mappings here ...
+
   }
 
   private getStoreName(): string {
@@ -111,6 +138,7 @@ export class VectorStore {
             });
             store.createIndex("personaId", "personaId", { unique: false });
             store.createIndex("timestamp", "timestamp", { unique: false });
+            store.createIndex("fact_key", "fact_key", { unique: false });
             logger.debug(`Created IndexedDB store: ${storeName}`);
           }
         },
@@ -180,15 +208,23 @@ export class VectorStore {
    * Save a memory entry to the vector store
    * @param memory The memory object to save
    */
-  async saveMemory(memory: Omit<Memory, "vector">): Promise<void> {
+  async saveMemory(memory: Omit<Memory, "vector">): Promise<Memory> {
     await this.initializationPromise;
 
     try {
       // Canonicalize the fact_key to reduce near-duplicates
-      const canonicalFactKey = this.getCanonicalForm(memory.fact_key);
+      let canonicalFactKey = this.getCanonicalForm(memory.fact_key);
+      // Normalize dynamic preference tokens to lowercase category part
+      if (/^(user|model)_preference\./i.test(canonicalFactKey)) {
+        const [owner, rest] = canonicalFactKey.split(".");
+        const category = (rest || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32) || "misc";
+        canonicalFactKey = `${owner}_preference.${category}`;
+      }
       
       // Generate embedding for the memory content using document task type
-      const contentToEmbed = `${canonicalFactKey}: ${memory.fact_value}`;
+      // Prefix with source tag to improve subject separation (user vs model)
+      const subject = memory.source === "model" ? "[MODEL]" : memory.source === "user" ? "[USER]" : "[UNKNOWN]";
+      const contentToEmbed = `${subject} ${canonicalFactKey}: ${memory.fact_value}`;
       const vector = this.aiClient
         ? await this.generateDocumentEmbedding(contentToEmbed)
         : new Array(3072).fill(0); // Fallback to zero vector
@@ -203,8 +239,18 @@ export class VectorStore {
       const tx = this.db?.transaction(storeName, "readwrite");
       const store = tx.objectStore(storeName);
 
+      // Preference merging: if same owner/category exists, replace value instead of duplicating
+      const isPreference = /^(user|model)_preference\.[a-z0-9_-]{1,32}$/.test(canonicalFactKey);
+
       // Check for duplicates based on fact_key and fact_value
-      const existingMemories = await store.getAll();
+      let existingMemories: Memory[] = [];
+      if (isPreference) {
+        // For preferences, use the fact_key index for efficient retrieval
+        existingMemories = await store.index("fact_key").getAll(canonicalFactKey);
+      } else {
+        // For non-preferences, check all memories
+        existingMemories = await store.getAll();
+      }
       // Use semantic similarity to find duplicates
       let bestMatch: Memory | null = null;
       let highestSimilarity = -1;
@@ -227,6 +273,23 @@ export class VectorStore {
       const duplicate =
         highestSimilarity > SIMILARITY_THRESHOLD ? bestMatch : null;
 
+      // If it's a preference, find prior entries with same key and replace the most recent one
+      if (isPreference) {
+        const sameKey = existingMemories
+          .filter((m) => m.fact_key === canonicalFactKey)
+          .sort((a, b) => (b.timestamp?.getTime?.() || 0) - (a.timestamp?.getTime?.() || 0));
+        if (sameKey[0]) {
+          const latest = sameKey[0];
+          const updated = { ...latest, ...memoryWithVector, id: latest.id };
+          await store.put(updated);
+          logger.debug("Updated preference (merged)", { factKey: canonicalFactKey });
+          await tx.done;
+          return;
+        }
+      }
+
+      let savedMemoryId: number | undefined;
+      
       if (duplicate) {
         // Update existing memory (reinforcement)
         duplicate.reinforcement_count =
@@ -239,12 +302,20 @@ export class VectorStore {
           reinforcementCount: duplicate.reinforcement_count,
         });
       } else {
-        // Save new memory
-        await store.add(memoryWithVector);
+        // Save new memory and capture the auto-generated ID
+        savedMemoryId = await store.add(memoryWithVector) as number;
         logger.debug("Saved new memory", { factKey: canonicalFactKey });
       }
 
       await tx.done;
+      
+      // Return the saved memory with its ID
+      if (duplicate) {
+        return duplicate;
+      } else {
+        // For new memories, use the ID returned by store.add
+        return { ...memoryWithVector, id: savedMemoryId };
+      }
     } catch (error) {
       logger.error("Failed to save memory", { error, memory });
       throw error;
@@ -436,9 +507,17 @@ export class VectorStore {
 
       // Canonicalize the query to improve matching
       const canonicalQuery = this.getCanonicalForm(query);
+
+      // Heuristically infer subject tag from query to avoid cross-subject collisions
+      // If the query mentions "my", "me", or starts from user input, we bias to [USER];
+      // if it asks about "your"/"you" and model identity, we bias to [MODEL].
+      let querySubject = "[UNKNOWN]";
+      const q = canonicalQuery.toLowerCase();
+      if (/\bmy\b|\bme\b|\bi\b/.test(q)) querySubject = "[USER]";
+      if (/\byour\b|\byou\b|model|persona|pronounce/.test(q)) querySubject = "[MODEL]";
       
       // Generate embedding for the query using query task type
-      const queryVector = await this.generateQueryEmbedding(canonicalQuery);
+      const queryVector = await this.generateQueryEmbedding(`${querySubject} ${canonicalQuery}`);
 
       const storeName = this.getStoreName();
       const tx = this.db?.transaction(storeName, "readonly");
@@ -537,6 +616,8 @@ export class VectorStore {
    * @returns Cosine similarity score (0-1)
    */
   private cosineSimilarity(vecA: number[], vecB: number[]): number {
+    // Gentle rehearsal: treat sparse zero vectors as low-signal; avoid false spikes
+
     if (vecA.length !== vecB.length) {
       logger.warn("Vectors have different lengths", {
         lenA: vecA.length,

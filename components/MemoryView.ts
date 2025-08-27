@@ -20,7 +20,35 @@ export class MemoryView extends LitElement {
   @state() private showHealthMetrics = false;
   @state() private healthMetrics: Partial<HealthMetrics> = {};
 
+  // Config object for memory scoring constants
+  private readonly MEMORY_SCORING_CONFIG = {
+    // Permanence weights
+    PERMANENCE_PERMANENT_BOOST: 2,
+    PERMANENCE_TEMPORARY_BOOST: 0.5,
+    PERMANENCE_CONTEXTUAL_BOOST: 1,
+    
+    // Multipliers for sorting
+    REINFORCEMENT_MULTIPLIER: 100,
+    RECENCY_DIVISOR: 1e10,
+    
+    // Stability scoring weights
+    STABILITY_PERMANENCE_WEIGHT: 1.0,
+    STABILITY_REINFORCEMENT_WEIGHT: 0.5,
+    STABILITY_RECENCY_WEIGHT: 0.5,
+    STABILITY_THRESHOLD: 2.5, // Threshold for stable memories
+    
+    // Recency decay
+    RECENCY_DECAY_DAYS: 30, // Days for recency score decay
+    MILLISECONDS_PER_DAY: 1000 * 60 * 60 * 24, // Milliseconds in a day
+    SORTING_PERMANENCE_MULTIPLIER: 1000 // Multiplier for permanence in sorting
+  };
+
   static styles = css`
+    @keyframes stable-pulse {
+      0% { box-shadow: var(--cp-glow-purple); }
+      50% { box-shadow: 0 0 12px rgba(0, 229, 255, 0.55), 0 0 20px rgba(124, 77, 255, 0.35); }
+      100% { box-shadow: var(--cp-glow-purple); }
+    }
     :host {
       display: flex;
       flex-direction: column;
@@ -169,6 +197,7 @@ export class MemoryView extends LitElement {
     }
 
     li {
+      position: relative;
       padding: 12px;
       border-radius: 10px;
       display: flex;
@@ -180,6 +209,8 @@ export class MemoryView extends LitElement {
       box-shadow: var(--cp-glow-purple);
       color: var(--cp-text);
     }
+
+   li.stable { animation: stable-pulse 2.6s ease-in-out infinite; }
 
     .memory-content {
       flex: 1;
@@ -197,6 +228,24 @@ export class MemoryView extends LitElement {
       display: flex;
       gap: 8px;
     }
+
+    .health-metrics-display {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .health-metric-reinforce {
+      font-size: 12px;
+      color: var(--cp-text);
+      opacity: 0.8;
+    }
+    
+    .health-metric-stability {
+      font-size: 12px;
+      color: var(--cp-cyan);
+      font-weight: 600;
+    }
   `;
 
   async connectedCallback() {
@@ -213,7 +262,9 @@ export class MemoryView extends LitElement {
     this.isLoading = true;
     this.error = null;
     try {
-      this.memories = await this.memoryService.getAllMemories();
+     const raw = await this.memoryService.getAllMemories();
+     // Sort by persistence: permanence (permanent first), then reinforcement_count desc, then recency desc
+     this.memories = raw.sort((a, b) => this.calculateMemorySortScore(b) - this.calculateMemorySortScore(a));
       // Update health metrics when fetching memories
       this.healthMetrics = healthMetricsService.getAverageMetrics();
     } catch (e) {
@@ -343,12 +394,25 @@ export class MemoryView extends LitElement {
         ${this.memories.length === 0
           ? html`<p>No memories found.</p>`
           : this.memories.map(
-              (memory) => html`
-                <li>
+            (memory) => {
+              // Stability score (derived): permanence weight + reinforcement + recency factor
+              const { stabilityScore, reinforcement } = this.calculateMemoryStabilityDetails(memory);
+
+              const titleStr = this.showHealthMetrics
+                ? `reinforce: ${reinforcement.toFixed(2)} | stability: ${stabilityScore.toFixed(2)}`
+                : `${memory.fact_key}: ${memory.fact_value}`;
+              const cls = stabilityScore >= this.MEMORY_SCORING_CONFIG.STABILITY_THRESHOLD ? 'stable' : '';
+
+              return html`
+                <li title=${titleStr} class=${cls}>
                   <div class="memory-content">
                     <span class="memory-key">${memory.fact_key}:</span>
                     <span>${memory.fact_value}</span>
                   </div>
+                  ${this.showHealthMetrics ? html`<div class="health-metrics-display">
+                     <span class="health-metric-reinforce">reinforce: ${(memory.reinforcement_count||0).toFixed(2)}</span>
+                     <span class="health-metric-stability">stability: ${stabilityScore.toFixed(2)}</span>
+                   </div>` : ""}
                   <div class="memory-actions">
                     ${memory.permanence_score === "permanent"
                       ? html`<button class="btn" @click=${() => this.unpinMemory(memory.id!)}>Unpin</button>`
@@ -358,10 +422,59 @@ export class MemoryView extends LitElement {
                     </button>
                   </div>
                 </li>
-              `
-            )}
+              `;
+            })
+      }
       </ul>
     `;
+  }
+
+  /**
+   * Calculate the permanence weight for a memory based on its permanence score
+   * @param permanenceScore The permanence score of the memory
+   * @returns The calculated permanence weight
+   */
+  private getPermanenceWeight(permanenceScore?: string): number {
+    switch (permanenceScore) {
+      case 'permanent':
+        return this.MEMORY_SCORING_CONFIG.PERMANENCE_PERMANENT_BOOST;
+      case 'temporary':
+        return this.MEMORY_SCORING_CONFIG.PERMANENCE_TEMPORARY_BOOST;
+      case 'contextual':
+      default:
+        return this.MEMORY_SCORING_CONFIG.PERMANENCE_CONTEXTUAL_BOOST;
+    }
+  }
+
+  /**
+   * Calculate stability details for a memory including the stability score and reinforcement count
+   * This is used to determine if a memory is "stable" and should be visually highlighted
+   * @param memory The memory to calculate the stability details for
+   * @returns An object containing the stability score and reinforcement count
+   */
+  private calculateMemoryStabilityDetails(memory: Memory): { stabilityScore: number; reinforcement: number } {
+    const permanenceWeight = this.getPermanenceWeight(memory.permanence_score);
+    const reinforcement = memory.reinforcement_count || 0;
+    const recency = memory.timestamp ? (Date.now() - new Date(memory.timestamp).getTime()) : Number.MAX_SAFE_INTEGER;
+    const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (this.MEMORY_SCORING_CONFIG.MILLISECONDS_PER_DAY * this.MEMORY_SCORING_CONFIG.RECENCY_DECAY_DAYS)) : 1; // decay over specified days
+    const stabilityScore = (permanenceWeight * this.MEMORY_SCORING_CONFIG.STABILITY_PERMANENCE_WEIGHT) + (reinforcement * this.MEMORY_SCORING_CONFIG.STABILITY_REINFORCEMENT_WEIGHT) + (recencyScore * this.MEMORY_SCORING_CONFIG.STABILITY_RECENCY_WEIGHT);
+    return { stabilityScore, reinforcement };
+  }
+
+  /**
+   * Calculate a sort score for a memory based on permanence, reinforcement, and recency
+   * This score is used to sort memories by persistence:
+   * - Permanence (permanent first)
+   * - Reinforcement count (descending)
+   * - Recency (newer first)
+   * @param memory The memory to calculate the score for
+   * @returns The calculated sort score
+   */
+  private calculateMemorySortScore(memory: Memory): number {
+    const permanenceBoost = this.getPermanenceWeight(memory.permanence_score);
+    const reinforcement = memory.reinforcement_count || 0;
+    const recency = memory.timestamp ? new Date(memory.timestamp).getTime() : 0;
+    return permanenceBoost * this.MEMORY_SCORING_CONFIG.SORTING_PERMANENCE_MULTIPLIER + reinforcement * this.MEMORY_SCORING_CONFIG.REINFORCEMENT_MULTIPLIER + recency / this.MEMORY_SCORING_CONFIG.RECENCY_DIVISOR;
   }
 }
 
