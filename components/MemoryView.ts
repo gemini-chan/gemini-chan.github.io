@@ -38,7 +38,9 @@ export class MemoryView extends LitElement {
     STABILITY_THRESHOLD: 2.5, // Threshold for stable memories
     
     // Recency decay
-    RECENCY_DECAY_DAYS: 30 // Days for recency score decay
+    RECENCY_DECAY_DAYS: 30, // Days for recency score decay
+    MILLISECONDS_PER_DAY: 1000 * 60 * 60 * 24, // Milliseconds in a day
+    SORTING_PERMANENCE_MULTIPLIER: 1000 // Multiplier for permanence in sorting
   };
 
   static styles = css`
@@ -394,11 +396,7 @@ export class MemoryView extends LitElement {
           : this.memories.map(
             (memory) => {
               // Stability score (derived): permanence weight + reinforcement + recency factor
-              const permanenceWeight = this.getPermanenceWeight(memory.permanence_score);
-              const reinforcement = memory.reinforcement_count || 0;
-              const recency = memory.timestamp ? (Date.now() - new Date(memory.timestamp).getTime()) : Number.MAX_SAFE_INTEGER;
-              const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (1000 * 60 * 60 * 24 * this.MEMORY_SCORING_CONFIG.RECENCY_DECAY_DAYS)) : 1; // decay over specified days
-              const stabilityScore = (permanenceWeight * this.MEMORY_SCORING_CONFIG.STABILITY_PERMANENCE_WEIGHT) + (reinforcement * this.MEMORY_SCORING_CONFIG.STABILITY_REINFORCEMENT_WEIGHT) + (recencyScore * this.MEMORY_SCORING_CONFIG.STABILITY_RECENCY_WEIGHT);
+              const { stabilityScore, reinforcement } = this.calculateMemoryStabilityDetails(memory);
 
               const titleStr = this.showHealthMetrics
                 ? `reinforce: ${reinforcement.toFixed(2)} | stability: ${stabilityScore.toFixed(2)}`
@@ -449,6 +447,21 @@ export class MemoryView extends LitElement {
   }
 
   /**
+   * Calculate stability details for a memory including the stability score and reinforcement count
+   * This is used to determine if a memory is "stable" and should be visually highlighted
+   * @param memory The memory to calculate the stability details for
+   * @returns An object containing the stability score and reinforcement count
+   */
+  private calculateMemoryStabilityDetails(memory: Memory): { stabilityScore: number; reinforcement: number } {
+    const permanenceWeight = this.getPermanenceWeight(memory.permanence_score);
+    const reinforcement = memory.reinforcement_count || 0;
+    const recency = memory.timestamp ? (Date.now() - new Date(memory.timestamp).getTime()) : Number.MAX_SAFE_INTEGER;
+    const recencyScore = recency > 0 ? Math.max(0, 1 - recency / (this.MEMORY_SCORING_CONFIG.MILLISECONDS_PER_DAY * this.MEMORY_SCORING_CONFIG.RECENCY_DECAY_DAYS)) : 1; // decay over specified days
+    const stabilityScore = (permanenceWeight * this.MEMORY_SCORING_CONFIG.STABILITY_PERMANENCE_WEIGHT) + (reinforcement * this.MEMORY_SCORING_CONFIG.STABILITY_REINFORCEMENT_WEIGHT) + (recencyScore * this.MEMORY_SCORING_CONFIG.STABILITY_RECENCY_WEIGHT);
+    return { stabilityScore, reinforcement };
+  }
+
+  /**
    * Calculate a sort score for a memory based on permanence, reinforcement, and recency
    * This score is used to sort memories by persistence:
    * - Permanence (permanent first)
@@ -461,7 +474,7 @@ export class MemoryView extends LitElement {
     const permanenceBoost = this.getPermanenceWeight(memory.permanence_score);
     const reinforcement = memory.reinforcement_count || 0;
     const recency = memory.timestamp ? new Date(memory.timestamp).getTime() : 0;
-    return permanenceBoost * 1000 + reinforcement * this.MEMORY_SCORING_CONFIG.REINFORCEMENT_MULTIPLIER + recency / this.MEMORY_SCORING_CONFIG.RECENCY_DIVISOR;
+    return permanenceBoost * this.MEMORY_SCORING_CONFIG.SORTING_PERMANENCE_MULTIPLIER + reinforcement * this.MEMORY_SCORING_CONFIG.REINFORCEMENT_MULTIPLIER + recency / this.MEMORY_SCORING_CONFIG.RECENCY_DIVISOR;
   }
 }
 
