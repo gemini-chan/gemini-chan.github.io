@@ -1260,10 +1260,10 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, (ev: VpuProgressEvent) => {
+		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, undefined, (ev: VpuProgressEvent) => {
 			// Log the event for debugging
 			logger.debug("VPU Progress Event", ev);
-			
+					
 			   // Map event to status string
 			   if (EVENT_STATUS_MAP[ev.type]) {
 			     this.npuStatus = EVENT_STATUS_MAP[ev.type];
