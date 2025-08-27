@@ -39,6 +39,14 @@ export class MemoryService extends BaseAIService implements IMemoryService {
   private readonly EXCITING_TOP_N_INCREMENT = 2;
   private readonly HEAVY_TOP_N_INCREMENT = 1;
   private readonly CADENCE_TOP_N_INCREMENT = 1;
+  
+  // Constants for stable model preferences and traits
+  private readonly STABLE_MODEL_PREFERENCE_CATEGORIES = new Set([
+    "color", "music", "food", "animal", "style", "aesthetic", "hobby",
+    "genre", "game", "show", "movie", "book", "drink", "snack", "season",
+    "weather", "art", "theme", "philosophy", "ethic", "virtue", "mood", "vibe"
+  ]);
+  private readonly STABLE_MODEL_TRAIT_CATEGORIES = new Set(["pet_name"]);
 
    constructor(vectorStore: VectorStore, client: AIClient) {
      super(client, MODEL_NAME);
@@ -283,24 +291,16 @@ Return ONLY the JSON array. No markdown, no prose.`;
         "model_alias_name",
       ]);
 
-     // Determine if a dynamic preference should be auto-pinned (stable personality)
-     const STABLE_MODEL_PREFERENCE_CATEGORIES = new Set([
-       "color", "music", "food", "animal", "style", "aesthetic", "hobby",
-       "genre", "game", "show", "movie", "book", "drink", "snack", "season",
-       "weather", "art", "theme", "philosophy", "ethic", "virtue", "mood", "vibe"
-     ]);
-     const STABLE_MODEL_TRAIT_CATEGORIES = new Set(["pet_name"]);
-     
      const isStableModelPreference = (key: string) => {
        const prefMatch = key.match(/^model_preference\.([a-z0-9_-]{1,32})$/);
        if (prefMatch) {
          const category = prefMatch[1];
-         return STABLE_MODEL_PREFERENCE_CATEGORIES.has(category);
+         return this.STABLE_MODEL_PREFERENCE_CATEGORIES.has(category);
        }
        const traitMatch = key.match(/^model_trait\.([a-z0-9_-]{1,32})$/);
        if (traitMatch) {
          const category = traitMatch[1];
-         return STABLE_MODEL_TRAIT_CATEGORIES.has(category); // Auto-pin pet_name trait
+         return this.STABLE_MODEL_TRAIT_CATEGORIES.has(category); // Auto-pin pet_name trait
        }
        return false;
      };
