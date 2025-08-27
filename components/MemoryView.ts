@@ -217,6 +217,24 @@ export class MemoryView extends LitElement {
       display: flex;
       gap: 8px;
     }
+
+    .health-metrics-display {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .health-metric-reinforce {
+      font-size: 12px;
+      color: var(--cp-text);
+      opacity: 0.8;
+    }
+    
+    .health-metric-stability {
+      font-size: 12px;
+      color: var(--cp-cyan);
+      font-weight: 600;
+    }
   `;
 
   async connectedCallback() {
@@ -235,13 +253,7 @@ export class MemoryView extends LitElement {
     try {
      const raw = await this.memoryService.getAllMemories();
      // Sort by persistence: permanence (permanent first), then reinforcement_count desc, then recency desc
-     const score = (m: Memory) => {
-       const permanenceBoost = this.getPermanenceWeight(m.permanence_score);
-       const reinforcement = m.reinforcement_count || 0;
-       const recency = m.timestamp ? new Date(m.timestamp).getTime() : 0;
-       return permanenceBoost * 1000 + reinforcement * this.REINFORCEMENT_MULTIPLIER + recency / this.RECENCY_DIVISOR;
-     };
-     this.memories = raw.sort((a,b) => score(b) - score(a));
+     this.memories = raw.sort((a, b) => this.calculateMemorySortScore(b) - this.calculateMemorySortScore(a));
       // Update health metrics when fetching memories
       this.healthMetrics = healthMetricsService.getAverageMetrics();
     } catch (e) {
@@ -390,10 +402,10 @@ export class MemoryView extends LitElement {
                     <span class="memory-key">${memory.fact_key}:</span>
                     <span>${memory.fact_value}</span>
                   </div>
-                  ${this.showHealthMetrics ? html`<div style="display:flex;gap:8px;align-items:center;">
-                      <span style="font-size:12px;color:var(--cp-text);opacity:0.8;">reinforce: ${(memory.reinforcement_count||0).toFixed(2)}</span>
-                      <span style="font-size:12px;color:var(--cp-cyan);font-weight:600;">stability: ${stabilityScore.toFixed(2)}</span>
-                    </div>` : ""}
+                  ${this.showHealthMetrics ? html`<div class="health-metrics-display">
+                     <span class="health-metric-reinforce">reinforce: ${(memory.reinforcement_count||0).toFixed(2)}</span>
+                     <span class="health-metric-stability">stability: ${stabilityScore.toFixed(2)}</span>
+                   </div>` : ""}
                   <div class="memory-actions">
                     ${memory.permanence_score === "permanent"
                       ? html`<button class="btn" @click=${() => this.unpinMemory(memory.id!)}>Unpin</button>`
@@ -425,6 +437,22 @@ export class MemoryView extends LitElement {
       default:
         return this.PERMANENCE_CONTEXTUAL_BOOST;
     }
+  }
+
+  /**
+   * Calculate a sort score for a memory based on permanence, reinforcement, and recency
+   * This score is used to sort memories by persistence:
+   * - Permanence (permanent first)
+   * - Reinforcement count (descending)
+   * - Recency (newer first)
+   * @param memory The memory to calculate the score for
+   * @returns The calculated sort score
+   */
+  private calculateMemorySortScore(memory: Memory): number {
+    const permanenceBoost = this.getPermanenceWeight(memory.permanence_score);
+    const reinforcement = memory.reinforcement_count || 0;
+    const recency = memory.timestamp ? new Date(memory.timestamp).getTime() : 0;
+    return permanenceBoost * 1000 + reinforcement * this.REINFORCEMENT_MULTIPLIER + recency / this.RECENCY_DIVISOR;
   }
 }
 
