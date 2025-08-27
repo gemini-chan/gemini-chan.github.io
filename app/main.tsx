@@ -1591,7 +1591,7 @@ this.updateTextTranscript(this.ttsCaption);
 							this.pendingTranscriptionText = "";
 						}
 						// Mark turn as complete
-						if (ev.data?.turnId === this.currentTurnId) {
+						if (ev.data?.turnId === this.currentTurnId || !ev.data?.turnId) {
 							this.isTurnInFlight = false;
 						}
 					}
@@ -1701,6 +1701,10 @@ this.updateTextTranscript(this.ttsCaption);
 									clearTimeout(this.transcriptionDebounceTimer);
 									this.transcriptionDebounceTimer = null;
 									this.pendingTranscriptionText = "";
+								}
+								// Mark turn as complete
+								if (ev.data?.turnId === this.currentTurnId || !ev.data?.turnId) {
+									this.isTurnInFlight = false;
 								}
 							}
 							
