@@ -45,7 +45,7 @@ export class Live2DGate extends LitElement {
     // Filter out undefined values to reduce log noise
     const changedEntries = Object.fromEntries(changed || []);
     const filteredEntries = Object.fromEntries(
-      Object.entries(changedEntries).filter(([_, value]) => value !== undefined)
+      Object.entries(changedEntries).filter(([, value]) => value !== undefined)
     );
     if (Object.keys(filteredEntries).length > 0) {
       log.debug('gate updated', filteredEntries);

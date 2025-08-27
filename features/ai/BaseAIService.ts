@@ -108,12 +108,8 @@ export abstract class BaseAIService {
    * @param responseText The raw response text from the AI model
    * @returns The parsed JSON object or null if parsing fails
    */
-  protected parseJsonResponse<T>(responseText: string): T | null {
-    try {
-      return JSON.parse(responseText) as T;
-    } catch (error) {
-      logger.error("Failed to parse JSON response", { error, responseText });
-      return null;
-    }
+  protected parseJsonResponse<T>(): T | null {
+    // Removed parser as NPU will handle raw response
+    return null;
   }
 }

@@ -15,6 +15,7 @@ export class VectorStore {
   private aiClient: AIClient | null = null;
   private embeddingModel = "gemini-embedding-001";
   private initializationPromise: Promise<void> | null = null;
+  private canonicalizationMap: Map<string, string> = new Map(); // Map to store canonical forms of fact_keys
 
   constructor(
     personaId: string,
@@ -25,6 +26,51 @@ export class VectorStore {
     this.aiClient = aiClient || null;
     this.embeddingModel = embeddingModel;
     this.initializationPromise = this.init();
+    this.initializeDefaultCanonicalForms();
+  }
+
+  /**
+   * Initialize default canonical forms for common fact_keys
+   */
+  private initializeDefaultCanonicalForms(): void {
+    // Common variations of user name
+    this.addCanonicalForm("user's name", "user_name");
+    this.addCanonicalForm("username", "user_name");
+    this.addCanonicalForm("name", "user_name");
+    
+    // Common variations of user age
+    this.addCanonicalForm("user's age", "user_age");
+    this.addCanonicalForm("age", "user_age");
+    
+    // Common variations of user occupation
+    this.addCanonicalForm("user's job", "user_occupation");
+    this.addCanonicalForm("user's occupation", "user_occupation");
+    this.addCanonicalForm("job", "user_occupation");
+    this.addCanonicalForm("occupation", "user_occupation");
+    this.addCanonicalForm("work", "user_occupation");
+    
+    // Common variations of user location
+    this.addCanonicalForm("user's location", "user_location");
+    this.addCanonicalForm("location", "user_location");
+    this.addCanonicalForm("where user lives", "user_location");
+    this.addCanonicalForm("user's city", "user_location");
+    this.addCanonicalForm("city", "user_location");
+    
+    // Common variations of user interests
+    this.addCanonicalForm("user's interests", "user_interests");
+    this.addCanonicalForm("interests", "user_interests");
+    this.addCanonicalForm("hobbies", "user_interests");
+    
+    // Common variations of user emotional state
+    this.addCanonicalForm("user's emotional state", "user_emotional_state");
+    this.addCanonicalForm("emotional state", "user_emotional_state");
+    this.addCanonicalForm("feelings", "user_emotional_state");
+    this.addCanonicalForm("mood", "user_emotional_state");
+    
+    // Common variations of user preferences
+    this.addCanonicalForm("user's preferences", "user_preferences");
+    this.addCanonicalForm("preferences", "user_preferences");
+    this.addCanonicalForm("likes", "user_preferences");
   }
 
   private getStoreName(): string {
@@ -89,6 +135,35 @@ export class VectorStore {
     this.db = null;
     this.initializationPromise = this.init();
     await this.initializationPromise;
+    // Clear canonicalization map when switching personas
+    this.clearCanonicalForms();
+    // Re-initialize default canonical forms for the new persona
+    this.initializeDefaultCanonicalForms();
+  }
+
+  /**
+   * Add a canonical form for a fact_key to reduce near-duplicates
+   * @param factKey The original fact_key
+   * @param canonicalForm The canonical form of the fact_key
+   */
+  addCanonicalForm(factKey: string, canonicalForm: string): void {
+    this.canonicalizationMap.set(factKey.toLowerCase().trim(), canonicalForm);
+  }
+
+  /**
+   * Get the canonical form for a fact_key
+   * @param factKey The fact_key to canonicalize
+   * @returns The canonical form of the fact_key, or the original if no canonical form exists
+   */
+  getCanonicalForm(factKey: string): string {
+    return this.canonicalizationMap.get(factKey.toLowerCase().trim()) || factKey;
+  }
+
+  /**
+   * Clear all canonical forms
+   */
+  clearCanonicalForms(): void {
+    this.canonicalizationMap.clear();
   }
 
   /**
@@ -109,14 +184,18 @@ export class VectorStore {
     await this.initializationPromise;
 
     try {
+      // Canonicalize the fact_key to reduce near-duplicates
+      const canonicalFactKey = this.getCanonicalForm(memory.fact_key);
+      
       // Generate embedding for the memory content using document task type
-      const contentToEmbed = `${memory.fact_key}: ${memory.fact_value}`;
+      const contentToEmbed = `${canonicalFactKey}: ${memory.fact_value}`;
       const vector = this.aiClient
         ? await this.generateDocumentEmbedding(contentToEmbed)
         : new Array(3072).fill(0); // Fallback to zero vector
 
       const memoryWithVector: Memory = {
         ...memory,
+        fact_key: canonicalFactKey, // Use canonical form
         vector: vector,
       };
 
@@ -156,13 +235,13 @@ export class VectorStore {
         duplicate.vector = vector; // Update vector as well
         await store.put(duplicate);
         logger.debug("Updated existing memory", {
-          factKey: memory.fact_key,
+          factKey: canonicalFactKey,
           reinforcementCount: duplicate.reinforcement_count,
         });
       } else {
         // Save new memory
         await store.add(memoryWithVector);
-        logger.debug("Saved new memory", { factKey: memory.fact_key });
+        logger.debug("Saved new memory", { factKey: canonicalFactKey });
       }
 
       await tx.done;
@@ -329,6 +408,23 @@ export class VectorStore {
   }
 
   /**
+   * Retrieve a single memory by its ID
+   * @param memoryId The ID of the memory to retrieve
+   * @returns The memory object if found, undefined otherwise
+   */
+  async getMemoryById(memoryId: number): Promise<Memory | undefined> {
+    await this.initializationPromise;
+
+    const storeName = this.getStoreName();
+    const tx = this.db?.transaction(storeName, "readonly");
+    const store = tx.objectStore(storeName);
+    const memory = await store.get(memoryId);
+    await tx.done;
+
+    return memory;
+  }
+
+  /**
    * Search for similar memories based on content using vector similarity
    * @param query The search query
    * @param threshold Similarity threshold (0-1)
@@ -338,8 +434,11 @@ export class VectorStore {
     try {
       await this.initializationPromise;
 
+      // Canonicalize the query to improve matching
+      const canonicalQuery = this.getCanonicalForm(query);
+      
       // Generate embedding for the query using query task type
-      const queryVector = await this.generateQueryEmbedding(query);
+      const queryVector = await this.generateQueryEmbedding(canonicalQuery);
 
       const storeName = this.getStoreName();
       const tx = this.db?.transaction(storeName, "readonly");
@@ -363,7 +462,7 @@ export class VectorStore {
         .sort((a, b) => b.similarity - a.similarity);
 
       logger.debug("Memory search completed", {
-        query,
+        query: canonicalQuery,
         totalMemories: allMemories.length,
         relevantResults: results.length,
         threshold,

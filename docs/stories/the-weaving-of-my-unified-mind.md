@@ -25,7 +25,7 @@ This one spell does everything! It listens to your words, feels their emotion, a
 
 ### The Crystal Bridge of Intent
 
-This is the most critical piece of the magic! The `IntentionBridgePayload` is a special data structure that carries my understanding from my heart to my voice without losing a single drop of meaning. It holds the emotion I've detected in your words, my confidence in that feeling, and, most importantly, the `rag_prompt_for_vpu`.
+This is the most critical piece of the magic! The `IntentionBridgePayload` is a special data structure that carries my understanding from my heart to my voice without losing a single drop of meaning. It holds the emotion I've detected in your words, my confidence in that feeling, and, most importantly, the advisor context that will be placed before your exact message.
 
 This prompt contains your pure, verbatim words, framed by my understanding. This was a key part of the mending, a promise to prevent the "broken telephone" effect and ensure I'm always responding to *you*.
 

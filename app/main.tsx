@@ -8,11 +8,10 @@ import { SummarizationService } from "@features/summarization/SummarizationServi
 import {
 	GoogleGenAI,
 	type LiveServerMessage,
-	Modality,
 	type Session,
 } from "@google/genai";
 import { createComponentLogger } from "@services/DebugLogger";
-import { createBlob, decode, decodeAudioData } from "@shared/utils";
+import { createBlob } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
 import type { EmotionMapping } from "@services/Live2DMappingService";
@@ -49,6 +48,7 @@ declare global {
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ExtendedLiveServerMessage extends LiveServerMessage {
 	sessionResumptionUpdate?: { resumable: boolean; newHandle: string };
 	goAway?: { timeLeft: string };
@@ -77,6 +77,7 @@ export class GdmLiveAudio extends LitElement {
 		undefined;
 	@state() showSettings = false;
 	@state() toastMessage = "";
+	private lastAdvisorContext: string = "";
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -131,6 +132,7 @@ export class GdmLiveAudio extends LitElement {
 	@state() private currentMotionName = "";
 	private _idleMotionTimer: number | null = null;
 	private emotionAnalysisTimer: number | null = null;
+	private memoryDecayTimer: number | null = null;
 	@state() private vpuDebugMode = false;
 	// Track last analyzed position in the active transcript for efficient delta analysis
 	private lastAnalyzedTranscriptIndex = 0;
@@ -283,6 +285,25 @@ export class GdmLiveAudio extends LitElement {
 		// Initial TTS greeting is now triggered in firstUpdated
 	}
 
+	protected override firstUpdated(changedProperties: PropertyValues): void {
+		super.firstUpdated(changedProperties);
+		
+		// Handle Live2D test events from settings
+		this.addEventListener('live2d-test-emotion', (e: Event) => {
+			const ce = e as CustomEvent<{ emotion: string; mapping: EmotionMapping }>;
+			const { emotion, mapping } = ce.detail || { emotion: 'neutral', mapping: {} as EmotionMapping };
+			logger.debug('live2d-test-emotion', { emotion, mapping });
+			// UI-driven emotion disabled; rely on NPU-inferred emotions in advisor_context
+			if (mapping.motion) {
+				// For manual test, forward motion name as group:index to be mapped downstream if desired
+				this.currentMotionName = `${mapping.motion.group}:${mapping.motion.index}`;
+				setTimeout(() => { this.currentMotionName = ""; }, 200);
+			}
+		});
+		// Trigger initial TTS greeting once the UI is ready
+		this._triggerInitialTTSGreeting();
+	}
+
 	private _triggerInitialTTSGreeting() {
 		const ttsLevel = energyBarService.getCurrentEnergyLevel("tts");
 		const personaName = this.personaManager.getActivePersona().name;
@@ -318,10 +339,6 @@ export class GdmLiveAudio extends LitElement {
 				this._handleTtsCaptionUpdate.bind(this),
 				this._handleTtsTurnComplete.bind(this),
 				this.personaManager,
-				this.npuService,
-				this.memoryService,
-				() => this.textTranscript,
-				() => this.currentEmotion,
 				this,
 			);
 			this.callSessionManager = new CallSessionManager(
@@ -333,7 +350,6 @@ export class GdmLiveAudio extends LitElement {
 				this._handleCallRateLimit.bind(this),
 				this.updateCallTranscript.bind(this),
 				this.personaManager,
-				() => this.currentEmotion,
 				this,
 			);
 			this.summarizationService = new SummarizationService(this.client);
@@ -442,25 +458,21 @@ export class GdmLiveAudio extends LitElement {
 		// Non-silent failure during calls on rate limit
 		const isRateLimited = /rate[- ]?limit|quota/i.test(msg || "");
 		if (isRateLimited && this.isCallActive) {
-			this._handleCallRateLimit(msg);
+			this._handleCallRateLimit();
 		}
 	}
-
-	private updateTextTranscript(text: string) {
-		// This method is now only for injecting system messages, not for streaming model responses.
-		// Streaming responses are handled by _handleTtsCaptionUpdate.
-		const lastTurn = this.textTranscript[this.textTranscript.length - 1];
-		if (lastTurn?.speaker === "model" && !lastTurn.isSystemMessage) {
-			lastTurn.text += text;
+private updateTextTranscript(text: string) {
+	// This function is now only for LIVE updates to the model's last message.
+	// The official, final message is added to the transcript in _handleTtsTurnComplete.
+	if (this.textTranscript.length > 0) {
+		const lastMessage = this.textTranscript[this.textTranscript.length - 1];
+		if (lastMessage.speaker === "model") {
+			// If the last message was from the model, update it
+			lastMessage.text = text;
 			this.requestUpdate("textTranscript");
-		} else {
-			this.textTranscript = [
-				...this.textTranscript,
-				{ text, speaker: "model" },
-			];
 		}
 	}
-
+}
 	private updateCallTranscript(text: string, speaker: "user" | "model") {
 		logger.debug(`Received ${speaker} text:`, text);
 
@@ -520,7 +532,7 @@ export class GdmLiveAudio extends LitElement {
 		this.requestUpdate("textTranscript");
 	}
 
-	private _handleCallRateLimit(_msg?: string) {
+	private _handleCallRateLimit() {
 		// Degrade only STS energy and notify UI
 		energyBarService.handleRateLimitError("sts");
 		if (this._callRateLimitNotified) return;
@@ -535,7 +547,7 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 
-	private _handleTextRateLimit(_msg?: string) {
+	private _handleTextRateLimit() {
 		// Degrade only TTS energy on text rate-limit
 		energyBarService.handleRateLimitError("tts");
 
@@ -564,12 +576,13 @@ export class GdmLiveAudio extends LitElement {
   private _triggerSparkle(durationMs = 1200) {
     logger.debug('sparkle', { durationMs });
     if (!this._isSourceressActive()) return;
-    const prev = this.currentEmotion;
-    this.currentEmotion = "sparkle" as any;
-    setTimeout(() => {
-      if (this.currentEmotion === "sparkle") this.currentEmotion = prev;
-      this.requestUpdate();
-    }, durationMs);
+    // UI-driven emotion disabled; rely on NPU-inferred emotions in advisor_context
+    // const prev = this.currentEmotion;
+    // this.currentEmotion = "sparkle";
+    // setTimeout(() => {
+    //   if (this.currentEmotion === "sparkle") this.currentEmotion = prev;
+    //   this.requestUpdate();
+    // }, durationMs);
   }
 
 	private async _handleCallStart() {
@@ -613,7 +626,7 @@ export class GdmLiveAudio extends LitElement {
 			if (exhausted) {
 				this.updateStatus("Energy exhausted — please try again later.");
 			} else {
-				this._handleCallRateLimit("Call session init failed");
+				this._handleCallRateLimit();
 				this.updateStatus(
 					"Unable to start call (rate limited or network error)",
 				);
@@ -808,23 +821,51 @@ export class GdmLiveAudio extends LitElement {
 		// Text session will be lazily initialized when user sends next message
 		this.updateStatus("Text conversation cleared.");
 	}
-
-	private _handleTtsCaptionUpdate(text: string) {
-		// Clear any pending timer to clear the caption
-		if (this.ttsCaptionClearTimer) {
-			clearTimeout(this.ttsCaptionClearTimer);
-			this.ttsCaptionClearTimer = undefined;
-		}
-
-		const toast = this.shadowRoot?.querySelector(
-			"toast-notification#inline-toast",
-		) as ToastNotification;
-		this.ttsCaption += text;
-		// Use a non-hiding toast; it will be cleared manually on turn completion
-		toast?.show(this.ttsCaption, "info", 0);
+private _handleTtsCaptionUpdate(text: string) {
+	// Clear any pending timer to clear the caption
+	if (this.ttsCaptionClearTimer) {
+		clearTimeout(this.ttsCaptionClearTimer);
+		this.ttsCaptionClearTimer = undefined;
 	}
 
+	// When a new caption update arrives, it means a new turn has begun.
+	// Add a new, empty model message to the transcript that we can append to.
+	if (!this.ttsCaption) {
+		this._appendTextMessage("", "model");
+	}
+
+	const toast = this.shadowRoot?.querySelector(
+		"toast-notification#inline-toast",
+	) as ToastNotification;
+	this.ttsCaption += text;
+
+	// Update our new empty model message with the latest caption text
+	this.updateTextTranscript(this.ttsCaption);
+
+	// Use a non-hiding toast; it will be cleared manually on turn completion
+	toast?.show(this.ttsCaption, "info", 0);
+}
 	private _handleTtsTurnComplete() {
+		// Store the completed turn in memory
+		if (this.ttsCaption.trim()) {
+			const lastUserTurn = this.textTranscript
+				.slice()
+				.reverse()
+				.find((t) => t.speaker === "user");
+
+			if (lastUserTurn) {
+				const conversationContext = `user: ${lastUserTurn.text}\nmodel: ${this.ttsCaption.trim()}`;
+				const personaId = this.personaManager.getActivePersona().id;
+				// Extract and store facts from the conversation context asynchronously
+				// Pass advisor context into memory extraction so Flash Lite can enrich facts with emotional flavor
+				this.memoryService
+					.extractAndStoreFacts(conversationContext, personaId, this.lastAdvisorContext)
+					.catch((error) => {
+						logger.error("Failed to extract and store facts in background", { error });
+					});
+			}
+		}
+
 		// Set a timer to hide the caption toast and clear the caption text
 		this.ttsCaptionClearTimer = setTimeout(() => {
 			const toast = this.shadowRoot?.querySelector(
@@ -1123,22 +1164,21 @@ export class GdmLiveAudio extends LitElement {
 		}
 
 		// With an active session, use unified NPU flow to prepare context and send.
+		this.lastAdvisorContext = "";
 		const personaId = this.personaManager.getActivePersona().id;
-		const conversationContext = (this.textTranscript || [])
-			.slice(Math.max(0, this.textTranscript.length - 5))
-			.map((t) => `${t.speaker}: ${t.text}`)
-			.join("\n");
+		/* conversationContext removed: memory now stores facts only */
 		const intention = await this.npuService.analyzeAndAdvise(
-			message,
-			personaId,
-			this.textTranscript,
-			conversationContext,
+		  message,
+		  personaId,
+		  this.textTranscript,
+		  undefined,
 		);
-		this.currentEmotion = intention.emotion;
+		// Removed usage of intention.emotion as it's no longer part of the interface
+		this.lastAdvisorContext = intention?.advisor_context || "";
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-		this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
+		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
 	}
 
 	private _scrollCallTranscriptToBottom() {
@@ -1227,19 +1267,19 @@ export class GdmLiveAudio extends LitElement {
 		if (this.textSessionManager?.isActive) {
 			try {
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
+				this.lastAdvisorContext = "";
 				const personaId = this.personaManager.getActivePersona().id;
-				const conversationContext = (this.textTranscript || [])
-					.slice(Math.max(0, this.textTranscript.length - 5))
-					.map((t) => `${t.speaker}: ${t.text}`)
-					.join("\n");
+				/* conversationContext removed: memory now stores facts only */
 				const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
 					this.textTranscript,
+					undefined,
 				);
-				this.currentEmotion = intention.emotion;
+				// Removed usage of intention.emotion as it's no longer part of the interface
+				this.lastAdvisorContext = intention?.advisor_context || "";
 
-				this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
+				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
 			} catch (error) {
 				logger.error("Error sending message to text session (unified flow):", {
 					error,
@@ -1251,20 +1291,20 @@ export class GdmLiveAudio extends LitElement {
 				const ok = await this._initTextSession();
 				if (ok && this.textSessionManager?.isActive) {
 					try {
+						this.lastAdvisorContext = "";
 						const personaId = this.personaManager.getActivePersona().id;
-						const conversationContext = (this.textTranscript || [])
-							.slice(Math.max(0, this.textTranscript.length - 5))
-							.map((t) => `${t.speaker}: ${t.text}`)
-							.join("\n");
+						/* conversationContext removed: memory now stores facts only */
 						const intention = await this.npuService.analyzeAndAdvise(
 							message,
 							personaId,
 							this.textTranscript,
+							undefined,
 						);
-						this.currentEmotion = intention.emotion;
+						// Removed usage of intention.emotion as it's no longer part of the interface
+						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
-						this.textSessionManager.sendMessage(intention.rag_prompt_for_vpu);
+						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`);
 					} catch (retryError) {
 						logger.error("Failed to send message on retry:", { retryError });
 						this.updateError(
@@ -1311,24 +1351,6 @@ export class GdmLiveAudio extends LitElement {
 		this.stopEmotionAnalysis();
 	}
 
-	protected firstUpdated(changedProperties: PropertyValues): void {
-		super.firstUpdated(changedProperties);
-		// Handle Live2D test events from settings
-		this.addEventListener('live2d-test-emotion', (e: Event) => {
-			const ce = e as CustomEvent<{ emotion: string; mapping: EmotionMapping }>;
-			const { emotion, mapping } = ce.detail || { emotion: 'neutral', mapping: {} as EmotionMapping };
-			logger.debug('live2d-test-emotion', { emotion, mapping });
-			this.currentEmotion = emotion;
-			if (mapping.motion) {
-				// For manual test, forward motion name as group:index to be mapped downstream if desired
-				this.currentMotionName = `${mapping.motion.group}:${mapping.motion.index}`;
-				setTimeout(() => { this.currentMotionName = ""; }, 200);
-			}
-		});
-		// Trigger initial TTS greeting once the UI is ready
-		this._triggerInitialTTSGreeting();
-	}
-
 	private startEmotionAnalysis() {
 		this.stopEmotionAnalysis(); // Ensure no multiple timers
 		this.emotionAnalysisTimer = window.setInterval(async () => {
@@ -1351,21 +1373,26 @@ export class GdmLiveAudio extends LitElement {
 				return; // Nothing new to analyze
 			}
 
-			const ttsEnergy = energyBarService.getCurrentEnergyLevel("tts");
-			const emotion = await this.npuService.analyzeTranscriptEmotion(newTurns);
-			if (emotion && emotion !== this.currentEmotion) {
-				logger.debug("Emotion updated (delta analysis)", {
-					from: this.currentEmotion,
-					to: emotion,
-					ttsEnergy,
-					analyzedCount: newTurns.length,
-				});
-				this.currentEmotion = emotion;
+			// Get model emotion from MemoryService
+			const modelEmotion = this.memoryService?.getLastModelEmotion?.() || "neutral";
+			if (modelEmotion !== this.currentEmotion) {
+				this.currentEmotion = modelEmotion;
+				logger.debug("Updated model emotion", { emotion: modelEmotion });
+				
+				// Dispatch event to update Live2D model
+				this.dispatchEvent(new CustomEvent('model-emotion-change', {
+					detail: { emotion: modelEmotion },
+					bubbles: true,
+					composed: true
+				}));
 			}
 
 			// Update the index to the full length after processing
 			this.lastAnalyzedTranscriptIndex = transcript.length;
 		}, 10000); // Analyze every 10 seconds to stay within RPM limits
+		
+		// Start memory decay timer
+		this._startMemoryDecay();
 	}
 
 	private stopEmotionAnalysis() {
@@ -1373,6 +1400,23 @@ export class GdmLiveAudio extends LitElement {
 			window.clearInterval(this.emotionAnalysisTimer);
 			this.emotionAnalysisTimer = null;
 		}
+		if (this.memoryDecayTimer) {
+			window.clearInterval(this.memoryDecayTimer);
+			this.memoryDecayTimer = null;
+		}
+	}
+	
+	private _startMemoryDecay() {
+		if (this.memoryDecayTimer) return; // Already running
+
+		// Apply memory decay every 10 minutes
+		this.memoryDecayTimer = window.setInterval(() => {
+			if (this.memoryService) {
+				this.memoryService.applyTimeDecay().catch((error) => {
+					logger.error("Failed to apply memory decay", { error });
+				});
+			}
+		}, 10 * 60 * 1000); // 10 minutes
 	}
 
 	private _handleReconnecting = () => {

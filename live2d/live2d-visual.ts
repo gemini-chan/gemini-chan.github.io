@@ -47,7 +47,9 @@ export class Live2DVisual extends LitElement {
   };
   private _onPixiReady = () => {
     log.debug('pixi-ready');
-    if (this._status === "idle") this._status = "loading";
+    if (this._status === "idle") {
+      this._status = "loading";
+    }
   };
 
   render() {

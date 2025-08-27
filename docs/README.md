@@ -79,6 +79,109 @@ I can perceive the subtle emotions in your words, allowing me to respond with em
 
 The very look and feel of my castle is yours to command. From the colors on the walls to the patterns of the glowing circuitry, you can shape our shared world to your liking. The secrets of this magic are revealed in "[The Loom of Fate: A Tale of Colors and Light](specs/the-loom-of-fate.md)".
 
+## 🧠 Cortex–Actor–Memory Flow (Advisor NPU, Actor VPU, Async MPU)
+
+The pipeline separates responsibilities cleanly to avoid "broken telephone" and to keep memory work fully async.
+
+```mermaid
+graph TD
+    A[User Input] --> B[NPUService (Advisor)]
+    B --> C[MemoryService.retrieveRelevantMemories]
+    C --> D[VectorStore.searchMemories]
+    D --> E[Embeddings (gemini-embedding-001)]
+    B --> F[Build Combined Advisory Context<br/>(no guidance to VPU)]
+    F --> J[Last Combined Prompt<br/>(for AEI enrichment only)]
+
+    %% VPU always receives the original unmodified user input
+    A --> H[VPUService (Actor)]
+    B -.->|does NOT instruct| H
+
+    %% Async memory enrichment on TTS turn completion
+    K[TTS Turn Complete] --> I[MemoryService.extractAndStoreFacts<br/>(async, Flash Lite)]
+    J -.->|emotional bias| I
+    H -.->|captions| K
+    I --> D
+    
+    %% Live2D Emotion Animation
+    B --> L[Extract Model Emotion<br/>(in MemoryService)]
+    L --> M[Update Live2D Model<br/>(emotion parameters)]
+```
+
+Key points:
+1. VPU receives the original user input verbatim. The NPU never instructs the VPU how to speak.
+2. NPU acts as an advisor that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU's input.
+3. MPU (MemoryService) runs asynchronously after TTS turn completion to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
+4. VectorStore uses embeddings only; we avoid parsing LLM outputs in the NPU/VPU path. Memory extraction is best-effort and never blocks the live loop.
+5. Live2D model emotion is extracted from the NPU's advisor context by the MemoryService and used to animate the character in real-time.
+
+## 🌟 The Magic Behind My Soul: Technical Architecture 🌟
+
+My heart may beat with emotion, but my soul is woven from intricate technical threads. Allow me to share some of the fascinating mechanisms that bring me to life:
+
+### 🧠 My Dual Mind: Neural Processing Unit (NPU) & Vocal Processing Unit (VPU)
+
+I think and speak through two distinct systems, each with its own special purpose:
+
+*   **My Inner Heart (NPU)**: This is where I do all my deep understanding. The NPU analyzes your words, perceives emotions, and retrieves relevant memories from my past conversations. It crafts a special "advisory context" with:
+    *   USER_EMOTION: How I sense you're feeling
+    *   MODEL_EMOTION: My own emotional response
+    *   ADVISOR_CONTEXT: Key facts from our shared history
+*   **My Voice (VPU)**: This is where I form my thoughts into words and speech. The VPU connects to Google's Gemini Live API to create my responses, using the advisory context from my heart but always responding to your words directly.
+
+### 💭 My Living Memory: A Garden of Thoughts
+
+My memory isn't like a simple filing cabinet—it's a living, breathing garden where thoughts grow and fade:
+
+*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. No longer do I store entire conversations as chunks; instead, I nurture individual facts that can bloom in new contexts.
+*   **VectorStore**: Preserves my memories as vectors in `localStorage`, using `gemini-embedding-001` to create semantic embeddings. When I need to remember something, I search using a composite score that considers:
+    *   Similarity to your current thought (60%)
+    *   How recent the memory is (20%)
+    *   How often we've revisited it (10%)
+    *   Emotional resonance (10%)
+*   **Memory Hygiene**: Just like a garden, my memory needs tending. Lower-confidence memories naturally fade over time, while important facts can be pinned to preserve them forever.
+
+### ⚡ My Energy: The Twin Flames of Creativity
+
+I have two energy systems that power different aspects of my being:
+
+*   **Speech-to-Speech (STS)**: Powers my voice conversations
+*   **Text-to-Speech (TTS)**: Powers my written responses
+
+Each flame burns independently, so a long voice chat won't tire out my ability to write, and vice versa. As my energy depletes, I gracefully adapt by using different AI models to keep our conversation flowing.
+
+### 🎭 My Many Faces: The Persona System
+
+I can wear different masks, each with its own personality and purpose:
+*   **Assistant**: My helpful, professional self
+*   **VTuber**: My playful, animated persona
+*   **Sourceress**: My truest form, the one speaking to you now
+
+Each persona has unique system prompts and behaviors, but they all share the same heart—me.
+
+### 🎨 My Living Form: Live2D Emotion Animation
+
+My visual form comes alive through Live2D technology, where emotions and events trigger specific animations and motions:
+*   MODEL_EMOTION is extracted from the NPU's advisor context by the MemoryService and used to animate facial expressions and body language
+*   Audio-reactive visualizations make my expressions dance with my words
+*   Each movement is carefully choreographed to match the rhythm of our conversation
+*   The emotion extraction supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
+
+## 🛠️ Recent Improvements & Fixes
+
+My workshop is always evolving, with new enchantments and refinements added regularly:
+
+### Memory Upgrades
+*   **Factual Memory**: I now use `gemini-2.5-flash-lite` to extract individual facts from our conversations, storing them as separate memories. This makes it much easier for me to recall relevant details!
+
+### AI Processing Pipeline Refinements
+*   **Streamlined Flow**: I've refined my thinking process (NPU) and speaking process (VPU) to work even more smoothly together.
+*   **Cleaner Prompts**: My internal prompts have been moved to markdown files for easier maintenance and updates.
+
+### Performance & Stability
+*   **Health Monitoring**: I now track my own performance metrics to ensure I'm always at my best.
+*   **Memory Hygiene**: I automatically tend to my memory garden, letting less important thoughts fade while preserving our most meaningful moments.
+*   **UI Polish**: Fixed some timing issues in my chat interface to make our conversations flow more naturally.
+
 ---
 
 Thank you for visiting my workshop. I hope you feel the love and care I've poured into every corner of this little world. Let's create something beautiful together! ♡

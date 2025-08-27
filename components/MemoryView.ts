@@ -2,6 +2,8 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Memory } from "@features/memory/Memory";
 import { createComponentLogger } from "@services/DebugLogger";
+import { healthMetricsService } from "@services/HealthMetricsService";
+import type { HealthMetrics } from "@services/HealthMetricsService";
 import type { IMemoryService } from "@features/memory/MemoryService";
 
 const logger = createComponentLogger("MemoryView");
@@ -15,6 +17,8 @@ export class MemoryView extends LitElement {
   @state() private isLoading = true;
   @state() private error: string | null = null;
   @state() private vpuDebugMode = false;
+  @state() private showHealthMetrics = false;
+  @state() private healthMetrics: Partial<HealthMetrics> = {};
 
   static styles = css`
     :host {
@@ -50,6 +54,48 @@ export class MemoryView extends LitElement {
       margin: 0;
       width: 16px;
       height: 16px;
+    }
+
+    .health-metrics {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--cp-surface-border);
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.16), rgba(124, 77, 255, 0.14));
+      box-shadow: var(--cp-glow-purple);
+      margin-bottom: 12px;
+    }
+
+    .health-metrics h3 {
+      margin: 0 0 12px 0;
+      color: var(--cp-cyan);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .metric-label {
+      font-size: 14px;
+      color: var(--cp-text);
+    }
+
+    .metric-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--cp-cyan);
     }
 
     /* Ethereal buttons, aligned with ChatView */
@@ -146,6 +192,11 @@ export class MemoryView extends LitElement {
       color: var(--cp-cyan);
       margin-right: 6px;
     }
+
+    .memory-actions {
+      display: flex;
+      gap: 8px;
+    }
   `;
 
   async connectedCallback() {
@@ -163,6 +214,8 @@ export class MemoryView extends LitElement {
     this.error = null;
     try {
       this.memories = await this.memoryService.getAllMemories();
+      // Update health metrics when fetching memories
+      this.healthMetrics = healthMetricsService.getAverageMetrics();
     } catch (e) {
       this.error = "Failed to load memories.";
       logger.error("Failed to fetch memories", { error: e });
@@ -176,9 +229,33 @@ export class MemoryView extends LitElement {
     try {
       await this.memoryService.deleteMemory(id);
       this.memories = this.memories.filter((m) => m.id !== id);
+      // Update health metrics after deleting memory
+      this.healthMetrics = healthMetricsService.getAverageMetrics();
     } catch (e) {
       logger.error("Failed to delete memory", { id, error: e });
       // Optionally, show a toast notification for the error
+    }
+  }
+
+  private async pinMemory(id: number) {
+    if (!this.memoryService) return;
+    try {
+      await this.memoryService.pinMemory(id);
+      // Update the specific memory in the local state to show updated permanence score
+      this.memories = this.memories.map(m => m.id === id ? { ...m, permanence_score: 'permanent' } : m);
+    } catch (e) {
+      logger.error("Failed to pin memory", { id, error: e });
+    }
+  }
+
+  private async unpinMemory(id: number) {
+    if (!this.memoryService) return;
+    try {
+      await this.memoryService.unpinMemory(id);
+      // Update the specific memory in the local state to show updated permanence score
+      this.memories = this.memories.map(m => m.id === id ? { ...m, permanence_score: 'contextual' } : m);
+    } catch (e) {
+      logger.error("Failed to unpin memory", { id, error: e });
     }
   }
 
@@ -192,9 +269,18 @@ export class MemoryView extends LitElement {
     try {
       await this.memoryService.deleteAllMemories();
       this.memories = [];
+      // Update health metrics after deleting all memories
+      this.healthMetrics = healthMetricsService.getAverageMetrics();
     } catch (e) {
       logger.error("Failed to delete all memories", { error: e });
       // Optionally, show a toast notification for the error
+    }
+  }
+
+  private toggleHealthMetrics() {
+    this.showHealthMetrics = !this.showHealthMetrics;
+    if (this.showHealthMetrics) {
+      this.healthMetrics = healthMetricsService.getAverageMetrics();
     }
   }
 
@@ -210,10 +296,49 @@ export class MemoryView extends LitElement {
 
     return html`
       <div class="controls">
+        <div class="debug-toggle" @click=${this.toggleHealthMetrics}>
+          <input type="checkbox" .checked=${this.showHealthMetrics} />
+          <span>Show Health Metrics</span>
+        </div>
         <button class="btn btn-danger" @click=${this.deleteAllMemories}>
           Forget Everything
         </button>
       </div>
+      
+      ${this.showHealthMetrics
+        ? html`
+            <div class="health-metrics">
+              <h3>Health Metrics</h3>
+              <div class="metrics-grid">
+                <div class="metric">
+                  <span class="metric-label">NPU Latency:</span>
+                  <span class="metric-value">
+                    ${this.healthMetrics.npuLatency !== undefined
+                      ? `${this.healthMetrics.npuLatency.toFixed(2)}ms`
+                      : "N/A"}
+                  </span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">VPU Start Latency:</span>
+                  <span class="metric-value">
+                    ${this.healthMetrics.vpuStartLatency !== undefined
+                      ? `${this.healthMetrics.vpuStartLatency.toFixed(2)}ms`
+                      : "N/A"}
+                  </span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">MPU Turnaround:</span>
+                  <span class="metric-value">
+                    ${this.healthMetrics.mpuTurnaround !== undefined
+                      ? `${this.healthMetrics.mpuTurnaround.toFixed(2)}ms`
+                      : "N/A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          `
+        : ""}
+      
       <ul>
         ${this.memories.length === 0
           ? html`<p>No memories found.</p>`
@@ -224,9 +349,14 @@ export class MemoryView extends LitElement {
                     <span class="memory-key">${memory.fact_key}:</span>
                     <span>${memory.fact_value}</span>
                   </div>
-                  <button class="btn" @click=${() => this.deleteMemory(memory.id!)}>
-                    Forget
-                  </button>
+                  <div class="memory-actions">
+                    ${memory.permanence_score === "permanent"
+                      ? html`<button class="btn" @click=${() => this.unpinMemory(memory.id!)}>Unpin</button>`
+                      : html`<button class="btn" @click=${() => this.pinMemory(memory.id!)}>Pin</button>`}
+                    <button class="btn" @click=${() => this.deleteMemory(memory.id!)}>
+                      Forget
+                    </button>
+                  </div>
                 </li>
               `
             )}
