@@ -416,6 +416,22 @@ export class ChatView extends LitElement {
       gap: 2px;
       vertical-align: middle;
     }
+    
+    .msg-status.clock {
+      color: var(--cp-cyan, #00e5ff);
+    }
+    
+    .msg-status.single {
+      color: var(--cp-purple, #7c4dff);
+    }
+    
+    .msg-status.double {
+      color: var(--cp-green, #00c853);
+    }
+    
+    .msg-status.error {
+      color: var(--cp-red, #ff1744);
+    }
   `;
 
   private _handleInput(e: Event) {
@@ -714,7 +730,12 @@ private async _updateScrollToBottomState() {
                       >
                         ${turn.text}
                         ${who === "user" && id && this.messageStatuses[id] 
-                          ? html`<span class="msg-status" @click=${(e: Event) => e.stopPropagation()}>
+                          ? html`<span class="msg-status ${this.messageStatuses[id]}" title="${
+                              this.messageStatuses[id] === 'clock' ? 'Analyzing…' :
+                              this.messageStatuses[id] === 'single' ? 'Sent to NPU' :
+                              this.messageStatuses[id] === 'double' ? 'Advisor responded' :
+                              'Error'
+                            }" @click=${(e: Event) => e.stopPropagation()}>
                               ${this.messageStatuses[id] === 'clock' 
                                 ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Zm-40-280h80v-200h-80v200Z"/></svg>`
                                 : this.messageStatuses[id] === 'single'

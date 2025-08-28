@@ -1495,6 +1495,9 @@ this.updateTextTranscript(this.ttsCaption);
                  this.npuProcessingTime = Date.now() - this.npuStartTime;
                  this.npuStartTime = null;
                }
+               // Set fallback status based on whether NPU produced a response
+               const ok = !!ev.data?.hasResponseText;
+               this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
              }
            }
            
