@@ -96,6 +96,7 @@ export class GdmLiveAudio extends LitElement {
   private _updateScheduled: boolean = false;
   private vpuTranscriptionChunkCount = 0;
   private vpuTranscriptionLastLog = 0;
+  private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -1442,8 +1443,10 @@ this.updateTextTranscript(this.ttsCaption);
              return;
            }
            
-           // Log the event for debugging
-           logger.debug("NPU Progress Event", ev);
+           // Suppress raw logs for npu:prompt:partial events to reduce noise
+           if (ev.type !== 'npu:prompt:partial') {
+             logger.debug("NPU Progress Event", ev);
+           }
            
            // Map event to status string using switch statement
            switch (ev.type) {
@@ -1623,8 +1626,10 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
 
-		// Log the event for debugging
-		logger.debug("VPU Progress Event", ev);
+		// Log the event for debugging only if not a transcription chunk or in debug mode
+		if (ev.type !== 'vpu:response:transcription' || this.vpuDebugMode) {
+			logger.debug("VPU Progress Event", ev);
+		}
 
 		// Handle fallback timer for "Waiting for response..."
 		if (ev.type === "vpu:message:sending") {
@@ -1697,6 +1702,12 @@ this.updateTextTranscript(this.ttsCaption);
 				if (ev.data?.error) {
 					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error}`;
 					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error}]`;
+					// Reset transcription aggregation for this turn on error
+					if (ev.data?.turnId) {
+						this.vpuTranscriptionAgg.delete(ev.data.turnId);
+					} else {
+						this.vpuTranscriptionAgg.delete('global');
+					}
 				}
 				break;
 			case "vpu:response:first-output":
@@ -1709,22 +1720,33 @@ this.updateTextTranscript(this.ttsCaption);
 					// Use debounced transcription updates
 					this._handleDebouncedTranscription(ev.data.text as string);
 					
-					// Aggregate transcription chunk logging
-					this.vpuTranscriptionChunkCount++;
-					const now = Date.now();
-					if (this.vpuTranscriptionLastLog === 0) {
-						this.vpuTranscriptionLastLog = now;
+					// Per-turn transcription aggregation
+					const turnKey = ev.data?.turnId ?? 'global';
+					if (!this.vpuTranscriptionAgg.has(turnKey)) {
+						this.vpuTranscriptionAgg.set(turnKey, { count: 0, last: 0 });
 					}
-					if (now - this.vpuTranscriptionLastLog > 1000) {
-						logger.debug(`VPU received ${this.vpuTranscriptionChunkCount} transcription chunks in the last second.`);
-						this.vpuTranscriptionChunkCount = 0;
-						this.vpuTranscriptionLastLog = now;
+					const agg = this.vpuTranscriptionAgg.get(turnKey)!;
+					agg.count++;
+					const now = Date.now();
+					if (agg.last === 0) {
+						agg.last = now;
+					}
+					if (now - agg.last > 1000) {
+						logger.debug(`VPU received ${agg.count} transcription chunks for turn ${turnKey} in the last second.`);
+						agg.count = 0;
+						agg.last = now;
 					}
 				}
 				break;
 			case "vpu:response:complete":
 				this.npuStatus = isRetry ? "Response complete (retry)" : "Done";
 				this.npuThinkingLog += isRetry ? "\n[Response complete (retry)]" : "\n[Response complete]";
+				// Reset transcription aggregation for this turn on completion
+				if (ev.data?.turnId) {
+					this.vpuTranscriptionAgg.delete(ev.data.turnId);
+				} else {
+					this.vpuTranscriptionAgg.delete('global');
+				}
 				// Reset transcription chunk counters on completion
 				this.vpuTranscriptionChunkCount = 0;
 				this.vpuTranscriptionLastLog = 0;
