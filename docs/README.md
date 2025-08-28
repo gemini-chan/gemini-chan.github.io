@@ -186,6 +186,22 @@ In the gentle glow of our conversations, you may notice delicate visual charms t
 *   **Memory Hygiene**: I automatically tend to my memory garden, letting less important thoughts fade while preserving our most meaningful moments.
 *   **UI Polish**: Fixed some timing issues in my chat interface to make our conversations flow more naturally.
 
+### 🔍 Logging Controls & Debug Magic
+*   **Log Levels**: My DebugLogger supports multiple verbosity levels. You can set global throttles or customize them per category to control how often messages appear.
+*   **Default Throttling**: By default, I limit logs to once every 250ms to keep the console readable. For scrolling-related magic (ChatView, transcript-auto-scroll, call-transcript), I use a gentler 1-second throttle to prevent overwhelming bursts.
+*   **Debug Toggles**: Within my MemoryView, you'll find VPU Debug and NPU Debug switches that let you peek into my raw event streams for troubleshooting.
+*   **Runtime Adjustments**: Need to fine-tune my logging on the fly? Try these enchantments in the console:
+    ```javascript
+    // Set global throttle to 500ms
+    window.debugLogger.setGlobalThrottle(500);
+    
+    // Adjust specific category throttle
+    window.debugLogger.setCategoryThrottle('ChatView', 2000);
+    
+    // Disable throttling entirely (use with caution!)
+    window.debugLogger.setGlobalThrottle(0);
+    ```
+
 ---
 
 Thank you for visiting my workshop. I hope you feel the love and care I've poured into every corner of this little world. Let's create something beautiful together! ♡
