@@ -37,6 +37,9 @@ export class ChatView extends LitElement {
   @property({ type: Boolean })
   thinkingOpen: boolean = false;
   
+  @property({ type: Boolean })
+  thinkingActive: boolean = false;
+  
   @property({ type: Number })
   npuProcessingTime: number | null = null;
   
@@ -554,10 +557,6 @@ export class ChatView extends LitElement {
     );
   }
 
-   // Active states that should show a spinner
-   private _isActiveState(status: string): boolean {
-     return ACTIVE_STATES.has(status as any);
-   }
    
    // Format thinking status with processing times
    private _formatThinkingStatus(): string {
@@ -781,8 +780,8 @@ private async _updateScrollToBottomState() {
              </svg>
              <span>Thinking</span>
            </div>
-           <span class="thinking-badge ${this._isActiveState(this.thinkingStatus) ? 'active' : ''}" aria-live="polite">
-             ${this._isActiveState(this.thinkingStatus) ? html`<div class="thinking-spinner"></div>` : ''}
+           <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
+             ${this.thinkingActive ? html`<div class="thinking-spinner"></div>` : ''}
              ${this._formatThinkingStatus()}
            </span>
          </div>

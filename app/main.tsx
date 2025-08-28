@@ -89,6 +89,7 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuThinkingOpen = false;
   @state() private npuThinkingLog: string = "";
   @state() private npuStatus: string = "";
+  @state() private thinkingActive = false;
   @state() private npuPersistCollapsed: boolean = false;
   @state() private currentTurnId: string | null = null;
   @state() private isTurnInFlight = false;
@@ -1595,28 +1596,35 @@ this.updateTextTranscript(this.ttsCaption);
            switch (ev.type) {
              case "npu:start":
                this.npuStatus = EVENT_STATUS_MAP[ev.type];
+               this.thinkingActive = true;
                // Start timing
                this.npuStartTime = Date.now();
+               this.npuThinkingLog += "\n[Thinking...]"; // Concise log line
                break;
              case "npu:model:start":
                this.npuStatus = "Preparing advisor…";
+               this.thinkingActive = true;
                if (ev.data?.model) {
                  this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
                  // Initialize retry count
                  this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
+                 this.npuThinkingLog += `\n[Preparing advisor: ${ev.data.model}]`; // Concise log line
                }
                break;
              case "npu:model:attempt":
                this.npuStatus = "Preparing advisor…";
+               this.thinkingActive = true;
                if (ev.data?.attempt) {
                  // Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
                  const retries = Math.max(0, (ev.data.attempt as number) - 1);
                  this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
+                 this.npuThinkingLog += `\n[Advisor attempt #${ev.data.attempt}]`; // Concise log line
                }
                break;
              case "npu:model:error":
                if (ev.data?.attempt && ev.data?.error) {
                  this.npuStatus = `Model error (attempt ${ev.data.attempt}): ${ev.data.error}`;
+                 this.thinkingActive = false;
                  this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
                  // Clear any pending transcription timers on error
                  if (this.transcriptionDebounceTimer) {
@@ -1629,16 +1637,20 @@ this.updateTextTranscript(this.ttsCaption);
                    this.npuProcessingTime = Date.now() - this.npuStartTime;
                    this.npuStartTime = null;
                  }
+                 this.npuThinkingLog += `\n[Model error (attempt ${ev.data.attempt}): ${ev.data.error}]`; // Concise log line
                }
                break;
              case "npu:model:response":
                this.npuStatus = "Advisor ready";
+               this.thinkingActive = true;
                if (ev.data?.length) {
                  this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
+                 this.npuThinkingLog += "\n[Advisor ready]"; // Concise log line
                }
                break;
              case "npu:complete":
                this.npuStatus = EVENT_STATUS_MAP[ev.type];
+               this.thinkingActive = false;
                // Calculate processing time on completion
                if (this.npuStartTime) {
                  this.npuProcessingTime = Date.now() - this.npuStartTime;
@@ -1647,10 +1659,15 @@ this.updateTextTranscript(this.ttsCaption);
                // Set fallback status based on whether NPU produced a response
                const ok = !!ev.data?.hasResponseText;
                this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
+               this.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
                break;
              default:
                if (EVENT_STATUS_MAP[ev.type]) {
                  this.npuStatus = EVENT_STATUS_MAP[ev.type];
+                 // Set thinking active for other active states
+                 if (ACTIVE_STATES.has(ev.type as any)) {
+                   this.thinkingActive = true;
+                 }
                }
                break;
            }
@@ -1683,6 +1700,25 @@ this.updateTextTranscript(this.ttsCaption);
                  console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
                }
              }
+           }
+           
+           // Handle memory events
+           if (ev.type === "npu:memories:start") {
+             this.npuThinkingLog += "\n[Retrieving memories...]"; // Concise log line
+           } else if (ev.type === "npu:memories:done") {
+             this.npuThinkingLog += "\n[Memories retrieved]"; // Concise log line
+           }
+           
+           // Handle prompt build events
+           if (ev.type === "npu:prompt:build") {
+             this.npuThinkingLog += "\n[Building prompt...]"; // Concise log line
+           } else if (ev.type === "npu:prompt:built") {
+             this.npuThinkingLog += "\n[Prompt built]"; // Concise log line
+           }
+           
+           // Handle advisor ready event
+           if (ev.type === "npu:advisor:ready") {
+             this.npuThinkingLog += "\n[Advisor context ready]"; // Concise log line
            }
            
            // Handle prompt built with optional full prompt display
@@ -1839,11 +1875,13 @@ this.updateTextTranscript(this.ttsCaption);
 		switch (ev.type) {
 			case "vpu:message:sending":
 				this.npuStatus = isRetry ? "Sending to VPU (retry)…" : "Sending to VPU…";
+				this.thinkingActive = true;
 				this.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
 				break;
 			case "vpu:message:error":
 				if (ev.data?.error) {
 					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error}`;
+					this.thinkingActive = false;
 					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error}]`;
 					// Reset transcription aggregation for this turn on error
 					if (ev.data?.turnId) {
@@ -1855,10 +1893,12 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "vpu:response:first-output":
 				this.npuStatus = isRetry ? "Receiving response (retry)…" : "Receiving response…";
+				this.thinkingActive = true;
 				this.npuThinkingLog += isRetry ? "\n[First output received (retry)]" : "\n[First output received]";
 				break;
 			case "vpu:response:transcription":
 				this.npuStatus = isRetry ? "Receiving response (retry)…" : "Receiving response…";
+				this.thinkingActive = true;
 				if (ev.data?.text) {
 					// Use debounced transcription updates
 					this._handleDebouncedTranscription(ev.data.text as string);
@@ -1883,6 +1923,7 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "vpu:response:complete":
 				this.npuStatus = isRetry ? "Response complete (retry)" : "Done";
+				this.thinkingActive = false;
 				this.npuThinkingLog += isRetry ? "\n[Response complete (retry)]" : "\n[Response complete]";
 				// Reset transcription aggregation for this turn on completion
 				if (ev.data?.turnId) {
