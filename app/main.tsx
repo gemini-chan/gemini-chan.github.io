@@ -160,14 +160,26 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 	
-	// Schedule update for frame-based batching
+	// Schedule update for frame-based batching with fallback
 	private _scheduleUpdate() {
 		if (!this._updateScheduled) {
 			this._updateScheduled = true;
+			
+			// Primary update via requestAnimationFrame
 			requestAnimationFrame(() => {
-				this._updateScheduled = false;
-				this.requestUpdate();
+				if (this._updateScheduled) {
+					this._updateScheduled = false;
+					this.requestUpdate();
+				}
 			});
+			
+			// Fallback timeout to ensure updates happen even when rAF is throttled
+			setTimeout(() => {
+				if (this._updateScheduled) {
+					this._updateScheduled = false;
+					this.requestUpdate();
+				}
+			}, 50); // 50ms fallback timeout
 		}
 	}
 
