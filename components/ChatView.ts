@@ -432,6 +432,10 @@ export class ChatView extends LitElement {
       color: var(--cp-green, #00c853);
     }
     
+    .msg-status.double svg:first-child {
+      margin-right: 2px;
+    }
+    
     .msg-status.error {
       color: var(--cp-red, #ff1744);
     }
@@ -717,7 +721,7 @@ private async _updateScrollToBottomState() {
              </svg>
              <span>Thinking</span>
            </div>
-           <span class="thinking-badge ${this._isActiveState(this.thinkingStatus) ? 'active' : ''}">
+           <span class="thinking-badge ${this._isActiveState(this.thinkingStatus) ? 'active' : ''}" aria-live="polite">
              ${this._isActiveState(this.thinkingStatus) ? html`<div class="thinking-spinner"></div>` : ''}
              ${this._formatThinkingStatus()}
            </span>

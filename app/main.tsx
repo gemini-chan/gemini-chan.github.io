@@ -1475,12 +1475,12 @@ this.updateTextTranscript(this.ttsCaption);
                // Start timing
                this.npuStartTime = Date.now();
              } else if (ev.type === "npu:model:start" && ev.data?.model) {
-               this.npuStatus = `Preparing advisor (${ev.data.model})…`;
+               this.npuStatus = "Preparing advisor…";
                this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
                // Initialize retry count
                this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
              } else if (ev.type === "npu:model:attempt" && ev.data?.attempt) {
-               this.npuStatus = `Calling model (attempt ${ev.data.attempt})…`;
+               this.npuStatus = "Preparing advisor…";
                // Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
                const retries = Math.max(0, (ev.data.attempt as number) - 1);
                this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
@@ -1638,9 +1638,11 @@ this.updateTextTranscript(this.ttsCaption);
 					       this.npuStatus = "Receiving response…";
 					       this.npuThinkingLog += "\n[First output received]";
 					     } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
+					       this.npuStatus = "Receiving response…";
 					       // Use debounced transcription updates
 					       this._handleDebouncedTranscription(ev.data.text as string);
 					     } else if (ev.type === "vpu:response:complete") {
+					       this.npuStatus = "Done";
 					       this.npuThinkingLog += "\n[Response complete]";
 					     }
 				});
