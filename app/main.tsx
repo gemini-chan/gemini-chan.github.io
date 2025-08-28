@@ -95,6 +95,8 @@ export class GdmLiveAudio extends LitElement {
   @state() private isTurnInFlight = false;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
+  private _npuFirstEventForced = new Set<string>();
+  private _vpuFirstEventForced = new Set<string>();
   private vpuTranscriptionChunkCount = 0;
   private vpuTranscriptionLastLog = 0;
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
@@ -164,11 +166,14 @@ export class GdmLiveAudio extends LitElement {
 	private _scheduleUpdate() {
 		if (!this._updateScheduled) {
 			this._updateScheduled = true;
+			let updatePerformed = false;
 			
 			// Primary update via requestAnimationFrame
 			requestAnimationFrame(() => {
 				if (this._updateScheduled) {
 					this._updateScheduled = false;
+					updatePerformed = true;
+					logger.debug("UI rAF update");
 					this.requestUpdate();
 				}
 			});
@@ -177,7 +182,10 @@ export class GdmLiveAudio extends LitElement {
 			setTimeout(() => {
 				if (this._updateScheduled) {
 					this._updateScheduled = false;
-					this.requestUpdate();
+					if (!updatePerformed) {
+						logger.debug("UI timeout update");
+						this.requestUpdate();
+					}
 				}
 			}, 50); // 50ms fallback timeout
 		}
@@ -1329,6 +1337,14 @@ this.updateTextTranscript(this.ttsCaption);
           return;
         }
         
+        // Force immediate update on first NPU event for this turn
+        const turnId = ev.data?.turnId || this.currentTurnId;
+        if (turnId && !this._npuFirstEventForced.has(turnId)) {
+          this._npuFirstEventForced.add(turnId);
+          logger.debug("UI FORCE: first NPU event", { turnId, type: ev.type });
+          this.requestUpdate();
+        }
+        
         // Log events based on debug mode
         if (this.npuDebugMode || ev.type !== 'npu:prompt:partial') {
           logger.debug("NPU Progress Event", ev);
@@ -1728,6 +1744,13 @@ this.updateTextTranscript(this.ttsCaption);
            this._scheduleUpdate();
          }
 				);
+        
+        // Clean up first event tracking after completion
+        if (ev.type === "npu:complete") {
+          if (turnId) {
+            this._npuFirstEventForced.delete(turnId);
+          }
+        }
 				// Removed usage of intention.emotion as it's no longer part of the interface
 				this.lastAdvisorContext = intention?.advisor_context || "";
 
@@ -1792,6 +1815,21 @@ this.updateTextTranscript(this.ttsCaption);
 		// Ignore events for other turns
 		if (this.currentTurnId && turnId && ev.data?.turnId && this.currentTurnId !== ev.data.turnId) {
 			return;
+		}
+		
+		// Force immediate update on first VPU event for this turn
+		const eventTurnId = ev.data?.turnId || turnId;
+		if (eventTurnId && !this._vpuFirstEventForced.has(eventTurnId)) {
+			this._vpuFirstEventForced.add(eventTurnId);
+			logger.debug("UI FORCE: first VPU event", { turnId: eventTurnId, type: ev.type });
+			this.requestUpdate();
+		}
+		
+		// Clean up first event tracking after completion or error
+		if (ev.type === "vpu:response:complete" || ev.type === "vpu:message:error") {
+			if (eventTurnId) {
+				this._vpuFirstEventForced.delete(eventTurnId);
+			}
 		}
 
 		// Log the event for debugging only if not a transcription chunk or in debug mode
@@ -1928,6 +1966,21 @@ this.updateTextTranscript(this.ttsCaption);
 		
 		// Schedule update for frame-based batching
 		this._scheduleUpdate();
+	}
+
+	/**
+	 * Log component updates for debugging UI refresh issues
+	 */
+	protected override updated(changedProperties: PropertyValues<this>): void {
+		super.updated(changedProperties);
+		
+		logger.debug("UPDATED", {
+			thinkingStatus: this.npuStatus,
+			thinkingActive: this.thinkingActive,
+			open: this.npuThinkingOpen,
+			logLen: this.npuThinkingLog.length,
+			transcriptLen: this.textTranscript.length
+		});
 	}
 
 	connectedCallback() {

@@ -624,6 +624,21 @@ export class ChatView extends LitElement {
     }
   }
 
+  /**
+   * Log component updates for debugging UI refresh issues
+   */
+  updated(changedProperties: Map<string | number | symbol, unknown>) {
+    super.updated(changedProperties);
+    
+    log.debug("ChatView UPDATED", {
+      thinkingStatus: this.thinkingStatus,
+      thinkingActive: this.thinkingActive,
+      open: this.thinkingOpen,
+      textLen: (this.thinkingText || '').length,
+      transcriptLen: this.transcript.length
+    });
+  }
+
   private _resetText() {
     log.debug("Resetting conversation");
     this.dispatchEvent(
