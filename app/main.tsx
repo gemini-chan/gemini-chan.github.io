@@ -1322,6 +1322,8 @@ this.updateTextTranscript(this.ttsCaption);
     this.npuThinkingLog = "";
     this.npuStatus = "Thinking…";
     this.npuThinkingOpen = false; // Default collapsed for summary requests
+    // Force immediate render of initial Thinking UI
+    this.requestUpdate();
     // Set current turn ID to ensure only this turn drives the Thinking UI
     this.currentTurnId = turnId;
     const intention = await this.npuService.analyzeAndAdvise(
@@ -1594,6 +1596,8 @@ this.updateTextTranscript(this.ttsCaption);
         // Respect user's preference; default collapsed
         // If user ever collapsed it, persist collapsed. Otherwise respect current open.
         this.npuThinkingOpen = this.npuPersistCollapsed ? false : userExpanded;
+        // Force immediate render of initial Thinking UI
+        this.requestUpdate();
         const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
