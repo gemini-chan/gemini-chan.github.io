@@ -1469,10 +1469,12 @@ this.updateTextTranscript(this.ttsCaption);
                this.npuStartTime = Date.now();
              } else if (ev.type === "npu:model:start" && ev.data?.model) {
                this.npuStatus = `Preparing advisor (${ev.data.model})…`;
+               this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
              } else if (ev.type === "npu:model:attempt" && ev.data?.attempt) {
                this.npuStatus = `Calling model (attempt ${ev.data.attempt})…`;
              } else if (ev.type === "npu:model:error" && ev.data?.attempt && ev.data?.error) {
                this.npuStatus = `Model error (attempt ${ev.data.attempt}): ${ev.data.error}`;
+               this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
                // Clear any pending transcription timers on error
                if (this.transcriptionDebounceTimer) {
                  clearTimeout(this.transcriptionDebounceTimer);
@@ -1486,6 +1488,7 @@ this.updateTextTranscript(this.ttsCaption);
                }
              } else if (ev.type === "npu:model:response" && ev.data?.length) {
                this.npuStatus = "Advisor ready";
+               this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
              } else if (ev.type === "npu:complete") {
                // Calculate processing time on completion
                if (this.npuStartTime) {
@@ -1553,14 +1556,6 @@ this.updateTextTranscript(this.ttsCaption);
 						return;
 					}
 					
-					// Update message status based on VPU events
-					if (ev.type === "vpu:message:sending") {
-						this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
-					} else if (ev.type === "vpu:response:complete") {
-						this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
-					} else if (ev.type === "vpu:message:error") {
-						this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
-					}
 					
 					// Log the event for debugging
 					logger.debug("VPU Progress Event (summary)", ev);
@@ -1670,14 +1665,6 @@ this.updateTextTranscript(this.ttsCaption);
 								return;
 							}
 							
-							// Update message status based on VPU events (retry path)
-							if (ev.type === "vpu:message:sending") {
-								this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
-							} else if (ev.type === "vpu:response:complete") {
-								this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
-							} else if (ev.type === "vpu:message:error") {
-								this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
-							}
 							
 							// Log the event for debugging
 							logger.debug("VPU Progress Event (retry)", ev);
