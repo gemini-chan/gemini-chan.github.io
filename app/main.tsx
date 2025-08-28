@@ -153,6 +153,13 @@ export class GdmLiveAudio extends LitElement {
 		this._scheduleUpdate();
 	}
 	
+	// Helper to auto-expand thinking panel based on persistence setting
+	private _autoExpandThinkingPanel() {
+		if (!this.npuPersistCollapsed) {
+			this.npuThinkingOpen = true;
+		}
+	}
+	
 	// Schedule update for frame-based batching
 	private _scheduleUpdate() {
 		if (!this._updateScheduled) {
