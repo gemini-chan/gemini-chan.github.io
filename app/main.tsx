@@ -10,7 +10,7 @@ import {
 	type LiveServerMessage,
 	type Session,
 } from "@google/genai";
-import { createComponentLogger } from "@services/DebugLogger";
+import { createComponentLogger, debugLogger } from "@services/DebugLogger";
 import { createBlob } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
@@ -1783,6 +1783,13 @@ this.updateTextTranscript(this.ttsCaption);
 		);
 		this.addEventListener("reconnecting", this._handleReconnecting);
 		this.addEventListener("reconnected", this._handleReconnected);
+		
+		// Set default throttles
+		debugLogger.setThrottle('*', 250, { leading: true, trailing: false });
+		debugLogger.setThrottle('ChatView', 1000, { leading: true, trailing: false });
+		debugLogger.setThrottle('transcript-auto-scroll', 1000, { leading: true, trailing: false });
+		debugLogger.setThrottle('call-transcript', 1000, { leading: true, trailing: false });
+		
 		this.startEmotionAnalysis();
 	}
 

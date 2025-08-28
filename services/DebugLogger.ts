@@ -275,7 +275,7 @@ export class DebugLogger {
 
   private formatAndOutput(entry: LogEntry): void {
     const { component, level, message, data, timestamp } = entry;
-    const throttle = this.throttles.get(component);
+    const throttle = this.throttles.get(component) ?? this.throttles.get('*');
     
     // If no throttling is configured, output immediately
     if (!throttle) {
