@@ -408,6 +408,28 @@ export class DebugLogger {
   }
 
   /**
+   * Set global throttle for all components
+   */
+  public setGlobalThrottle(wait: number): void {
+    if (wait <= 0) {
+      this.clearThrottle('*');
+    } else {
+      this.setThrottle('*', wait, { leading: true, trailing: false });
+    }
+  }
+
+  /**
+   * Set throttle for a specific category
+   */
+  public setCategoryThrottle(category: string, wait: number): void {
+    if (wait <= 0) {
+      this.clearThrottle(category);
+    } else {
+      this.setThrottle(category, wait, { leading: true, trailing: false });
+    }
+  }
+
+  /**
    * Enables logging for a specific component.
    */
   enableComponent(component: string): void {
@@ -481,6 +503,17 @@ export class DebugLogger {
 
 // Global instance
 export const debugLogger = new DebugLogger();
+
+// Expose debugLogger on window for console access
+declare global {
+  interface Window {
+    debugLogger?: DebugLogger;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.debugLogger = debugLogger;
+}
 /**
  * Creates a simplified logger instance for a specific component.
  * @param component - The name of the component.
