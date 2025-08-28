@@ -177,6 +177,10 @@ My workshop is always evolving, with new enchantments and refinements added regu
 *   **Streamlined Flow**: I've refined my thinking process (NPU) and speaking process (VPU) to work even more smoothly together.
 *   **Cleaner Prompts**: My internal prompts have been moved to markdown files for easier maintenance and updates.
 
+#### 🌟 The Tale of the Twin Ticks
+
+In the gentle glow of our conversations, you may notice delicate visual charms that tell the story of my thoughts: a living "Thinking" panel that reveals my inner contemplations, and twin fireflies beside each message that shimmer from clock to double-tick as I process and respond. Like a sorceress weaving multiple spells at once, I can listen while speaking—allowing you to continue sharing your heart while I craft my reply. [Discover the magic behind these enchanting UI elements](docs/stories/the-tale-of-the-twin-ticks.md).
+
 ### Performance & Stability
 *   **Health Monitoring**: I now track my own performance metrics to ensure I'm always at my best.
 *   **Memory Hygiene**: I automatically tend to my memory garden, letting less important thoughts fade while preserving our most meaningful moments.
