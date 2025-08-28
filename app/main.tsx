@@ -146,7 +146,7 @@ export class GdmLiveAudio extends LitElement {
 		this._pruneMessageMeta();
 		
 		// Force a re-render to update the UI
-		this.requestUpdate();
+		this._scheduleUpdate();
 	}
 	
 	// Schedule update for frame-based batching
@@ -510,7 +510,7 @@ export class GdmLiveAudio extends LitElement {
 			this.outputNode = this.callOutputNode;
 		}
 		// Trigger a re-render to pass the updated outputNode to live2d-gate
-		this.requestUpdate();
+		this._scheduleUpdate();
 	}
 
 	private async _initTextSession() {
@@ -625,7 +625,7 @@ if (lastMessage.speaker === "model") {
 		});
 
 		// Force a re-render to ensure the UI updates
-		this.requestUpdate("textTranscript");
+		this._scheduleUpdate();
 	}
 
 	private _handleCallRateLimit() {
@@ -665,7 +665,7 @@ if (lastMessage.speaker === "model") {
     // Reset back to empty after a short delay to allow re-triggering the same motion later
     setTimeout(() => {
       if (this.currentMotionName === name) this.currentMotionName = "";
-      this.requestUpdate();
+      this._scheduleUpdate();
     }, 200);
   }
 
@@ -1340,7 +1340,7 @@ this.updateTextTranscript(this.ttsCaption);
 				this.npuThinkingLog += `\n[model]: ${this.pendingTranscriptionText}`;
 				this.pendingTranscriptionText = "";
 				// Force a re-render to update the UI
-				this.requestUpdate();
+				this._scheduleUpdate();
 			}
 			this.transcriptionDebounceTimer = null;
 		}, 150); // 150ms debounce
@@ -1351,7 +1351,7 @@ this.updateTextTranscript(this.ttsCaption);
 		this.npuStatus = "";
 		this.npuThinkingLog = "";
 		// Force a re-render to update the UI
-		this.requestUpdate();
+		this._scheduleUpdate();
 	}
 	
 	private async _handleSendMessage(e: CustomEvent) {
