@@ -1374,11 +1374,6 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 	
 	private async _handleSendMessage(e: CustomEvent) {
-		// Block re-entrant sends
-		if (this.isTurnInFlight) {
-			this.npuStatus = "Finishing previous response…";
-			return;
-		}
 
     let userExpanded = false;
     // Track when the user manually opens the panel
@@ -1433,7 +1428,6 @@ this.updateTextTranscript(this.ttsCaption);
 				// Create turn ID for correlation
 				const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
 				this.currentTurnId = turnId;
-				this.isTurnInFlight = true;
 				
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
 				this.lastAdvisorContext = "";
@@ -1590,10 +1584,6 @@ this.updateTextTranscript(this.ttsCaption);
 							this.transcriptionDebounceTimer = null;
 							this.pendingTranscriptionText = "";
 						}
-						// Mark turn as complete
-						if (ev.data?.turnId === this.currentTurnId || !ev.data?.turnId) {
-							this.isTurnInFlight = false;
-						}
 					}
 					
 					     // Map event to status string
@@ -1702,10 +1692,6 @@ this.updateTextTranscript(this.ttsCaption);
 									this.transcriptionDebounceTimer = null;
 									this.pendingTranscriptionText = "";
 								}
-								// Mark turn as complete
-								if (ev.data?.turnId === this.currentTurnId || !ev.data?.turnId) {
-									this.isTurnInFlight = false;
-								}
 							}
 							
 							       // Map event to status string
@@ -1750,8 +1736,6 @@ this.updateTextTranscript(this.ttsCaption);
 						// Mark turn as complete on retry failure
 						this.isTurnInFlight = false;
 					}
-					// Mark turn as complete on NPU error
-					this.isTurnInFlight = false;
 				}
 			}
 		} else {
@@ -2006,7 +1990,6 @@ this.updateTextTranscript(this.ttsCaption);
                   .thinkingOpen=${this.npuThinkingOpen}
                   .npuProcessingTime=${this.npuProcessingTime}
                   .vpuProcessingTime=${this.vpuProcessingTime}
-                  .disableInput=${this.isTurnInFlight}
                   @send-message=${this._handleSendMessage}
                   @reset-text=${this._resetTextContext}
                   @scroll-state-changed=${this._handleChatScrollStateChanged}

@@ -47,8 +47,6 @@ export class ChatView extends LitElement {
   @property({ type: Number })
   vpuProcessingTime: number | null = null;
   
-  @property({ type: Boolean })
-  disableInput = false;
   
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;
@@ -264,12 +262,6 @@ export class ChatView extends LitElement {
       transform: translateY(-1px);
     }
     
-    button:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
-    }
 
     .scroll-to-bottom {
       position: absolute;
@@ -720,16 +712,13 @@ private async _updateScrollToBottomState() {
           @keydown=${(e: KeyboardEvent) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              if (!this.disableInput) {
-                this._sendMessage();
-              }
+              this._sendMessage();
             }
           }} 
           placeholder="Type a message..."
           rows="1"
-          ?disabled=${this.disableInput}
         ></textarea>
-        <button @click=${this._sendMessage} ?disabled=${this.disableInput}>
+        <button @click=${this._sendMessage}>
             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z"/></svg>
         </button>
       </div>
