@@ -17,6 +17,7 @@ export class MemoryView extends LitElement {
   @state() private isLoading = true;
   @state() private error: string | null = null;
   @state() private vpuDebugMode = false;
+  @state() private npuDebugMode = false;
   @state() private showHealthMetrics = false;
   @state() private healthMetrics: Partial<HealthMetrics> = {};
 
@@ -335,6 +336,24 @@ export class MemoryView extends LitElement {
     }
   }
 
+  private toggleVpuDebug() {
+    this.vpuDebugMode = !this.vpuDebugMode;
+    this.dispatchEvent(new CustomEvent('vpu-debug-toggle', {
+      detail: { enabled: this.vpuDebugMode },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  private toggleNpuDebug() {
+    this.npuDebugMode = !this.npuDebugMode;
+    this.dispatchEvent(new CustomEvent('npu-debug-toggle', {
+      detail: { enabled: this.npuDebugMode },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
 
   render() {
     if (this.isLoading) {
@@ -347,9 +366,19 @@ export class MemoryView extends LitElement {
 
     return html`
       <div class="controls">
-        <div class="debug-toggle" @click=${this.toggleHealthMetrics}>
-          <input type="checkbox" .checked=${this.showHealthMetrics} />
-          <span>Show Health Metrics</span>
+        <div style="display: flex; gap: 16px;">
+          <div class="debug-toggle" @click=${this.toggleVpuDebug}>
+            <input type="checkbox" .checked=${this.vpuDebugMode} />
+            <span>VPU Debug</span>
+          </div>
+          <div class="debug-toggle" @click=${this.toggleNpuDebug}>
+            <input type="checkbox" .checked=${this.npuDebugMode} />
+            <span>NPU Debug</span>
+          </div>
+          <div class="debug-toggle" @click=${this.toggleHealthMetrics}>
+            <input type="checkbox" .checked=${this.showHealthMetrics} />
+            <span>Show Health Metrics</span>
+          </div>
         </div>
         <button class="btn btn-danger" @click=${this.deleteAllMemories}>
           Forget Everything

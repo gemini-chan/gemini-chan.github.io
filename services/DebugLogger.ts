@@ -125,6 +125,7 @@ class ConfigurationManager {
 export class DebugLogger {
   private config: DebugLoggerConfig;
   private configManager: ConfigurationManager;
+  private throttles = new Map<string, { wait: number; leading: boolean; trailing: boolean; last: number; timeoutId?: number | null; pending?: LogEntry | null }>();
 
   /**
    * Initializes a new instance of the DebugLogger.
@@ -274,6 +275,51 @@ export class DebugLogger {
 
   private formatAndOutput(entry: LogEntry): void {
     const { component, level, message, data, timestamp } = entry;
+    const throttle = this.throttles.get(component);
+    
+    // If no throttling is configured, output immediately
+    if (!throttle) {
+      this.outputLog(entry);
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLast = now - throttle.last;
+    
+    // Handle leading edge
+    if (throttle.leading && timeSinceLast >= throttle.wait) {
+      throttle.last = now;
+      this.outputLog(entry);
+      return;
+    }
+    
+    // Handle trailing edge
+    if (throttle.trailing) {
+      // Clear any existing timeout
+      if (throttle.timeoutId) {
+        clearTimeout(throttle.timeoutId);
+      }
+      
+      // Store the pending entry
+      throttle.pending = entry;
+      
+      // Calculate remaining time
+      const remainingTime = throttle.wait - timeSinceLast;
+      
+      // Set timeout to emit the pending entry
+      throttle.timeoutId = window.setTimeout(() => {
+        if (throttle.pending) {
+          this.outputLog(throttle.pending);
+          throttle.last = Date.now();
+          throttle.pending = null;
+        }
+        throttle.timeoutId = null;
+      }, Math.max(0, remainingTime));
+    }
+  }
+
+  private outputLog(entry: LogEntry): void {
+    const { component, level, message, data, timestamp } = entry;
     const parts = [];
 
     if (this.config.timestamp) {
@@ -319,6 +365,46 @@ export class DebugLogger {
    */
   error(component: string, message: string, data?: unknown): void {
     this.log("error", component, message, data);
+  }
+
+  /**
+   * Set throttling configuration for a component
+   */
+  public setThrottle(component: string, wait: number, opts?: { leading?: boolean; trailing?: boolean }): void {
+    const leading = opts?.leading !== false; // default true
+    const trailing = opts?.trailing !== false; // default true
+    
+    this.throttles.set(component, {
+      wait,
+      leading,
+      trailing,
+      last: 0
+    });
+  }
+
+  /**
+   * Clear throttling configuration for a component
+   */
+  public clearThrottle(component: string): void {
+    const throttle = this.throttles.get(component);
+    if (throttle) {
+      if (throttle.timeoutId) {
+        clearTimeout(throttle.timeoutId);
+      }
+      this.throttles.delete(component);
+    }
+  }
+
+  /**
+   * Clear all throttling configurations
+   */
+  public clearAllThrottles(): void {
+    for (const [component, throttle] of this.throttles.entries()) {
+      if (throttle.timeoutId) {
+        clearTimeout(throttle.timeoutId);
+      }
+    }
+    this.throttles.clear();
   }
 
   /**

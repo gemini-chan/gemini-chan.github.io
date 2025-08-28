@@ -215,6 +215,7 @@ export class GdmLiveAudio extends LitElement {
 	private emotionAnalysisTimer: number | null = null;
 	private memoryDecayTimer: number | null = null;
 	@state() private vpuDebugMode = false;
+	@state() private npuDebugMode = false;
 	// Track last analyzed position in the active transcript for efficient delta analysis
 	private lastAnalyzedTranscriptIndex = 0;
 
@@ -1216,6 +1217,18 @@ this.updateTextTranscript(this.ttsCaption);
 			2000,
 		);
 	}
+	
+	private _handleNpuDebugToggle(e: CustomEvent) {
+		this.npuDebugMode = e.detail.enabled;
+		const toast = this.shadowRoot?.querySelector(
+			"toast-notification#inline-toast",
+		) as ToastNotification;
+		toast?.show(
+			`NPU Debug Mode ${this.npuDebugMode ? "Enabled" : "Disabled"}`,
+			"info",
+			2000,
+		);
+	}
 
 	private _handleSummarizationComplete(summary: string, transcript: Turn[]) {
 		const newSummary: CallSummary = {
@@ -1443,8 +1456,8 @@ this.updateTextTranscript(this.ttsCaption);
              return;
            }
            
-           // Suppress raw logs for npu:prompt:partial events to reduce noise
-           if (ev.type !== 'npu:prompt:partial') {
+           // Log events based on debug mode
+           if (this.npuDebugMode || ev.type !== 'npu:prompt:partial') {
              logger.debug("NPU Progress Event", ev);
            }
            
@@ -2063,6 +2076,7 @@ this.updateTextTranscript(this.ttsCaption);
                 <memory-view
                   .memoryService=${this.memoryService}
                   @vpu-debug-toggle=${this._handleVpuDebugToggle}
+                  @npu-debug-toggle=${this._handleNpuDebugToggle}
                 ></memory-view>
               `
 					}
