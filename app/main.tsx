@@ -93,6 +93,7 @@ export class GdmLiveAudio extends LitElement {
   @state() private currentTurnId: string | null = null;
   @state() private isTurnInFlight = false;
   private vpuWaitTimer: number | null = null;
+  private _updateScheduled: boolean = false;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -1538,6 +1539,9 @@ this.updateTextTranscript(this.ttsCaption);
              // Auto-collapse after complete, but only if user hadn't manually expanded
              if (!userExpanded) this.npuThinkingOpen = false;
            }
+           
+           // Schedule update for frame-based batching
+           this._scheduleUpdate();
          }
 				);
 				// Removed usage of intention.emotion as it's no longer part of the interface
@@ -1691,6 +1695,9 @@ this.updateTextTranscript(this.ttsCaption);
 				this.npuThinkingLog += isRetry ? "\n[Response complete (retry)]" : "\n[Response complete]";
 				break;
 		}
+		
+		// Schedule update for frame-based batching
+		this._scheduleUpdate();
 	}
 
 	connectedCallback() {
