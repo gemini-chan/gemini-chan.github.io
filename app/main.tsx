@@ -1260,11 +1260,20 @@ this.updateTextTranscript(this.ttsCaption);
 		// ensures we start with a fresh session.
 		this._resetTextContext();
 
-		// Add the summary prompt as the first "user" message in the new conversation
-		this.textTranscript = [
-			...this.textTranscript,
-			{ text: message, speaker: "user" },
-		];
+    // Generate turn ID before appending user message
+    const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
+    
+    // Add the summary prompt as the first "user" message in the new conversation with turnId
+    this.textTranscript = [
+      ...this.textTranscript,
+      { text: message, speaker: "user", turnId }
+    ];
+    
+    // Initialize status to clock (analyzing)
+    this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
+    
+    // Prune message metadata maps
+    this._pruneMessageMeta();
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
@@ -1282,19 +1291,146 @@ this.updateTextTranscript(this.ttsCaption);
 		this.lastAdvisorContext = "";
 		const personaId = this.personaManager.getActivePersona().id;
 		/* conversationContext removed: memory now stores facts only */
-		const intention = await this.npuService.analyzeAndAdvise(
-		  message,
-		  personaId,
-		  this.textTranscript,
-		  undefined,
-		);
+    this.npuThinkingLog = "";
+    this.npuStatus = "Thinking…";
+    this.npuThinkingOpen = false; // Default collapsed for summary requests
+    const intention = await this.npuService.analyzeAndAdvise(
+      message,
+      personaId,
+      this.textTranscript,
+      undefined,
+      undefined,
+      turnId,
+      (ev: NpuProgressEvent) => {
+        // Ignore events for other turns
+        if (ev.data?.turnId && ev.data.turnId !== turnId) {
+          return;
+        }
+        
+        // Log events based on debug mode
+        if (this.npuDebugMode || ev.type !== 'npu:prompt:partial') {
+          logger.debug("NPU Progress Event", ev);
+        }
+        
+        // Map event to status string using switch statement
+        switch (ev.type) {
+          case "npu:start":
+            this.npuStatus = EVENT_STATUS_MAP[ev.type];
+            // Start timing
+            this.npuStartTime = Date.now();
+            break;
+          case "npu:model:start":
+            this.npuStatus = "Preparing advisor…";
+            if (ev.data?.model) {
+              this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+              // Initialize retry count
+              this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
+            }
+            break;
+          case "npu:model:attempt":
+            this.npuStatus = "Preparing advisor…";
+            if (ev.data?.attempt) {
+              // Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
+              const retries = Math.max(0, (ev.data.attempt as number) - 1);
+              this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
+            }
+            break;
+          case "npu:model:error":
+            if (ev.data?.attempt && ev.data?.error) {
+              this.npuStatus = `Model error (attempt ${ev.data.attempt}): ${ev.data.error}`;
+              this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
+              // Clear any pending transcription timers on error
+              if (this.transcriptionDebounceTimer) {
+                clearTimeout(this.transcriptionDebounceTimer);
+                this.transcriptionDebounceTimer = null;
+                this.pendingTranscriptionText = "";
+              }
+              // Calculate processing time on error
+              if (this.npuStartTime) {
+                this.npuProcessingTime = Date.now() - this.npuStartTime;
+                this.npuStartTime = null;
+              }
+            }
+            break;
+          case "npu:model:response":
+            this.npuStatus = "Advisor ready";
+            if (ev.data?.length) {
+              this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
+            }
+            break;
+          case "npu:complete":
+            this.npuStatus = EVENT_STATUS_MAP[ev.type];
+            // Calculate processing time on completion
+            if (this.npuStartTime) {
+              this.npuProcessingTime = Date.now() - this.npuStartTime;
+              this.npuStartTime = null;
+            }
+            // Set fallback status based on whether NPU produced a response
+            const ok = !!ev.data?.hasResponseText;
+            this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
+            break;
+          default:
+            if (EVENT_STATUS_MAP[ev.type]) {
+              this.npuStatus = EVENT_STATUS_MAP[ev.type];
+            }
+            break;
+        }
+        
+        // Handle auto-expand rules
+        if (AUTO_EXPAND_RULES.has(ev.type)) {
+          // auto-expand only if user has NOT persisted collapsed
+          if (!this.npuPersistCollapsed) {
+            this.npuThinkingOpen = true;
+            // Save to localStorage when expanding
+            try {
+              localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
+            } catch (error) {
+              // Ignore storage errors
+              console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
+            }
+          }
+        }
+        
+        // Handle prompt partial updates
+        if (ev.type === "npu:prompt:partial" && ev.data?.delta) {
+          this.npuThinkingLog += ev.data.delta;
+          if (!this.npuPersistCollapsed) {
+            this.npuThinkingOpen = true;
+            // Save to localStorage when expanding
+            try {
+              localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
+            } catch (error) {
+              // Ignore storage errors
+              console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
+            }
+          }
+        }
+        
+        // Handle prompt built with optional full prompt display
+        if (ev.type === "npu:prompt:built" && ev.data?.fullPrompt) {
+          // Optionally, keep partial stream; or replace with full prompt
+          if (this.showInternalPrompts) {
+            this.npuThinkingLog = ev.data.fullPrompt as string;
+          }
+        }
+        
+        // Handle completion
+        if (ev.type === "npu:complete") {
+          // Auto-collapse after complete
+          this.npuThinkingOpen = false;
+        }
+        
+        // Schedule update for frame-based batching
+        this._scheduleUpdate();
+      }
+    );
 		// Removed usage of intention.emotion as it's no longer part of the interface
 		this.lastAdvisorContext = intention?.advisor_context || "";
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, undefined, (ev: VpuProgressEvent) => {
-			this._handleVpuProgress(ev);
+		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
+			this._handleVpuProgress(ev, turnId);
 		});
 	}
 
@@ -1372,13 +1508,7 @@ this.updateTextTranscript(this.ttsCaption);
 	
 	private async _handleSendMessage(e: CustomEvent) {
 
-    let userExpanded = false;
-    // Track when the user manually opens the panel
-    const chatViewEl = this.shadowRoot?.querySelector('chat-view') as (HTMLElement & { thinkingOpen?: boolean }) | null;
-    if (chatViewEl) {
-      const current = chatViewEl.thinkingOpen;
-      userExpanded = !!current;
-    }
+    const userExpanded = this.npuThinkingOpen;
 		const message = e.detail;
 		if (!message || !message.trim()) {
 			return;

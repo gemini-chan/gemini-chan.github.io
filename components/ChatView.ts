@@ -4,13 +4,7 @@ import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { ACTIVE_STATES } from "@shared/progress";
 import { throttle } from "@shared/utils";
-
-interface Turn {
-  text: string;
-  author: "user" | "model";
-  isSystemMessage?: boolean;
-  turnId?: string;
-}
+import type { Turn } from "@shared/types";
 
 const log = createComponentLogger("ChatView");
 
@@ -582,7 +576,7 @@ export class ChatView extends LitElement {
      }
      
      // Otherwise, show the regular status
-     return this.thinkingStatus || (this.thinkingOpen ? 'open' : 'closed');
+     return this.thinkingStatus;
    }
  
    private _toggleThinking = () => {
@@ -826,8 +820,8 @@ private async _updateScrollToBottomState() {
                 `
               : this.transcript.map(
                   (turn) => {
-                    const who = (turn as any).author ?? (turn as any).speaker;
-                    const id = (turn as any).turnId;
+                    const who = turn.speaker;
+                    const id = turn.turnId;
                     return html`
                       <div
                         class="turn ${who} ${turn.isSystemMessage
