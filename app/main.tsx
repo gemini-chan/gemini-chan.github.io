@@ -148,6 +148,17 @@ export class GdmLiveAudio extends LitElement {
 		// Force a re-render to update the UI
 		this.requestUpdate();
 	}
+	
+	// Schedule update for frame-based batching
+	private _scheduleUpdate() {
+		if (!this._updateScheduled) {
+			this._updateScheduled = true;
+			requestAnimationFrame(() => {
+				this._updateScheduled = false;
+				this.requestUpdate();
+			});
+		}
+	}
 
 	// Track current API key for smart change detection
 	private currentApiKey = "";
