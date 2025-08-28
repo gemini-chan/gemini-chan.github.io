@@ -3,6 +3,7 @@
  * Provides smart scrolling behavior that respects user interaction
  */
 import { createComponentLogger } from "@services/DebugLogger";
+import { throttle } from "@shared/utils";
 
 const logger = createComponentLogger("transcript-auto-scroll");
 
@@ -25,6 +26,8 @@ export interface ScrollToBottomState {
 export class TranscriptAutoScroll {
   private options: Required<AutoScrollOptions>;
   private wasAtBottomBeforeUpdate = new WeakMap<Element, boolean>();
+  private logAutoScroll = throttle((payload: any) => logger.debug("Transcript update - auto-scrolling", payload), 250, { trailing: false });
+  private logUserScroll = throttle((payload: any) => logger.debug("User scroll event", payload), 250, { trailing: false });
 
   constructor(options: AutoScrollOptions = {}) {
     this.options = {
@@ -105,7 +108,7 @@ export class TranscriptAutoScroll {
       requestAnimationFrame(() => {
         // Detect rapid updates (multiple messages at once)
         const isRapidUpdate = newLength - oldLength > 1;
-        logger.debug("Transcript update - auto-scrolling", {
+        this.logAutoScroll({
           oldLength,
           newLength,
           smooth: !isRapidUpdate,
@@ -181,7 +184,7 @@ export class TranscriptAutoScroll {
     // This ensures we respect their current scroll position for future auto-scroll decisions
     this.wasAtBottomBeforeUpdate.set(element, isAtBottom);
 
-    logger.debug("User scroll event", { isAtBottom });
+    this.logUserScroll({ isAtBottom });
 
     return isAtBottom;
   }

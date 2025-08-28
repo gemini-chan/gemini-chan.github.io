@@ -4,6 +4,56 @@
  */
 import type { Blob } from "@google/genai";
 
+function throttle<T extends (...args: any[]) => void>(
+  fn: T,
+  wait: number,
+  opts?: { leading?: boolean; trailing?: boolean }
+): T & { cancel: () => void } {
+  const leading = opts?.leading !== false;
+  const trailing = opts?.trailing === true;
+  
+  let timeoutId: number | null = null;
+  let lastRunTime = 0;
+  let lastArgs: any[] | null = null;
+
+  function throttled(this: any, ...args: any[]) {
+    const now = Date.now();
+    lastArgs = args;
+
+    if (!lastRunTime && !leading) {
+      lastRunTime = now;
+    }
+
+    const remaining = wait - (now - lastRunTime);
+
+    if (remaining <= 0 || remaining > wait) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      lastRunTime = now;
+      fn.apply(this, args);
+    } else if (!timeoutId && trailing) {
+      timeoutId = window.setTimeout(() => {
+        lastRunTime = Date.now();
+        timeoutId = null;
+        fn.apply(this, lastArgs!);
+      }, remaining);
+    }
+  }
+
+  throttled.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    lastRunTime = 0;
+    lastArgs = null;
+  };
+
+  return throttled as T & { cancel: () => void };
+}
+
 function encode(bytes) {
   let binary = "";
   const len = bytes.byteLength;
@@ -70,4 +120,4 @@ async function decodeAudioData(
   return buffer;
 }
 
-export { createBlob, decode, decodeAudioData, encode };
+export { createBlob, decode, decodeAudioData, encode, throttle };

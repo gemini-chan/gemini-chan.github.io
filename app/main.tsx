@@ -94,6 +94,8 @@ export class GdmLiveAudio extends LitElement {
   @state() private isTurnInFlight = false;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
+  private vpuTranscriptionChunkCount = 0;
+  private vpuTranscriptionLastLog = 0;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -1658,6 +1660,9 @@ this.updateTextTranscript(this.ttsCaption);
 				this.transcriptionDebounceTimer = null;
 				this.pendingTranscriptionText = "";
 			}
+			// Reset transcription chunk counters on completion or error
+			this.vpuTranscriptionChunkCount = 0;
+			this.vpuTranscriptionLastLog = 0;
 		}
 
 		// Map event to status string
@@ -1667,6 +1672,10 @@ this.updateTextTranscript(this.ttsCaption);
 			if (ev.type === "vpu:message:sending") {
 				// Start timing
 				this.vpuStartTime = Date.now();
+				// Initialize transcription log time
+				if (this.vpuTranscriptionLastLog === 0) {
+					this.vpuTranscriptionLastLog = Date.now();
+				}
 			} else if (ev.type === "vpu:message:error" && ev.data?.error) {
 				this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error}`;
 			} else if (ev.type === "vpu:response:complete") {
@@ -1699,11 +1708,26 @@ this.updateTextTranscript(this.ttsCaption);
 				if (ev.data?.text) {
 					// Use debounced transcription updates
 					this._handleDebouncedTranscription(ev.data.text as string);
+					
+					// Aggregate transcription chunk logging
+					this.vpuTranscriptionChunkCount++;
+					const now = Date.now();
+					if (this.vpuTranscriptionLastLog === 0) {
+						this.vpuTranscriptionLastLog = now;
+					}
+					if (now - this.vpuTranscriptionLastLog > 1000) {
+						logger.debug(`VPU received ${this.vpuTranscriptionChunkCount} transcription chunks in the last second.`);
+						this.vpuTranscriptionChunkCount = 0;
+						this.vpuTranscriptionLastLog = now;
+					}
 				}
 				break;
 			case "vpu:response:complete":
 				this.npuStatus = isRetry ? "Response complete (retry)" : "Done";
 				this.npuThinkingLog += isRetry ? "\n[Response complete (retry)]" : "\n[Response complete]";
+				// Reset transcription chunk counters on completion
+				this.vpuTranscriptionChunkCount = 0;
+				this.vpuTranscriptionLastLog = 0;
 				break;
 		}
 		
