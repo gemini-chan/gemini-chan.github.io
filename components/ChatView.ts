@@ -3,6 +3,7 @@ import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { ACTIVE_STATES } from "@shared/progress";
+import { throttle } from "@shared/utils";
 
 interface Turn {
   text: string;
@@ -60,6 +61,17 @@ export class ChatView extends LitElement {
 
   private lastSeenMessageCount = 0;
   private textareaRef: HTMLTextAreaElement | null = null;
+  
+  // Previous scroll state tracking
+  private _prevShowButton: boolean | null = null;
+  private _prevNewMessageCount: number = 0;
+  
+  // Throttled loggers
+  private _logScrollState = throttle((detail: { showButton: boolean; newMessageCount: number }) => 
+    log.debug("Scroll state changed", detail), 250, { trailing: false });
+    
+  private _logScrollButton = throttle((detail: { showButton: boolean; newMessageCount: number }) => 
+    log.debug("Scroll to bottom state updated", detail), 250, { trailing: false });
 
   static styles = css`
     :host {
@@ -708,17 +720,29 @@ private async _updateScrollToBottomState() {
       this.lastSeenMessageCount,
     );
     this.newMessageCount = state.newMessageCount;
-    log.debug("Scroll to bottom state updated", {
-      showButton: state.showButton,
-      newMessageCount: state.newMessageCount,
-    });
+
+    // Only log when state actually changes
+    if (this._prevShowButton !== state.showButton || this._prevNewMessageCount !== state.newMessageCount) {
+      this._logScrollButton({
+        showButton: state.showButton,
+        newMessageCount: state.newMessageCount,
+      });
+        
+      this._prevShowButton = state.showButton;
+      this._prevNewMessageCount = state.newMessageCount;
+    }
 
     // Dispatch event to notify parent component of scroll state changes
     const detail = {
       showButton: state.showButton,
       newMessageCount: state.newMessageCount,
     };
-    log.debug("Scroll state changed", detail);
+      
+    // Only log scroll state when it changes
+    if (this._prevShowButton !== detail.showButton || this._prevNewMessageCount !== detail.newMessageCount) {
+      this._logScrollState(detail);
+    }
+      
     this.dispatchEvent(
       new CustomEvent("scroll-state-changed", {
         detail,
