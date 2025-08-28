@@ -473,6 +473,49 @@ export class ChatView extends LitElement {
     }
   `;
 
+  private _renderMessageStatus(id: string) {
+    const status = this.messageStatuses[id];
+    const retryCount = this.messageRetryCount[id];
+    
+    let title = '';
+    let ariaLabel = '';
+    
+    switch (status) {
+      case 'clock':
+        title = 'Analyzing…';
+        ariaLabel = 'Message status: Analyzing';
+        break;
+      case 'single':
+        title = 'Sent to NPU';
+        ariaLabel = 'Message status: Sent to NPU';
+        break;
+      case 'double':
+        title = 'Advisor responded';
+        ariaLabel = 'Message status: Advisor responded';
+        break;
+      default:
+        title = 'Error';
+        ariaLabel = 'Message status: Error';
+    }
+    
+    return html`<span 
+      class="msg-status ${status}" 
+      title="${title}"
+      aria-label="${ariaLabel}"
+      @click=${(e: Event) => e.stopPropagation()}>
+        ${status === 'clock' 
+          ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Zm-40-280h80v-200h-80v200Z"/></svg>`
+          : status === 'single'
+          ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`
+          : status === 'double'
+          ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`
+          : html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-200h-80v200Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>`}
+        ${retryCount && retryCount > 0 
+          ? html`<span class="retry-badge" title="Retrying… (x${retryCount})" aria-label="Retry count: ${retryCount}">×</span>`
+          : ''}
+    </span>`;
+  }
+
   private _handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     this.inputValue = target.value;
@@ -769,23 +812,7 @@ private async _updateScrollToBottomState() {
                       >
                         ${turn.text}
                         ${who === "user" && id && this.messageStatuses[id] 
-                          ? html`<span class="msg-status ${this.messageStatuses[id]}" title="${
-                              this.messageStatuses[id] === 'clock' ? 'Analyzing…' :
-                              this.messageStatuses[id] === 'single' ? 'Sent to NPU' :
-                              this.messageStatuses[id] === 'double' ? 'Advisor responded' :
-                              'Error'
-                            }" @click=${(e: Event) => e.stopPropagation()}>
-                              ${this.messageStatuses[id] === 'clock' 
-                                ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Zm-40-280h80v-200h-80v200Z"/></svg>`
-                                : this.messageStatuses[id] === 'single'
-                                ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`
-                                : this.messageStatuses[id] === 'double'
-                                ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`
-                                : html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-200h-80v200Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>`}
-                              ${this.messageRetryCount[id] && this.messageRetryCount[id] > 0 
-                                ? html`<span class="retry-badge" title="Retrying… (x${this.messageRetryCount[id]})">×</span>`
-                                : ''}
-                            </span>`
+                          ? this._renderMessageStatus(id)
                           : ''}
                       </div>
                     `;

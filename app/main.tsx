@@ -1266,43 +1266,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
 		this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, undefined, (ev: VpuProgressEvent) => {
-			// Log the event for debugging
-			logger.debug("VPU Progress Event", ev);
-					
-			   // Map event to status string
-			   if (EVENT_STATUS_MAP[ev.type]) {
-			     this.npuStatus = EVENT_STATUS_MAP[ev.type];
-			     // Add data details for specific events
-			     if (ev.type === "vpu:message:error" && ev.data?.error) {
-			       this.npuStatus = `VPU error: ${ev.data.error}`;
-			     }
-			     // Force a re-render to update the UI
-			     this.requestUpdate();
-			   }
-			   
-			   // Handle log updates
-			   if (ev.type === "vpu:message:sending") {
-			     this.npuThinkingLog += "\n[Sending message to VPU]";
-			     // Force a re-render to update the UI
-			     this.requestUpdate();
-			   } else if (ev.type === "vpu:message:error" && ev.data?.error) {
-			     this.npuThinkingLog += `\n[VPU Error: ${ev.data.error}]`;
-			     // Force a re-render to update the UI
-			     this.requestUpdate();
-			   } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
-			     // Flip status to "Receiving response..." exactly once
-			     if (this.npuStatus !== "Receiving response…") {
-			       this.npuStatus = "Receiving response…";
-			       // Force a re-render to update the UI
-			       this.requestUpdate();
-			     }
-			     // Use debounced transcription updates
-			     this._handleDebouncedTranscription(ev.data.text as string);
-			   } else if (ev.type === "vpu:response:complete") {
-			     this.npuThinkingLog += "\n[Response complete]";
-			     // Force a re-render to update the UI
-			     this.requestUpdate();
-			   }
+			this._handleVpuProgress(ev);
 		});
 	}
 
@@ -1467,41 +1431,54 @@ this.updateTextTranscript(this.ttsCaption);
            // Log the event for debugging
            logger.debug("NPU Progress Event", ev);
            
-           // Map event to status string
-           if (EVENT_STATUS_MAP[ev.type]) {
-             this.npuStatus = EVENT_STATUS_MAP[ev.type];
-             // Add data details for specific events
-             if (ev.type === "npu:start") {
+           // Map event to status string using switch statement
+           switch (ev.type) {
+             case "npu:start":
+               this.npuStatus = EVENT_STATUS_MAP[ev.type];
                // Start timing
                this.npuStartTime = Date.now();
-             } else if (ev.type === "npu:model:start" && ev.data?.model) {
+               break;
+             case "npu:model:start":
                this.npuStatus = "Preparing advisor…";
-               this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
-               // Initialize retry count
-               this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
-             } else if (ev.type === "npu:model:attempt" && ev.data?.attempt) {
+               if (ev.data?.model) {
+                 this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+                 // Initialize retry count
+                 this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
+               }
+               break;
+             case "npu:model:attempt":
                this.npuStatus = "Preparing advisor…";
-               // Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
-               const retries = Math.max(0, (ev.data.attempt as number) - 1);
-               this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
-             } else if (ev.type === "npu:model:error" && ev.data?.attempt && ev.data?.error) {
-               this.npuStatus = `Model error (attempt ${ev.data.attempt}): ${ev.data.error}`;
-               this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
-               // Clear any pending transcription timers on error
-               if (this.transcriptionDebounceTimer) {
-                 clearTimeout(this.transcriptionDebounceTimer);
-                 this.transcriptionDebounceTimer = null;
-                 this.pendingTranscriptionText = "";
+               if (ev.data?.attempt) {
+                 // Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
+                 const retries = Math.max(0, (ev.data.attempt as number) - 1);
+                 this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
                }
-               // Calculate processing time on error
-               if (this.npuStartTime) {
-                 this.npuProcessingTime = Date.now() - this.npuStartTime;
-                 this.npuStartTime = null;
+               break;
+             case "npu:model:error":
+               if (ev.data?.attempt && ev.data?.error) {
+                 this.npuStatus = `Model error (attempt ${ev.data.attempt}): ${ev.data.error}`;
+                 this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
+                 // Clear any pending transcription timers on error
+                 if (this.transcriptionDebounceTimer) {
+                   clearTimeout(this.transcriptionDebounceTimer);
+                   this.transcriptionDebounceTimer = null;
+                   this.pendingTranscriptionText = "";
+                 }
+                 // Calculate processing time on error
+                 if (this.npuStartTime) {
+                   this.npuProcessingTime = Date.now() - this.npuStartTime;
+                   this.npuStartTime = null;
+                 }
                }
-             } else if (ev.type === "npu:model:response" && ev.data?.length) {
+               break;
+             case "npu:model:response":
                this.npuStatus = "Advisor ready";
-               this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
-             } else if (ev.type === "npu:complete") {
+               if (ev.data?.length) {
+                 this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
+               }
+               break;
+             case "npu:complete":
+               this.npuStatus = EVENT_STATUS_MAP[ev.type];
                // Calculate processing time on completion
                if (this.npuStartTime) {
                  this.npuProcessingTime = Date.now() - this.npuStartTime;
@@ -1510,7 +1487,12 @@ this.updateTextTranscript(this.ttsCaption);
                // Set fallback status based on whether NPU produced a response
                const ok = !!ev.data?.hasResponseText;
                this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
-             }
+               break;
+             default:
+               if (EVENT_STATUS_MAP[ev.type]) {
+                 this.npuStatus = EVENT_STATUS_MAP[ev.type];
+               }
+               break;
            }
            
            // Handle auto-expand rules
@@ -1566,85 +1548,7 @@ this.updateTextTranscript(this.ttsCaption);
 				// this.npuStatus = "Sending to VPU…";
 				
 				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
-					// Ignore events for other turns
-					if (ev.data?.turnId && ev.data.turnId !== turnId) {
-						return;
-					}
-					
-					
-					// Log the event for debugging
-					logger.debug("VPU Progress Event (summary)", ev);
-					
-					// Handle fallback timer for "Waiting for response..."
-					if (ev.type === "vpu:message:sending") {
-						// Clear any existing timer
-						if (this.vpuWaitTimer) {
-							clearTimeout(this.vpuWaitTimer);
-							this.vpuWaitTimer = null;
-						}
-						// Set new timer
-						if (this.currentTurnId === turnId) {
-							this.vpuWaitTimer = window.setTimeout(() => {
-								if (this.currentTurnId === turnId) {
-									this.npuStatus = "Waiting for response…";
-								}
-								this.vpuWaitTimer = null;
-							}, 800);
-						}
-					} else if (ev.type === "vpu:response:first-output" || ev.type === "vpu:response:transcription") {
-						// Clear the fallback timer when we get first output
-						if (this.vpuWaitTimer) {
-							clearTimeout(this.vpuWaitTimer);
-							this.vpuWaitTimer = null;
-						}
-					} else if (ev.type === "vpu:response:complete" || ev.type === "vpu:message:error") {
-						// Clear the fallback timer on completion or error
-						if (this.vpuWaitTimer) {
-							clearTimeout(this.vpuWaitTimer);
-							this.vpuWaitTimer = null;
-						}
-						// Clear transcription state
-						if (this.transcriptionDebounceTimer) {
-							clearTimeout(this.transcriptionDebounceTimer);
-							this.transcriptionDebounceTimer = null;
-							this.pendingTranscriptionText = "";
-						}
-					}
-					
-					     // Map event to status string
-					     if (EVENT_STATUS_MAP[ev.type]) {
-					       this.npuStatus = EVENT_STATUS_MAP[ev.type];
-					       // Add data details for specific events
-					       if (ev.type === "vpu:message:sending") {
-					         // Start timing
-					         this.vpuStartTime = Date.now();
-					       } else if (ev.type === "vpu:message:error" && ev.data?.error) {
-					         this.npuStatus = `VPU error: ${ev.data.error}`;
-					       } else if (ev.type === "vpu:response:complete") {
-					         // Calculate processing time on completion
-					         if (this.vpuStartTime) {
-					           this.vpuProcessingTime = Date.now() - this.vpuStartTime;
-					           this.vpuStartTime = null;
-					         }
-					       }
-					     }
-					     
-					     // Handle log updates
-					     if (ev.type === "vpu:message:sending") {
-					       this.npuThinkingLog += "\n[Sending message to VPU]";
-					     } else if (ev.type === "vpu:message:error" && ev.data?.error) {
-					       this.npuThinkingLog += `\n[VPU Error: ${ev.data.error}]`;
-					     } else if (ev.type === "vpu:response:first-output") {
-					       this.npuStatus = "Receiving response…";
-					       this.npuThinkingLog += "\n[First output received]";
-					     } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
-					       this.npuStatus = "Receiving response…";
-					       // Use debounced transcription updates
-					       this._handleDebouncedTranscription(ev.data.text as string);
-					     } else if (ev.type === "vpu:response:complete") {
-					       this.npuStatus = "Done";
-					       this.npuThinkingLog += "\n[Response complete]";
-					     }
+					this._handleVpuProgress(ev, turnId, false);
 				});
 			} catch (error) {
 				logger.error("Error sending message to text session (unified flow):", {
@@ -1677,82 +1581,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
 						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
-							// Ignore events for other turns
-							if (ev.data?.turnId && ev.data.turnId !== turnId) {
-								return;
-							}
-							
-							
-							// Log the event for debugging
-							logger.debug("VPU Progress Event (retry)", ev);
-							
-							// Handle fallback timer for "Waiting for response..."
-							if (ev.type === "vpu:message:sending") {
-								// Clear any existing timer
-								if (this.vpuWaitTimer) {
-									clearTimeout(this.vpuWaitTimer);
-									this.vpuWaitTimer = null;
-								}
-								// Set new timer
-								if (this.currentTurnId === turnId) {
-									this.vpuWaitTimer = window.setTimeout(() => {
-										if (this.currentTurnId === turnId) {
-											this.npuStatus = "Waiting for response…";
-										}
-										this.vpuWaitTimer = null;
-									}, 800);
-								}
-							} else if (ev.type === "vpu:response:first-output" || ev.type === "vpu:response:transcription") {
-								// Clear the fallback timer when we get first output
-								if (this.vpuWaitTimer) {
-									clearTimeout(this.vpuWaitTimer);
-									this.vpuWaitTimer = null;
-								}
-							} else if (ev.type === "vpu:response:complete" || ev.type === "vpu:message:error") {
-								// Clear the fallback timer on completion or error
-								if (this.vpuWaitTimer) {
-									clearTimeout(this.vpuWaitTimer);
-									this.vpuWaitTimer = null;
-								}
-								// Clear transcription state
-								if (this.transcriptionDebounceTimer) {
-									clearTimeout(this.transcriptionDebounceTimer);
-									this.transcriptionDebounceTimer = null;
-									this.pendingTranscriptionText = "";
-								}
-							}
-							
-							       // Map event to status string
-							       if (EVENT_STATUS_MAP[ev.type]) {
-							         this.npuStatus = EVENT_STATUS_MAP[ev.type];
-							         // Add "(retry)" suffix for retry events
-							         if (ev.type === "vpu:message:sending") {
-							           this.npuStatus = "Sending to VPU (retry)…";
-							         } else if (ev.type === "vpu:response:transcription") {
-							           this.npuStatus = "Receiving response (retry)…";
-							         } else if (ev.type === "vpu:response:complete") {
-							           this.npuStatus = "Response complete (retry)";
-							         }
-							         // Add data details for specific events
-							         if (ev.type === "vpu:message:error" && ev.data?.error) {
-							           this.npuStatus = `VPU error (retry): ${ev.data.error}`;
-							         }
-							       }
-							       
-							       // Handle log updates
-							       if (ev.type === "vpu:message:sending") {
-							         this.npuThinkingLog += "\n[Sending message to VPU (retry)]";
-							       } else if (ev.type === "vpu:message:error" && ev.data?.error) {
-							         this.npuThinkingLog += `\n[VPU Error (retry): ${ev.data.error}]`;
-							       } else if (ev.type === "vpu:response:first-output") {
-							         this.npuStatus = "Receiving response (retry)…";
-							         this.npuThinkingLog += "\n[First output received (retry)]";
-							       } else if (ev.type === "vpu:response:transcription" && ev.data?.text) {
-							         // Use debounced transcription updates
-							         this._handleDebouncedTranscription(ev.data.text as string);
-							       } else if (ev.type === "vpu:response:complete") {
-							         this.npuThinkingLog += "\n[Response complete (retry)]";
-							       }
+							this._handleVpuProgress(ev, turnId, true);
 						});
 					} catch (retryError) {
 						logger.error("Failed to send message on retry:", { retryError });
@@ -1768,6 +1597,99 @@ this.updateTextTranscript(this.ttsCaption);
 			}
 		} else {
 			this.updateError("Text session not available");
+		}
+	}
+
+	private _handleVpuProgress(ev: VpuProgressEvent, turnId?: string, isRetry = false) {
+		// Ignore events for other turns
+		if (turnId && ev.data?.turnId && ev.data.turnId !== turnId) {
+			return;
+		}
+
+		// Log the event for debugging
+		logger.debug("VPU Progress Event", ev);
+
+		// Handle fallback timer for "Waiting for response..."
+		if (ev.type === "vpu:message:sending") {
+			// Clear any existing timer
+			if (this.vpuWaitTimer) {
+				clearTimeout(this.vpuWaitTimer);
+				this.vpuWaitTimer = null;
+			}
+			// Set new timer
+			if (!turnId || this.currentTurnId === turnId) {
+				this.vpuWaitTimer = window.setTimeout(() => {
+					if (!turnId || this.currentTurnId === turnId) {
+						this.npuStatus = "Waiting for response…";
+					}
+					this.vpuWaitTimer = null;
+				}, 800);
+			}
+		} else if (ev.type === "vpu:response:first-output" || ev.type === "vpu:response:transcription") {
+			// Clear the fallback timer when we get first output
+			if (this.vpuWaitTimer) {
+				clearTimeout(this.vpuWaitTimer);
+				this.vpuWaitTimer = null;
+			}
+		} else if (ev.type === "vpu:response:complete" || ev.type === "vpu:message:error") {
+			// Clear the fallback timer on completion or error
+			if (this.vpuWaitTimer) {
+				clearTimeout(this.vpuWaitTimer);
+				this.vpuWaitTimer = null;
+			}
+			// Clear transcription state
+			if (this.transcriptionDebounceTimer) {
+				clearTimeout(this.transcriptionDebounceTimer);
+				this.transcriptionDebounceTimer = null;
+				this.pendingTranscriptionText = "";
+			}
+		}
+
+		// Map event to status string
+		if (EVENT_STATUS_MAP[ev.type]) {
+			this.npuStatus = EVENT_STATUS_MAP[ev.type];
+			// Add data details for specific events
+			if (ev.type === "vpu:message:sending") {
+				// Start timing
+				this.vpuStartTime = Date.now();
+			} else if (ev.type === "vpu:message:error" && ev.data?.error) {
+				this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error}`;
+			} else if (ev.type === "vpu:response:complete") {
+				// Calculate processing time on completion
+				if (this.vpuStartTime) {
+					this.vpuProcessingTime = Date.now() - this.vpuStartTime;
+					this.vpuStartTime = null;
+				}
+			}
+		}
+
+		// Handle log updates and status overrides
+		switch (ev.type) {
+			case "vpu:message:sending":
+				this.npuStatus = isRetry ? "Sending to VPU (retry)…" : "Sending to VPU…";
+				this.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
+				break;
+			case "vpu:message:error":
+				if (ev.data?.error) {
+					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error}`;
+					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error}]`;
+				}
+				break;
+			case "vpu:response:first-output":
+				this.npuStatus = isRetry ? "Receiving response (retry)…" : "Receiving response…";
+				this.npuThinkingLog += isRetry ? "\n[First output received (retry)]" : "\n[First output received]";
+				break;
+			case "vpu:response:transcription":
+				this.npuStatus = isRetry ? "Receiving response (retry)…" : "Receiving response…";
+				if (ev.data?.text) {
+					// Use debounced transcription updates
+					this._handleDebouncedTranscription(ev.data.text as string);
+				}
+				break;
+			case "vpu:response:complete":
+				this.npuStatus = isRetry ? "Response complete (retry)" : "Done";
+				this.npuThinkingLog += isRetry ? "\n[Response complete (retry)]" : "\n[Response complete]";
+				break;
 		}
 	}
 
