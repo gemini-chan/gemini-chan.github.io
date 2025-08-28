@@ -51,6 +51,9 @@ export class ChatView extends LitElement {
   @property({ type: Object })
   messageStatuses: Record<string, string> = {};
   
+  @property({ type: Object })
+  messageRetryCount: Record<string, number> = {};
+  
   
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;
@@ -432,6 +435,39 @@ export class ChatView extends LitElement {
     .msg-status.error {
       color: var(--cp-red, #ff1744);
     }
+    
+    .retry-badge {
+      font-size: 10px;
+      opacity: 0.8;
+      margin-left: 2px;
+      vertical-align: super;
+      background: var(--cp-surface-strong);
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    
+    .msg-status svg {
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+    
+    @keyframes tick-pop {
+      0% { transform: scale(0.8); opacity: 0.4; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes tick-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+    
+    .msg-status.single svg {
+      animation: tick-pop 160ms ease;
+    }
+    
+    .msg-status.double svg {
+      animation: tick-pulse 800ms ease-in-out 2;
+    }
   `;
 
   private _handleInput(e: Event) {
@@ -743,6 +779,9 @@ private async _updateScrollToBottomState() {
                                 : this.messageStatuses[id] === 'double'
                                 ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="m424-266-134-134 57-56 77 77 224-224 56 57-280 280Zm56 266q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>`
                                 : html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-200h-80v200Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>`}
+                              ${this.messageRetryCount[id] && this.messageRetryCount[id] > 0 
+                                ? html`<span class="retry-badge" title="Retrying… (x${this.messageRetryCount[id]})">×</span>`
+                                : ''}
                             </span>`
                           : ''}
                       </div>

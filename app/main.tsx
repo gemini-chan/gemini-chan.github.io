@@ -106,6 +106,7 @@ export class GdmLiveAudio extends LitElement {
 	private npuStartTime: number | null = null;
 	private vpuStartTime: number | null = null;
 	@state() private messageStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
+	@state() private messageRetryCount: Record<string, number> = {};
 	
 	// Debouncing for vpu:response:transcription events
 	private transcriptionDebounceTimer: number | null = null;
@@ -139,6 +140,9 @@ export class GdmLiveAudio extends LitElement {
 		
 		// Mark not in-flight
 		this.isTurnInFlight = false;
+		
+		// Prune message metadata maps
+		this._pruneMessageMeta();
 		
 		// Force a re-render to update the UI
 		this.requestUpdate();
@@ -1399,6 +1403,9 @@ this.updateTextTranscript(this.ttsCaption);
     
     // Initialize status to clock (analyzing)
     this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
+    
+    // Prune message metadata maps
+    this._pruneMessageMeta();
 
 		// Check API key presence before proceeding
 		if (!this._checkApiKeyExists()) {
@@ -1470,8 +1477,13 @@ this.updateTextTranscript(this.ttsCaption);
              } else if (ev.type === "npu:model:start" && ev.data?.model) {
                this.npuStatus = `Preparing advisor (${ev.data.model})…`;
                this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+               // Initialize retry count
+               this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
              } else if (ev.type === "npu:model:attempt" && ev.data?.attempt) {
                this.npuStatus = `Calling model (attempt ${ev.data.attempt})…`;
+               // Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
+               const retries = Math.max(0, (ev.data.attempt as number) - 1);
+               this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
              } else if (ev.type === "npu:model:error" && ev.data?.attempt && ev.data?.error) {
                this.npuStatus = `Model error (attempt ${ev.data.attempt}): ${ev.data.error}`;
                this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
@@ -1788,6 +1800,31 @@ this.updateTextTranscript(this.ttsCaption);
 		this.stopEmotionAnalysis();
 	}
 
+	private _pruneMessageMeta() {
+		// Create a set of current user turn IDs
+		const currentUserTurnIds = new Set(
+			this.textTranscript
+				.filter(turn => turn.speaker === "user" && turn.turnId)
+				.map(turn => turn.turnId)
+		);
+		
+		// Filter messageStatuses and messageRetryCount to only include current turn IDs
+		const prunedStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
+		const prunedRetryCount: Record<string, number> = {};
+		
+		for (const turnId of currentUserTurnIds) {
+			if (turnId && this.messageStatuses[turnId]) {
+				prunedStatuses[turnId] = this.messageStatuses[turnId];
+			}
+			if (turnId && this.messageRetryCount[turnId] !== undefined) {
+				prunedRetryCount[turnId] = this.messageRetryCount[turnId];
+			}
+		}
+		
+		this.messageStatuses = prunedStatuses;
+		this.messageRetryCount = prunedRetryCount;
+	}
+	
 	private startEmotionAnalysis() {
 		this.stopEmotionAnalysis(); // Ensure no multiple timers
 		this.emotionAnalysisTimer = window.setInterval(async () => {
@@ -2005,6 +2042,7 @@ this.updateTextTranscript(this.ttsCaption);
                   .npuProcessingTime=${this.npuProcessingTime}
                   .vpuProcessingTime=${this.vpuProcessingTime}
                   .messageStatuses=${this.messageStatuses}
+                  .messageRetryCount=${this.messageRetryCount}
                   @send-message=${this._handleSendMessage}
                   @reset-text=${this._resetTextContext}
                   @scroll-state-changed=${this._handleChatScrollStateChanged}
