@@ -1302,6 +1302,16 @@ this.updateTextTranscript(this.ttsCaption);
     
     // Prune message metadata maps
     this._pruneMessageMeta();
+    
+    // Set initial thinking state BEFORE any awaits
+    this.npuThinkingLog = "";
+    this.npuStatus = "Thinking…";
+    this.thinkingActive = true;
+    this.npuThinkingOpen = this.npuPersistCollapsed ? false : true;
+    this.requestUpdate();
+    await this.updateComplete;
+    
+    logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, open: this.npuThinkingOpen, active: this.thinkingActive });
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
@@ -1319,12 +1329,7 @@ this.updateTextTranscript(this.ttsCaption);
 		this.lastAdvisorContext = "";
 		const personaId = this.personaManager.getActivePersona().id;
 		/* conversationContext removed: memory now stores facts only */
-    this.npuThinkingLog = "";
-    this.npuStatus = "Thinking…";
-    this.npuThinkingOpen = false; // Default collapsed for summary requests
-    // Force immediate render of initial Thinking UI and await update completion
-    this.requestUpdate();
-    await this.updateComplete;
+    // Initial thinking state already set above
     // Set current turn ID to ensure only this turn drives the Thinking UI
     this.currentTurnId = turnId;
     const intention = await this.npuService.analyzeAndAdvise(
@@ -1552,6 +1557,18 @@ this.updateTextTranscript(this.ttsCaption);
     
     // Prune message metadata maps
     this._pruneMessageMeta();
+    
+    // Set initial thinking state BEFORE any awaits
+    this.npuThinkingLog = "";
+    this.npuStatus = "Thinking…";
+    this.thinkingActive = true;
+    // Respect persisted collapse; otherwise, keep current open state
+    this.npuThinkingOpen = this.npuPersistCollapsed ? false : true;
+    // Flush synchronously
+    this.requestUpdate();
+    await this.updateComplete;
+    
+    logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, open: this.npuThinkingOpen, active: this.thinkingActive });
 
 		// Check API key presence before proceeding
 		if (!this._checkApiKeyExists()) {
@@ -1592,14 +1609,7 @@ this.updateTextTranscript(this.ttsCaption);
 				this.lastAdvisorContext = "";
 				const personaId = this.personaManager.getActivePersona().id;
 				/* conversationContext removed: memory now stores facts only */
-				this.npuThinkingLog = "";
-        this.npuStatus = "Thinking…";
-        // Respect user's preference; default collapsed
-        // If user ever collapsed it, persist collapsed. Otherwise respect current open.
-        this.npuThinkingOpen = this.npuPersistCollapsed ? false : userExpanded;
-        // Force immediate render of initial Thinking UI and await update completion
-        this.requestUpdate();
-        await this.updateComplete;
+				// Initial thinking state already set above
         const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
