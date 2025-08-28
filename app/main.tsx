@@ -1607,6 +1607,26 @@ this.updateTextTranscript(this.ttsCaption);
              return;
            }
            
+           // Force immediate update on first NPU event for this turn
+           const turnId = ev.data?.turnId || this.currentTurnId;
+           if (turnId && !this._npuFirstEventForced.has(turnId)) {
+             this._npuFirstEventForced.add(turnId);
+             logger.debug("UI FORCE: first NPU event", { turnId, type: ev.type });
+             this.requestUpdate();
+           }
+           
+           // Clean up first event tracking after completion
+           if (ev.type === "npu:complete") {
+             if (turnId) {
+               this._npuFirstEventForced.delete(turnId);
+             }
+           }
+           
+           // Log events based on debug mode
+           if (this.npuDebugMode || ev.type !== 'npu:prompt:partial') {
+             logger.debug("NPU Progress Event", ev);
+           }
+           
            // Log events based on debug mode
            if (this.npuDebugMode || ev.type !== 'npu:prompt:partial') {
              logger.debug("NPU Progress Event", ev);
