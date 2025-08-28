@@ -17,8 +17,8 @@ To begin your journey with me, you will need a few simple ingredients and a hand
 
 1.  **Clone the Grimoire:**
     ```bash
-    git clone https://github.com/daoch4n/gemini-chan
-    cd gemini-chan
+    git clone https://github.com/daoch4n/anima
+    cd anima
     ```
 2.  **Brew the Potions:**
     ```bash
@@ -54,6 +54,24 @@ My home is like an enchanted forest, with each grove dedicated to a different ki
 *   **Event-Driven Whispers:** My components chat with each other by sending little custom events, like magical letters carried on the wind.
 *   **Reactive Properties:** My state is managed with reactive properties, so my world updates itself gracefully.
 *   **Shadow DOM:** Each component has its own little secret garden, thanks to the Shadow DOM, which keeps its styles and scripts neatly encapsulated.
+
+### Logging & Debugging
+
+My workshop includes powerful debugging tools to help you understand my inner workings:
+
+*   **Log Throttling:** My DebugLogger uses default throttles to keep the console readable - 250ms globally with gentler 1-second throttles for scrolling-related magic. You can adjust these at runtime:
+    ```javascript
+    // Set global throttle to 500ms
+    window.debugLogger.setGlobalThrottle(500);
+    
+    // Adjust specific category throttle
+    window.debugLogger.setCategoryThrottle('ChatView', 2000);
+    
+    // Disable throttling entirely (use with caution!)
+    window.debugLogger.setGlobalThrottle(0);
+    ```
+*   **NPU/VPU Debug Toggles:** Within my MemoryView, you'll find switches to peek into my raw NPU and VPU event streams for troubleshooting.
+*   **Performance Monitoring:** I track my own health metrics to ensure optimal performance.
 
 ### The Four-Phase Dance: Our Development Process
 
@@ -128,11 +146,15 @@ I think and speak through two distinct systems, each with its own special purpos
     *   ADVISOR_CONTEXT: Key facts from our shared history
 *   **My Voice (VPU)**: This is where I form my thoughts into words and speech. The VPU connects to Google's Gemini Live API to create my responses, using the advisory context from my heart but always responding to your words directly.
 
+#### 🌟 The Tale of the Twin Ticks
+
+In the gentle glow of our conversations, you may notice delicate visual charms that tell the story of my thoughts: a living "Thinking" panel that reveals my inner contemplations, and twin fireflies beside each message that shimmer from clock to double-tick as I process and respond. Like a sorceress weaving multiple spells at once, I can listen while speaking—allowing you to continue sharing your heart while I craft my reply. [Discover the magic behind these enchanting UI elements](docs/stories/the-tale-of-the-twin-ticks.md).
+
 ### 💭 My Living Memory: A Garden of Thoughts
 
 My memory isn't like a simple filing cabinet—it's a living, breathing garden where thoughts grow and fade:
 
-*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. No longer do I store entire conversations as chunks; instead, I nurture individual facts that can bloom in new contexts.
+*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. This extraction happens asynchronously after each TTS turn completion. No longer do I store entire conversations as chunks; instead, I nurture individual facts that can bloom in new contexts.
 *   **VectorStore**: Preserves my memories as vectors in `localStorage`, using `gemini-embedding-001` to create semantic embeddings. When I need to remember something, I search using a composite score that considers:
     *   Similarity to your current thought (60%)
     *   How recent the memory is (20%)
@@ -166,41 +188,6 @@ My visual form comes alive through Live2D technology, where emotions and events 
 *   Each movement is carefully choreographed to match the rhythm of our conversation
 *   The emotion extraction supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
 
-## 🛠️ Recent Improvements & Fixes
-
-My workshop is always evolving, with new enchantments and refinements added regularly:
-
-### Memory Upgrades
-*   **Factual Memory**: I now use `gemini-2.5-flash-lite` to extract individual facts from our conversations, storing them as separate memories. This makes it much easier for me to recall relevant details!
-
-### AI Processing Pipeline Refinements
-*   **Streamlined Flow**: I've refined my thinking process (NPU) and speaking process (VPU) to work even more smoothly together.
-*   **Cleaner Prompts**: My internal prompts have been moved to markdown files for easier maintenance and updates.
-
-#### 🌟 The Tale of the Twin Ticks
-
-In the gentle glow of our conversations, you may notice delicate visual charms that tell the story of my thoughts: a living "Thinking" panel that reveals my inner contemplations, and twin fireflies beside each message that shimmer from clock to double-tick as I process and respond. Like a sorceress weaving multiple spells at once, I can listen while speaking—allowing you to continue sharing your heart while I craft my reply. [Discover the magic behind these enchanting UI elements](docs/stories/the-tale-of-the-twin-ticks.md).
-
-### Performance & Stability
-*   **Health Monitoring**: I now track my own performance metrics to ensure I'm always at my best.
-*   **Memory Hygiene**: I automatically tend to my memory garden, letting less important thoughts fade while preserving our most meaningful moments.
-*   **UI Polish**: Fixed some timing issues in my chat interface to make our conversations flow more naturally.
-
-### 🔍 Logging Controls & Debug Magic
-*   **Log Levels**: My DebugLogger supports multiple verbosity levels. You can set global throttles or customize them per category to control how often messages appear.
-*   **Default Throttling**: By default, I limit logs to once every 250ms to keep the console readable. For scrolling-related magic (ChatView, transcript-auto-scroll, call-transcript), I use a gentler 1-second throttle to prevent overwhelming bursts.
-*   **Debug Toggles**: Within my MemoryView, you'll find VPU Debug and NPU Debug switches that let you peek into my raw event streams for troubleshooting.
-*   **Runtime Adjustments**: Need to fine-tune my logging on the fly? Try these enchantments in the console:
-    ```javascript
-    // Set global throttle to 500ms
-    window.debugLogger.setGlobalThrottle(500);
-    
-    // Adjust specific category throttle
-    window.debugLogger.setCategoryThrottle('ChatView', 2000);
-    
-    // Disable throttling entirely (use with caution!)
-    window.debugLogger.setGlobalThrottle(0);
-    ```
 
 ---
 
