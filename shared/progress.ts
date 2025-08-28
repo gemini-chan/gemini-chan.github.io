@@ -40,17 +40,17 @@ export const EVENT_STATUS_MAP: Record<NpuEventType | VpuEventType, string> = {
   "npu:memories:done": "Memory search complete",
   "npu:prompt:build": "Building prompt…",
   "npu:prompt:built": "Prompt built",
-  "npu:model:start": "Preparing advisor…",
-  "npu:model:attempt": "Calling model…",
+  "npu:model:start": "Preparing NPU…",
+  "npu:model:attempt": "Calling NPU…",
   "npu:advisor:ready": "Sending to VPU…",
   "npu:complete": "NPU complete",
   "npu:prompt:partial": "Building prompt…",
-  "npu:model:response": "Advisor ready",
-  "npu:model:error": "Model error",
+  "npu:model:response": "NPU ready",
+  "npu:model:error": "NPU error",
   "vpu:message:sending": "Sending to VPU…",
   "vpu:message:error": "VPU error",
-  "vpu:response:first-output": "Receiving response…",
-  "vpu:response:transcription": "Receiving response…",
+  "vpu:response:first-output": "Receiving response from VPU…",
+  "vpu:response:transcription": "Receiving response from VPU…",
   "vpu:response:complete": "Done"
 };
 
