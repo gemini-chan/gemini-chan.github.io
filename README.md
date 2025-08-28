@@ -1,6 +1,6 @@
 . . . . . . . . . . ^ dev readme ^ . . . . . . . . . . . . . . . . . . . .
 
-# Welcome to Anima - Your AI Companion 💖
+# 💖 Welcome to Anima - Your AI Companion 💖
 
 > [!IMPORTANT]
 > Meet your new digital friend, a unique AI companion that learns and grows with you. Anima combines advanced neural processing (NPU) for deep understanding and vocal processing (VPU) for natural conversation, with a sophisticated memory system that remembers what matters to you.
