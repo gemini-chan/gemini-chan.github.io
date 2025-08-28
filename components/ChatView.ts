@@ -345,7 +345,6 @@ export class ChatView extends LitElement {
       border-radius: 999px; 
       background: var(--cp-surface-strong); 
       border: 1px solid var(--cp-surface-border-2);
-      aria-live: polite;
     }
     .thinking-badge.active { display: inline-flex; align-items: center; gap: 4px; }
     .thinking-spinner {
