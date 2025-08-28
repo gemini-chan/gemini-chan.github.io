@@ -2,7 +2,6 @@ import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
 import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { ACTIVE_STATES } from "@shared/progress";
 import { throttle } from "@shared/utils";
 import type { Turn } from "@shared/types";
 

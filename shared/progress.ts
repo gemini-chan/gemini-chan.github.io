@@ -69,7 +69,6 @@ export const ACTIVE_STATES = new Set([
 // Auto-expand rules
 export const AUTO_EXPAND_RULES = new Set([
   "npu:memories:start",
-  "npu:prompt:partial",
   "npu:model:start",
   "npu:model:attempt",
   "vpu:message:sending",

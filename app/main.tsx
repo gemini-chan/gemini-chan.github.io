@@ -1381,17 +1381,7 @@ this.updateTextTranscript(this.ttsCaption);
         
         // Handle auto-expand rules
         if (AUTO_EXPAND_RULES.has(ev.type)) {
-          // auto-expand only if user has NOT persisted collapsed
-          if (!this.npuPersistCollapsed) {
-            this.npuThinkingOpen = true;
-            // Save to localStorage when expanding
-            try {
-              localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
-            } catch (error) {
-              // Ignore storage errors
-              console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
-            }
-          }
+          this._autoExpandThinkingPanel();
         }
         
         // Handle prompt partial updates
@@ -1399,16 +1389,7 @@ this.updateTextTranscript(this.ttsCaption);
           if (this.npuThinkingOpen) {
             this.npuThinkingLog += ev.data.delta;
           }
-          if (!this.npuPersistCollapsed) {
-            this.npuThinkingOpen = true;
-            // Save to localStorage when expanding
-            try {
-              localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
-            } catch (error) {
-              // Ignore storage errors
-              console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
-            }
-          }
+          // Do not auto-expand for partial updates
         }
         
         // Handle prompt built with optional full prompt display
@@ -1678,16 +1659,8 @@ this.updateTextTranscript(this.ttsCaption);
            
            // Handle auto-expand rules
            if (AUTO_EXPAND_RULES.has(ev.type)) {
-             // auto-expand only if user has NOT persisted collapsed
-             if (!this.npuPersistCollapsed && userExpanded) {
-               this.npuThinkingOpen = true;
-               // Save to localStorage when expanding
-               try {
-                 localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
-               } catch (error) {
-                 // Ignore storage errors
-                 console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
-               }
+             if (userExpanded) {
+               this._autoExpandThinkingPanel();
              }
            }
            
@@ -1696,16 +1669,7 @@ this.updateTextTranscript(this.ttsCaption);
              if (this.npuThinkingOpen) {
                this.npuThinkingLog += ev.data.delta;
              }
-             if (!this.npuPersistCollapsed && userExpanded) {
-               this.npuThinkingOpen = true;
-               // Save to localStorage when expanding
-               try {
-                 localStorage.setItem('npuPersistCollapsed', JSON.stringify(false));
-               } catch (error) {
-                 // Ignore storage errors
-                 console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
-               }
-             }
+             // Do not auto-expand for partial updates
            }
            
            // Handle memory events
