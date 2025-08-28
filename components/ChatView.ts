@@ -8,6 +8,7 @@ interface Turn {
   text: string;
   author: "user" | "model";
   isSystemMessage?: boolean;
+  turnId?: string;
 }
 
 const log = createComponentLogger("ChatView");
@@ -46,6 +47,9 @@ export class ChatView extends LitElement {
   
   @property({ type: Number })
   vpuProcessingTime: number | null = null;
+  
+  @property({ type: Object })
+  messageStatuses: Record<string, string> = {};
   
   
   // Debounce timer for scroll events
@@ -403,6 +407,15 @@ export class ChatView extends LitElement {
       height: 48px;
       opacity: 0.5;
     }
+    
+    .msg-status {
+      margin-left: 6px;
+      opacity: 0.7;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      vertical-align: middle;
+    }
   `;
 
   private _handleInput(e: Event) {
@@ -690,15 +703,30 @@ private async _updateScrollToBottomState() {
                   </div>
                 `
               : this.transcript.map(
-                  (turn) => html`
-                    <div
-                      class="turn ${turn.author} ${turn.isSystemMessage
-                        ? "system"
-                        : ""}"
-                    >
-                      ${turn.text}
-                    </div>
-                  `,
+                  (turn) => {
+                    const who = (turn as any).author ?? (turn as any).speaker;
+                    const id = (turn as any).turnId;
+                    return html`
+                      <div
+                        class="turn ${who} ${turn.isSystemMessage
+                          ? "system"
+                          : ""}"
+                      >
+                        ${turn.text}
+                        ${who === "user" && id && this.messageStatuses[id] 
+                          ? html`<span class="msg-status" @click=${(e: Event) => e.stopPropagation()}>
+                              ${this.messageStatuses[id] === 'clock' 
+                                ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Zm-40-280h80v-200h-80v200Z"/></svg>`
+                                : this.messageStatuses[id] === 'single'
+                                ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`
+                                : this.messageStatuses[id] === 'double'
+                                ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="m424-266-134-134 57-56 77 77 224-224 56 57-280 280Zm56 266q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>`
+                                : html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-200h-80v200Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>`}
+                            </span>`
+                          : ''}
+                      </div>
+                    `;
+                  }
                 )
           }
         </div>

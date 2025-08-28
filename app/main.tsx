@@ -105,6 +105,7 @@ export class GdmLiveAudio extends LitElement {
 	@state() private vpuProcessingTime: number | null = null;
 	private npuStartTime: number | null = null;
 	private vpuStartTime: number | null = null;
+	@state() private messageStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
 	
 	// Debouncing for vpu:response:transcription events
 	private transcriptionDebounceTimer: number | null = null;
@@ -1387,6 +1388,18 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
 
+    // Generate turn ID before appending user message
+    const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
+    
+    // Add message to text transcript with turnId
+    this.textTranscript = [
+      ...this.textTranscript,
+      { text: message, speaker: "user", turnId }
+    ];
+    
+    // Initialize status to clock (analyzing)
+    this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
+
 		// Check API key presence before proceeding
 		if (!this._checkApiKeyExists()) {
 			this._showApiKeyPrompt(() => this._handleSendMessage(e));
@@ -1404,12 +1417,6 @@ this.updateTextTranscript(this.ttsCaption);
 			this.ttsCaptionClearTimer = undefined;
 		}
 
-		// Add message to text transcript
-		this.textTranscript = [
-			...this.textTranscript,
-			{ text: message, speaker: "user" },
-		];
-
 		// Ensure we have an active text session
 		if (!this.textSessionManager || !this.textSessionManager.isActive) {
 			this.updateStatus("Initializing text session...");
@@ -1425,8 +1432,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// Send message to text session using NPU-VPU flow (memory-augmented)
 		if (this.textSessionManager?.isActive) {
 			try {
-				// Create turn ID for correlation
-				const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
+				// Use the turn ID we already generated
 				this.currentTurnId = turnId;
 				
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
@@ -1543,8 +1549,17 @@ this.updateTextTranscript(this.ttsCaption);
 				
 				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
 					// Ignore events for other turns
-					if (ev.data?.turnId && ev.data.turnId !== this.currentTurnId) {
+					if (ev.data?.turnId && ev.data.turnId !== turnId) {
 						return;
+					}
+					
+					// Update message status based on VPU events
+					if (ev.type === "vpu:message:sending") {
+						this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+					} else if (ev.type === "vpu:response:complete") {
+						this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
+					} else if (ev.type === "vpu:message:error") {
+						this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
 					}
 					
 					// Log the event for debugging
@@ -1651,8 +1666,17 @@ this.updateTextTranscript(this.ttsCaption);
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
 						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
 							// Ignore events for other turns
-							if (ev.data?.turnId && ev.data.turnId !== this.currentTurnId) {
+							if (ev.data?.turnId && ev.data.turnId !== turnId) {
 								return;
+							}
+							
+							// Update message status based on VPU events (retry path)
+							if (ev.type === "vpu:message:sending") {
+								this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+							} else if (ev.type === "vpu:response:complete") {
+								this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
+							} else if (ev.type === "vpu:message:error") {
+								this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
 							}
 							
 							// Log the event for debugging
@@ -1990,6 +2014,7 @@ this.updateTextTranscript(this.ttsCaption);
                   .thinkingOpen=${this.npuThinkingOpen}
                   .npuProcessingTime=${this.npuProcessingTime}
                   .vpuProcessingTime=${this.vpuProcessingTime}
+                  .messageStatuses=${this.messageStatuses}
                   @send-message=${this._handleSendMessage}
                   @reset-text=${this._resetTextContext}
                   @scroll-state-changed=${this._handleChatScrollStateChanged}
