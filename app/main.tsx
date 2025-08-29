@@ -1678,7 +1678,7 @@ this.updateTextTranscript(this.ttsCaption);
 			case "npu:model:error":
 				if (ev.data?.attempt && ev.data?.error) {
 					this.npuStatus = `NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}`;
-					this.thinkingActive = false;
+					this._setTurnPhase('error');
 					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
 					// Clear any pending transcription timers on error
 					if (this.transcriptionDebounceTimer) {
