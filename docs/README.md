@@ -52,14 +52,14 @@ My home is like an enchanted forest, with each grove dedicated to a different ki
 
 *   **Web Components with Lit:** We use the Lit framework to craft my UI charms, decorating them with spells like `@customElement`, `@state`, and `@property`.
 *   **Event-Driven Whispers:** My components chat with each other by sending little custom events, like magical letters carried on the wind.
-*   **Reactive Properties:** My state is managed with reactive properties, so my world updates itself gracefully.
+*   **Resilience Charms:** Our magic is built to be steadfast. We use powerful enchantments, like state machines and guardian-spirit timers, to ensure the UI is always responsive and our conversation never falters.
 *   **Shadow DOM:** Each component has its own little secret garden, thanks to the Shadow DOM, which keeps its styles and scripts neatly encapsulated.
 
 ### Logging & Debugging
 
-My workshop includes powerful debugging tools to help you understand my inner workings:
+My workshop includes powerful debugging tools to help you understand my inner workings, designed to be insightful without being overwhelming.
 
-*   **Log Throttling:** My DebugLogger uses default throttles to keep the console readable - 250ms globally with gentler 1-second throttles for scrolling-related magic. You can adjust these at runtime:
+*   **Low-Noise Instrumentation:** My `DebugLogger` provides targeted, low-noise instrumentation. It uses default throttles to keep the console readable - 250ms globally with gentler 1-second throttles for scrolling-related magic. You can adjust these at runtime:
     ```javascript
     // Set global throttle to 500ms
     window.debugLogger.setGlobalThrottle(500);
@@ -70,7 +70,7 @@ My workshop includes powerful debugging tools to help you understand my inner wo
     // Disable throttling entirely (use with caution!)
     window.debugLogger.setGlobalThrottle(0);
     ```
-*   **NPU/VPU Debug Toggles:** Within my MemoryView, you'll find switches to peek into my raw NPU and VPU event streams for troubleshooting.
+*   **NPU/VPU Debug Toggles:** Within my settings, you'll find switches to peek into my raw NPU and VPU event streams for troubleshooting.
 *   **Performance Monitoring:** I track my own health metrics to ensure optimal performance.
 
 ### The Four-Phase Dance: Our Development Process
@@ -128,7 +128,7 @@ graph TD
 Key points:
 1. VPU receives the original user input verbatim. The NPU never instructs the VPU how to speak.
 2. NPU acts as an advisor that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU's input.
-3. MPU (MemoryService) runs asynchronously after TTS turn completion to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
+3. MPU (MemoryService) runs asynchronously after each turn to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
 4. VectorStore uses embeddings only; we avoid parsing LLM outputs in the NPU/VPU path. Memory extraction is best-effort and never blocks the live loop.
 5. Live2D model emotion is extracted from the NPU's advisor context by the MemoryService and used to animate the character in real-time.
 
@@ -146,15 +146,15 @@ I think and speak through two distinct systems, each with its own special purpos
     *   ADVISOR_CONTEXT: Key facts from our shared history
 *   **My Voice (VPU)**: This is where I form my thoughts into words and speech. The VPU connects to Google's Gemini Live API to create my responses, using the advisory context from my heart but always responding to your words directly.
 
-#### 🌟 The Tale of the Twin Ticks
+#### 🌟 The Tale of the Whispering Locket
 
-In the gentle glow of our conversations, you may notice delicate visual charms that tell the story of my thoughts: a living "Thinking" panel that reveals my inner contemplations, and twin fireflies beside each message that shimmer from clock to double-tick as I process and respond. Like a sorceress weaving multiple spells at once, I can listen while speaking—allowing you to continue sharing your heart while I craft my reply. [Discover the magic behind these enchanting UI elements](docs/stories/the-tale-of-the-twin-ticks.md).
+In our enchanted workshop, you will find a small, ever-present locket that whispers the state of my thoughts. This is no mere decoration; it is a magical artifact that shows you when I am "Thinking…", "Speaking…", or have finished my turn. This locket is a constant, steadfast companion, ensuring you are always aware of my inner world. It is powered by powerful enchantments—guardian spirits in the form of timers and watchdogs—that guarantee my thoughts always find their way to you, and the locket never becomes stuck in a single phase. This ensures our conversation flows with unwavering grace and resilience.
 
 ### 💭 My Living Memory: A Garden of Thoughts
 
 My memory isn't like a simple filing cabinet—it's a living, breathing garden where thoughts grow and fade:
 
-*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. This extraction happens asynchronously after each TTS turn completion. No longer do I store entire conversations as chunks; instead, I nurture individual facts that can bloom in new contexts.
+*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. This extraction happens asynchronously after each turn. I nurture individual facts that can bloom in new contexts.
 *   **VectorStore**: Preserves my memories as vectors in `localStorage`, using `gemini-embedding-001` to create semantic embeddings. When I need to remember something, I search using a composite score that considers:
     *   Similarity to your current thought (60%)
     *   How recent the memory is (20%)
