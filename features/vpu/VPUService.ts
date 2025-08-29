@@ -140,14 +140,6 @@
             }
           }
   
-          // Generation complete acknowledgement
-          const genComplete = extendedMessage.serverContent?.generationComplete;
-          if (genComplete) {
-            logger.debug('VPU completion: generationComplete');
-            // Hook for post-turn actions; for now, surface a status update
-            this.updateStatus(`${this.getSessionName()}: generation complete`);
-          }
-  
           // Audio handling
           const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData;
           if (audio) {
@@ -539,9 +531,11 @@
       if (this.progressCb) {
         logger.debug(`VPU turn complete via ${reason}`);
         this.progressCb({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
+        this.onTurnComplete();
+        
+        // Clear the callback only after both completion signals have been sent
         this.progressCb = undefined;
         this.progressTurnId = null;
-        this.onTurnComplete();
         if (this.transcriptionIdleTimer) {
           window.clearTimeout(this.transcriptionIdleTimer);
           this.transcriptionIdleTimer = null;

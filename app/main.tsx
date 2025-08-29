@@ -1576,6 +1576,10 @@ this.updateTextTranscript(this.ttsCaption);
   }
 	
 	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string) {
+		// Once a turn is complete or has errored, ignore subsequent events for it.
+		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
+			return;
+		}
 		// Ignore events for other turns
 		if (this.currentTurnId && ev.data?.turnId && this.currentTurnId !== ev.data.turnId) {
 			return;
@@ -1918,6 +1922,10 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 
 	private _handleVpuProgress(ev: VpuProgressEvent, turnId?: string, isRetry = false) {
+		// Once a turn is complete or has errored, ignore subsequent events for it.
+		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
+			return;
+		}
 		// Ignore events for other turns
 		if (this.currentTurnId && turnId && ev.data?.turnId && this.currentTurnId !== (ev.data.turnId as string)) {
 			return;

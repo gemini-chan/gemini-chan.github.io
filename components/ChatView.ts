@@ -361,8 +361,17 @@ export class ChatView extends LitElement {
       background: var(--cp-surface-strong); 
       border: 1px solid var(--cp-surface-border-2);
     }
-    .thinking-badge.active { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-    .status-line { display: flex; align-items: center; gap: 4px; }
+    .thinking-badge.active {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
     .thinking-spinner {
       width: 12px;
       height: 12px;
@@ -758,9 +767,9 @@ private async _updateScrollToBottomState() {
       <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
         <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
           <div class="status-line">
-            <div class="thinking-spinner"></div>
+            ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
             <span class="status-primary">${this.thinkingStatus}</span>
-            <span class="status-secondary">${this.thinkingSubStatus}</span>
+            ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
           </div>
         </span>
       </div>
