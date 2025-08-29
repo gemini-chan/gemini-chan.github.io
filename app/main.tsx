@@ -105,6 +105,8 @@ export class GdmLiveAudio extends LitElement {
   private vpuTranscriptionChunkCount = 0;
   private vpuTranscriptionLastLog = 0;
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
+  private vpuDevTicker: number | null = null;
+  private devRemainingMs: number = 0;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -153,8 +155,11 @@ export class GdmLiveAudio extends LitElement {
 		// Reset turn state
 		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
 		
-		// Clear VPU watchdog
+		// Clear VPU watchdog and hard max timer
 		this._clearVpuWatchdog();
+		this._clearVpuHardMaxTimer();
+		this._clearVpuDevTicker();
+		this.devRemainingMs = 0;
 		
 		// Prune message metadata maps
 		this._pruneMessageMeta();
@@ -1433,16 +1438,22 @@ this.updateTextTranscript(this.ttsCaption);
       case 'complete':
         this.thinkingActive = false;
         this.npuStatus = "Done";
+        this.devRemainingMs = 0;
+        this._clearVpuDevTicker();
         break;
       case 'error':
         this.thinkingActive = false;
         if (!this.npuStatus) {
           this.npuStatus = "Error";
         }
+        this.devRemainingMs = 0;
+        this._clearVpuDevTicker();
         break;
       case 'idle':
         this.thinkingActive = false;
         this.npuStatus = "";
+        this.devRemainingMs = 0;
+        this._clearVpuDevTicker();
         break;
     }
     
@@ -1488,6 +1499,51 @@ this.updateTextTranscript(this.ttsCaption);
         turnId: this.turnState.id 
       });
       this.vpuHardDeadline = 0;
+    }
+  }
+  
+  private _armVpuDevTicker() {
+    // If vpuDevTicker exists, no-op
+    if (this.vpuDevTicker) {
+      logger.debug("VPU dev ticker already armed");
+      return;
+    }
+    
+    // Set new ticker
+    this.vpuDevTicker = window.setInterval(() => {
+      try {
+        if (this.turnState.phase !== 'vpu' || !this.turnState.id) { 
+          this._clearVpuDevTicker(); 
+          return; 
+        }
+        const now = Date.now();
+        this.devRemainingMs = Math.max(0, this.vpuHardDeadline ? (this.vpuHardDeadline - now) : 0);
+        // If deadline present and reached, force complete
+        if (this.vpuHardDeadline && now >= this.vpuHardDeadline) {
+          logger.debug('VPU DEV TICKER forcing completion');
+          this._clearVpuWatchdog();
+          this._clearVpuHardMaxTimer();
+          this._setTurnPhase('complete');
+          this._clearVpuDevTicker();
+          this.requestUpdate();
+          return;
+        }
+        // Request update to refresh dev label countdown
+        this.requestUpdate();
+      } catch (e) {
+        logger.warn('VPU DEV TICKER error', { error: e });
+      }
+    }, 250);
+    
+    logger.debug("VPU dev ticker armed", { turnId: this.turnState.id });
+  }
+  
+  private _clearVpuDevTicker() {
+    if (this.vpuDevTicker) {
+      clearInterval(this.vpuDevTicker);
+      this.vpuDevTicker = null;
+      logger.debug("VPU dev ticker cleared");
+      this.devRemainingMs = 0;
     }
   }
   
@@ -1688,7 +1744,7 @@ this.updateTextTranscript(this.ttsCaption);
 	}
   
   private _devThinkingLabel(): string {
-    return `${this.lastEventType || ''}${this.vpuHardDeadline ? ' • ETA ' + Math.max(0, this.vpuHardDeadline - Date.now()) + 'ms' : ''}`;
+    return `${this.lastEventType || ''}${this.vpuHardDeadline ? ' • ETA ' + Math.max(0, this.devRemainingMs) + 'ms' : ''}`;
   }
 
 	private async _handleSendMessage(e: CustomEvent) {
@@ -1857,13 +1913,16 @@ this.updateTextTranscript(this.ttsCaption);
       this._setTurnPhase('vpu');
       this._armVpuHardMaxTimer();
       this._resetVpuWatchdog();
+      this._armVpuDevTicker();
     } else if (ev.type === "vpu:response:complete") {
       this._clearVpuWatchdog();
       this._clearVpuHardMaxTimer();
+      this._clearVpuDevTicker();
       this._setTurnPhase('complete');
     } else if (ev.type === "vpu:message:error") {
       this._clearVpuWatchdog();
       this._clearVpuHardMaxTimer();
+      this._clearVpuDevTicker();
       this._setTurnPhase('error');
     }
 		
