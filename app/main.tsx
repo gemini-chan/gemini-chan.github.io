@@ -86,14 +86,11 @@ export class GdmLiveAudio extends LitElement {
 	@state() showSettings = false;
 	@state() toastMessage = "";
 	private lastAdvisorContext: string = "";
-  @state() private npuThinkingOpen = false;
   @state() private npuThinkingLog: string = "";
   @state() private npuStatus: string = "";
   @state() private thinkingActive = false;
-  @state() private npuPersistCollapsed: boolean = false;
   @state() private currentTurnId: string | null = null;
   @state() private isTurnInFlight = false;
-  @state() private userOpenedThisTurn = false;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
   private _npuFirstEventForced = new Set<string>();
@@ -156,12 +153,6 @@ export class GdmLiveAudio extends LitElement {
 		this._scheduleUpdate();
 	}
 	
-	// Helper to auto-expand thinking panel based on persistence setting
-	private _autoExpandThinkingPanel() {
-		if (!this.npuPersistCollapsed) {
-			this.npuThinkingOpen = true;
-		}
-	}
 	
 	// Schedule immediate update without batching
 	private _scheduleUpdate() {
@@ -361,18 +352,6 @@ export class GdmLiveAudio extends LitElement {
 		super();
 		this.personaManager = new PersonaManager();
 		// MemoryService will be initialized after the GoogleGenAI client is created
-		
-		// Load persisted collapsed state from localStorage
-		try {
-			const savedCollapsed = localStorage.getItem('npuPersistCollapsed');
-			if (savedCollapsed !== null) {
-				this.npuPersistCollapsed = JSON.parse(savedCollapsed);
-			}
-		} catch (error) {
-			// If there's an error parsing, default to false
-			console.warn('Failed to parse npuPersistCollapsed from localStorage:', error);
-			this.npuPersistCollapsed = false;
-		}
 		
 		this.initClient();
 
@@ -1509,17 +1488,9 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 		}
 
-		// Handle auto-expand rules
-		if (AUTO_EXPAND_RULES.has(ev.type) && !this.npuPersistCollapsed) {
-			this._autoExpandThinkingPanel();
-		}
-
 		// Handle prompt partial updates
 		if (ev.type === "npu:prompt:partial" && ev.data?.delta) {
-			if (this.npuThinkingOpen) {
-				this.npuThinkingLog += ev.data.delta;
-			}
-			// Do not auto-expand for partial updates
+			this.npuThinkingLog += ev.data.delta;
 		}
 
 		// Handle memory events
@@ -1549,18 +1520,11 @@ this.updateTextTranscript(this.ttsCaption);
 			}
 		}
 
-		// Handle completion
-		if (ev.type === "npu:complete") {
-			// Auto-collapse after complete, but only if user hadn't manually expanded
-			this.npuThinkingOpen = this.userOpenedThisTurn ? this.npuThinkingOpen : false;
-		}
-
 		// Schedule update for frame-based batching
 		this._scheduleUpdate();
 	}
 
 	private async _handleSendMessage(e: CustomEvent) {
-		const userExpanded = this.npuThinkingOpen;
 		const message = e.detail;
 		if (!message || !message.trim()) {
 			return;
@@ -1585,17 +1549,11 @@ this.updateTextTranscript(this.ttsCaption);
 		this.npuThinkingLog = "";
 		this.npuStatus = "Thinking…";
 		this.thinkingActive = true;
-		// Reset user opened state for new turn
-		this.userOpenedThisTurn = false;
-		// Respect persisted collapse; otherwise, keep current open state
-		if (!this.npuPersistCollapsed) {
-			this.npuThinkingOpen = true;
-		}
 		// Flush synchronously
 		this.requestUpdate();
 		await this.updateComplete;
 
-		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, open: this.npuThinkingOpen, active: this.thinkingActive });
+		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
 
 		// Check API key presence before proceeding
 		if (!this._checkApiKeyExists()) {
@@ -1644,7 +1602,7 @@ this.updateTextTranscript(this.ttsCaption);
 					undefined,
 					undefined,
 					turnId,
-					(ev: NpuProgressEvent) => this._handleNpuProgress(ev, turnId, userExpanded)
+					(ev: NpuProgressEvent) => this._handleNpuProgress(ev, turnId)
 				);
 
 				// Removed usage of intention.emotion as it's no longer part of the interface
@@ -2155,7 +2113,6 @@ this.updateTextTranscript(this.ttsCaption);
                   .visible=${this.activeMode !== "calling"}
                   .thinkingStatus=${this.npuStatus}
                   .thinkingText=${this.npuThinkingLog}
-                  .thinkingOpen=${this.npuThinkingOpen}
                   .thinkingActive=${this.thinkingActive}
                   .npuProcessingTime=${this.npuProcessingTime}
                   .vpuProcessingTime=${this.vpuProcessingTime}
@@ -2165,19 +2122,6 @@ this.updateTextTranscript(this.ttsCaption);
                   @reset-text=${this._resetTextContext}
                   @scroll-state-changed=${this._handleChatScrollStateChanged}
                   @chat-active-changed=${this._handleChatActiveChanged}
-                  @thinking-open-changed=${(e: CustomEvent) => {
-                    this.npuThinkingOpen = e.detail.open;
-                    if (!e.detail.open) {
-                      this.npuPersistCollapsed = true;
-                      // Save to localStorage
-                      try {
-                        localStorage.setItem('npuPersistCollapsed', JSON.stringify(true));
-                      } catch (error) {
-                        // Ignore storage errors
-                        console.warn('Failed to save npuPersistCollapsed to localStorage:', error);
-                      }
-                    }
-                  }}
                 >
                 </chat-view>
               `

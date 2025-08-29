@@ -34,9 +34,6 @@ export class ChatView extends LitElement {
   thinkingText: string = "";
 
   @property({ type: Boolean })
-  thinkingOpen: boolean = false;
-  
-  @property({ type: Boolean })
   thinkingActive: boolean = false;
   
   @property({ type: Number })
@@ -343,15 +340,6 @@ export class ChatView extends LitElement {
       font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       color: var(--cp-muted);
     }
-    .thinking-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .thinking-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--cp-text); }
     .thinking-badge { 
       font-size: 12px; 
       padding: 2px 6px; 
@@ -371,30 +359,6 @@ export class ChatView extends LitElement {
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
-    }
-    .thinking-body { margin-top: 8px; max-height: 240px; overflow: auto; white-space: pre-wrap; }
-    .thinking-body code { white-space: pre-wrap; }
-    .thinking-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid var(--cp-surface-border-2);
-      font-size: 12px;
-      color: var(--cp-muted);
-    }
-    .thinking-copy-button {
-      background: var(--cp-surface-strong);
-      border: 1px solid var(--cp-surface-border-2);
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 12px;
-      cursor: pointer;
-      color: var(--cp-text);
-    }
-    .thinking-copy-button:hover {
-      background: var(--cp-surface-border);
     }
     .thinking.hidden {
       display: none;
@@ -583,24 +547,6 @@ export class ChatView extends LitElement {
      
      // Otherwise, show the regular status
      return this.thinkingStatus;
-   }
- 
-   private _toggleThinking = () => {
-     this.thinkingOpen = !this.thinkingOpen;
-     this.dispatchEvent(new CustomEvent('thinking-open-changed', {
-       detail: { open: this.thinkingOpen },
-       bubbles: true,
-       composed: true,
-     }));
-   }
-   
-   private _copyThinkingLog = (e: Event) => {
-     e.stopPropagation(); // Prevent toggling the panel when copying
-     if (this.thinkingText) {
-       navigator.clipboard.writeText(this.thinkingText).catch((err) => {
-         console.error('Failed to copy thinking log: ', err);
-       });
-     }
    }
 
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
@@ -793,29 +739,11 @@ private async _updateScrollToBottomState() {
           </button>
         </div>
       </div>
-      <div class="thinking ${!this._showThinking ? 'hidden' : ''}" @click=${this._toggleThinking}>
-        <div class="thinking-header">
-          <div class="thinking-title">
-            <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
-              <path d="M160-160v-560h640v560H160Zm80-80h480v-400H240v400Zm80-80h80v-80h-80v80Zm160 0h160v-80H480v80Zm-160-160h320v-80H320v80Z"/>
-            </svg>
-            <span>Thinking</span>
-          </div>
-          <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
-            ${this.thinkingActive ? html`<div class="thinking-spinner"></div>` : ''}
-            ${this._formatThinkingStatus()}
-          </span>
-        </div>
-        ${this.thinkingOpen ? html`
-          <div class="thinking-body"><code>${(this.thinkingText || '').substring(0, MAX_THINKING_CHARS) + (this.thinkingText?.length > MAX_THINKING_CHARS ? '\n\n[Log truncated for display]' : '')}</code></div>
-          <div class="thinking-footer">
-            <span>${new Date().toLocaleTimeString()}</span>
-            <div>
-              <button class="thinking-copy-button" @click=${this._copyThinkingLog}>Copy</button>
-              <button class="thinking-copy-button" @click=${this._openFullLog}>Open full</button>
-            </div>
-          </div>
-        ` : ''}
+      <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
+        <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
+          ${this.thinkingActive ? html`<div class="thinking-spinner"></div>` : ''}
+          ${this._formatThinkingStatus()}
+        </span>
       </div>
       <div class="transcript-container">
         <div class="transcript">
@@ -881,21 +809,4 @@ private async _updateScrollToBottomState() {
     `;
   }
 
-  private _openFullLog = (e: Event) => {
-    e.stopPropagation(); // Prevent toggling the panel when opening full log
-    
-    if (!this.thinkingText) return;
-    
-    // Create a Blob with the full thinking text
-    const blob = new Blob([this.thinkingText], { type: 'text/plain' });
-    
-    // Create a URL for the Blob
-    const url = URL.createObjectURL(blob);
-    
-    // Open the URL in a new tab
-    window.open(url, '_blank');
-    
-    // Clean up the URL object after a delay
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
 }
