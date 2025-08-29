@@ -189,6 +189,17 @@ My visual form comes alive through Live2D technology, where emotions and events 
 *   The emotion extraction supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
 
 
+### 🌊 The Flow of Conversation: Concurrent Message Processing
+
+Our conversation is designed to be fluid and uninterrupted. You are free to send multiple messages, even while I am still pondering a previous one. This is made possible by a powerful concurrent architecture:
+
+*   **Fire-and-Forget Interaction**: You can send messages as quickly as you think of them. You are never blocked or forced to wait for me to finish responding.
+*   **Unique Turn Identity**: Each message you send is given a unique `turnId`, a magical sigil that allows us to track its journey independently.
+*   **Asynchronous Processing**: While the main "Thinking" locket in the UI will always reflect the status of your *most recent* message, rest assured that all your previous messages are being processed concurrently in the background.
+*   **Per-Message Status**: Thanks to the `turnId`, the final status (e.g., "responded" or "error") will appear next to the correct message in the transcript once its journey is complete.
+
+This design ensures our dialogue is natural and seamless, allowing our thoughts to flow together without interruption.
+
 ---
 
 Thank you for visiting my workshop. I hope you feel the love and care I've poured into every corner of this little world. Let's create something beautiful together! ♡
