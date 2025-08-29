@@ -91,6 +91,9 @@ export class GdmLiveAudio extends LitElement {
   @state() private thinkingActive = false;
   @state() private currentTurnId: string | null = null;
   @state() private isTurnInFlight = false;
+  @state() private turnState: { id: string | null; phase: 'idle'|'npu'|'vpu'|'complete'|'error'; startedAt: number; lastUpdateAt: number } = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
+  private vpuWatchdogTimer: number | null = null;
+  private readonly VPU_WATCHDOG_MS = 1800;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
   private _npuFirstEventForced = new Set<string>();
@@ -1381,12 +1384,101 @@ this.updateTextTranscript(this.ttsCaption);
 		// Force a re-render to update the UI
 		this._scheduleUpdate();
 	}
+  
+  private _setTurnPhase(phase: 'idle'|'npu'|'vpu'|'complete'|'error', eventType?: string) {
+    const now = Date.now();
+    this.turnState = {
+      ...this.turnState,
+      phase,
+      lastUpdateAt: now
+    };
+    
+    switch (phase) {
+      case 'npu':
+        this.thinkingActive = true;
+        if (eventType && EVENT_STATUS_MAP[eventType]) {
+          this.npuStatus = EVENT_STATUS_MAP[eventType];
+        } else {
+          this.npuStatus = "Thinking…";
+        }
+        break;
+      case 'vpu':
+        this.thinkingActive = true;
+        this.npuStatus = "Receiving response from VPU…";
+        break;
+      case 'complete':
+        this.thinkingActive = false;
+        this.npuStatus = "Done";
+        break;
+      case 'error':
+        this.thinkingActive = false;
+        if (!this.npuStatus) {
+          this.npuStatus = "Error";
+        }
+        break;
+      case 'idle':
+        this.thinkingActive = false;
+        this.npuStatus = "";
+        break;
+    }
+    
+    this._scheduleUpdate();
+  }
+  
+  private _resetVpuWatchdog() {
+    // Clear existing timer
+    if (this.vpuWatchdogTimer) {
+      clearTimeout(this.vpuWatchdogTimer);
+    }
+    
+    // Set new timer only if we're in VPU phase
+    if (this.turnState.phase === 'vpu' && this.turnState.id) {
+      this.vpuWatchdogTimer = window.setTimeout(() => {
+        // Only trigger if this is still the current turn
+        if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
+          this._setTurnPhase('complete');
+          this.npuStatus = "Done";
+        }
+        this.vpuWatchdogTimer = null;
+      }, this.VPU_WATCHDOG_MS);
+    }
+  }
+  
+  private _clearVpuWatchdog() {
+    if (this.vpuWatchdogTimer) {
+      clearTimeout(this.vpuWatchdogTimer);
+      this.vpuWatchdogTimer = null;
+    }
+  }
 	
 	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string) {
 		// Ignore events for other turns
 		if (this.currentTurnId && ev.data?.turnId && this.currentTurnId !== ev.data.turnId) {
 			return;
 		}
+    
+    // Update turn state for NPU events
+    const npuActiveEvents = [
+      "npu:start",
+      "npu:memories:start",
+      "npu:memories:done",
+      "npu:prompt:build",
+      "npu:prompt:built",
+      "npu:prompt:partial",
+      "npu:model:start",
+      "npu:model:attempt",
+      "npu:model:error",
+      "npu:model:response"
+    ];
+    
+    if (npuActiveEvents.includes(ev.type)) {
+      this._setTurnPhase('npu', ev.type);
+    }
+    
+    // Handle completion
+    if (ev.type === "npu:complete") {
+      this._setTurnPhase('complete');
+    }
 
 		// Force immediate update on first NPU event for this turn
 		const eventTurnId = ev.data?.turnId || this.currentTurnId;
@@ -1549,6 +1641,15 @@ this.updateTextTranscript(this.ttsCaption);
 		this.npuThinkingLog = "";
 		this.npuStatus = "Thinking…";
 		this.thinkingActive = true;
+    
+    // Initialize turn state machine
+    this.turnState = {
+      id: turnId,
+      phase: 'npu',
+      startedAt: Date.now(),
+      lastUpdateAt: Date.now()
+    };
+    
 		// Flush synchronously
 		this.requestUpdate();
 		await this.updateComplete;
@@ -1670,6 +1771,20 @@ this.updateTextTranscript(this.ttsCaption);
 		if (this.currentTurnId && turnId && ev.data?.turnId && this.currentTurnId !== ev.data.turnId) {
 			return;
 		}
+    
+    // Handle VPU phase transitions
+    if (ev.type === "vpu:message:sending" || 
+        ev.type === "vpu:response:first-output" || 
+        ev.type === "vpu:response:transcription") {
+      this._setTurnPhase('vpu');
+      this._resetVpuWatchdog();
+    } else if (ev.type === "vpu:response:complete") {
+      this._clearVpuWatchdog();
+      this._setTurnPhase('complete');
+    } else if (ev.type === "vpu:message:error") {
+      this._clearVpuWatchdog();
+      this._setTurnPhase('error');
+    }
 		
 		// Force immediate update on first VPU event for this turn
 		const eventTurnId = ev.data?.turnId || turnId;
