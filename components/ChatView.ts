@@ -622,7 +622,7 @@ export class ChatView extends LitElement {
       ) || [];
       defaultAutoScroll.handleTranscriptUpdate(
         this._transcriptEl,
-        oldTranscript,
+        oldTranscript.length,
         this.transcript.length,
       );
 
