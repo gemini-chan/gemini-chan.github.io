@@ -2160,6 +2160,9 @@ this.updateTextTranscript(this.ttsCaption);
 		debugLogger.setThrottle('call-transcript', 1000, { leading: true, trailing: false });
 		
 		this.startEmotionAnalysis();
+		
+		// Start dev RAF poller
+		this._armDevRaf();
 	}
 
 	disconnectedCallback() {
@@ -2175,6 +2178,12 @@ this.updateTextTranscript(this.ttsCaption);
 		this.removeEventListener("reconnecting", this._handleReconnecting);
 		this.removeEventListener("reconnected", this._handleReconnected);
 		this.stopEmotionAnalysis();
+		
+		// Stop dev RAF poller
+		if (this._devRafId) {
+			cancelAnimationFrame(this._devRafId);
+			this._devRafId = null;
+		}
 	}
 
 	private _pruneMessageMeta() {
