@@ -278,8 +278,7 @@ export class DebugLogger {
   }
 
   private formatAndOutput(entry: LogEntry): void {
-    const { component } = entry;
-    const writer = this.throttledWriters.get(component) ?? this.globalThrottledWriter;
+    const writer = this.throttledWriters.get(entry.component) ?? this.globalThrottledWriter;
     
     if (writer) {
       writer(entry);

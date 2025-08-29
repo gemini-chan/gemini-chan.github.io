@@ -122,4 +122,4 @@ async function decodeAudioData(
   return buffer;
 }
 
-export { createBlob, decode, decodeAudioData, encode, throttle };
+export { createBlob, decode, decodeAudioData, encode };

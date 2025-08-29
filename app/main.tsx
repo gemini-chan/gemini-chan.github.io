@@ -1706,7 +1706,7 @@ this.updateTextTranscript(this.ttsCaption);
 				if (EVENT_STATUS_MAP[ev.type as string]) {
 					this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
 					// Set thinking active for other active states
-					if (ACTIVE_STATES.has(ev.type as any)) {
+					if (ACTIVE_STATES.has(ev.type as string)) {
 						this.thinkingActive = true;
 					}
 				}
@@ -2434,7 +2434,7 @@ this.updateTextTranscript(this.ttsCaption);
             .vpuProcessingTime=${this.vpuProcessingTime}
             .messageStatuses=${this.messageStatuses}
             .messageRetryCount=${this.messageRetryCount}
-            .devLabel=${(import.meta as any).env?.DEV ? this._devThinkingLabel() : ''}
+            .devLabel=${import.meta.env.DEV ? this._devThinkingLabel() : ''}
             .phase=${this.turnState.phase}
             .lastEventType=${this.lastEventType}
             .hardDeadlineMs=${this.vpuHardDeadline}
