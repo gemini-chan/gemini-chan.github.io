@@ -1977,6 +1977,8 @@ this.updateTextTranscript(this.ttsCaption);
       this._resetVpuWatchdog();
       this._armVpuDevTicker();
     } else if (ev.type === "vpu:response:complete") {
+      // Update log before setting phase to complete
+      this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
       this._clearVpuWatchdog();
       this._clearVpuHardMaxTimer();
       this._clearVpuDevTicker();
@@ -2108,7 +2110,6 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "vpu:response:complete":
 				this.thinkingActive = false;
-				this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
 				// Reset transcription aggregation for this turn on completion
 				if (ev.data?.turnId) {
 					this.vpuTranscriptionAgg.delete(ev.data.turnId as string);
