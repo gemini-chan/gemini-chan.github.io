@@ -51,6 +51,11 @@ export class ChatView extends LitElement {
   @property({ type: Object })
   messageRetryCount: Record<string, number> = {};
   
+  // Helper getter to determine if thinking UI should be shown
+  private get _showThinking(): boolean {
+    return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText;
+  }
+  
   
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;
@@ -390,6 +395,9 @@ export class ChatView extends LitElement {
     }
     .thinking-copy-button:hover {
       background: var(--cp-surface-border);
+    }
+    .thinking.hidden {
+      display: none;
     }
 
     .transcript-container {
@@ -852,6 +860,31 @@ private async _updateScrollToBottomState() {
           }
         </div>
       </div>
+      ${this._showThinking ? html`
+       <div class="thinking" @click=${this._toggleThinking}>
+         <div class="thinking-header">
+           <div class="thinking-title">
+             <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+               <path d="M160-160v-560h640v560H160Zm80-80h480v-400H240v400Zm80-80h80v-80h-80v80Zm160 0h160v-80H480v80Zm-160-160h320v-80H320v80Z"/>
+             </svg>
+             <span>Thinking</span>
+           </div>
+           <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
+             ${this.thinkingActive ? html`<div class="thinking-spinner"></div>` : ''}
+             ${this._formatThinkingStatus()}
+           </span>
+         </div>
+          ${this.thinkingOpen ? html`
+            <div class="thinking-body"><code>${(this.thinkingText || '').substring(0, MAX_THINKING_CHARS) + (this.thinkingText?.length > MAX_THINKING_CHARS ? '\n\n[Log truncated for display]' : '')}</code></div>
+            <div class="thinking-footer">
+              <span>${new Date().toLocaleTimeString()}</span>
+              <div>
+                <button class="thinking-copy-button" @click=${this._copyThinkingLog}>Copy</button>
+                <button class="thinking-copy-button" @click=${this._openFullLog}>Open full</button>
+              </div>
+            </div>
+          ` : ''}
+        </div>` : ''}
       <div class="input-area">
         <textarea
           .value=${this.inputValue}
