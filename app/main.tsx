@@ -1860,8 +1860,7 @@ this.updateTextTranscript(this.ttsCaption);
 				const ok = await this._initTextSession();
 				if (ok && this.textSessionManager?.isActive) {
 					try {
-						// Create turn ID for correlation
-						const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
+						// Reuse the original turnId for correlation
 						this.currentTurnId = turnId;
 
 						this.lastAdvisorContext = "";
