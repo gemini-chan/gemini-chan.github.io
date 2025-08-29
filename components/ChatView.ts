@@ -342,7 +342,7 @@ export class ChatView extends LitElement {
     }
 
     .thinking {
-      display: ${!this._showThinking ? 'none' : 'block'};
+      /* Container for thinking indicator - visibility controlled by .hidden class */
     }
     .thinking-badge { 
       font-size: 12px; 
@@ -736,15 +736,15 @@ private async _updateScrollToBottomState() {
             <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"/>
           </svg>
           <span>Chat</span>
-          <div class="thinking">
-            <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
-              <div class="status-line">
-                ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
-                <span class="status-primary">${this.thinkingStatus}</span>
-                ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
-              </div>
-            </span>
-          </div>
+        </div>
+        <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
+          <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
+            <div class="status-line">
+              ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
+              <span class="status-primary">${this.thinkingStatus}</span>
+              ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
+            </div>
+          </span>
         </div>
         <div class="header-actions">
           <button class="reset-button" @click=${this._resetText} title="Clear conversation">
