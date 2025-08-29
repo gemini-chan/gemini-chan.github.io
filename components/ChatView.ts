@@ -640,6 +640,8 @@ export class ChatView extends LitElement {
           this.visible,
           this.transcript.length > 0,
         );
+      } else {
+        this.setAttribute("hidden", "");
       }
     }
   }
