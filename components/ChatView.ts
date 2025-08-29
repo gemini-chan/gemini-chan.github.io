@@ -585,6 +585,19 @@ export class ChatView extends LitElement {
     );
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    log.debug("Component mounted", { 
+      isConnected: this.isConnected,
+      visibilityState: document.visibilityState 
+    });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    log.debug("Component unmounted");
+  }
+
   firstUpdated() {
     log.debug("Component first updated");
     // Add scroll event listener to update scroll-to-bottom button visibility
@@ -618,7 +631,9 @@ export class ChatView extends LitElement {
       thinkingStatus: this.thinkingStatus,
       thinkingActive: this.thinkingActive,
       textLen: (this.thinkingText || '').length,
-      transcriptLen: this.transcript.length
+      transcriptLen: this.transcript.length,
+      isConnected: this.isConnected,
+      visibilityState: document.visibilityState
     });
     
     if (changedProperties.has("transcript")) {

@@ -1193,7 +1193,9 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 
 	private _handleTabSwitch(e: CustomEvent) {
+		const previousTab = this.activeTab;
 		this.activeTab = e.detail.tab;
+		logger.debug("Tab switched", { from: previousTab, to: this.activeTab });
 	}
 
 	private _handleVpuDebugToggle(e: CustomEvent) {
@@ -1393,12 +1395,23 @@ this.updateTextTranscript(this.ttsCaption);
 	}
   
   private _setTurnPhase(phase: 'idle'|'npu'|'vpu'|'complete'|'error', eventType?: string) {
+    const previousPhase = this.turnState.phase;
     const now = Date.now();
     this.turnState = {
       ...this.turnState,
       phase,
       lastUpdateAt: now
     };
+    
+    // Log phase transition
+    if (previousPhase !== phase) {
+      logger.debug("Turn phase transition", { 
+        turnId: this.turnState.id, 
+        from: previousPhase, 
+        to: phase, 
+        eventType 
+      });
+    }
     
     switch (phase) {
       case 'npu':
@@ -1949,6 +1962,16 @@ this.updateTextTranscript(this.ttsCaption);
 	 */
 	protected override updated(changedProperties: PropertyValues<this>): void {
 		super.updated(changedProperties);
+		
+		// Log activeTab changes with additional context
+		if (changedProperties.has('activeTab')) {
+			const chatViewPresent = this.shadowRoot?.querySelector('chat-view') !== null;
+			logger.debug("UPDATED - activeTab changed", {
+				activeTab: this.activeTab,
+				chatViewPresent,
+				turnState: this.turnState
+			});
+		}
 		
 		logger.debug("UPDATED", {
 			thinkingStatus: this.npuStatus,
