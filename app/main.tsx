@@ -1846,7 +1846,7 @@ this.updateTextTranscript(this.ttsCaption);
 				// Note: We don't set npuStatus here anymore as it's handled by the advisor:ready event
 				// this.npuStatus = "Sending to VPU…";
 
-				this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
+				this.textSessionManager.sendMessageWithProgress(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
 					this._handleVpuProgress(ev, turnId, false);
 				});
 			} catch (error) {
@@ -1878,7 +1878,7 @@ this.updateTextTranscript(this.ttsCaption);
 						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
-						this.textSessionManager.sendMessage(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
+						this.textSessionManager.sendMessageWithProgress(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
 							this._handleVpuProgress(ev, turnId, true);
 						});
 					} catch (retryError) {
