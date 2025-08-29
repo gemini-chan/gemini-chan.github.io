@@ -93,6 +93,7 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuPersistCollapsed: boolean = false;
   @state() private currentTurnId: string | null = null;
   @state() private isTurnInFlight = false;
+  @state() private userOpenedThisTurn = false;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
   private _npuFirstEventForced = new Set<string>();
@@ -1283,7 +1284,10 @@ this.updateTextTranscript(this.ttsCaption);
     this.npuThinkingLog = "";
     this.npuStatus = "Thinking…";
     this.thinkingActive = true;
-    this.npuThinkingOpen = this.npuPersistCollapsed ? false : true;
+    this.userOpenedThisTurn = false;
+    if (!this.npuPersistCollapsed) {
+        this.npuThinkingOpen = true;
+    }
     this.requestUpdate();
     await this.updateComplete;
     
@@ -1307,6 +1311,7 @@ this.updateTextTranscript(this.ttsCaption);
 		/* conversationContext removed: memory now stores facts only */
     // Set current turn ID to ensure only this turn drives the Thinking UI
     this.currentTurnId = turnId;
+    this.userOpenedThisTurn = false;
     const intention = await this.npuService.analyzeAndAdvise(
       message,
       personaId,
@@ -1314,7 +1319,7 @@ this.updateTextTranscript(this.ttsCaption);
       undefined,
       undefined,
       turnId,
-      (ev: NpuProgressEvent) => this._handleNpuProgress(ev, turnId, false) // For summary, pass false
+      (ev: NpuProgressEvent) => this._handleNpuProgress(ev, turnId)
     );
 		// Removed usage of intention.emotion as it's no longer part of the interface
 		this.lastAdvisorContext = intention?.advisor_context || "";
@@ -1398,7 +1403,7 @@ this.updateTextTranscript(this.ttsCaption);
 		this._scheduleUpdate();
 	}
 	
-	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string, userExpanded: boolean) {
+	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string) {
 		// Ignore events for other turns
 		if (this.currentTurnId && ev.data?.turnId && this.currentTurnId !== ev.data.turnId) {
 			return;
@@ -1505,10 +1510,8 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Handle auto-expand rules
-		if (AUTO_EXPAND_RULES.has(ev.type)) {
-			if (!userExpanded) {
-				this._autoExpandThinkingPanel();
-			}
+		if (AUTO_EXPAND_RULES.has(ev.type) && !this.npuPersistCollapsed) {
+			this._autoExpandThinkingPanel();
 		}
 
 		// Handle prompt partial updates
@@ -1549,7 +1552,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// Handle completion
 		if (ev.type === "npu:complete") {
 			// Auto-collapse after complete, but only if user hadn't manually expanded
-			if (!userExpanded) this.npuThinkingOpen = false;
+			this.npuThinkingOpen = this.userOpenedThisTurn ? this.npuThinkingOpen : false;
 		}
 
 		// Schedule update for frame-based batching
@@ -1582,8 +1585,12 @@ this.updateTextTranscript(this.ttsCaption);
 		this.npuThinkingLog = "";
 		this.npuStatus = "Thinking…";
 		this.thinkingActive = true;
+		// Reset user opened state for new turn
+		this.userOpenedThisTurn = false;
 		// Respect persisted collapse; otherwise, keep current open state
-		this.npuThinkingOpen = this.npuPersistCollapsed ? false : true;
+		if (!this.npuPersistCollapsed) {
+			this.npuThinkingOpen = true;
+		}
 		// Flush synchronously
 		this.requestUpdate();
 		await this.updateComplete;
