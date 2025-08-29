@@ -1443,6 +1443,7 @@ this.updateTextTranscript(this.ttsCaption);
         this.thinkingActive = false;
         this.npuStatus = "";
         this.npuSubStatus = "";
+        this.npuThinkingLog = "";
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
         // Clear dev state
