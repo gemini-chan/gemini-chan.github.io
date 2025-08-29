@@ -1457,9 +1457,8 @@ this.updateTextTranscript(this.ttsCaption);
         break;
       case 'error':
         this.thinkingActive = false;
-        if (!this.npuStatus) {
-          this.npuStatus = "Error";
-        }
+        this.npuStatus = "";
+        this.npuSubStatus = "";
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
         // Clear dev state
@@ -1475,6 +1474,7 @@ this.updateTextTranscript(this.ttsCaption);
       case 'idle':
         this.thinkingActive = false;
         this.npuStatus = "";
+        this.npuSubStatus = "";
         this.npuThinkingLog = ""; // Clear thinking log text
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
@@ -1609,8 +1609,14 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
     
-    // Update turn state for NPU events
-    const npuActiveEvents = [
+    // Determine the correct phase based on event type
+    let phase: 'npu' | 'error' | null = null;
+    let eventType = ev.type as string;
+    
+    // Map event to phase
+    if (eventType === "npu:model:error") {
+      phase = 'error';
+    } else if ([
       "npu:start",
       "npu:memories:start",
       "npu:memories:done",
@@ -1619,14 +1625,17 @@ this.updateTextTranscript(this.ttsCaption);
       "npu:prompt:partial",
       "npu:model:start",
       "npu:model:attempt",
-      "npu:model:error",
-      "npu:model:response"
-    ];
-    
-    if (npuActiveEvents.includes(ev.type as string)) {
-      this._setTurnPhase('npu', ev.type as string);
+      "npu:model:response",
+      "npu:advisor:ready",
+      "npu:complete"
+    ].includes(eventType)) {
+      phase = 'npu';
     }
     
+    // Update turn state if we have a valid phase
+    if (phase !== null) {
+      this._setTurnPhase(phase, eventType);
+    }
 
 		// Force immediate update on first NPU event for this turn
 		const eventTurnId = (ev.data?.turnId as string) || this.currentTurnId;
@@ -1647,18 +1656,24 @@ this.updateTextTranscript(this.ttsCaption);
 			logger.debug("NPU Progress Event", ev);
 		}
 
-		// Map event to status string using switch statement
+		// Handle timing and processing metrics
+		if (ev.type === "npu:start") {
+			// Start timing
+			this.npuStartTime = Date.now();
+		} else if (ev.type === "npu:complete") {
+			// Calculate processing time on completion
+			if (this.npuStartTime) {
+				this.npuProcessingTime = Date.now() - this.npuStartTime;
+				this.npuStartTime = null;
+			}
+		}
+
+		// Handle log updates
 		switch (ev.type) {
 			case "npu:start":
-				this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
-				this.thinkingActive = true;
-				// Start timing
-				this.npuStartTime = Date.now();
 				this.npuThinkingLog += "\n[Thinking...]"; // Concise log line
 				break;
 			case "npu:model:start":
-				this.npuStatus = "Preparing NPU…";
-				this.thinkingActive = true;
 				if (ev.data?.model) {
 					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
 					// Initialize retry count
@@ -1667,8 +1682,6 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "npu:model:attempt":
-				this.npuStatus = "Thinking…";
-				this.thinkingActive = true;
 				if (ev.data?.attempt) {
 					// Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
 					const retries = Math.max(0, (ev.data.attempt as number) - 1);
@@ -1678,8 +1691,6 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "npu:model:error":
 				if (ev.data?.attempt && ev.data?.error) {
-					this.npuStatus = `NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}`;
-					this._setTurnPhase('error');
 					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
 					// Clear any pending transcription timers on error
 					if (this.transcriptionDebounceTimer) {
@@ -1687,43 +1698,20 @@ this.updateTextTranscript(this.ttsCaption);
 						this.transcriptionDebounceTimer = null;
 						this.pendingTranscriptionText = "";
 					}
-					// Calculate processing time on error
-					if (this.npuStartTime) {
-						this.npuProcessingTime = Date.now() - this.npuStartTime;
-						this.npuStartTime = null;
-					}
 					this.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:response":
-				this.npuStatus = "NPU ready";
-				this.thinkingActive = true;
 				if (ev.data?.length) {
 					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
 					this.npuThinkingLog += "\n[NPU ready]"; // Concise log line
 				}
 				break;
 			case "npu:complete":
-				this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
-				this.thinkingActive = false;
-				// Calculate processing time on completion
-				if (this.npuStartTime) {
-					this.npuProcessingTime = Date.now() - this.npuStartTime;
-					this.npuStartTime = null;
-				}
 				// Set fallback status based on whether NPU produced a response
 				const ok = !!ev.data?.hasResponseText;
 				this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
 				this.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
-				break;
-			default:
-				if (EVENT_STATUS_MAP[ev.type as string]) {
-					this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
-					// Set thinking active for other active states
-					if (ACTIVE_STATES.has(ev.type as string)) {
-						this.thinkingActive = true;
-					}
-				}
 				break;
 		}
 
