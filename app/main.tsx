@@ -1571,6 +1571,16 @@ this.updateTextTranscript(this.ttsCaption);
     }
   }
   
+  /**
+   * Constructs the VPU message payload by combining advisor context and user message
+   * @param advisorContext The context provided by the NPU
+   * @param userMessage The original user message
+   * @returns The formatted message payload for VPU
+   */
+  private _constructVpuMessagePayload(advisorContext: string, userMessage: string): string {
+    return advisorContext ? `${advisorContext}\n\n${userMessage}` : userMessage;
+  }
+  
   private _armVpuHardMaxTimer() {
     // Always clear any existing timer before setting a new one
     this._clearVpuHardMaxTimer(true); // silent clear
