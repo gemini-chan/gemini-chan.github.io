@@ -698,12 +698,15 @@ export class ChatView extends LitElement {
                 turnId: this.turnId
               }
             }));
-            
+              
             // Clear the ticker
             if (this._badgeTicker) {
               clearInterval(this._badgeTicker);
               this._badgeTicker = null;
             }
+              
+            // Set remaining time to 0 when forcing completion
+            this._devRemainingMs = 0;
           }
           
           this.requestUpdate();
