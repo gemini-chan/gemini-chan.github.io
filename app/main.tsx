@@ -94,7 +94,6 @@ export class GdmLiveAudio extends LitElement {
   private readonly VPU_HARD_MAX_MS = 7000;
   private vpuHardDeadline: number = 0;
   private vpuWaitTimer: number | null = null;
-  private _updateScheduled: boolean = false;
   private _npuFirstEventForced = new Set<string>();
   private _vpuFirstEventForced = new Set<string>();
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
