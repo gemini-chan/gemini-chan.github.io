@@ -762,7 +762,6 @@ private async _updateScrollToBottomState() {
             <span class="status-primary">${this.thinkingStatus}</span>
             ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
           </div>
-          </span>
         </span>
       </div>
       <div class="transcript-container">
