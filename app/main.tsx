@@ -1485,7 +1485,6 @@ this.updateTextTranscript(this.ttsCaption);
         if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
           logger.debug("VPU watchdog fired", { turnId: this.turnState.id });
           this._setTurnPhase('complete');
-          this.npuStatus = "Done";
         }
         this.vpuWatchdogTimer = null;
       }, this.VPU_WATCHDOG_MS);
@@ -1780,20 +1779,6 @@ this.updateTextTranscript(this.ttsCaption);
     }
   }
 
-  private _handleThinkingForcedComplete(e: CustomEvent<{ reason: string; turnId?: string }>) {
-    const { reason, turnId } = e.detail;
-    logger.debug('Received thinking-forced-complete-ui event', { reason, turnId });
-    
-    // Process completion even if turnId is missing or mismatched (trust the UI)
-    if (!turnId || turnId === this.turnState.id) {
-      logger.debug('Forcing turn completion from UI event');
-      this._setTurnPhase('complete');
-      // Clear dev state
-      this.vpuHardDeadline = 0;
-      this.lastEventType = '';
-      this.requestUpdate();
-    }
-  }
 
 	private async _handleSendMessage(e: CustomEvent) {
 		const message = e.detail;
@@ -2448,7 +2433,6 @@ this.updateTextTranscript(this.ttsCaption);
             @reset-text=${this._resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}
             @chat-active-changed=${this._handleChatActiveChanged}
-            @thinking-forced-complete-ui=${this._handleThinkingForcedComplete}
           >
           </chat-view>
           ${
