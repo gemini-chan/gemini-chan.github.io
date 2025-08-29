@@ -578,21 +578,6 @@ export class ChatView extends LitElement {
     }
   }
 
-  /**
-   * Log component updates for debugging UI refresh issues
-   */
-  updated(changedProperties: Map<string | number | symbol, unknown>) {
-    super.updated(changedProperties);
-    
-    log.debug("ChatView UPDATED", {
-      thinkingStatus: this.thinkingStatus,
-      thinkingActive: this.thinkingActive,
-      open: this.thinkingOpen,
-      textLen: (this.thinkingText || '').length,
-      transcriptLen: this.transcript.length
-    });
-  }
-
   private _resetText() {
     log.debug("Resetting conversation");
     this.dispatchEvent(
@@ -629,6 +614,13 @@ export class ChatView extends LitElement {
   }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
+    log.debug("ChatView UPDATED", {
+      thinkingStatus: this.thinkingStatus,
+      thinkingActive: this.thinkingActive,
+      textLen: (this.thinkingText || '').length,
+      transcriptLen: this.transcript.length
+    });
+    
     if (changedProperties.has("transcript")) {
       // Use generic auto-scroll utility
       const transcriptEl = this.shadowRoot?.querySelector(".transcript");
