@@ -758,9 +758,9 @@ private async _updateScrollToBottomState() {
       <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
         <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
           <div class="status-line">
-            ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
+            <div class="thinking-spinner"></div>
             <span class="status-primary">${this.thinkingStatus}</span>
-            ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
+            <span class="status-secondary">${this.thinkingSubStatus}</span>
           </div>
         </span>
       </div>
