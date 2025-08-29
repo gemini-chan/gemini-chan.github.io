@@ -1630,7 +1630,6 @@ this.updateTextTranscript(this.ttsCaption);
 		const eventTurnId = (ev.data?.turnId as string) || this.currentTurnId;
 		if (eventTurnId && !this._npuFirstEventForced.has(eventTurnId)) {
 			this._npuFirstEventForced.add(eventTurnId);
-			logger.debug("UI FORCE: first NPU event", { turnId: eventTurnId, type: ev.type });
 			this.requestUpdate();
 		}
 
@@ -1977,7 +1976,6 @@ this.updateTextTranscript(this.ttsCaption);
 		const eventTurnId = (ev.data?.turnId as string) || turnId;
 		if (eventTurnId && !this._vpuFirstEventForced.has(eventTurnId)) {
 			this._vpuFirstEventForced.add(eventTurnId);
-			logger.debug("UI FORCE: first VPU event", { turnId: eventTurnId, type: ev.type });
 			this.requestUpdate();
 		}
 		
@@ -2106,29 +2104,6 @@ this.updateTextTranscript(this.ttsCaption);
 		this._scheduleUpdate();
 	}
 
-	/**
-	 * Log component updates for debugging UI refresh issues
-	 */
-	protected override updated(changedProperties: PropertyValues<this>): void {
-		super.updated(changedProperties);
-		
-		// Log activeTab changes with additional context
-		if (changedProperties.has('activeTab')) {
-			const chatViewPresent = this.shadowRoot?.querySelector('chat-view') !== null;
-			logger.debug("UPDATED - activeTab changed", {
-				activeTab: this.activeTab,
-				chatViewPresent,
-				turnState: this.turnState
-			});
-		}
-		
-		logger.debug("UPDATED", {
-			thinkingStatus: this.npuStatus,
-			thinkingActive: this.thinkingActive,
-			logLen: this.npuThinkingLog.length,
-			transcriptLen: this.textTranscript.length
-		});
-	}
 
 	connectedCallback() {
 		// Subscribe to energy level changes to surface persona-specific prompts

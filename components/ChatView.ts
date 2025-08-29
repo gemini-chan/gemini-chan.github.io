@@ -644,54 +644,6 @@ export class ChatView extends LitElement {
     ) as HTMLTextAreaElement;
   }
 
-  updated(changedProperties: Map<string | number | symbol, unknown>) {
-    log.debug("ChatView UPDATED", {
-      thinkingStatus: this.thinkingStatus,
-      thinkingActive: this.thinkingActive,
-      textLen: (this.thinkingText || '').length,
-      transcriptLen: this.transcript.length,
-      isConnected: this.isConnected,
-      visibilityState: document.visibilityState
-    });
-    
-    if (changedProperties.has("transcript")) {
-      // Use generic auto-scroll utility
-      if (this._transcriptEl) {
-        const oldTranscript =
-          (changedProperties.get("transcript") as Turn[]) || [];
-        log.debug("Transcript updated", {
-          oldLength: oldTranscript.length,
-          newLength: this.transcript.length,
-        });
-        defaultAutoScroll.handleTranscriptUpdate(
-          this._transcriptEl,
-          oldTranscript.length,
-          this.transcript.length,
-        );
-
-        // Update scroll-to-bottom button state
-        this._updateScrollToBottomState();
-      }
-    }
-
-    if (changedProperties.has("visible")) {
-      log.debug(`Visibility changed to ${this.visible}`);
-      if (this.visible) {
-        this.removeAttribute("hidden");
-
-        // Use generic auto-scroll utility for visibility changes
-        if (this._transcriptEl) {
-          defaultAutoScroll.handleVisibilityChange(
-            this._transcriptEl,
-            this.visible,
-            this.transcript.length > 0,
-          );
-        }
-      } else {
-        this.setAttribute("hidden", "");
-      }
-    }
-  }
 private async _updateScrollToBottomState() {
   // Await a microtask to allow the DOM to update before we measure it
   await new Promise(resolve => setTimeout(resolve, 0));
