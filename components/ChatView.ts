@@ -342,13 +342,7 @@ export class ChatView extends LitElement {
     }
 
     .thinking {
-      background: var(--cp-surface);
-      border: 1px solid var(--cp-surface-border);
-      border-radius: 10px;
-      box-shadow: var(--cp-glow-purple);
-      padding: 8px 10px;
-      font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      color: var(--cp-muted);
+      display: ${!this._showThinking ? 'none' : 'block'};
     }
     .thinking-badge { 
       font-size: 12px; 
@@ -356,6 +350,13 @@ export class ChatView extends LitElement {
       border-radius: 999px; 
       background: var(--cp-surface-strong); 
       border: 1px solid var(--cp-surface-border-2);
+    }
+    .header .thinking-badge {
+      padding: 4px 8px;
+      background: rgba(124, 77, 255, 0.1);
+      border: 1px solid rgba(124, 77, 255, 0.2);
+      align-self: center;
+      margin-left: 8px;
     }
     .thinking-badge.active {
       display: inline-flex;
@@ -735,6 +736,15 @@ private async _updateScrollToBottomState() {
             <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"/>
           </svg>
           <span>Chat</span>
+          <div class="thinking">
+            <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
+              <div class="status-line">
+                ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
+                <span class="status-primary">${this.thinkingStatus}</span>
+                ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
+              </div>
+            </span>
+          </div>
         </div>
         <div class="header-actions">
           <button class="reset-button" @click=${this._resetText} title="Clear conversation">
@@ -743,15 +753,6 @@ private async _updateScrollToBottomState() {
             </svg>
           </button>
         </div>
-      </div>
-      <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
-        <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
-          <div class="status-line">
-            ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
-            <span class="status-primary">${this.thinkingStatus}</span>
-            ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
-          </div>
-        </span>
       </div>
       <div class="transcript-container">
         <div class="transcript">
