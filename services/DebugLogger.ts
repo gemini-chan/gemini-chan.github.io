@@ -1,5 +1,7 @@
 // src/debug-logger.ts
 
+import { throttle } from "@shared/utils";
+
 declare const __DEBUG__: boolean;
 declare const __DEBUG_COMPONENTS__: string[];
 
@@ -126,6 +128,8 @@ export class DebugLogger {
   private config: DebugLoggerConfig;
   private configManager: ConfigurationManager;
   private throttles = new Map<string, { wait: number; leading: boolean; trailing: boolean; last: number; timeoutId?: number | null; pending?: LogEntry | null }>();
+  private throttledWriters = new Map<string, (entry: LogEntry) => void>();
+  private globalThrottledWriter: ((entry: LogEntry) => void) | null = null;
 
   /**
    * Initializes a new instance of the DebugLogger.
@@ -274,47 +278,13 @@ export class DebugLogger {
   }
 
   private formatAndOutput(entry: LogEntry): void {
-    const { component, level, message, data, timestamp } = entry;
-    const throttle = this.throttles.get(component) ?? this.throttles.get('*');
+    const { component } = entry;
+    const writer = this.throttledWriters.get(component) ?? this.globalThrottledWriter;
     
-    // If no throttling is configured, output immediately
-    if (!throttle) {
+    if (writer) {
+      writer(entry);
+    } else {
       this.outputLog(entry);
-      return;
-    }
-
-    const now = Date.now();
-    const timeSinceLast = now - throttle.last;
-    
-    // Handle leading edge
-    if (throttle.leading && timeSinceLast >= throttle.wait) {
-      throttle.last = now;
-      this.outputLog(entry);
-      return;
-    }
-    
-    // Handle trailing edge
-    if (throttle.trailing) {
-      // Clear any existing timeout
-      if (throttle.timeoutId) {
-        clearTimeout(throttle.timeoutId);
-      }
-      
-      // Store the pending entry
-      throttle.pending = entry;
-      
-      // Calculate remaining time
-      const remainingTime = throttle.wait - timeSinceLast;
-      
-      // Set timeout to emit the pending entry
-      throttle.timeoutId = window.setTimeout(() => {
-        if (throttle.pending) {
-          this.outputLog(throttle.pending);
-          throttle.last = Date.now();
-          throttle.pending = null;
-        }
-        throttle.timeoutId = null;
-      }, Math.max(0, remainingTime));
     }
   }
 
@@ -374,6 +344,16 @@ export class DebugLogger {
     const leading = opts?.leading !== false; // default true
     const trailing = opts?.trailing !== false; // default true
     
+    // Create throttled writer using shared throttle utility
+    const throttledWriter = throttle((entry: LogEntry) => this.outputLog(entry), wait, { leading, trailing });
+    
+    if (component === '*') {
+      this.globalThrottledWriter = throttledWriter;
+    } else {
+      this.throttledWriters.set(component, throttledWriter);
+    }
+    
+    // Keep existing config for backward compatibility
     this.throttles.set(component, {
       wait,
       leading,
@@ -386,6 +366,14 @@ export class DebugLogger {
    * Clear throttling configuration for a component
    */
   public clearThrottle(component: string): void {
+    // Clear throttled writer
+    if (component === '*') {
+      this.globalThrottledWriter = null;
+    } else {
+      this.throttledWriters.delete(component);
+    }
+    
+    // Keep existing config removal for backward compatibility
     const throttle = this.throttles.get(component);
     if (throttle) {
       if (throttle.timeoutId) {
@@ -399,6 +387,11 @@ export class DebugLogger {
    * Clear all throttling configurations
    */
   public clearAllThrottles(): void {
+    // Clear all throttled writers
+    this.throttledWriters.clear();
+    this.globalThrottledWriter = null;
+    
+    // Clear existing throttle configs
     for (const [component, throttle] of this.throttles.entries()) {
       if (throttle.timeoutId) {
         clearTimeout(throttle.timeoutId);
