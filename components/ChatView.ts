@@ -49,13 +49,7 @@ export class ChatView extends LitElement {
   messageRetryCount: Record<string, number> = {};
   
   @property({ type: String })
-  devLabel?: string;
-  
-  @property({ type: String })
   phase: 'idle'|'npu'|'vpu'|'complete'|'error' = 'idle';
-  
-  @property({ type: String })
-  lastEventType: string = '';
   
   @property({ type: Number })
   hardDeadlineMs: number = 0;
@@ -768,7 +762,7 @@ private async _updateScrollToBottomState() {
             <span class="status-primary">${this.thinkingStatus}</span>
             ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
           </div>
-          ${this.devLabel ? html`<div class="dev-meta">${this.devLabel}</div>` : ''}
+          </span>
         </span>
       </div>
       <div class="transcript-container">

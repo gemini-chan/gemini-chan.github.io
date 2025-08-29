@@ -93,7 +93,6 @@ export class GdmLiveAudio extends LitElement {
   private readonly VPU_WATCHDOG_MS = 2200;
   private vpuHardMaxTimer: number | null = null;
   private readonly VPU_HARD_MAX_MS = 7000;
-  private lastEventType: string = '';
   private vpuHardDeadline: number = 0;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
@@ -1555,14 +1554,8 @@ this.updateTextTranscript(this.ttsCaption);
   }
   
   private _armVpuHardMaxTimer() {
-    // Make timer one-shot
-    if (this.vpuHardMaxTimer) {
-      logger.debug('VPU hard max already armed', { 
-        turnId: this.turnState.id, 
-        deadline: this.vpuHardDeadline 
-      });
-      return;
-    }
+    // Always clear any existing timer before setting a new one
+    this._clearVpuHardMaxTimer();
     
     // Set new hard max timer
     if (this.turnState.id) {
@@ -1750,9 +1743,6 @@ this.updateTextTranscript(this.ttsCaption);
 		this._scheduleUpdate();
 	}
   
-  private _devThinkingLabel(): string {
-    return `${this.lastEventType || ''}${this.vpuHardDeadline ? ' • ETA ' + Math.max(0, this.devRemainingMs) + 'ms' : ''}`;
-  }
 
   private _armDevRaf() {
     // Only run in development mode
@@ -1936,9 +1926,6 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
     
-    // Track last event type for dev display
-    this.lastEventType = ev.type;
-    
     // Handle VPU phase transitions
     if (ev.type === "vpu:message:sending" || 
         ev.type === "vpu:response:first-output" || 
@@ -1957,6 +1944,16 @@ this.updateTextTranscript(this.ttsCaption);
       this._clearVpuHardMaxTimer();
       this._clearVpuDevTicker();
       this._setTurnPhase('error');
+    }
+    
+    // Update sub status for all relevant VPU events
+    if (EVENT_STATUS_MAP[ev.type as string]) {
+      // For transcription events, keep UI clean by setting empty status
+      if (ev.type === "vpu:response:transcription") {
+        this.npuSubStatus = "";
+      } else {
+        this.npuSubStatus = EVENT_STATUS_MAP[ev.type as string];
+      }
     }
 		
 		// Force immediate update on first VPU event for this turn
