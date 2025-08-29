@@ -143,6 +143,7 @@
           // Generation complete acknowledgement
           const genComplete = extendedMessage.serverContent?.generationComplete;
           if (genComplete) {
+            logger.debug('VPU completion: generationComplete');
             // Hook for post-turn actions; for now, surface a status update
             this.updateStatus(`${this.getSessionName()}: generation complete`);
           }
@@ -516,6 +517,7 @@
               window.clearTimeout(this.transcriptionIdleTimer);
             }
             this.transcriptionIdleTimer = window.setTimeout(() => {
+              logger.debug('VPU completion: transcription idle fallback');
               this._completeTurn("transcription idle");
             }, 1200); // 1.2s idle timeout
 
@@ -582,6 +584,7 @@
     protected override onAudioEnded(): void {
       // Guard against audio-end firing after completion
       if (this.sources.size === 0 && this.firstOutputReceived && this.progressCb) {
+        logger.debug('VPU completion: audio end fallback');
         this._completeTurn("audio end");
       }
     }

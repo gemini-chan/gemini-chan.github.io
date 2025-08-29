@@ -59,15 +59,11 @@ const logger = createComponentLogger("GdmLiveAudio");
 
 // Import progress event types and mappings
 import type {
-  BaseProgressEvent,
   NpuProgressEvent,
-  VpuProgressEvent,
-  NpuEventType,
-  VpuEventType
+  VpuProgressEvent
 } from "@shared/progress";
 import {
   EVENT_STATUS_MAP,
-  AUTO_EXPAND_RULES,
   ACTIVE_STATES
 } from "@shared/progress";
 
@@ -1759,7 +1755,7 @@ this.updateTextTranscript(this.ttsCaption);
 
   private _armDevRaf() {
     // Only run in development mode
-    if (!(import.meta as any).env?.DEV) return;
+    if (!import.meta.env.DEV) return;
     
     const loop = () => {
       // Only check if we're in VPU phase
@@ -1782,7 +1778,7 @@ this.updateTextTranscript(this.ttsCaption);
     }
   }
 
-  private _handleThinkingForcedComplete(e: CustomEvent) {
+  private _handleThinkingForcedComplete(e: CustomEvent<{ reason: string; turnId?: string }>) {
     const { reason, turnId } = e.detail;
     logger.debug('Received thinking-forced-complete-ui event', { reason, turnId });
     

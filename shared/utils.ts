@@ -4,7 +4,7 @@
  */
 import type { Blob } from "@google/genai";
 
-function throttle<T extends (...args: any[]) => void>(
+export function throttle<T extends (...args: unknown[]) => void>(
   fn: T,
   wait: number,
   opts?: { leading?: boolean; trailing?: boolean }
@@ -14,9 +14,9 @@ function throttle<T extends (...args: any[]) => void>(
   
   let timeoutId: number | null = null;
   let lastRunTime = 0;
-  let lastArgs: any[] | null = null;
+  let lastArgs: unknown[] | null = null;
 
-  function throttled(this: any, ...args: any[]) {
+  function throttled(this: unknown, ...args: unknown[]) {
     const now = Date.now();
     lastArgs = args;
 
@@ -32,12 +32,14 @@ function throttle<T extends (...args: any[]) => void>(
         timeoutId = null;
       }
       lastRunTime = now;
-      fn.apply(this, args);
+      fn.apply(this, args as Parameters<T>);
     } else if (!timeoutId && trailing) {
       timeoutId = window.setTimeout(() => {
         lastRunTime = Date.now();
         timeoutId = null;
-        fn.apply(this, lastArgs!);
+        if (lastArgs) {
+          fn.apply(this, lastArgs as Parameters<T>);
+        }
       }, remaining);
     }
   }

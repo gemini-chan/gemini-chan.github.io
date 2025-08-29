@@ -7,9 +7,6 @@ import type { Turn } from "@shared/types";
 
 const log = createComponentLogger("ChatView");
 
-// Maximum characters to display in the thinking log
-const MAX_THINKING_CHARS = 20000;
-
 @customElement("chat-view")
 export class ChatView extends LitElement {
   @property({ type: Array })

@@ -7,6 +7,8 @@ import { throttle } from "@shared/utils";
 
 const logger = createComponentLogger("transcript-auto-scroll");
 
+type ScrollPayload = { isAtBottom?: boolean; oldLength?: number; newLength?: number; smooth?: boolean; wasAtBottom?: boolean };
+
 export interface AutoScrollOptions {
   /** Threshold in pixels to determine if user is "near bottom" */
   threshold?: number;
@@ -26,8 +28,8 @@ export interface ScrollToBottomState {
 export class TranscriptAutoScroll {
   private options: Required<AutoScrollOptions>;
   private wasAtBottomBeforeUpdate = new WeakMap<Element, boolean>();
-  private logAutoScroll = throttle((payload: any) => logger.debug("Transcript update - auto-scrolling", payload), 250, { trailing: false });
-  private logUserScroll = throttle((payload: any) => logger.debug("User scroll event", payload), 250, { trailing: false });
+  private logAutoScroll = throttle((payload: ScrollPayload) => logger.debug("Transcript update - auto-scrolling", payload), 250, { trailing: false });
+  private logUserScroll = throttle((payload: { isAtBottom?: boolean }) => logger.debug("User scroll event", payload), 250, { trailing: false });
 
   constructor(options: AutoScrollOptions = {}) {
     this.options = {
