@@ -592,7 +592,7 @@
      * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
      * then VPU (the session) responds with the enhanced context.
      */
-    public sendMessage(message: string, turnId?: string, progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void): void {
+    public sendMessageWithProgress(message: string, turnId?: string, progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void): void {
       if (!this.session) {
         this.updateError(`${this.getSessionName()} not initialized`);
         return;
