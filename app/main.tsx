@@ -1913,6 +1913,34 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 	}
 
+	private _getVpuSubStatus(ev: VpuProgressEvent, isRetry: boolean): string {
+		// For transcription events, keep UI clean by returning empty status
+		if (ev.type === "vpu:response:transcription") {
+			return "";
+		}
+		
+		// Map event to status string using switch statement
+		switch (ev.type) {
+			case "vpu:message:sending":
+				return isRetry ? "Sending to VPU (retry)…" : "Sending to VPU…";
+			case "vpu:message:error":
+				if (ev.data?.error) {
+					return `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
+				}
+				return "";
+			case "vpu:response:first-output":
+				return "Receiving response…";
+			case "vpu:response:complete":
+				return "";
+			default:
+				// Use EVENT_STATUS_MAP for other events
+				if (EVENT_STATUS_MAP[ev.type as string]) {
+					return EVENT_STATUS_MAP[ev.type as string];
+				}
+				return "";
+		}
+	}
+
 	private _handleVpuProgress(ev: VpuProgressEvent, turnId?: string, isRetry = false) {
 		// Once a turn is complete or has errored, ignore subsequent events for it.
 		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
@@ -1943,15 +1971,8 @@ this.updateTextTranscript(this.ttsCaption);
       this._setTurnPhase('error');
     }
     
-    // Update sub status for all relevant VPU events
-    if (EVENT_STATUS_MAP[ev.type as string]) {
-      // For transcription events, keep UI clean by setting empty status
-      if (ev.type === "vpu:response:transcription") {
-        this.npuSubStatus = "";
-      } else {
-        this.npuSubStatus = EVENT_STATUS_MAP[ev.type as string];
-      }
-    }
+    // Update sub status using the new helper method
+    this.npuSubStatus = this._getVpuSubStatus(ev, isRetry);
 		
 		// Force immediate update on first VPU event for this turn
 		const eventTurnId = (ev.data?.turnId as string) || turnId;
@@ -2010,36 +2031,27 @@ this.updateTextTranscript(this.ttsCaption);
 			// Reset transcription chunk counters on completion or error
 		}
 
-		// Map event to status string
-		if (EVENT_STATUS_MAP[ev.type as string]) {
-			this.npuSubStatus = EVENT_STATUS_MAP[ev.type as string];
-			// Add data details for specific events
-			if (ev.type === "vpu:message:sending") {
-				// Start timing
-				this.vpuStartTime = Date.now();
-			} else if (ev.type === "vpu:message:error" && ev.data?.error) {
-				this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
-				this.npuSubStatus = "";
-			} else if (ev.type === "vpu:response:complete") {
-				// Calculate processing time on completion
-				if (this.vpuStartTime) {
-					this.vpuProcessingTime = Date.now() - this.vpuStartTime;
-					this.vpuStartTime = null;
-				}
+		// Handle timing and processing metrics
+		if (ev.type === "vpu:message:sending") {
+			// Start timing
+			this.vpuStartTime = Date.now();
+		} else if (ev.type === "vpu:response:complete") {
+			// Calculate processing time on completion
+			if (this.vpuStartTime) {
+				this.vpuProcessingTime = Date.now() - this.vpuStartTime;
+				this.vpuStartTime = null;
 			}
 		}
 
-		// Handle log updates and status overrides
+		// Handle log updates and other state changes
 		switch (ev.type) {
 			case "vpu:message:sending":
-				this.npuSubStatus = isRetry ? "Sending to VPU (retry)…" : "Sending to VPU…";
 				this.thinkingActive = true;
 				this.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
 				break;
 			case "vpu:message:error":
 				if (ev.data?.error) {
 					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
-					this.npuSubStatus = "";
 					this.thinkingActive = false;
 					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}]`;
 					// Reset transcription aggregation for this turn on error
@@ -2051,12 +2063,10 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:first-output":
-				this.npuSubStatus = "Receiving response…";
 				this.thinkingActive = true;
 				this.npuThinkingLog += isRetry ? "\n[VPU first output received (retry)]" : "\n[VPU first output received]";
 				break;
 			case "vpu:response:transcription":
-				this.npuSubStatus = "";
 				this.thinkingActive = true;
 				if (ev.data?.text) {
 					// Use debounced transcription updates
@@ -2081,7 +2091,6 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:complete":
-				this.npuSubStatus = "";
 				this.thinkingActive = false;
 				this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
 				// Reset transcription aggregation for this turn on completion
