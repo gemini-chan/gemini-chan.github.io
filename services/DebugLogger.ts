@@ -391,7 +391,7 @@ export class DebugLogger {
     this.globalThrottledWriter = null;
     
     // Clear existing throttle configs
-    for (const [component, throttle] of this.throttles.entries()) {
+    for (const throttle of this.throttles.values()) {
       if (throttle.timeoutId) {
         clearTimeout(throttle.timeoutId);
       }
