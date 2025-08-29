@@ -2290,41 +2290,40 @@ this.updateTextTranscript(this.ttsCaption);
             .visible=${this.activeMode !== "calling"}
             @tab-switch=${this._handleTabSwitch}
           ></tab-view>
+          <chat-view
+            .transcript=${this.textTranscript}
+            .visible=${this.activeMode !== "calling" && this.activeTab === "chat"}
+            .thinkingStatus=${this.npuStatus}
+            .thinkingText=${this.npuThinkingLog}
+            .thinkingActive=${this.thinkingActive}
+            .npuProcessingTime=${this.npuProcessingTime}
+            .vpuProcessingTime=${this.vpuProcessingTime}
+            .messageStatuses=${this.messageStatuses}
+            .messageRetryCount=${this.messageRetryCount}
+            @send-message=${this._handleSendMessage}
+            @reset-text=${this._resetTextContext}
+            @scroll-state-changed=${this._handleChatScrollStateChanged}
+            @chat-active-changed=${this._handleChatActiveChanged}
+          >
+          </chat-view>
           ${
-						this.activeTab === "chat"
+						this.activeTab === "call-history"
 							? html`
-                <chat-view
-                  .transcript=${this.textTranscript}
-                  .visible=${this.activeMode !== "calling"}
-                  .thinkingStatus=${this.npuStatus}
-                  .thinkingText=${this.npuThinkingLog}
-                  .thinkingActive=${this.thinkingActive}
-                  .npuProcessingTime=${this.npuProcessingTime}
-                  .vpuProcessingTime=${this.vpuProcessingTime}
-                  .messageStatuses=${this.messageStatuses}
-                  .messageRetryCount=${this.messageRetryCount}
-                  @send-message=${this._handleSendMessage}
-                  @reset-text=${this._resetTextContext}
-                  @scroll-state-changed=${this._handleChatScrollStateChanged}
-                  @chat-active-changed=${this._handleChatActiveChanged}
-                >
-                </chat-view>
-              `
-							: this.activeTab === "call-history"
-								? html`
                 <call-history-view
                   .callHistory=${this.callHistory}
                   @start-tts-from-summary=${this._startTtsFromSummary}
                 >
                 </call-history-view>
               `
-								: html`
+							: this.activeTab === "memory"
+								? html`
                 <memory-view
                   .memoryService=${this.memoryService}
                   @vpu-debug-toggle=${this._handleVpuDebugToggle}
                   @npu-debug-toggle=${this._handleNpuDebugToggle}
                 ></memory-view>
               `
+								: ""
 					}
         </div>
 
