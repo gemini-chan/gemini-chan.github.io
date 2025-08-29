@@ -79,7 +79,7 @@
       const source = this.outputAudioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(this.outputNode);
-      source.addEventListener("ended", () => this.sources.delete(source));
+      source.addEventListener("ended", () => { this.sources.delete(source); this.onAudioEnded(); });
   
       source.start(this.nextStartTime);
       this.nextStartTime = this.nextStartTime + audioBuffer.duration;
@@ -190,6 +190,10 @@
     protected abstract getModel(): string;
     protected abstract getConfig(): Record<string, unknown>;
     protected abstract getSessionName(): string;
+
+    protected onAudioEnded(): void {
+      // Default implementation - can be overridden by subclasses
+    }
   
     private async _connect(handle: string | null): Promise<Error | null> {
       try {
@@ -439,6 +443,46 @@
       return fallbackPrompt ? `${basePrompt}\n\n${fallbackPrompt}` : basePrompt;
     }
   }
+
+  export class TextSessionManager extends BaseSessionManager {
+    private progressCb?: (event: Record<string, unknown>) => void;
+    private progressTurnId?: string | null = null;
+    
+    constructor(
+      outputAudioContext: AudioContext,
+      outputNode: GainNode,
+      client: GoogleGenAI,
+      updateStatus: (msg: string) => void,
+      updateError: (msg: string) => void,
+      onRateLimit: () => void,
+      private updateTranscript: (text: string) => void,
+      private onTurnComplete: () => void,
+      private personaManager: PersonaManager,
+      hostElement: HTMLElement,
+    ) {
+      super(
+        outputAudioContext,
+        outputNode,
+        client,
+        updateStatus,
+        updateError,
+        onRateLimit,
+        hostElement,
+      );
+    }
+
+    protected onAudioEnded(): void {
+      // When all audio has finished playing and we've received output, trigger completion
+      // Only if we haven't already completed via generationComplete event
+      if (this.sources.size === 0 && this.firstOutputReceived && this.progressCb) {
+        logger.debug("VPU fallback complete via audio end");
+        this.progressCb?.({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
+        // Clear progress callback and turn ID on completion
+        this.progressCb = undefined;
+        this.progressTurnId = null;
+        this.onTurnComplete();
+      }
+    }
   
   export class TextSessionManager extends BaseSessionManager {
     private progressCb?: (event: Record<string, unknown>) => void;
