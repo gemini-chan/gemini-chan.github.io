@@ -96,6 +96,8 @@ export class GdmLiveAudio extends LitElement {
   private readonly VPU_WATCHDOG_MS = 2200;
   private vpuHardMaxTimer: number | null = null;
   private readonly VPU_HARD_MAX_MS = 7000;
+  private lastEventType: string = '';
+  private vpuHardDeadline: number = 0;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
   private _npuFirstEventForced = new Set<string>();
@@ -1478,17 +1480,33 @@ this.updateTextTranscript(this.ttsCaption);
     }
   }
   
-  private _armVpuHardMaxTimer() {
-    // Clear any existing hard max timer
+  private _clearVpuHardMaxTimer() {
     if (this.vpuHardMaxTimer) {
       clearTimeout(this.vpuHardMaxTimer);
       this.vpuHardMaxTimer = null;
+      logger.debug("VPU hard max timer cleared", { 
+        turnId: this.turnState.id 
+      });
+      this.vpuHardDeadline = 0;
+    }
+  }
+  
+  private _armVpuHardMaxTimer() {
+    // Make timer one-shot
+    if (this.vpuHardMaxTimer) {
+      logger.debug('VPU hard max already armed', { 
+        turnId: this.turnState.id, 
+        deadline: this.vpuHardDeadline 
+      });
+      return;
     }
     
     // Set new hard max timer
     if (this.turnState.id) {
-      logger.debug("VPU hard max timer armed", { 
+      this.vpuHardDeadline = Date.now() + this.VPU_HARD_MAX_MS;
+      logger.debug("VPU hard max armed", { 
         turnId: this.turnState.id, 
+        deadline: new Date(this.vpuHardDeadline).toISOString(),
         timeoutMs: this.VPU_HARD_MAX_MS 
       });
       this.vpuHardMaxTimer = window.setTimeout(() => {
@@ -1499,6 +1517,7 @@ this.updateTextTranscript(this.ttsCaption);
           this.requestUpdate();
         }
         this.vpuHardMaxTimer = null;
+        this.vpuHardDeadline = 0;
       }, this.VPU_HARD_MAX_MS);
     }
   }
@@ -1667,6 +1686,10 @@ this.updateTextTranscript(this.ttsCaption);
 		// Schedule update for frame-based batching
 		this._scheduleUpdate();
 	}
+  
+  private _devThinkingLabel(): string {
+    return `${this.lastEventType || ''}${this.vpuHardDeadline ? ' • ETA ' + Math.max(0, this.vpuHardDeadline - Date.now()) + 'ms' : ''}`;
+  }
 
 	private async _handleSendMessage(e: CustomEvent) {
 		const message = e.detail;
@@ -1824,6 +1847,9 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
     
+    // Track last event type for dev display
+    this.lastEventType = ev.type;
+    
     // Handle VPU phase transitions
     if (ev.type === "vpu:message:sending" || 
         ev.type === "vpu:response:first-output" || 
@@ -1833,17 +1859,11 @@ this.updateTextTranscript(this.ttsCaption);
       this._resetVpuWatchdog();
     } else if (ev.type === "vpu:response:complete") {
       this._clearVpuWatchdog();
-      if (this.vpuHardMaxTimer) {
-        clearTimeout(this.vpuHardMaxTimer);
-        this.vpuHardMaxTimer = null;
-      }
+      this._clearVpuHardMaxTimer();
       this._setTurnPhase('complete');
     } else if (ev.type === "vpu:message:error") {
       this._clearVpuWatchdog();
-      if (this.vpuHardMaxTimer) {
-        clearTimeout(this.vpuHardMaxTimer);
-        this.vpuHardMaxTimer = null;
-      }
+      this._clearVpuHardMaxTimer();
       this._setTurnPhase('error');
     }
 		
@@ -2300,6 +2320,7 @@ this.updateTextTranscript(this.ttsCaption);
             .vpuProcessingTime=${this.vpuProcessingTime}
             .messageStatuses=${this.messageStatuses}
             .messageRetryCount=${this.messageRetryCount}
+            .devLabel=${(import.meta as any).env?.DEV ? this._devThinkingLabel() : ''}
             @send-message=${this._handleSendMessage}
             @reset-text=${this._resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}

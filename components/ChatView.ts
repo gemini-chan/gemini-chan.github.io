@@ -48,6 +48,9 @@ export class ChatView extends LitElement {
   @property({ type: Object })
   messageRetryCount: Record<string, number> = {};
   
+  @property({ type: String })
+  devLabel?: string;
+  
   // Helper getter to determine if thinking UI should be shown
   private get _showThinking(): boolean {
     return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText;
@@ -451,6 +454,12 @@ export class ChatView extends LitElement {
     .msg-status.double svg {
       animation: tick-pulse 800ms ease-in-out 2;
     }
+    
+    .dev-meta {
+      margin-left: 8px;
+      font-size: 11px;
+      opacity: 0.6;
+    }
   `;
 
   private _renderMessageStatus(id: string) {
@@ -750,6 +759,7 @@ private async _updateScrollToBottomState() {
         <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
           ${this.thinkingActive ? html`<div class="thinking-spinner"></div>` : ''}
           ${this._formatThinkingStatus()}
+          ${this.devLabel ? html`<span class="dev-meta">${this.devLabel}</span>` : ''}
         </span>
       </div>
       <div class="transcript-container">
