@@ -64,6 +64,8 @@ export class ChatView extends LitElement {
   
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;
+  private _transcriptEl: HTMLElement | null = null;
+  private _scrollHandler: () => void;
 
   private lastSeenMessageCount = 0;
   private textareaRef: HTMLTextAreaElement | null = null;
@@ -607,29 +609,33 @@ export class ChatView extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this._transcriptEl && this._scrollHandler) {
+      this._transcriptEl.removeEventListener("scroll", this._scrollHandler);
+    }
     log.debug("Component unmounted");
   }
 
   firstUpdated() {
     log.debug("Component first updated");
     // Add scroll event listener to update scroll-to-bottom button visibility
-    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-    if (transcriptEl) {
-      transcriptEl.addEventListener("scroll", () => {
+    this._transcriptEl = this.shadowRoot?.querySelector(".transcript") as HTMLElement;
+    if (this._transcriptEl) {
+      this._scrollHandler = () => {
         // Debounce scroll events to reduce UI churn
         if (this.scrollDebounceTimer) {
           clearTimeout(this.scrollDebounceTimer);
         }
         
         this.scrollDebounceTimer = window.setTimeout(() => {
-          const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
+          const isAtBottom = defaultAutoScroll.handleScrollEvent(this._transcriptEl as HTMLElement);
           if (isAtBottom) {
             this.lastSeenMessageCount = this.transcript.length;
           }
           this._updateScrollToBottomState();
           this.scrollDebounceTimer = null;
         }, 100); // Debounce for 100ms
-      });
+      };
+      this._transcriptEl.addEventListener("scroll", this._scrollHandler);
     }
 
     // Store reference to textarea for height management
@@ -650,8 +656,7 @@ export class ChatView extends LitElement {
     
     if (changedProperties.has("transcript")) {
       // Use generic auto-scroll utility
-      const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-      if (transcriptEl) {
+      if (this._transcriptEl) {
         const oldTranscript =
           (changedProperties.get("transcript") as Turn[]) || [];
         log.debug("Transcript updated", {
@@ -659,7 +664,7 @@ export class ChatView extends LitElement {
           newLength: this.transcript.length,
         });
         defaultAutoScroll.handleTranscriptUpdate(
-          transcriptEl,
+          this._transcriptEl,
           oldTranscript.length,
           this.transcript.length,
         );
@@ -675,10 +680,9 @@ export class ChatView extends LitElement {
         this.removeAttribute("hidden");
 
         // Use generic auto-scroll utility for visibility changes
-        const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-        if (transcriptEl) {
+        if (this._transcriptEl) {
           defaultAutoScroll.handleVisibilityChange(
-            transcriptEl,
+            this._transcriptEl,
             this.visible,
             this.transcript.length > 0,
           );
@@ -692,10 +696,9 @@ private async _updateScrollToBottomState() {
   // Await a microtask to allow the DOM to update before we measure it
   await new Promise(resolve => setTimeout(resolve, 0));
 
-  const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-  if (transcriptEl) {
+  if (this._transcriptEl) {
     const state = defaultAutoScroll.getScrollToBottomState(
-      transcriptEl,
+      this._transcriptEl,
       this.transcript.length,
       this.lastSeenMessageCount,
     );
@@ -734,9 +737,8 @@ private async _updateScrollToBottomState() {
 }
   private _scrollToBottom() {
     log.debug("Scrolling to bottom");
-    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-    if (transcriptEl) {
-      defaultAutoScroll.scrollToBottom(transcriptEl, true);
+    if (this._transcriptEl) {
+      defaultAutoScroll.scrollToBottom(this._transcriptEl, true);
       this.lastSeenMessageCount = this.transcript.length;
     }
   }
@@ -824,7 +826,7 @@ private async _updateScrollToBottomState() {
           placeholder="Type a message..."
           rows="1"
         ></textarea>
-        <button @click=${this._sendMessage}>
+        <button @click=${this._sendMessage} aria-label="Send Message">
             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z"/></svg>
         </button>
       </div>

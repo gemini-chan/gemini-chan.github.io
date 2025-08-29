@@ -1017,8 +1017,7 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 
 	private _checkApiKeyExists(): boolean {
-		const apiKey = localStorage.getItem("gemini-api-key");
-		return apiKey !== null && apiKey.trim() !== "";
+		return this.currentApiKey !== null && this.currentApiKey.trim() !== "";
 	}
 
 	private _getApiKeyPrompt(): string {
