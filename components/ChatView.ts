@@ -344,6 +344,9 @@ export class ChatView extends LitElement {
     .thinking {
       /* Container for thinking indicator - visibility controlled by .hidden class */
     }
+    .thinking.hidden {
+      display: none;
+    }
     .thinking-badge { 
       font-size: 12px; 
       padding: 2px 6px; 
@@ -380,9 +383,6 @@ export class ChatView extends LitElement {
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
-    }
-    .thinking.hidden {
-      display: none;
     }
 
     .transcript-container {
