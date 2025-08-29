@@ -162,33 +162,9 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 	
-	// Schedule update for frame-based batching with fallback
+	// Schedule immediate update without batching
 	private _scheduleUpdate() {
-		if (!this._updateScheduled) {
-			this._updateScheduled = true;
-			let updatePerformed = false;
-			
-			// Primary update via requestAnimationFrame
-			requestAnimationFrame(() => {
-				if (this._updateScheduled) {
-					this._updateScheduled = false;
-					updatePerformed = true;
-					logger.debug("UI rAF update");
-					this.requestUpdate();
-				}
-			});
-			
-			// Fallback timeout to ensure updates happen even when rAF is throttled
-			setTimeout(() => {
-				if (this._updateScheduled) {
-					this._updateScheduled = false;
-					if (!updatePerformed) {
-						logger.debug("UI timeout update");
-						this.requestUpdate();
-					}
-				}
-			}, 50); // 50ms fallback timeout
-		}
+		this.requestUpdate();
 	}
 
 	// Track current API key for smart change detection
