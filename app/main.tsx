@@ -1435,7 +1435,8 @@ this.updateTextTranscript(this.ttsCaption);
         break;
       case 'complete':
         this.thinkingActive = false;
-        this.npuStatus = "Done";
+        this.npuStatus = "";
+        this.npuSubStatus = "";
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
         // Clear dev state
