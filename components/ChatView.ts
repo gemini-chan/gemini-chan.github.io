@@ -51,10 +51,27 @@ export class ChatView extends LitElement {
   @property({ type: String })
   devLabel?: string;
   
+  @property({ type: String })
+  phase: 'idle'|'npu'|'vpu'|'complete'|'error' = 'idle';
+  
+  @property({ type: String })
+  lastEventType: string = '';
+  
+  @property({ type: Number })
+  hardDeadlineMs: number = 0;
+  
+  @property({ type: Number })
+  idleDeadlineMs?: number;
+  
   // Helper getter to determine if thinking UI should be shown
   private get _showThinking(): boolean {
     return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText;
   }
+  
+  // Private fields for badge engine
+  private _badgeTicker: number | null = null;
+  private _forcedComplete = false;
+  private _devRemainingMs = 0;
   
   
   // Debounce timer for scroll events
@@ -540,6 +557,11 @@ export class ChatView extends LitElement {
    
    // Format thinking status with processing times
    private _formatThinkingStatus(): string {
+     // If forced complete, show "Done"
+     if (this._forcedComplete) {
+       return "Done";
+     }
+     
      // If we have processing times and the status is "Done", show the times
      if (this.thinkingStatus === "Done" && (this.npuProcessingTime || this.vpuProcessingTime)) {
        const npuTime = this.npuProcessingTime ? `${(this.npuProcessingTime / 1000).toFixed(1)}s` : '';
@@ -605,6 +627,12 @@ export class ChatView extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     log.debug("Component unmounted");
+    
+    // Cleanup badge ticker
+    if (this._badgeTicker) {
+      clearInterval(this._badgeTicker);
+      this._badgeTicker = null;
+    }
   }
 
   firstUpdated() {
@@ -644,6 +672,52 @@ export class ChatView extends LitElement {
       isConnected: this.isConnected,
       visibilityState: document.visibilityState
     });
+    
+    // Handle badge ticker for VPU phase
+    if (changedProperties.has("phase") || changedProperties.has("hardDeadlineMs")) {
+      const oldPhase = changedProperties.get("phase") as string || 'idle';
+      
+      // Start ticker when entering VPU phase
+      if (this.phase === 'vpu' && oldPhase !== 'vpu' && !this._badgeTicker && this.hardDeadlineMs > 0) {
+        this._badgeTicker = window.setInterval(() => {
+          const now = Date.now();
+          this._devRemainingMs = Math.max(0, this.hardDeadlineMs - now);
+          
+          // Check if deadline has been reached
+          if (now >= this.hardDeadlineMs) {
+            this._forcedComplete = true;
+            // Dispatch event to notify parent
+            this.dispatchEvent(new CustomEvent('thinking-forced-complete-ui', {
+              bubbles: true,
+              composed: true,
+              detail: {
+                reason: 'hard-deadline',
+                turnId: (this as any).currentTurnId ?? ''
+              }
+            }));
+            
+            // Clear the ticker
+            if (this._badgeTicker) {
+              clearInterval(this._badgeTicker);
+              this._badgeTicker = null;
+            }
+          }
+          
+          this.requestUpdate();
+        }, 250);
+      }
+      
+      // Stop ticker when leaving VPU phase or clearing deadline
+      if ((oldPhase === 'vpu' && this.phase !== 'vpu') || 
+          (this.hardDeadlineMs === 0 && changedProperties.get("hardDeadlineMs") !== 0)) {
+        if (this._badgeTicker) {
+          clearInterval(this._badgeTicker);
+          this._badgeTicker = null;
+        }
+        this._devRemainingMs = 0;
+        this._forcedComplete = false;
+      }
+    }
     
     if (changedProperties.has("transcript")) {
       // Use generic auto-scroll utility
@@ -757,7 +831,7 @@ private async _updateScrollToBottomState() {
       </div>
       <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
         <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
-          ${this.thinkingActive ? html`<div class="thinking-spinner"></div>` : ''}
+          ${this._forcedComplete ? false : (this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
           ${this._formatThinkingStatus()}
           ${this.devLabel ? html`<span class="dev-meta">${this.devLabel}</span>` : ''}
         </span>

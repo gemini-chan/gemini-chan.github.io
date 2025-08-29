@@ -107,6 +107,7 @@ export class GdmLiveAudio extends LitElement {
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
   private vpuDevTicker: number | null = null;
   private devRemainingMs: number = 0;
+  private _devRafId: number | null = null;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -1747,6 +1748,43 @@ this.updateTextTranscript(this.ttsCaption);
     return `${this.lastEventType || ''}${this.vpuHardDeadline ? ' • ETA ' + Math.max(0, this.devRemainingMs) + 'ms' : ''}`;
   }
 
+  private _armDevRaf() {
+    // Only run in development mode
+    if (!(import.meta as any).env?.DEV) return;
+    
+    const loop = () => {
+      // Only check if we're in VPU phase
+      if (this.turnState.phase === 'vpu' && this.vpuHardDeadline > 0) {
+        const now = Date.now();
+        if (now >= this.vpuHardDeadline) {
+          logger.debug('DEV RAF: Forcing turn completion due to hard deadline');
+          this._setTurnPhase('complete');
+          this.requestUpdate();
+        }
+      }
+      
+      // Keep the loop running in dev for visibility
+      this._devRafId = requestAnimationFrame(loop);
+    };
+    
+    // Start the loop if not already running
+    if (!this._devRafId) {
+      this._devRafId = requestAnimationFrame(loop);
+    }
+  }
+
+  private _handleThinkingForcedComplete(e: CustomEvent) {
+    const { reason, turnId } = e.detail;
+    logger.debug('Received thinking-forced-complete-ui event', { reason, turnId });
+    
+    // Only process if this is for the current turn
+    if (turnId === this.turnState.id) {
+      logger.debug('Forcing turn completion from UI event');
+      this._setTurnPhase('complete');
+      this.requestUpdate();
+    }
+  }
+
 	private async _handleSendMessage(e: CustomEvent) {
 		const message = e.detail;
 		if (!message || !message.trim()) {
@@ -2380,10 +2418,14 @@ this.updateTextTranscript(this.ttsCaption);
             .messageStatuses=${this.messageStatuses}
             .messageRetryCount=${this.messageRetryCount}
             .devLabel=${(import.meta as any).env?.DEV ? this._devThinkingLabel() : ''}
+            .phase=${this.turnState.phase}
+            .lastEventType=${this.lastEventType}
+            .hardDeadlineMs=${this.vpuHardDeadline}
             @send-message=${this._handleSendMessage}
             @reset-text=${this._resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}
             @chat-active-changed=${this._handleChatActiveChanged}
+            @thinking-forced-complete-ui=${this._handleThinkingForcedComplete}
           >
           </chat-view>
           ${
