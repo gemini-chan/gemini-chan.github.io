@@ -448,6 +448,7 @@
   export class TextSessionManager extends BaseSessionManager {
     private progressCb?: (event: Record<string, unknown>) => void;
     private progressTurnId?: string | null = null;
+    private transcriptionIdleTimer: number | null = null;
     
     constructor(
       outputAudioContext: AudioContext,
@@ -510,6 +511,14 @@
           
           // Emit progress event for first output transcription
           if (message.serverContent?.outputTranscription?.text) {
+            // Reset idle timer on each transcription chunk
+            if (this.transcriptionIdleTimer) {
+              window.clearTimeout(this.transcriptionIdleTimer);
+            }
+            this.transcriptionIdleTimer = window.setTimeout(() => {
+              this._completeTurn("transcription idle");
+            }, 1200); // 1.2s idle timeout
+
             this.progressCb?.({ type: "vpu:response:transcription", ts: Date.now(), data: { text: message.serverContent.outputTranscription.text, turnId: this.progressTurnId } });
             this.updateTranscript(message.serverContent.outputTranscription.text);
           }
@@ -518,16 +527,25 @@
           const extendedMessage = message as ExtendedLiveServerMessage;
           const genComplete = extendedMessage.serverContent?.generationComplete;
           if (genComplete) {
-            this.progressCb?.({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
-            // Clear progress callback and turn ID on completion
-            this.progressCb = undefined;
-            this.progressTurnId = null;
-            this.onTurnComplete();
+            this._completeTurn("generationComplete");
           }
         },
       };
     }
   
+    private _completeTurn(reason: string): void {
+      if (this.progressCb) {
+        logger.debug(`VPU turn complete via ${reason}`);
+        this.progressCb({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
+        this.progressCb = undefined;
+        this.progressTurnId = null;
+        this.onTurnComplete();
+        if (this.transcriptionIdleTimer) {
+          window.clearTimeout(this.transcriptionIdleTimer);
+          this.transcriptionIdleTimer = null;
+        }
+      }
+    }
   
     protected getModel(): string {
       // Align text session with energy levels (TTS); if exhausted (level 0), refuse to provide a model
@@ -562,12 +580,9 @@
     }
     
     protected override onAudioEnded(): void {
+      // Guard against audio-end firing after completion
       if (this.sources.size === 0 && this.firstOutputReceived && this.progressCb) {
-        logger.debug("VPU fallback complete via audio end");
-        this.progressCb?.({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
-        this.progressCb = undefined;
-        this.progressTurnId = null;
-        this.onTurnComplete();
+        this._completeTurn("audio end");
       }
     }
     

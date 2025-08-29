@@ -1870,7 +1870,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// Log the event for debugging only if not a transcription chunk or in debug mode
 		if (ev.type !== 'vpu:response:transcription' || this.vpuDebugMode) {
-			logger.debug("VPU Progress Event", ev);
+			logger.debug("VPU Progress Event", { isRetry, ...ev });
 		}
 
 		// Handle fallback timer for "Waiting for response..."
