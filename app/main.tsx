@@ -1935,7 +1935,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// Map event to status string using switch statement
 		switch (ev.type) {
 			case "vpu:message:sending":
-				return isRetry ? "Sending to VPU (retry)…" : "Sending to VPU…";
+				return "";
 			case "vpu:message:error":
 				if (ev.data?.error) {
 					return `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
