@@ -1440,7 +1440,6 @@ this.updateTextTranscript(this.ttsCaption);
         this._clearVpuDevTicker();
         // Clear dev state
         this.vpuHardDeadline = 0;
-        this.lastEventType = '';
         break;
       case 'error':
         this.thinkingActive = false;
@@ -1451,7 +1450,6 @@ this.updateTextTranscript(this.ttsCaption);
         this._clearVpuDevTicker();
         // Clear dev state
         this.vpuHardDeadline = 0;
-        this.lastEventType = '';
         break;
       case 'idle':
         this.thinkingActive = false;
@@ -1460,7 +1458,6 @@ this.updateTextTranscript(this.ttsCaption);
         this._clearVpuDevTicker();
         // Clear dev state
         this.vpuHardDeadline = 0;
-        this.lastEventType = '';
         break;
     }
     
