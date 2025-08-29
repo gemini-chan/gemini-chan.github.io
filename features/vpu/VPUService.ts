@@ -444,45 +444,6 @@
     }
   }
 
-  export class TextSessionManager extends BaseSessionManager {
-    private progressCb?: (event: Record<string, unknown>) => void;
-    private progressTurnId?: string | null = null;
-    
-    constructor(
-      outputAudioContext: AudioContext,
-      outputNode: GainNode,
-      client: GoogleGenAI,
-      updateStatus: (msg: string) => void,
-      updateError: (msg: string) => void,
-      onRateLimit: () => void,
-      private updateTranscript: (text: string) => void,
-      private onTurnComplete: () => void,
-      private personaManager: PersonaManager,
-      hostElement: HTMLElement,
-    ) {
-      super(
-        outputAudioContext,
-        outputNode,
-        client,
-        updateStatus,
-        updateError,
-        onRateLimit,
-        hostElement,
-      );
-    }
-
-    protected onAudioEnded(): void {
-      // When all audio has finished playing and we've received output, trigger completion
-      // Only if we haven't already completed via generationComplete event
-      if (this.sources.size === 0 && this.firstOutputReceived && this.progressCb) {
-        logger.debug("VPU fallback complete via audio end");
-        this.progressCb?.({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
-        // Clear progress callback and turn ID on completion
-        this.progressCb = undefined;
-        this.progressTurnId = null;
-        this.onTurnComplete();
-      }
-    }
   
   export class TextSessionManager extends BaseSessionManager {
     private progressCb?: (event: Record<string, unknown>) => void;
@@ -599,6 +560,17 @@
     protected getSessionName(): string {
       return "Text session";
     }
+    
+    protected override onAudioEnded(): void {
+      if (this.sources.size === 0 && this.firstOutputReceived && this.progressCb) {
+        logger.debug("VPU fallback complete via audio end");
+        this.progressCb?.({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
+        this.progressCb = undefined;
+        this.progressTurnId = null;
+        this.onTurnComplete();
+      }
+    }
+    
     public override reconnectSession(): Promise<void> {
       // Do nothing. Reconnect is disabled for TTS sessions.
       return Promise.resolve();
