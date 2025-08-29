@@ -439,6 +439,7 @@
 
   
   export class TextSessionManager extends BaseSessionManager {
+    private readonly TRANSCRIPTION_IDLE_TIMEOUT_MS = 1200;
     private progressCb?: (event: Record<string, unknown>) => void;
     private progressTurnId?: string | null = null;
     private transcriptionIdleTimer: number | null = null;
@@ -511,7 +512,7 @@
             this.transcriptionIdleTimer = window.setTimeout(() => {
               logger.debug('VPU completion: transcription idle fallback');
               this._completeTurn("transcription idle");
-            }, 1200); // 1.2s idle timeout
+            }, this.TRANSCRIPTION_IDLE_TIMEOUT_MS); // 1.2s idle timeout
 
             this.progressCb?.({ type: "vpu:response:transcription", ts: Date.now(), data: { text: message.serverContent.outputTranscription.text, turnId: this.progressTurnId } });
             this.updateTranscript(message.serverContent.outputTranscription.text);
