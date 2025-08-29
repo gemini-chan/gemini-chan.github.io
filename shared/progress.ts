@@ -49,8 +49,8 @@ export const EVENT_STATUS_MAP: Record<NpuEventType | VpuEventType, string> = {
   "npu:model:error": "NPU error",
   "vpu:message:sending": "Sending to VPU…",
   "vpu:message:error": "VPU error",
-  "vpu:response:first-output": "Receiving response from VPU…",
-  "vpu:response:transcription": "Receiving response from VPU…",
+  "vpu:response:first-output": "Speaking…",
+  "vpu:response:transcription": "Speaking…",
   "vpu:response:complete": "Done"
 };
 
