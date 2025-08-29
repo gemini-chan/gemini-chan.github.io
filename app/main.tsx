@@ -364,9 +364,8 @@ export class GdmLiveAudio extends LitElement {
 	constructor() {
 		super();
 		this.personaManager = new PersonaManager();
-		// MemoryService will be initialized after the GoogleGenAI client is created
-		
-		this.initClient();
+		// MemoryService will be initialized after the GoogleGenAI client is created.
+		// Client initialization is deferred to connectedCallback to avoid Lit update warnings.
 
 		// Debug: Check initial TTS energy state
 		logger.debug("Initial TTS energy state", {
@@ -1666,7 +1665,7 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "npu:model:attempt":
-				this.npuStatus = "Calling NPU…";
+				this.npuStatus = "Thinking…";
 				this.thinkingActive = true;
 				if (ev.data?.attempt) {
 					// Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
@@ -2107,12 +2106,16 @@ this.updateTextTranscript(this.ttsCaption);
 
 
 	connectedCallback() {
+		super.connectedCallback();
+
+		// Initialize the GenAI client and session managers
+		this.initClient();
+
 		// Subscribe to energy level changes to surface persona-specific prompts
 		energyBarService.addEventListener(
 			"energy-level-changed",
 			this._onEnergyLevelChanged as EventListener,
 		);
-		super.connectedCallback();
 		window.addEventListener(
 			"persona-changed",
 			this._handlePersonaChanged.bind(this),

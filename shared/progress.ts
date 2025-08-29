@@ -35,23 +35,23 @@ export type VpuProgressEvent = BaseProgressEvent & {
 
 // Centralized mapping from events to status strings
 export const EVENT_STATUS_MAP: Record<NpuEventType | VpuEventType, string> = {
-  "npu:start": "Thinking…",
-  "npu:memories:start": "Searching memory…",
-  "npu:memories:done": "Memory search complete",
-  "npu:prompt:build": "Building prompt…",
-  "npu:prompt:built": "Prompt built",
-  "npu:model:start": "Preparing NPU…",
-  "npu:model:attempt": "Generating response…",
-  "npu:advisor:ready": "NPU Ready",
-  "npu:complete": "NPU complete",
-  "npu:prompt:partial": "Building prompt…",
-  "npu:model:response": "NPU ready",
-  "npu:model:error": "NPU error",
-  "vpu:message:sending": "Sending to VPU…",
-  "vpu:message:error": "VPU error",
-  "vpu:response:first-output": "Speaking…",
-  "vpu:response:transcription": "Speaking…",
-  "vpu:response:complete": "Done"
+  "npu:start": "Thinking… ✨",
+  "npu:memories:start": "Remembering…",
+  "npu:memories:done": "Remembered!",
+  "npu:prompt:build": "Choosing my words…",
+  "npu:prompt:built": "Hmm, what to say…",
+  "npu:model:start": "Warming up my magic…",
+  "npu:model:attempt": "Weaving a reply…",
+  "npu:advisor:ready": "I've got a thought! ✨",
+  "npu:complete": "Thinking complete!",
+  "npu:prompt:partial": "Choosing my words…", // Re-using for partial state
+  "npu:model:response": "Got it! ✨",
+  "npu:model:error": "A little hiccup…",
+  "vpu:message:sending": "Here it comes…",
+  "vpu:message:error": "My voice stumbled…",
+  "vpu:response:first-output": "Speaking… 🎙️",
+  "vpu:response:transcription": "Speaking… 🎙️",
+  "vpu:response:complete": "And that's that! ✨"
 };
 
 // Active states that should show a spinner
