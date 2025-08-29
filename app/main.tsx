@@ -63,8 +63,7 @@ import type {
   VpuProgressEvent
 } from "@shared/progress";
 import {
-  EVENT_STATUS_MAP,
-  ACTIVE_STATES
+  EVENT_STATUS_MAP
 } from "@shared/progress";
 
 @customElement("gdm-live-audio")
@@ -1606,8 +1605,8 @@ this.updateTextTranscript(this.ttsCaption);
 		}
     
     // Determine the correct phase based on event type
-    let phase: 'npu' | 'error' | null = null;
-    let eventType = ev.type as string;
+    let phase: 'npu' | 'error' | 'complete' | null = null;
+    const eventType = ev.type as string;
     
     // Map event to phase
     if (eventType === "npu:model:error") {
