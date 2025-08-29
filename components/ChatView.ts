@@ -450,7 +450,7 @@ export class ChatView extends LitElement {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
     
-    .msg-status svg {
+    .msg-status .status-icon {
       transition: transform 120ms ease, opacity 120ms ease;
     }
     
@@ -464,11 +464,11 @@ export class ChatView extends LitElement {
       50% { transform: scale(1.12); }
     }
     
-    .msg-status.single svg {
+    .msg-status.single .status-icon {
       animation: tick-pop 160ms ease;
     }
     
-    .msg-status.double svg {
+    .msg-status.double .status-icon {
       animation: tick-pulse 800ms ease-in-out 2;
     }
     
@@ -518,12 +518,12 @@ export class ChatView extends LitElement {
       aria-label="${ariaLabel}"
       @click=${(e: Event) => e.stopPropagation()}>
         ${status === 'clock' 
-          ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Zm-40-280h80v-200h-80v200Z"/></svg>`
+          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/clock.svg" class="status-icon" height="14px" alt="Analyzing">`
           : status === 'single'
-          ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`
+          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/tick.svg" class="status-icon" height="14px" alt="Sent to NPU">`
           : status === 'double'
-          ? html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`
-          : html`<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-200h-80v200Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>`}
+          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/double-tick.svg" class="status-icon" height="14px" alt="Advisor responded">`
+          : html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/error.svg" class="status-icon" height="14px" alt="Error">`}
         ${retryCount && retryCount > 0 
           ? html`<span class="retry-badge" title="Retrying… (x${retryCount})" aria-label="Retry count: ${retryCount}">×</span>`
           : ''}

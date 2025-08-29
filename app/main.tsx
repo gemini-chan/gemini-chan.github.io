@@ -55,6 +55,15 @@ interface ExtendedLiveServerMessage extends LiveServerMessage {
 
 type ActiveMode = "texting" | "calling" | null;
 
+// Define type aliases for turn state
+type TurnPhase = 'idle' | 'npu' | 'vpu' | 'complete' | 'error';
+interface TurnState { 
+  id: string | null; 
+  phase: TurnPhase; 
+  startedAt: number; 
+  lastUpdateAt: number; 
+}
+
 const logger = createComponentLogger("GdmLiveAudio");
 
 // Import progress event types and mappings
@@ -86,7 +95,7 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuSubStatus: string = "";
   @state() private thinkingActive = false;
   @state() private currentTurnId: string | null = null;
-  @state() private turnState: { id: string | null; phase: 'idle'|'npu'|'vpu'|'complete'|'error'; startedAt: number; lastUpdateAt: number } = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
+  @state() private turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private vpuWatchdogTimer: number | null = null;
   private readonly VPU_WATCHDOG_MS = 2200;
   private vpuHardMaxTimer: number | null = null;
@@ -99,6 +108,10 @@ export class GdmLiveAudio extends LitElement {
   private vpuDevTicker: number | null = null;
   private devRemainingMs: number = 0;
   private _devRafId: number | null = null;
+  
+  // Named constants for timeouts
+  private readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
+  private readonly ERROR_TO_IDLE_DELAY_MS = 2500;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -1450,7 +1463,7 @@ this.updateTextTranscript(this.ttsCaption);
           if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'complete') {
             this._setTurnPhase('idle');
           }
-        }, 1500);
+        }, this.COMPLETE_TO_IDLE_DELAY_MS);
         break;
       case 'error':
         this.thinkingActive = false;
@@ -1466,7 +1479,7 @@ this.updateTextTranscript(this.ttsCaption);
           if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'error') {
             this._setTurnPhase('idle');
           }
-        }, 2500);
+        }, this.ERROR_TO_IDLE_DELAY_MS);
         break;
       case 'idle':
         this.thinkingActive = false;
