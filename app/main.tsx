@@ -2418,9 +2418,7 @@ this.updateTextTranscript(this.ttsCaption);
             .vpuProcessingTime=${this.vpuProcessingTime}
             .messageStatuses=${this.messageStatuses}
             .messageRetryCount=${this.messageRetryCount}
-            .devLabel=${import.meta.env.DEV ? this._devThinkingLabel() : ''}
             .phase=${this.turnState.phase}
-            .lastEventType=${this.lastEventType}
             .hardDeadlineMs=${this.vpuHardDeadline}
             .turnId=${this.turnState.id || ''}
             @send-message=${this._handleSendMessage}
