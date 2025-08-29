@@ -1239,6 +1239,38 @@ this.updateTextTranscript(this.ttsCaption);
 		this.callHistory = [newSummary, ...this.callHistory];
 	}
 
+	private _initializeNewTurn(message: string): string {
+		// Generate turn ID before appending user message
+		const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
+		
+		// Add message to text transcript with turnId
+		this.textTranscript = [
+			...this.textTranscript,
+			{ text: message, speaker: "user", turnId }
+		];
+
+		// Initialize status to clock (analyzing)
+		this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
+
+		// Prune message metadata maps
+		this._pruneMessageMeta();
+
+		// Set initial thinking state BEFORE any awaits
+		this.npuThinkingLog = "";
+		this.npuStatus = "Thinking…";
+		this.thinkingActive = true;
+		
+		// Initialize turn state machine
+		this.turnState = {
+			id: turnId,
+			phase: 'npu',
+			startedAt: Date.now(),
+			lastUpdateAt: Date.now()
+		};
+		
+		return turnId;
+	}
+
 	private async _startTtsFromSummary(e: CustomEvent) {
 		const summary = e.detail.summary as CallSummary;
 		const message = `Tell me more about our call regarding "${summary.summary}"`;
@@ -1259,38 +1291,13 @@ this.updateTextTranscript(this.ttsCaption);
 		// ensures we start with a fresh session.
 		this._resetTextContext();
 
-    // Generate turn ID before appending user message
-    const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
-    
-    // Add the summary prompt as the first "user" message in the new conversation with turnId
-    this.textTranscript = [
-      ...this.textTranscript,
-      { text: message, speaker: "user", turnId }
-    ];
-    
-    // Initialize status to clock (analyzing)
-    this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
-    
-    // Prune message metadata maps
-    this._pruneMessageMeta();
-    
-    // Set initial thinking state BEFORE any awaits
-    this.npuThinkingLog = "";
-    this.npuStatus = "Thinking…";
-    this.thinkingActive = true;
-    
-    // Initialize turn state machine
-    this.turnState = {
-      id: turnId,
-      phase: 'npu',
-      startedAt: Date.now(),
-      lastUpdateAt: Date.now()
-    };
-    
-    this.requestUpdate();
-    await this.updateComplete;
-    
-    logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
+		// Initialize new turn and get turnId
+		const turnId = this._initializeNewTurn(message);
+		
+		this.requestUpdate();
+		await this.updateComplete;
+		
+		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
@@ -1308,17 +1315,17 @@ this.updateTextTranscript(this.ttsCaption);
 		this.lastAdvisorContext = "";
 		const personaId = this.personaManager.getActivePersona().id;
 		/* conversationContext removed: memory now stores facts only */
-    // Set current turn ID to ensure only this turn drives the Thinking UI
-    this.currentTurnId = turnId;
-    const intention = await this.npuService.analyzeAndAdvise(
-      message,
-      personaId,
-      this.textTranscript,
-      undefined,
-      undefined,
-      turnId,
-      (ev: NpuProgressEvent) => this._handleNpuProgress(ev, turnId)
-    );
+		// Set current turn ID to ensure only this turn drives the Thinking UI
+		this.currentTurnId = turnId;
+		const intention = await this.npuService.analyzeAndAdvise(
+			message,
+			personaId,
+			this.textTranscript,
+			undefined,
+			undefined,
+			turnId,
+			(ev: NpuProgressEvent) => this._handleNpuProgress(ev, turnId)
+		);
 		// Removed usage of intention.emotion as it's no longer part of the interface
 		this.lastAdvisorContext = intention?.advisor_context || "";
 
@@ -1789,34 +1796,9 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
 
-		// Generate turn ID before appending user message
-		const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
-
-		// Add message to text transcript with turnId
-		this.textTranscript = [
-			...this.textTranscript,
-			{ text: message, speaker: "user", turnId }
-		];
-
-		// Initialize status to clock (analyzing)
-		this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
-
-		// Prune message metadata maps
-		this._pruneMessageMeta();
-
-		// Set initial thinking state BEFORE any awaits
-		this.npuThinkingLog = "";
-		this.npuStatus = "Thinking…";
-		this.thinkingActive = true;
-    
-    // Initialize turn state machine
-    this.turnState = {
-      id: turnId,
-      phase: 'npu',
-      startedAt: Date.now(),
-      lastUpdateAt: Date.now()
-    };
-    
+		// Initialize new turn and get turnId
+		const turnId = this._initializeNewTurn(message);
+		
 		// Flush synchronously
 		this.requestUpdate();
 		await this.updateComplete;
