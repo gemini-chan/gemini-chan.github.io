@@ -1599,8 +1599,11 @@ this.updateTextTranscript(this.ttsCaption);
 		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
 			return;
 		}
-		// Ignore events for other turns
-		if (this.currentTurnId && ev.data?.turnId && this.currentTurnId !== ev.data.turnId) {
+		// Ignore events for other turns - with type safety check
+		if (this.currentTurnId && 
+			ev.data?.turnId && 
+			typeof ev.data.turnId === 'string' && 
+			this.currentTurnId !== ev.data.turnId) {
 			return;
 		}
     
@@ -1611,8 +1614,6 @@ this.updateTextTranscript(this.ttsCaption);
     // Map event to phase
     if (eventType === "npu:model:error") {
       phase = 'error';
-    } else if (eventType === "npu:complete") {
-      phase = 'complete';
     } else if ([
       "npu:start",
       "npu:memories:start",
@@ -1929,8 +1930,12 @@ this.updateTextTranscript(this.ttsCaption);
 		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
 			return;
 		}
-		// Ignore events for other turns
-		if (this.currentTurnId && turnId && ev.data?.turnId && this.currentTurnId !== (ev.data.turnId as string)) {
+		// Ignore events for other turns - with type safety check
+		if (this.currentTurnId && 
+			turnId && 
+			ev.data?.turnId && 
+			typeof ev.data.turnId === 'string' && 
+			this.currentTurnId !== ev.data.turnId) {
 			return;
 		}
     
