@@ -63,6 +63,9 @@ export class ChatView extends LitElement {
   @property({ type: Number })
   idleDeadlineMs?: number;
   
+  @property({ type: String })
+  turnId: string = '';
+  
   // Helper getter to determine if thinking UI should be shown
   private get _showThinking(): boolean {
     return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText;
@@ -692,7 +695,7 @@ export class ChatView extends LitElement {
               composed: true,
               detail: {
                 reason: 'hard-deadline',
-                turnId: (this as any).currentTurnId ?? ''
+                turnId: this.turnId
               }
             }));
             
@@ -831,9 +834,9 @@ private async _updateScrollToBottomState() {
       </div>
       <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
         <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
-          ${this._forcedComplete ? false : (this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
+          ${(!this._forcedComplete && (this.phase === 'npu' || this.phase === 'vpu')) ? html`<div class="thinking-spinner"></div>` : ''}
           ${this._formatThinkingStatus()}
-          ${this.devLabel ? html`<span class="dev-meta">${this.devLabel}</span>` : ''}
+          ${(!this._forcedComplete && this.devLabel) ? html`<span class="dev-meta">${this.devLabel}</span>` : ''}
         </span>
       </div>
       <div class="transcript-container">

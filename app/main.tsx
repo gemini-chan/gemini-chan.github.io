@@ -1441,6 +1441,9 @@ this.updateTextTranscript(this.ttsCaption);
         this.npuStatus = "Done";
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
+        // Clear dev state
+        this.vpuHardDeadline = 0;
+        this.lastEventType = '';
         break;
       case 'error':
         this.thinkingActive = false;
@@ -1449,12 +1452,18 @@ this.updateTextTranscript(this.ttsCaption);
         }
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
+        // Clear dev state
+        this.vpuHardDeadline = 0;
+        this.lastEventType = '';
         break;
       case 'idle':
         this.thinkingActive = false;
         this.npuStatus = "";
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
+        // Clear dev state
+        this.vpuHardDeadline = 0;
+        this.lastEventType = '';
         break;
     }
     
@@ -1777,10 +1786,13 @@ this.updateTextTranscript(this.ttsCaption);
     const { reason, turnId } = e.detail;
     logger.debug('Received thinking-forced-complete-ui event', { reason, turnId });
     
-    // Only process if this is for the current turn
-    if (turnId === this.turnState.id) {
+    // Process completion even if turnId is missing or mismatched (trust the UI)
+    if (!turnId || turnId === this.turnState.id) {
       logger.debug('Forcing turn completion from UI event');
       this._setTurnPhase('complete');
+      // Clear dev state
+      this.vpuHardDeadline = 0;
+      this.lastEventType = '';
       this.requestUpdate();
     }
   }
@@ -2430,6 +2442,7 @@ this.updateTextTranscript(this.ttsCaption);
             .phase=${this.turnState.phase}
             .lastEventType=${this.lastEventType}
             .hardDeadlineMs=${this.vpuHardDeadline}
+            .turnId=${this.turnState.id || ''}
             @send-message=${this._handleSendMessage}
             @reset-text=${this._resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}
