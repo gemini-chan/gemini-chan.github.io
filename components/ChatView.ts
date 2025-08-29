@@ -631,17 +631,18 @@ export class ChatView extends LitElement {
     }
 
     if (changedProperties.has("visible")) {
-      this.removeAttribute("hidden");
+      if (this.visible) {
+        this.removeAttribute("hidden");
+      } else {
+        this.setAttribute("hidden", "");
+      }
 
-      // Use generic auto-scroll utility for visibility changes
       if (this._transcriptEl) {
         defaultAutoScroll.handleVisibilityChange(
           this._transcriptEl,
           this.visible,
           this.transcript.length > 0,
         );
-      } else {
-        this.setAttribute("hidden", "");
       }
     }
   }
