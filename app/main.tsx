@@ -1434,12 +1434,19 @@ this.updateTextTranscript(this.ttsCaption);
         break;
       case 'complete':
         this.thinkingActive = false;
-        this.npuStatus = "";
+        this.npuStatus = "Done";
         this.npuSubStatus = "";
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
         // Clear dev state
         this.vpuHardDeadline = 0;
+        
+        // Set timeout to transition to idle after 1500ms
+        setTimeout(() => {
+          if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'complete') {
+            this._setTurnPhase('idle');
+          }
+        }, 1500);
         break;
       case 'error':
         this.thinkingActive = false;
@@ -1450,10 +1457,18 @@ this.updateTextTranscript(this.ttsCaption);
         this._clearVpuDevTicker();
         // Clear dev state
         this.vpuHardDeadline = 0;
+        
+        // Set timeout to transition to idle after 2500ms
+        setTimeout(() => {
+          if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'error') {
+            this._setTurnPhase('idle');
+          }
+        }, 2500);
         break;
       case 'idle':
         this.thinkingActive = false;
         this.npuStatus = "";
+        this.npuThinkingLog = ""; // Clear thinking log text
         this.devRemainingMs = 0;
         this._clearVpuDevTicker();
         // Clear dev state
@@ -1603,10 +1618,6 @@ this.updateTextTranscript(this.ttsCaption);
       this._setTurnPhase('npu', ev.type as string);
     }
     
-    // Handle completion
-    if (ev.type === "npu:complete") {
-      this._setTurnPhase('complete');
-    }
 
 		// Force immediate update on first NPU event for this turn
 		const eventTurnId = (ev.data?.turnId as string) || this.currentTurnId;
