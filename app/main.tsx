@@ -2187,20 +2187,17 @@ this.updateTextTranscript(this.ttsCaption);
 		);
 		
 		// Filter messageStatuses and messageRetryCount to only include current turn IDs
-		const prunedStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
-		const prunedRetryCount: Record<string, number> = {};
+		this.messageStatuses = Object.fromEntries(
+			Object.entries(this.messageStatuses).filter(([turnId]) => 
+				currentUserTurnIds.has(turnId)
+			)
+		);
 		
-		for (const turnId of currentUserTurnIds) {
-			if (turnId && this.messageStatuses[turnId]) {
-				prunedStatuses[turnId] = this.messageStatuses[turnId];
-			}
-			if (turnId && this.messageRetryCount[turnId] !== undefined) {
-				prunedRetryCount[turnId] = this.messageRetryCount[turnId];
-			}
-		}
-		
-		this.messageStatuses = prunedStatuses;
-		this.messageRetryCount = prunedRetryCount;
+		this.messageRetryCount = Object.fromEntries(
+			Object.entries(this.messageRetryCount).filter(([turnId]) => 
+				currentUserTurnIds.has(turnId)
+			)
+		);
 	}
 	
 	private startEmotionAnalysis() {
