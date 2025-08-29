@@ -1328,9 +1328,11 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
-		this.textSessionManager.sendMessageWithProgress(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
-			this._handleVpuProgress(ev, turnId);
-		});
+		this.textSessionManager.sendMessageWithProgress(
+			this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+			turnId, 
+			(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId)
+		);
 	}
 
 	private _scrollCallTranscriptToBottom() {
@@ -1847,9 +1849,11 @@ this.updateTextTranscript(this.ttsCaption);
 				// Note: We don't set npuStatus here anymore as it's handled by the advisor:ready event
 				// this.npuStatus = "Sending to VPU…";
 
-				this.textSessionManager.sendMessageWithProgress(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
-					this._handleVpuProgress(ev, turnId, false);
-				});
+				this.textSessionManager.sendMessageWithProgress(
+					this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+					turnId, 
+					(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, false)
+				);
 			} catch (error) {
 				logger.error("Error sending message to text session (unified flow):", {
 					error,
@@ -1879,9 +1883,11 @@ this.updateTextTranscript(this.ttsCaption);
 						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
-						this.textSessionManager.sendMessageWithProgress(`${intention?.advisor_context ? intention.advisor_context + "\n\n" : ""}${message}`, turnId, (ev: VpuProgressEvent) => {
-							this._handleVpuProgress(ev, turnId, true);
-						});
+						this.textSessionManager.sendMessageWithProgress(
+							this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+							turnId, 
+							(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, true)
+						);
 					} catch (retryError) {
 						logger.error("Failed to send message on retry:", { retryError });
 						this.updateError(
