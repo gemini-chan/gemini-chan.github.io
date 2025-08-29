@@ -1428,11 +1428,7 @@ this.updateTextTranscript(this.ttsCaption);
     switch (phase) {
       case 'npu':
         this.thinkingActive = true;
-        if (eventType && EVENT_STATUS_MAP[eventType]) {
-          this.npuStatus = EVENT_STATUS_MAP[eventType];
-        } else {
-          this.npuStatus = "Thinking…";
-        }
+        this.npuStatus = EVENT_STATUS_MAP[eventType] || 'Thinking...';
         break;
       case 'vpu':
         this.thinkingActive = true;
@@ -1616,6 +1612,8 @@ this.updateTextTranscript(this.ttsCaption);
     // Map event to phase
     if (eventType === "npu:model:error") {
       phase = 'error';
+    } else if (eventType === "npu:complete") {
+      phase = 'complete';
     } else if ([
       "npu:start",
       "npu:memories:start",
@@ -1626,8 +1624,7 @@ this.updateTextTranscript(this.ttsCaption);
       "npu:model:start",
       "npu:model:attempt",
       "npu:model:response",
-      "npu:advisor:ready",
-      "npu:complete"
+      "npu:advisor:ready"
     ].includes(eventType)) {
       phase = 'npu';
     }
