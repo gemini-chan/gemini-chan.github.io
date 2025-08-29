@@ -54,9 +54,6 @@ export class ChatView extends LitElement {
   @property({ type: Number })
   hardDeadlineMs: number = 0;
   
-  @property({ type: Number })
-  idleDeadlineMs?: number;
-  
   @property({ type: String })
   turnId: string = '';
   
@@ -64,9 +61,6 @@ export class ChatView extends LitElement {
   private get _showThinking(): boolean {
     return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText;
   }
-  
-  private _devRemainingMs = 0;
-  
   
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;

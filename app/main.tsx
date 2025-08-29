@@ -87,7 +87,6 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuSubStatus: string = "";
   @state() private thinkingActive = false;
   @state() private currentTurnId: string | null = null;
-  @state() private isTurnInFlight = false;
   @state() private turnState: { id: string | null; phase: 'idle'|'npu'|'vpu'|'complete'|'error'; startedAt: number; lastUpdateAt: number } = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private vpuWatchdogTimer: number | null = null;
   private readonly VPU_WATCHDOG_MS = 2200;
@@ -98,8 +97,6 @@ export class GdmLiveAudio extends LitElement {
   private _updateScheduled: boolean = false;
   private _npuFirstEventForced = new Set<string>();
   private _vpuFirstEventForced = new Set<string>();
-  private vpuTranscriptionChunkCount = 0;
-  private vpuTranscriptionLastLog = 0;
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
   private vpuDevTicker: number | null = null;
   private devRemainingMs: number = 0;
@@ -1927,8 +1924,6 @@ this.updateTextTranscript(this.ttsCaption);
 								(retryError as Error).message
 							}`,
 						);
-						// Mark turn as complete on retry failure
-						this.isTurnInFlight = false;
 					}
 				}
 			}
@@ -2032,8 +2027,6 @@ this.updateTextTranscript(this.ttsCaption);
 				this.pendingTranscriptionText = "";
 			}
 			// Reset transcription chunk counters on completion or error
-			this.vpuTranscriptionChunkCount = 0;
-			this.vpuTranscriptionLastLog = 0;
 		}
 
 		// Map event to status string
@@ -2043,10 +2036,6 @@ this.updateTextTranscript(this.ttsCaption);
 			if (ev.type === "vpu:message:sending") {
 				// Start timing
 				this.vpuStartTime = Date.now();
-				// Initialize transcription log time
-				if (this.vpuTranscriptionLastLog === 0) {
-					this.vpuTranscriptionLastLog = Date.now();
-				}
 			} else if (ev.type === "vpu:message:error" && ev.data?.error) {
 				this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
 				this.npuSubStatus = "";
@@ -2121,8 +2110,6 @@ this.updateTextTranscript(this.ttsCaption);
 					this.vpuTranscriptionAgg.delete('global');
 				}
 				// Reset transcription chunk counters on completion
-				this.vpuTranscriptionChunkCount = 0;
-				this.vpuTranscriptionLastLog = 0;
 				break;
 		}
 		
