@@ -146,9 +146,6 @@ export class GdmLiveAudio extends LitElement {
 		// Clear correlation
 		this.currentTurnId = null;
 		
-		// Mark not in-flight
-		this.isTurnInFlight = false;
-		
 		// Reset turn state
 		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
 		
@@ -1281,14 +1278,10 @@ this.updateTextTranscript(this.ttsCaption);
       lastUpdateAt: Date.now()
     };
     
-    this.userOpenedThisTurn = false;
-    if (!this.npuPersistCollapsed) {
-        this.npuThinkingOpen = true;
-    }
     this.requestUpdate();
     await this.updateComplete;
     
-    logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, open: this.npuThinkingOpen, active: this.thinkingActive });
+    logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
@@ -1308,7 +1301,6 @@ this.updateTextTranscript(this.ttsCaption);
 		/* conversationContext removed: memory now stores facts only */
     // Set current turn ID to ensure only this turn drives the Thinking UI
     this.currentTurnId = turnId;
-    this.userOpenedThisTurn = false;
     const intention = await this.npuService.analyzeAndAdvise(
       message,
       personaId,
@@ -1419,7 +1411,7 @@ this.updateTextTranscript(this.ttsCaption);
         break;
       case 'vpu':
         this.thinkingActive = true;
-        this.npuStatus = "Receiving response from VPU…";
+        this.npuStatus = "Speaking…";
         break;
       case 'complete':
         this.thinkingActive = false;
@@ -1486,8 +1478,8 @@ this.updateTextTranscript(this.ttsCaption);
       "npu:model:response"
     ];
     
-    if (npuActiveEvents.includes(ev.type)) {
-      this._setTurnPhase('npu', ev.type);
+    if (npuActiveEvents.includes(ev.type as string)) {
+      this._setTurnPhase('npu', ev.type as string);
     }
     
     // Handle completion
@@ -1496,7 +1488,7 @@ this.updateTextTranscript(this.ttsCaption);
     }
 
 		// Force immediate update on first NPU event for this turn
-		const eventTurnId = ev.data?.turnId || this.currentTurnId;
+		const eventTurnId = (ev.data?.turnId as string) || this.currentTurnId;
 		if (eventTurnId && !this._npuFirstEventForced.has(eventTurnId)) {
 			this._npuFirstEventForced.add(eventTurnId);
 			logger.debug("UI FORCE: first NPU event", { turnId: eventTurnId, type: ev.type });
@@ -1518,7 +1510,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// Map event to status string using switch statement
 		switch (ev.type) {
 			case "npu:start":
-				this.npuStatus = EVENT_STATUS_MAP[ev.type];
+				this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
 				this.thinkingActive = true;
 				// Start timing
 				this.npuStartTime = Date.now();
@@ -1531,7 +1523,7 @@ this.updateTextTranscript(this.ttsCaption);
 					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
 					// Initialize retry count
 					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
-					this.npuThinkingLog += `\n[Preparing NPU: ${ev.data.model}]`; // Concise log line
+					this.npuThinkingLog += `\n[Preparing NPU: ${ev.data.model as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:attempt":
@@ -1546,7 +1538,7 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "npu:model:error":
 				if (ev.data?.attempt && ev.data?.error) {
-					this.npuStatus = `NPU error (attempt ${ev.data.attempt}): ${ev.data.error}`;
+					this.npuStatus = `NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}`;
 					this.thinkingActive = false;
 					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
 					// Clear any pending transcription timers on error
@@ -1560,7 +1552,7 @@ this.updateTextTranscript(this.ttsCaption);
 						this.npuProcessingTime = Date.now() - this.npuStartTime;
 						this.npuStartTime = null;
 					}
-					this.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error}]`; // Concise log line
+					this.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:response":
@@ -1572,7 +1564,7 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "npu:complete":
-				this.npuStatus = EVENT_STATUS_MAP[ev.type];
+				this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
 				this.thinkingActive = false;
 				// Calculate processing time on completion
 				if (this.npuStartTime) {
@@ -1585,8 +1577,8 @@ this.updateTextTranscript(this.ttsCaption);
 				this.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
 				break;
 			default:
-				if (EVENT_STATUS_MAP[ev.type]) {
-					this.npuStatus = EVENT_STATUS_MAP[ev.type];
+				if (EVENT_STATUS_MAP[ev.type as string]) {
+					this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
 					// Set thinking active for other active states
 					if (ACTIVE_STATES.has(ev.type as any)) {
 						this.thinkingActive = true;
@@ -1597,7 +1589,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// Handle prompt partial updates
 		if (ev.type === "npu:prompt:partial" && ev.data?.delta) {
-			this.npuThinkingLog += ev.data.delta;
+			this.npuThinkingLog += ev.data.delta as string;
 		}
 
 		// Handle memory events
@@ -1783,7 +1775,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 	private _handleVpuProgress(ev: VpuProgressEvent, turnId?: string, isRetry = false) {
 		// Ignore events for other turns
-		if (this.currentTurnId && turnId && ev.data?.turnId && this.currentTurnId !== ev.data.turnId) {
+		if (this.currentTurnId && turnId && ev.data?.turnId && this.currentTurnId !== (ev.data.turnId as string)) {
 			return;
 		}
     
@@ -1802,7 +1794,7 @@ this.updateTextTranscript(this.ttsCaption);
     }
 		
 		// Force immediate update on first VPU event for this turn
-		const eventTurnId = ev.data?.turnId || turnId;
+		const eventTurnId = (ev.data?.turnId as string) || turnId;
 		if (eventTurnId && !this._vpuFirstEventForced.has(eventTurnId)) {
 			this._vpuFirstEventForced.add(eventTurnId);
 			logger.debug("UI FORCE: first VPU event", { turnId: eventTurnId, type: ev.type });
@@ -1861,8 +1853,8 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Map event to status string
-		if (EVENT_STATUS_MAP[ev.type]) {
-			this.npuStatus = EVENT_STATUS_MAP[ev.type];
+		if (EVENT_STATUS_MAP[ev.type as string]) {
+			this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
 			// Add data details for specific events
 			if (ev.type === "vpu:message:sending") {
 				// Start timing
@@ -1872,7 +1864,7 @@ this.updateTextTranscript(this.ttsCaption);
 					this.vpuTranscriptionLastLog = Date.now();
 				}
 			} else if (ev.type === "vpu:message:error" && ev.data?.error) {
-				this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error}`;
+				this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
 			} else if (ev.type === "vpu:response:complete") {
 				// Calculate processing time on completion
 				if (this.vpuStartTime) {
@@ -1891,31 +1883,31 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "vpu:message:error":
 				if (ev.data?.error) {
-					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error}`;
+					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
 					this.thinkingActive = false;
-					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error}]`;
+					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}]`;
 					// Reset transcription aggregation for this turn on error
 					if (ev.data?.turnId) {
-						this.vpuTranscriptionAgg.delete(ev.data.turnId);
+						this.vpuTranscriptionAgg.delete(ev.data.turnId as string);
 					} else {
 						this.vpuTranscriptionAgg.delete('global');
 					}
 				}
 				break;
 			case "vpu:response:first-output":
-				this.npuStatus = isRetry ? "Receiving response from VPU (retry)…" : "Receiving response from VPU…";
+				this.npuStatus = isRetry ? "Speaking (retry)…" : "Speaking…";
 				this.thinkingActive = true;
 				this.npuThinkingLog += isRetry ? "\n[VPU first output received (retry)]" : "\n[VPU first output received]";
 				break;
 			case "vpu:response:transcription":
-				this.npuStatus = isRetry ? "Receiving response from VPU (retry)…" : "Receiving response from VPU…";
+				this.npuStatus = isRetry ? "Speaking (retry)…" : "Speaking…";
 				this.thinkingActive = true;
 				if (ev.data?.text) {
 					// Use debounced transcription updates
 					this._handleDebouncedTranscription(ev.data.text as string);
 					
 					// Per-turn transcription aggregation
-					const turnKey = ev.data?.turnId ?? 'global';
+					const turnKey = (ev.data?.turnId as string) ?? 'global';
 					if (!this.vpuTranscriptionAgg.has(turnKey)) {
 						this.vpuTranscriptionAgg.set(turnKey, { count: 0, last: 0 });
 					}
@@ -1938,7 +1930,7 @@ this.updateTextTranscript(this.ttsCaption);
 				this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
 				// Reset transcription aggregation for this turn on completion
 				if (ev.data?.turnId) {
-					this.vpuTranscriptionAgg.delete(ev.data.turnId);
+					this.vpuTranscriptionAgg.delete(ev.data.turnId as string);
 				} else {
 					this.vpuTranscriptionAgg.delete('global');
 				}
@@ -1961,7 +1953,6 @@ this.updateTextTranscript(this.ttsCaption);
 		logger.debug("UPDATED", {
 			thinkingStatus: this.npuStatus,
 			thinkingActive: this.thinkingActive,
-			open: this.npuThinkingOpen,
 			logLen: this.npuThinkingLog.length,
 			transcriptLen: this.textTranscript.length
 		});
