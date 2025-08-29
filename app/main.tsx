@@ -84,6 +84,7 @@ export class GdmLiveAudio extends LitElement {
 	private lastAdvisorContext: string = "";
   @state() private npuThinkingLog: string = "";
   @state() private npuStatus: string = "";
+  @state() private npuSubStatus: string = "";
   @state() private thinkingActive = false;
   @state() private currentTurnId: string | null = null;
   @state() private isTurnInFlight = false;
@@ -2003,7 +2004,7 @@ this.updateTextTranscript(this.ttsCaption);
 			if (!turnId || this.currentTurnId === turnId) {
 				this.vpuWaitTimer = window.setTimeout(() => {
 					if (!turnId || this.currentTurnId === turnId) {
-						this.npuStatus = "Waiting for response…";
+						this.npuSubStatus = "Waiting for response…";
 					}
 					this.vpuWaitTimer = null;
 				}, 800);
@@ -2033,7 +2034,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// Map event to status string
 		if (EVENT_STATUS_MAP[ev.type as string]) {
-			this.npuStatus = EVENT_STATUS_MAP[ev.type as string];
+			this.npuSubStatus = EVENT_STATUS_MAP[ev.type as string];
 			// Add data details for specific events
 			if (ev.type === "vpu:message:sending") {
 				// Start timing
@@ -2044,6 +2045,7 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 			} else if (ev.type === "vpu:message:error" && ev.data?.error) {
 				this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
+				this.npuSubStatus = "";
 			} else if (ev.type === "vpu:response:complete") {
 				// Calculate processing time on completion
 				if (this.vpuStartTime) {
@@ -2056,13 +2058,14 @@ this.updateTextTranscript(this.ttsCaption);
 		// Handle log updates and status overrides
 		switch (ev.type) {
 			case "vpu:message:sending":
-				this.npuStatus = isRetry ? "Sending to VPU (retry)…" : "Sending to VPU…";
+				this.npuSubStatus = isRetry ? "Sending to VPU (retry)…" : "Sending to VPU…";
 				this.thinkingActive = true;
 				this.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
 				break;
 			case "vpu:message:error":
 				if (ev.data?.error) {
 					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
+					this.npuSubStatus = "";
 					this.thinkingActive = false;
 					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}]`;
 					// Reset transcription aggregation for this turn on error
@@ -2074,12 +2077,12 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:first-output":
-				this.npuStatus = isRetry ? "Speaking (retry)…" : "Speaking…";
+				this.npuSubStatus = "Receiving response…";
 				this.thinkingActive = true;
 				this.npuThinkingLog += isRetry ? "\n[VPU first output received (retry)]" : "\n[VPU first output received]";
 				break;
 			case "vpu:response:transcription":
-				this.npuStatus = isRetry ? "Speaking (retry)…" : "Speaking…";
+				this.npuSubStatus = "";
 				this.thinkingActive = true;
 				if (ev.data?.text) {
 					// Use debounced transcription updates
@@ -2104,7 +2107,7 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:complete":
-				this.npuStatus = isRetry ? "Response complete (retry)" : "Done";
+				this.npuSubStatus = "";
 				this.thinkingActive = false;
 				this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
 				// Reset transcription aggregation for this turn on completion
@@ -2428,6 +2431,7 @@ this.updateTextTranscript(this.ttsCaption);
             .transcript=${this.textTranscript}
             .visible=${this.activeMode !== "calling" && this.activeTab === "chat"}
             .thinkingStatus=${this.npuStatus}
+            .thinkingSubStatus=${this.npuSubStatus}
             .thinkingText=${this.npuThinkingLog}
             .thinkingActive=${this.thinkingActive}
             .npuProcessingTime=${this.npuProcessingTime}

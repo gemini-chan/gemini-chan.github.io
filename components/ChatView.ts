@@ -28,6 +28,9 @@ export class ChatView extends LitElement {
   thinkingStatus: string = "";
 
   @property({ type: String })
+  thinkingSubStatus: string = "";
+
+  @property({ type: String })
   thinkingText: string = "";
 
   @property({ type: Boolean })
@@ -477,6 +480,14 @@ export class ChatView extends LitElement {
       font-size: 11px;
       opacity: 0.6;
     }
+
+    .status-primary {
+      /* Main status text is default weight */
+    }
+    .status-secondary {
+      margin-left: 6px;
+      opacity: 0.7;
+    }
   `;
 
   private _renderMessageStatus(id: string) {
@@ -555,31 +566,6 @@ export class ChatView extends LitElement {
   }
 
    
-   // Format thinking status with processing times
-   private _formatThinkingStatus(): string {
-     // If forced complete, show "Done"
-     if (this._forcedComplete) {
-       return "Done";
-     }
-     
-     // If we have processing times and the status is "Done", show the times
-     if (this.thinkingStatus === "Done" && (this.npuProcessingTime || this.vpuProcessingTime)) {
-       const npuTime = this.npuProcessingTime ? `${(this.npuProcessingTime / 1000).toFixed(1)}s` : '';
-       const vpuTime = this.vpuProcessingTime ? `${(this.vpuProcessingTime / 1000).toFixed(1)}s` : '';
-       
-       if (npuTime && vpuTime) {
-         return `Done in ${npuTime}+${vpuTime}`;
-       } else if (npuTime) {
-         return `Done in ${npuTime}`;
-       } else if (vpuTime) {
-         return `Done in ${vpuTime}`;
-       }
-     }
-     
-     // Otherwise, show the regular status
-     return this.thinkingStatus;
-   }
-
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
     // Reset height to recalculate
     textarea.style.height = "auto";
@@ -835,7 +821,8 @@ private async _updateScrollToBottomState() {
       <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
         <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
           ${(!this._forcedComplete && (this.phase === 'npu' || this.phase === 'vpu')) ? html`<div class="thinking-spinner"></div>` : ''}
-          ${this._formatThinkingStatus()}
+          <span class="status-primary">${this.thinkingStatus}</span>
+          ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
           ${(!this._forcedComplete && this.devLabel) ? html`<span class="dev-meta">${this.devLabel}</span>` : ''}
         </span>
       </div>
