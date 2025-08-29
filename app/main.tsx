@@ -149,6 +149,12 @@ export class GdmLiveAudio extends LitElement {
 		// Mark not in-flight
 		this.isTurnInFlight = false;
 		
+		// Reset turn state
+		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
+		
+		// Clear VPU watchdog
+		this._clearVpuWatchdog();
+		
 		// Prune message metadata maps
 		this._pruneMessageMeta();
 		
@@ -1266,6 +1272,15 @@ this.updateTextTranscript(this.ttsCaption);
     this.npuThinkingLog = "";
     this.npuStatus = "Thinking…";
     this.thinkingActive = true;
+    
+    // Initialize turn state machine
+    this.turnState = {
+      id: turnId,
+      phase: 'npu',
+      startedAt: Date.now(),
+      lastUpdateAt: Date.now()
+    };
+    
     this.userOpenedThisTurn = false;
     if (!this.npuPersistCollapsed) {
         this.npuThinkingOpen = true;
