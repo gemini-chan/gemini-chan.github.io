@@ -1516,13 +1516,15 @@ this.updateTextTranscript(this.ttsCaption);
     }
   }
   
-  private _clearVpuHardMaxTimer() {
+  private _clearVpuHardMaxTimer(silent = false) {
     if (this.vpuHardMaxTimer) {
       clearTimeout(this.vpuHardMaxTimer);
       this.vpuHardMaxTimer = null;
-      logger.debug("VPU hard max timer cleared", { 
-        turnId: this.turnState.id 
-      });
+      if (!silent) {
+        logger.debug("VPU hard max timer cleared", {
+          turnId: this.turnState.id
+        });
+      }
       this.vpuHardDeadline = 0;
     }
   }
@@ -1574,7 +1576,7 @@ this.updateTextTranscript(this.ttsCaption);
   
   private _armVpuHardMaxTimer() {
     // Always clear any existing timer before setting a new one
-    this._clearVpuHardMaxTimer();
+    this._clearVpuHardMaxTimer(true); // silent clear
     
     // Set new hard max timer
     if (this.turnState.id) {
