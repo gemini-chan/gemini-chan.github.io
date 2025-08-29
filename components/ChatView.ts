@@ -615,6 +615,37 @@ export class ChatView extends LitElement {
     log.debug("Component unmounted");
   }
 
+  updated(changedProperties: Map<string | number | symbol, unknown>) {
+    if (changedProperties.has("transcript")) {
+      const oldTranscript = (
+        changedProperties.get("transcript") as Turn[]
+      ) || [];
+      defaultAutoScroll.handleTranscriptUpdate(
+        this._transcriptEl,
+        oldTranscript,
+        this.transcript.length,
+      );
+
+      // Update scroll-to-bottom button state
+      this._updateScrollToBottomState();
+    }
+
+    if (changedProperties.has("visible")) {
+      this.removeAttribute("hidden");
+
+      // Use generic auto-scroll utility for visibility changes
+      if (this._transcriptEl) {
+        defaultAutoScroll.handleVisibilityChange(
+          this._transcriptEl,
+          this.visible,
+          this.transcript.length > 0,
+        );
+      } else {
+        this.setAttribute("hidden", "");
+      }
+    }
+  }
+
   firstUpdated() {
     log.debug("Component first updated");
     // Add scroll event listener to update scroll-to-bottom button visibility
