@@ -93,7 +93,9 @@ export class GdmLiveAudio extends LitElement {
   @state() private isTurnInFlight = false;
   @state() private turnState: { id: string | null; phase: 'idle'|'npu'|'vpu'|'complete'|'error'; startedAt: number; lastUpdateAt: number } = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private vpuWatchdogTimer: number | null = null;
-  private readonly VPU_WATCHDOG_MS = 1800;
+  private readonly VPU_WATCHDOG_MS = 2200;
+  private vpuHardMaxTimer: number | null = null;
+  private readonly VPU_HARD_MAX_MS = 7000;
   private vpuWaitTimer: number | null = null;
   private _updateScheduled: boolean = false;
   private _npuFirstEventForced = new Set<string>();
@@ -1453,9 +1455,14 @@ this.updateTextTranscript(this.ttsCaption);
     
     // Set new timer only if we're in VPU phase
     if (this.turnState.phase === 'vpu' && this.turnState.id) {
+      logger.debug("VPU watchdog armed", { 
+        turnId: this.turnState.id, 
+        timeoutMs: this.VPU_WATCHDOG_MS 
+      });
       this.vpuWatchdogTimer = window.setTimeout(() => {
         // Only trigger if this is still the current turn
         if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
+          logger.debug("VPU watchdog fired", { turnId: this.turnState.id });
           this._setTurnPhase('complete');
           this.npuStatus = "Done";
         }
@@ -1468,6 +1475,31 @@ this.updateTextTranscript(this.ttsCaption);
     if (this.vpuWatchdogTimer) {
       clearTimeout(this.vpuWatchdogTimer);
       this.vpuWatchdogTimer = null;
+    }
+  }
+  
+  private _armVpuHardMaxTimer() {
+    // Clear any existing hard max timer
+    if (this.vpuHardMaxTimer) {
+      clearTimeout(this.vpuHardMaxTimer);
+      this.vpuHardMaxTimer = null;
+    }
+    
+    // Set new hard max timer
+    if (this.turnState.id) {
+      logger.debug("VPU hard max timer armed", { 
+        turnId: this.turnState.id, 
+        timeoutMs: this.VPU_HARD_MAX_MS 
+      });
+      this.vpuHardMaxTimer = window.setTimeout(() => {
+        logger.debug("VPU HARD TIMEOUT fired", { turnId: this.turnState.id });
+        // Only trigger if this is still the current turn
+        if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
+          this._setTurnPhase('complete');
+          this.requestUpdate();
+        }
+        this.vpuHardMaxTimer = null;
+      }, this.VPU_HARD_MAX_MS);
     }
   }
 	
@@ -1797,12 +1829,21 @@ this.updateTextTranscript(this.ttsCaption);
         ev.type === "vpu:response:first-output" || 
         ev.type === "vpu:response:transcription") {
       this._setTurnPhase('vpu');
+      this._armVpuHardMaxTimer();
       this._resetVpuWatchdog();
     } else if (ev.type === "vpu:response:complete") {
       this._clearVpuWatchdog();
+      if (this.vpuHardMaxTimer) {
+        clearTimeout(this.vpuHardMaxTimer);
+        this.vpuHardMaxTimer = null;
+      }
       this._setTurnPhase('complete');
     } else if (ev.type === "vpu:message:error") {
       this._clearVpuWatchdog();
+      if (this.vpuHardMaxTimer) {
+        clearTimeout(this.vpuHardMaxTimer);
+        this.vpuHardMaxTimer = null;
+      }
       this._setTurnPhase('error');
     }
 		
