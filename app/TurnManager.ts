@@ -25,6 +25,15 @@ export class TurnManager {
     'npu:thought': 'Thinking (Thought)...', 
     'npu:audio-out': 'Thinking (Audio)...' 
   };
+  
+  // VPU dev ticker methods
+  public armVpuDevTicker() {
+    this.host._armDevRaf();
+  }
+  
+  public clearVpuDevTicker() {
+    // RAF continues running in dev for visibility - no-op here
+  }
 
   constructor(host: GdmLiveAudio) {
     this.host = host;
