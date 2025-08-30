@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite",
-    "type": "tsc -p tsconfig.json --noEmit",
+    "type": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "lint": "eslint . --ext .ts --fix",
     "prepare": "husky install",
     "build": "vite build"

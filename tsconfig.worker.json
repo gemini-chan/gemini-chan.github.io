@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "WebWorker"],
+    "noEmit": true
+  },
+  "include": ["app/audio-processor.ts", "app/audio-worklet.d.ts"],
+  "exclude": ["node_modules"]
+}

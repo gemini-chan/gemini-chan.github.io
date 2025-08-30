@@ -67,7 +67,7 @@ export class AudioManager {
     this.sourceNode.connect(this.inputNode);
 
     // Add the audio worklet module
-    await this.inputAudioContext.audioWorklet.addModule('/audio-processor.js');
+    await this.inputAudioContext.audioWorklet.addModule('app/audio-processor.ts');
     
     // Create the AudioWorkletNode
     this.audioWorkletNode = new AudioWorkletNode(this.inputAudioContext, 'audio-processor');
