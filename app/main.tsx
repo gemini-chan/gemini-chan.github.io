@@ -35,6 +35,8 @@ import {
 	TextSessionManager,
 } from "@features/vpu/VPUService";
 import type { CallSummary, Turn } from "@shared/types";
+import { SessionManager } from "./SessionManager";
+import { AudioManager } from "./AudioManager";
 
 declare global {
 	interface Window {
@@ -56,7 +58,7 @@ interface ExtendedLiveServerMessage extends LiveServerMessage {
 type ActiveMode = "texting" | "calling" | null;
 
 
-const logger = createComponentLogger("GdmLiveAudio");
+export const logger = createComponentLogger("GdmLiveAudio");
 
 // Import progress event types and mappings
 import type {
@@ -87,40 +89,40 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuStatus: string = "";
   @state() private npuSubStatus: string = "";
   @state() private thinkingActive = false;
-  @state() private turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
+  @state() public turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private turnManager: TurnManager;
   private vpuWaitTimer: number | null = null;
   private _npuFirstEventForced = new Set<string>();
   private _vpuFirstEventForced = new Set<string>();
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
   private vpuDevTicker: number | null = null;
-  private devRemainingMs: number = 0;
+  public devRemainingMs: number = 0;
   private _devRafId: number | null = null;
   
   // Named constants for timeouts
   private readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
-  private readonly ERROR_TO_IDLE_DELAY_MS = 2500;
+  public readonly ERROR_TO_IDLE_DELAY_MS = 2500;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
 	
 	// Settings
-	@state() private showInternalPrompts: boolean = false;
+	public showInternalPrompts: boolean = false;
 	
 	// Metrics
-	@state() private npuProcessingTime: number | null = null;
-	@state() private vpuProcessingTime: number | null = null;
+	@state() public npuProcessingTime: number | null = null;
+	@state() public vpuProcessingTime: number | null = null;
 	private npuStartTime: number | null = null;
 	private vpuStartTime: number | null = null;
-	@state() private messageStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
-	@state() private messageRetryCount: Record<string, number> = {};
+	@state() public messageStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
+	@state() public messageRetryCount: Record<string, number> = {};
 	
 	// Debouncing for vpu:response:transcription events
 	private transcriptionDebounceTimer: number | null = null;
 	private pendingTranscriptionText: string = "";
 
 	// Clear all thinking UI and timers
-	private _clearThinkingAll() {
+	public _clearThinkingAll() {
 		// Clear thinking UI
 		this._clearThinkingUI();
 		
@@ -160,7 +162,7 @@ export class GdmLiveAudio extends LitElement {
 	
 	
 	// Schedule immediate update without batching
-	private _scheduleUpdate() {
+	public _scheduleUpdate() {
 		this.requestUpdate();
 	}
 
@@ -171,14 +173,14 @@ export class GdmLiveAudio extends LitElement {
 	@state() activeMode: ActiveMode = null;
 	@state() textTranscript: Turn[] = [];
 	@state() callTranscript: Turn[] = [];
-	@state() textSession: Session | null = null;
-	@state() callSession: Session | null = null;
+	@state() public textSession: Session | null = null;
+	@state() public callSession: Session | null = null;
 	@state() activeTab: "chat" | "call-history" | "memory" = "chat";
 	@state() callHistory: CallSummary[] = [];
 
 	// Session managers
-	private textSessionManager: TextSessionManager;
-	private callSessionManager: CallSessionManager;
+	public textSessionManager: TextSessionManager;
+	public callSessionManager: CallSessionManager;
 	private sessionManager: SessionManager;
 	private summarizationService: SummarizationService;
 	private personaManager: PersonaManager;
@@ -504,7 +506,7 @@ export class GdmLiveAudio extends LitElement {
 	}
 
 
-	private updateStatus(msg: string) {
+	public updateStatus(msg: string) {
 		this.status = msg;
 		// Reset timers and show toast
 		if (this._statusHideTimer) clearTimeout(this._statusHideTimer);
@@ -522,7 +524,7 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 
-	private updateError(msg: string) {
+	public updateError(msg: string) {
 		this.error = msg;
 		// Non-silent failure during calls on rate limit
 		const isRateLimited = /rate[- ]?limit|quota/i.test(msg || "");
@@ -636,7 +638,7 @@ if (lastMessage.speaker === "model") {
     return name.toLowerCase().includes("sourceress");
   }
 
-  private _setSourceressMotion(name: string) {
+  public _setSourceressMotion(name: string) {
     logger.debug('set-motion', { name });
     if (!this._isSourceressActive()) return;
     this.currentMotionName = name;
@@ -740,7 +742,7 @@ if (lastMessage.speaker === "model") {
 		}
 	}
 
-	private _startIdleMotionCycle(intervalMs = 25000) {
+	public _startIdleMotionCycle(intervalMs = 25000) {
 		logger.debug('idle-cycle:start', { intervalMs });
 		if (this._idleMotionTimer) {
 			clearTimeout(this._idleMotionTimer);
