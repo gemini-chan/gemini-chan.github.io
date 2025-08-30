@@ -724,57 +724,9 @@ if (lastMessage.speaker === "model") {
 		this.updateStatus("Starting call...");
 
 		try {
-			this.audioManager.mediaStream = await navigator.mediaDevices.getUserMedia({
-				audio: true,
-				video: false,
-			});
+			await this.audioManager.startAudioProcessing();
 
-			this.updateStatus("");
 			this.callState = "active";
-
-			// Live2D: greet motion for Sourceress on call start
-			this._setSourceressMotion("greet");
-
-			// Start idle motion cycling while in call
-			this._startIdleMotionCycle();
-
-			this.audioManager.sourceNode = this.inputAudioContext.createMediaStreamSource(
-				this.audioManager.mediaStream,
-			);
-			this.audioManager.sourceNode.connect(this.inputNode);
-
-			const bufferSize = 1024;
-			this.audioManager.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
-				bufferSize,
-				1,
-				1,
-			);
-
-			this.audioManager.scriptProcessorNode.onaudioprocess = (audioProcessingEvent) => {
-				if (!this.isCallActive) return;
-
-				const inputBuffer = audioProcessingEvent.inputBuffer;
-				const pcmData = inputBuffer.getChannelData(0);
-				// Send audio to the active call session using session manager
-				if (
-					this.activeMode === "calling" &&
-					this.callSessionManager &&
-					this.callSessionManager.isActive
-				) {
-					try {
-						this.callSessionManager.sendRealtimeInput({
-							media: createBlob(pcmData),
-						});
-					} catch (e) {
-						const msg = String((e as Error)?.message || e || "");
-						this.updateError(`Failed to stream audio: ${msg}`);
-					}
-				}
-			};
-
-			this.audioManager.sourceNode.connect(this.audioManager.scriptProcessorNode);
-			this.audioManager.scriptProcessorNode.connect(this.inputAudioContext.destination);
-
 			this.isCallActive = true;
 
 			// Dispatch call-start event
@@ -828,20 +780,7 @@ if (lastMessage.speaker === "model") {
 		}
 		this.currentMotionName = "";
 
-		if (this.audioManager.scriptProcessorNode && this.audioManager.sourceNode && this.inputAudioContext) {
-			this.audioManager.scriptProcessorNode.disconnect();
-			this.audioManager.sourceNode.disconnect();
-		}
-
-		this.audioManager.scriptProcessorNode = null;
-		this.audioManager.sourceNode = null;
-
-		if (this.audioManager.mediaStream) {
-			for (const track of this.audioManager.mediaStream.getTracks()) {
-				track.stop();
-			}
-			this.audioManager.mediaStream = null;
-		}
+		this.audioManager.stopAudioProcessing();
 
 		// Switch back to texting mode
 		this.activeMode = "texting";
