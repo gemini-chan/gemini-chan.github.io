@@ -445,9 +445,6 @@ export class GdmLiveAudio extends LitElement {
 		// Always initialize with texting mode by default (main UI)
 		this.activeMode = "texting";
 
-		// Connect both session output nodes to the main audio destination
-		this.audioManager.textOutputNode.connect(this.audioManager.outputAudioContext.destination);
-		this.audioManager.callOutputNode.connect(this.audioManager.outputAudioContext.destination);
 		this._updateActiveOutputNode();
 
 		const apiKey = localStorage.getItem("gemini-api-key");

@@ -32,6 +32,8 @@ export class AudioManager {
   initAudio() {
     // Audio initialization is now handled by individual session managers
     // Each session manager maintains its own isolated audio timeline
+    this.textOutputNode.connect(this.outputAudioContext.destination);
+    this.callOutputNode.connect(this.outputAudioContext.destination);
   }
 
   public async startAudioProcessing() {
