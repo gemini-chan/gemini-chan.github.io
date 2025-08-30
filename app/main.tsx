@@ -1074,6 +1074,8 @@ this.updateTextTranscript(this.ttsCaption);
 		this.sessionManager.messageStatuses = newStatuses;
 		this._pruneMessageMeta();
 		
+		debugLogger.debug("Transcript after optimistic update", this.sessionManager.textTranscript);
+		
 		this.requestUpdate();
 		await this.updateComplete;
 		
@@ -1390,6 +1392,8 @@ this.updateTextTranscript(this.ttsCaption);
 				return;
 			}
 		}
+		
+		debugLogger.debug("Transcript before optimistic update", this.sessionManager.textTranscript);
 
 		// Initialize new turn and get turnId
 		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
@@ -1399,6 +1403,7 @@ this.updateTextTranscript(this.ttsCaption);
 		
 		// Flush synchronously
 		this.requestUpdate();
+		debugLogger.debug("requestUpdate() called");
 		await this.updateComplete;
 
 		logger.debug("UI INIT: Thinking set pre-await", { status: this.turnManager.npuStatus, active: this.turnManager.thinkingActive });
