@@ -15,16 +15,17 @@ export interface TurnState {
 }
 
 export class TurnManager {
+  private static readonly EVENT_STATUS_MAP: Record<string, string> = { 
+    'npu:thought': 'Thinking (Thought)...', 
+    'npu:audio-out': 'Thinking (Audio)...' 
+  };
+  
   private host: GdmLiveAudio; // GdmLiveAudio instance
   public vpuWatchdogTimer: number | null = null;
   public vpuHardDeadline = 0;
   public vpuHardMaxTimer: number | null = null;
   private readonly VPU_WATCHDOG_MS = 15000;
   private readonly VPU_HARD_MAX_MS = 25000;
-  public EVENT_STATUS_MAP: Record<string, string> = { 
-    'npu:thought': 'Thinking (Thought)...', 
-    'npu:audio-out': 'Thinking (Audio)...' 
-  };
   
   // VPU dev ticker methods
   public armVpuDevTicker() {
@@ -94,7 +95,7 @@ export class TurnManager {
     switch (phase) {
       case 'npu':
         this.host.thinkingActive = true;
-        this.host.npuStatus = this.host.EVENT_STATUS_MAP[eventType] || 'Thinking...';
+        this.host.npuStatus = TurnManager.EVENT_STATUS_MAP[eventType] || 'Thinking...';
         console.debug('Status badge updated', { status: this.host.npuStatus });
         break;
       case 'vpu':
