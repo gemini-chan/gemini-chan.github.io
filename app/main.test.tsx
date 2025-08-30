@@ -23,7 +23,8 @@ describe('main component', () => {
   it('should display a user message after sending', async () => {
     // Create a mock sessionManager on the mainComponent instance
     const mockSessionManager = {
-      textTranscript: [{ text: 'Hello! How can I help you?', speaker: 'model' }]
+      textTranscript: [{ text: 'Hello! How can I help you?', speaker: 'model' }],
+      messageRetries: new Map()
     };
     // @ts-ignore
     mainComponent.sessionManager = mockSessionManager;
