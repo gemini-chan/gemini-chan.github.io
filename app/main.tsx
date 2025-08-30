@@ -479,6 +479,7 @@ if (lastMessage.speaker === "model") {
 }
 }
 	private updateCallTranscript(text: string, speaker: "user" | "model") {
+		if (!this.sessionManager) return;
 		logger.debug(`Received ${speaker} text:`, text);
 
 		// For audio transcription, we get incremental chunks that should be appended
@@ -500,6 +501,7 @@ if (lastMessage.speaker === "model") {
 	}
 
 	private _appendCallNotice(text: string) {
+		if (!this.sessionManager) return;
 		// Append a system-style notice to the call transcript to avoid silent failures
 		const notice = {
 			text,
@@ -515,6 +517,7 @@ if (lastMessage.speaker === "model") {
 		speaker: "user" | "model",
 		isSystemMessage = false,
 	) {
+		if (!this.sessionManager) return;
 		// Append a message directly to the text transcript
 		logger.debug("Appending text message", {
 			text,
@@ -590,6 +593,7 @@ if (lastMessage.speaker === "model") {
   }
 
 	private async _handleCallStart() {
+		if (!this.sessionManager) return;
 		try {
 			// Acquire microphone FIRST, within the user gesture's direct context.
 			await this.audioManager.acquireMicrophone();
@@ -694,6 +698,7 @@ if (lastMessage.speaker === "model") {
 	}
 
 	public async _handleCallEnd() {
+		if (!this.sessionManager) return;
 		if (!this.isCallActive && !this.audioManager.mediaStream)
 			return;
 
@@ -761,6 +766,7 @@ this.ttsCaption += text;
 this.updateTextTranscript(this.ttsCaption);
 }
 	private _handleTtsTurnComplete() {
+		if (!this.sessionManager) return;
 		// Store the completed turn in memory
 		if (this.ttsCaption.trim()) {
 			const lastUserTurn = this.sessionManager.textTranscript
@@ -1340,6 +1346,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 
 	private async _handleSendMessage(e: CustomEvent) {
+		if (!this.sessionManager) return;
 		const message = e.detail;
 		if (!message || !message.trim()) {
 			return;
@@ -1716,6 +1723,7 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 
 	public _pruneMessageMeta() {
+		if (!this.sessionManager) return;
 		// Create a set of current user turn IDs
 		const currentUserTurnIds = new Set(
 			this.sessionManager.textTranscript
@@ -1738,11 +1746,13 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 	
 	private _resetTextContext() {
+		if (!this.sessionManager) return;
 		this.sessionManager.resetTextContext();
 		this.requestUpdate();
 	}
 
 	private _resetCallContext() {
+		if (!this.sessionManager) return;
 		this.sessionManager.resetCallContext();
 		this.requestUpdate();
 	}
@@ -1750,6 +1760,7 @@ this.updateTextTranscript(this.ttsCaption);
 	private startEmotionAnalysis() {
 		this.stopEmotionAnalysis(); // Ensure no multiple timers
 		this.emotionAnalysisTimer = window.setInterval(async () => {
+			if (!this.sessionManager) return;
 			// Only run analysis if a call is active or a text chat is active
 			if (!this.isCallActive && !this.isChatActive) {
 				return;
@@ -1871,6 +1882,7 @@ this.updateTextTranscript(this.ttsCaption);
 	}
 
 	private _onEnergyLevelChanged = (e: Event) => {
+		if (!this.sessionManager) return;
 		const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
 			.detail;
 
