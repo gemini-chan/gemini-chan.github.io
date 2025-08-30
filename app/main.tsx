@@ -594,13 +594,6 @@ private updateTextTranscript(text: string) {
   }
 
 	private async _handleCallStart() {
-		// Check API key presence before proceeding
-		if (!this._checkApiKeyExists()) {
-			this._showApiKeyPrompt(() => this._handleCallStart());
-			return;
-		}
-
-		if (!this.sessionManager) return;
 		try {
 			// Acquire microphone FIRST, within the user gesture's direct context.
 			await this.audioManager.acquireMicrophone();
@@ -630,6 +623,14 @@ private updateTextTranscript(text: string) {
 			this.sessionManager.lastAnalyzedTranscriptIndex = 0;
 			this.callState = "connecting";
 			this._updateActiveOutputNode();
+
+			// Check API key presence before proceeding
+			if (!this._checkApiKeyExists()) {
+				this._showApiKeyPrompt(() => this._handleCallStart());
+				return;
+			}
+
+			if (!this.sessionManager) return;
 
 			const isResuming = this.callSessionManager.getResumptionHandle() !== null;
 			const ok = await this.sessionManager.initCallSession();
@@ -1347,13 +1348,6 @@ this.updateTextTranscript(this.ttsCaption);
 
 
 	private async _handleSendMessage(e: CustomEvent) {
-		// Check API key presence before proceeding
-		if (!this._checkApiKeyExists()) {
-			this._showApiKeyPrompt(() => this._handleSendMessage(e));
-			return;
-		}
-
-		if (!this.sessionManager) return;
 		const message = e.detail;
 		if (!message || !message.trim()) {
 			return;
@@ -1370,6 +1364,14 @@ this.updateTextTranscript(this.ttsCaption);
 		await this.updateComplete;
 
 		logger.debug("UI INIT: Thinking set pre-await", { status: this.turnManager.npuStatus, active: this.turnManager.thinkingActive });
+
+		// Check API key presence before proceeding
+		if (!this._checkApiKeyExists()) {
+			this._showApiKeyPrompt(() => this._handleSendMessage(e));
+			return;
+		}
+
+		if (!this.sessionManager) return;
 
 		// Clear any existing captions when the user sends a new message
 		this.ttsCaption = "";
