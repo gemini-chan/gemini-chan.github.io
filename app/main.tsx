@@ -35,7 +35,7 @@ import {
 } from "@features/vpu/VPUService";
 import type { CallSummary, Turn } from "@shared/types";
 import { SessionManager } from "./SessionManager";
-import { AudioManager } from "./AudioManager";
+import { AudioManager, type AudioManagerDependencies } from "./AudioManager";
 
 declare global {
 	interface Window {
@@ -60,11 +60,13 @@ type ActiveMode = "texting" | "calling" | null;
 export const logger = createComponentLogger("GdmLiveAudio");
 
 // Import progress event types and mappings
-import type {
-  NpuProgressEvent,
-  VpuProgressEvent
-} from "@shared/progress";
-import { TurnManager, type TurnState } from "./TurnManager";
+import type { NpuProgressEvent, VpuProgressEvent } from "@shared/progress";
+import {
+	TurnManager,
+	type TurnState,
+	type TurnManagerDependencies,
+} from "./TurnManager";
+import type { SessionManagerDependencies } from "./SessionManager";
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -345,11 +347,27 @@ export class GdmLiveAudio extends LitElement {
 	constructor() {
 		super();
 		this.personaManager = new PersonaManager();
-		this.turnManager = new TurnManager(this);
-		this.sessionManager = new SessionManager(this);
-		// AudioManager will be initialized after session managers are created
-		// MemoryService will be initialized after the GoogleGenAI client is created.
-		// Client initialization is deferred to connectedCallback to avoid Lit update warnings.
+
+		const turnManagerDeps: TurnManagerDependencies = {
+			getState: () => ({
+				turnState: this.turnState,
+				textTranscript: this.textTranscript,
+				messageStatuses: this.messageStatuses,
+			}),
+			setState: (newState) => {
+				Object.assign(this, newState);
+			},
+			pruneMessageMeta: this._pruneMessageMeta.bind(this),
+			armDevRaf: this._armDevRaf.bind(this),
+			scheduleUpdate: this._scheduleUpdate.bind(this),
+			COMPLETE_TO_IDLE_DELAY_MS: this.COMPLETE_TO_IDLE_DELAY_MS,
+			ERROR_TO_IDLE_DELAY_MS: this.ERROR_TO_IDLE_DELAY_MS,
+		};
+		this.turnManager = new TurnManager(turnManagerDeps);
+
+		// AudioManager, SessionManager, etc. will be initialized later in initClient
+		// after the API key is validated and the client is created.
+		// This avoids circular dependencies and unnecessary work.
 
 		// Debug: Check initial TTS energy state
 		logger.debug("Initial TTS energy state", {
@@ -428,14 +446,51 @@ export class GdmLiveAudio extends LitElement {
 				this,
 			);
 			this.summarizationService = new SummarizationService(this.client);
+
+			// Now that text/call managers exist, create the main session manager
+			const sessionManagerDeps: SessionManagerDependencies = {
+				personaManager: this.personaManager,
+				textSessionManager: this.textSessionManager,
+				callSessionManager: this.callSessionManager,
+				energyBarService: this.energyBarService,
+				getState: () => ({
+					isCallActive: this.isCallActive,
+					lastAnalyzedTranscriptIndex: this.lastAnalyzedTranscriptIndex,
+					textTranscript: this.textTranscript,
+					callTranscript: this.callTranscript,
+					_callReconnectingNotified: this._callReconnectingNotified,
+					_callRateLimitNotified: this._callRateLimitNotified,
+				}),
+				setState: (newState) => {
+					Object.assign(this, newState);
+				},
+				updateStatus: this.updateStatus.bind(this),
+				updateError: this.updateError.bind(this),
+				handleCallRateLimit: this._handleCallRateLimit.bind(this),
+				clearThinkingAll: this._clearThinkingAll.bind(this),
+				queryShadowRoot: (selector: string) =>
+					this.shadowRoot?.querySelector(selector) ?? null,
+			};
+			this.sessionManager = new SessionManager(sessionManagerDeps);
 		}
 	}
 
 
 	private async initClient() {
-		// Initialize AudioManager with the callSessionManager
-		this.audioManager = new AudioManager(this, this.callSessionManager);
-
+		// Create AudioManager first; its dependencies are self-contained or host-provided getters.
+		const audioManagerDeps: AudioManagerDependencies = {
+			getCallSessionManager: () => this.callSessionManager,
+			getState: () => ({
+				activeMode: this.activeMode,
+				isCallActive: this.isCallActive,
+			}),
+			updateStatus: this.updateStatus.bind(this),
+			updateError: this.updateError.bind(this),
+			scheduleUpdate: this._scheduleUpdate.bind(this),
+			setSourceressMotion: this._setSourceressMotion.bind(this),
+			startIdleMotionCycle: this._startIdleMotionCycle.bind(this),
+		};
+		this.audioManager = new AudioManager(audioManagerDeps);
 		this.audioManager.initAudio();
 
 		// Always initialize with texting mode by default (main UI)
@@ -622,7 +677,10 @@ if (lastMessage.speaker === "model") {
     this.currentMotionName = name;
     // Reset back to empty after a short delay to allow re-triggering the same motion later
     setTimeout(() => {
-      if (this.currentMotionName === name) this.currentMotionName = "";
+      if (this.currentMotionName === name) {
+        this.currentMotionName = "";
+        this._scheduleUpdate();
+      }
     }, 200);
   }
 

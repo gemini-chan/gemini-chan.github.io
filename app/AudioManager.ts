@@ -3,107 +3,128 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { GdmLiveAudio } from "./main.tsx";
 import { createBlob } from "@shared/utils";
 import type { CallSessionManager } from "@features/vpu/VPUService";
 
+export interface AudioManagerDependencies {
+	getCallSessionManager: () => CallSessionManager;
+	getState: () => {
+		activeMode: "texting" | "calling" | null;
+		isCallActive: boolean;
+	};
+	updateStatus: (msg: string) => void;
+	updateError: (msg: string) => void;
+	scheduleUpdate: () => void;
+	setSourceressMotion: (name: string) => void;
+	startIdleMotionCycle: () => void;
+}
+
 export class AudioManager {
-  mediaStream: MediaStream | null = null;
-  sourceNode: MediaStreamAudioSourceNode | null = null;
-  audioWorkletNode: AudioWorkletNode | null = null;
-  public inputAudioContext: AudioContext;
-  public outputAudioContext: AudioContext;
-  public inputNode: GainNode;
-  public outputNode: GainNode;
-  public textOutputNode: GainNode;
-  public callOutputNode: GainNode;
-  public micEnabled: boolean = true;
-  public isMuted: boolean = false;
+	mediaStream: MediaStream | null = null;
+	sourceNode: MediaStreamAudioSourceNode | null = null;
+	audioWorkletNode: AudioWorkletNode | null = null;
+	public inputAudioContext: AudioContext;
+	public outputAudioContext: AudioContext;
+	public inputNode: GainNode;
+	public outputNode: GainNode;
+	public textOutputNode: GainNode;
+	public callOutputNode: GainNode;
+	public micEnabled: boolean = true;
+	public isMuted: boolean = false;
 
-  constructor(private host: GdmLiveAudio, private callSessionManager: CallSessionManager) {
-    this.inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    this.outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-    this.inputNode = this.inputAudioContext.createGain();
-    this.outputNode = this.outputAudioContext.createGain();
-    this.textOutputNode = this.outputAudioContext.createGain();
-    this.callOutputNode = this.outputAudioContext.createGain();
+	constructor(private deps: AudioManagerDependencies) {
+		this.inputAudioContext = new (window.AudioContext ||
+			window.webkitAudioContext)({ sampleRate: 16000 });
+		this.outputAudioContext = new (window.AudioContext ||
+			window.webkitAudioContext)({ sampleRate: 24000 });
+  this.inputNode = this.inputAudioContext.createGain();
+  this.outputNode = this.outputAudioContext.createGain();
+  this.textOutputNode = this.outputAudioContext.createGain();
+  this.callOutputNode = this.outputAudioContext.createGain();
+ }
+
+ initAudio() {
+  // Audio initialization is now handled by individual session managers
+  // Each session manager maintains its own isolated audio timeline
+  this.textOutputNode.connect(this.outputAudioContext.destination);
+  this.callOutputNode.connect(this.outputAudioContext.destination);
+ }
+
+ public updateActiveOutputNode() {
+  const { activeMode } = this.deps.getState();
+  // Update the main outputNode to point to the active session's output node
+  if (activeMode === "texting") {
+   this.outputNode = this.textOutputNode;
+  } else if (activeMode === "calling") {
+   this.outputNode = this.callOutputNode;
+  }
+  // Trigger a re-render to pass the updated outputNode to live2d-gate
+  this.deps.scheduleUpdate();
+ }
+
+ public async acquireMicrophone() {
+  if (this.mediaStream) {
+   return;
+  }
+  this.mediaStream = await navigator.mediaDevices.getUserMedia({
+   audio: true,
+   video: false,
+  });
+ }
+
+ public async startAudioProcessing() {
+  if (!this.mediaStream) {
+   throw new Error(
+    "Media stream has not been acquired. Call acquireMicrophone first.",
+   );
   }
 
-  initAudio() {
-    // Audio initialization is now handled by individual session managers
-    // Each session manager maintains its own isolated audio timeline
-    this.textOutputNode.connect(this.outputAudioContext.destination);
-    this.callOutputNode.connect(this.outputAudioContext.destination);
-  }
+  this.deps.updateStatus("");
 
-  public updateActiveOutputNode() {
-    // Update the main outputNode to point to the active session's output node
-    if (this.host.activeMode === "texting") {
-      this.outputNode = this.textOutputNode;
-    } else if (this.host.activeMode === "calling") {
-      this.outputNode = this.callOutputNode;
+  // Live2D: greet motion for Sourceress on call start
+  this.deps.setSourceressMotion("greet");
+
+  // Start idle motion cycling while in call
+  this.deps.startIdleMotionCycle();
+
+  this.sourceNode = this.inputAudioContext.createMediaStreamSource(
+   this.mediaStream,
+  );
+  this.sourceNode.connect(this.inputNode);
+
+  // Add the audio worklet module
+  await this.inputAudioContext.audioWorklet.addModule(
+   new URL("./audio-processor.ts", import.meta.url).href,
+  );
+
+  // Create the AudioWorkletNode
+  this.audioWorkletNode = new AudioWorkletNode(
+   this.inputAudioContext,
+   "audio-processor",
+  );
+
+  // Set up message handling from the worklet
+  this.audioWorkletNode.port.onmessage = (event) => {
+   const { isCallActive, activeMode } = this.deps.getState();
+   if (!isCallActive) return;
+
+   const pcmData = event.data;
+   // Send audio to the active call session using session manager
+   if (
+   	activeMode === "calling" &&
+   	this.deps.getCallSessionManager() &&
+   	this.deps.getCallSessionManager().isActive
+   ) {
+   	try {
+   		this.deps.getCallSessionManager().sendRealtimeInput({
+   			media: createBlob(pcmData),
+   		});
+    } catch (e) {
+    	const msg = String((e as Error)?.message || e || "");
+    	this.deps.updateError(`Failed to stream audio: ${msg}`);
     }
-    // Trigger a re-render to pass the updated outputNode to live2d-gate
-    this.host._scheduleUpdate();
-  }
-
-  public async acquireMicrophone() {
-    if (this.mediaStream) {
-      return;
-    }
-    this.mediaStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: false,
-    });
-  }
-
-  public async startAudioProcessing() {
-    if (!this.mediaStream) {
-      throw new Error("Media stream has not been acquired. Call acquireMicrophone first.");
-    }
-
-    this.host.updateStatus("");
-
-    // Live2D: greet motion for Sourceress on call start
-    this.host._setSourceressMotion("greet");
-
-    // Start idle motion cycling while in call
-    this.host._startIdleMotionCycle();
-
-    this.sourceNode = this.inputAudioContext.createMediaStreamSource(
-      this.mediaStream,
-    );
-    this.sourceNode.connect(this.inputNode);
-
-    // Add the audio worklet module
-    await this.inputAudioContext.audioWorklet.addModule(
-      new URL('./audio-processor.ts', import.meta.url).href
-    );
-    
-    // Create the AudioWorkletNode
-    this.audioWorkletNode = new AudioWorkletNode(this.inputAudioContext, 'audio-processor');
-    
-    // Set up message handling from the worklet
-    this.audioWorkletNode.port.onmessage = (event) => {
-      if (!this.host.isCallActive) return;
-      
-      const pcmData = event.data;
-      // Send audio to the active call session using session manager
-      if (
-        this.host.activeMode === "calling" &&
-        this.callSessionManager &&
-        this.callSessionManager.isActive
-      ) {
-        try {
-          this.callSessionManager.sendRealtimeInput({
-            media: createBlob(pcmData),
-          });
-        } catch (e) {
-          const msg = String((e as Error)?.message || e || "");
-          this.host.updateError(`Failed to stream audio: ${msg}`);
-        }
-      }
-    };
+   }
+  };
 
     // Connect the audio nodes
     this.sourceNode.connect(this.audioWorkletNode);
