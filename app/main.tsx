@@ -1270,9 +1270,9 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "npu:model:start":
 				if (ev.data?.model) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'single' };
 					// Initialize retry count
-					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
+					this.sessionManager.messageRetryCount = { ...this.sessionManager.messageRetryCount, [turnId]: 0 };
 					this.turnManager.npuThinkingLog += `\n[Preparing NPU: ${ev.data.model as string}]`; // Concise log line
 				}
 				break;
@@ -1280,13 +1280,13 @@ this.updateTextTranscript(this.ttsCaption);
 				if (ev.data?.attempt) {
 					// Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
 					const retries = Math.max(0, (ev.data.attempt as number) - 1);
-					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
+					this.sessionManager.messageRetryCount = { ...this.sessionManager.messageRetryCount, [turnId]: Math.max(this.sessionManager.messageRetryCount[turnId] ?? 0, retries) };
 					this.turnManager.npuThinkingLog += `\n[NPU attempt #${ev.data.attempt}]`; // Concise log line
 				}
 				break;
 			case "npu:model:error":
 				if (ev.data?.attempt && ev.data?.error) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'error' };
 					// Clear any pending transcription timers on error
 					if (this.transcriptionDebounceTimer) {
 						clearTimeout(this.transcriptionDebounceTimer);
@@ -1298,14 +1298,14 @@ this.updateTextTranscript(this.ttsCaption);
 				break;
 			case "npu:model:response":
 				if (ev.data?.length) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'double' };
 					this.turnManager.npuThinkingLog += "\n[NPU ready]"; // Concise log line
 				}
 				break;
 			case "npu:complete":
 				// Set fallback status based on whether NPU produced a response
 				const ok = !!ev.data?.hasResponseText;
-				this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
+				this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: ok ? 'double' : 'error' };
 				this.turnManager.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
 				break;
 		}
@@ -1750,20 +1750,20 @@ this.updateTextTranscript(this.ttsCaption);
 	public _pruneMessageMeta() {
 		// Create a set of current user turn IDs
 		const currentUserTurnIds = new Set(
-			this.textTranscript
+			this.sessionManager.textTranscript
 				.filter(turn => turn.speaker === "user" && turn.turnId)
 				.map(turn => turn.turnId)
 		);
 		
 		// Filter messageStatuses and messageRetryCount to only include current turn IDs
-		this.messageStatuses = Object.fromEntries(
-			Object.entries(this.messageStatuses).filter(([turnId]) => 
+		this.sessionManager.messageStatuses = Object.fromEntries(
+			Object.entries(this.sessionManager.messageStatuses).filter(([turnId]) => 
 				currentUserTurnIds.has(turnId)
 			)
 		);
 		
-		this.messageRetryCount = Object.fromEntries(
-			Object.entries(this.messageRetryCount).filter(([turnId]) => 
+		this.sessionManager.messageRetryCount = Object.fromEntries(
+			Object.entries(this.sessionManager.messageRetryCount).filter(([turnId]) => 
 				currentUserTurnIds.has(turnId)
 			)
 		);
