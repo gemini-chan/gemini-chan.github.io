@@ -524,12 +524,12 @@ export class ChatView extends LitElement {
       aria-label="${ariaLabel}"
       @click=${(e: Event) => e.stopPropagation()}>
         ${status === 'clock' 
-          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/clock.svg" class="status-icon" height="14px" alt="Analyzing">`
+          ? html`<img src="/assets/icons/ui/xnix/chat/clock.svg" class="status-icon" height="14px" alt="Analyzing">`
           : status === 'single'
-          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/tick.svg" class="status-icon" height="14px" alt="Sent to NPU">`
+          ? html`<img src="/assets/icons/ui/xnix/chat/tick.svg" class="status-icon" height="14px" alt="Sent to NPU">`
           : status === 'double'
-          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/double-tick.svg" class="status-icon" height="14px" alt="Advisor responded">`
-          : html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/error.svg" class="status-icon" height="14px" alt="Error">`}
+          ? html`<img src="/assets/icons/ui/xnix/chat/double-tick.svg" class="status-icon" height="14px" alt="Advisor responded">`
+          : html`<img src="/assets/icons/ui/xnix/chat/error.svg" class="status-icon" height="14px" alt="Error">`}
         ${retryCount && retryCount > 0 
           ? html`<span class="retry-badge" title="Retrying… (x${retryCount})" aria-label="Retry count: ${retryCount}">×</span>`
           : ''}
