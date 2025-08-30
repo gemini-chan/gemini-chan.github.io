@@ -1443,6 +1443,7 @@ this.updateTextTranscript(this.ttsCaption);
       case 'npu':
         this.thinkingActive = true;
         this.npuStatus = EVENT_STATUS_MAP[eventType] || 'Thinking...';
+        logger.debug('Status badge updated', { status: this.npuStatus });
         break;
       case 'vpu':
         this.thinkingActive = true;
