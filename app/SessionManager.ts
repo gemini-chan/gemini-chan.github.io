@@ -56,11 +56,11 @@ export class SessionManager {
   	? `\n\n${ctxBlocks.join("\n\n")}`
   	: "";
 
-  // Use the combined markdown prompt template
+  // Use the combined markdown prompt template with safe replacer functions
   return combinedPrompt
-  	.replace("{systemPrompt}", systemPrompt)
-  	.replace("{context}", contextSection)
-  	.replace("{userMessage}", userMessage);
+  	.replace("{systemPrompt}", () => systemPrompt)
+  	.replace("{context}", () => contextSection)
+  	.replace("{userMessage}", () => userMessage);
  }
 
  public constructVpuMessagePayload(
