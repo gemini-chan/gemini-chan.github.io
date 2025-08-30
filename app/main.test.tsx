@@ -76,8 +76,11 @@ describe('main component', () => {
 
   it('should display a user message after sending', async () => {
     // Find the chat-view component within the gdm-live-audio's shadow DOM
-    const chatView = mainComponent.shadowRoot?.querySelector('chat-view') as ChatView;
-    expect(chatView).toBeTruthy();
+    let chatView: ChatView | null = null;
+    await waitFor(() => {
+      chatView = mainComponent.shadowRoot?.querySelector('chat-view') as ChatView;
+      expect(chatView).toBeTruthy();
+    });
 
     // Find the text input and send button within the chat-view's shadow DOM
     const textarea = chatView?.shadowRoot?.querySelector('textarea');
