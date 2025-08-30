@@ -595,6 +595,25 @@ private updateTextTranscript(text: string) {
 
 	private async _handleCallStart() {
 		try {
+			// Guard: Ensure sessionManager exists before proceeding
+			if (!this.sessionManager) {
+				// Check if API key exists
+				if (!this._checkApiKeyExists()) {
+					// Show API key prompt and return
+					this._showApiKeyPrompt(() => this._handleCallStart());
+					return;
+				}
+				
+				// API key exists but session manager doesn't - try to initialize
+				await this.initClient();
+				
+				// If session manager still doesn't exist, show error and return
+				if (!this.sessionManager) {
+					this.updateError("Failed to initialize session. Please try again.");
+					return;
+				}
+			}
+			
 			// Acquire microphone FIRST, within the user gesture's direct context.
 			await this.audioManager.acquireMicrophone();
 
@@ -1351,6 +1370,25 @@ this.updateTextTranscript(this.ttsCaption);
 		const message = e.detail;
 		if (!message || !message.trim()) {
 			return;
+		}
+
+		// Guard: Ensure sessionManager exists before proceeding
+		if (!this.sessionManager) {
+			// Check if API key exists
+			if (!this._checkApiKeyExists()) {
+				// Show API key prompt and return
+				this._showApiKeyPrompt(() => this._handleSendMessage(e));
+				return;
+			}
+			
+			// API key exists but session manager doesn't - try to initialize
+			await this.initClient();
+			
+			// If session manager still doesn't exist, show error and return
+			if (!this.sessionManager) {
+				this.updateError("Failed to initialize session. Please try again.");
+				return;
+			}
 		}
 
 		// Initialize new turn and get turnId
