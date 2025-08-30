@@ -1465,8 +1465,9 @@ this.updateTextTranscript(this.ttsCaption);
 				// Note: We don't set npuStatus here anymore as it's handled by the advisor:ready event
 				// this.npuStatus = "Sending to VPU…";
 
+				const vpuPayload = this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message);
 				this.textSessionManager.sendMessageWithProgress(
-					this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message), 
+					vpuPayload, 
 					turnId, 
 					(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, false)
 				);
