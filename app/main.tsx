@@ -119,6 +119,7 @@ export class GdmLiveAudio extends LitElement {
 	public _clearThinkingAll() {
 		// Reset turn manager state
 		this.turnManager.reset();
+		this.requestUpdate();
 		
 		// Clear timers
 		if (this.vpuWaitTimer) {
@@ -326,9 +327,9 @@ export class GdmLiveAudio extends LitElement {
 		this.personaManager = new PersonaManager();
 
 		this.turnManager = new TurnManager({
+			hostElement: this,
 			pruneMessageMeta: this._pruneMessageMeta.bind(this),
 			armDevRaf: this._armDevRaf.bind(this),
-			scheduleUpdate: this._scheduleUpdate.bind(this),
 			COMPLETE_TO_IDLE_DELAY_MS: this.COMPLETE_TO_IDLE_DELAY_MS,
 			ERROR_TO_IDLE_DELAY_MS: this.ERROR_TO_IDLE_DELAY_MS,
 		});
@@ -421,13 +422,12 @@ export class GdmLiveAudio extends LitElement {
 				textSessionManager: this.textSessionManager,
 				callSessionManager: this.callSessionManager,
 				energyBarService: this.energyBarService,
-				updateStatus: this.updateStatus.bind(this),
-				updateError: this.updateError.bind(this),
+				hostElement: this,
 				handleCallRateLimit: this._handleCallRateLimit.bind(this),
 				clearThinkingAll: this._clearThinkingAll.bind(this),
 				queryShadowRoot: (selector: string) =>
 					this.shadowRoot?.querySelector(selector) ?? null,
-			}, this);
+			});
 		}
 	}
 
@@ -436,13 +436,7 @@ export class GdmLiveAudio extends LitElement {
 		// Create AudioManager first; its dependencies are self-contained or host-provided getters.
 		const audioManagerDeps: AudioManagerDependencies = {
 			getCallSessionManager: () => this.callSessionManager,
-			getState: () => ({
-				activeMode: this.activeMode,
-				isCallActive: this.isCallActive,
-			}),
-			updateStatus: this.updateStatus.bind(this),
-			updateError: this.updateError.bind(this),
-			scheduleUpdate: this._scheduleUpdate.bind(this),
+			hostElement: this,
 			setSourceressMotion: this._setSourceressMotion.bind(this),
 			startIdleMotionCycle: this._startIdleMotionCycle.bind(this),
 		};
@@ -1734,6 +1728,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// Add event listeners for manager events
 		this.addEventListener("status-update", this._handleStatusUpdate);
 		this.addEventListener("error-update", this._handleErrorUpdate);
+		this.addEventListener("state-update", this._handleStateUpdate);
 		
 		// Set default throttles
 		debugLogger.setThrottle('*', 250, { leading: true, trailing: false });
@@ -1761,6 +1756,7 @@ this.updateTextTranscript(this.ttsCaption);
 		this.removeEventListener("reconnected", this._handleReconnected);
 		this.removeEventListener("status-update", this._handleStatusUpdate);
 		this.removeEventListener("error-update", this._handleErrorUpdate);
+		this.removeEventListener("state-update", this._handleStateUpdate);
 		this.stopEmotionAnalysis();
 		
 		// Stop dev RAF poller
@@ -2006,8 +2002,8 @@ this.updateTextTranscript(this.ttsCaption);
             .thinkingActive=${this.turnManager.thinkingActive}
             .npuProcessingTime=${this.npuProcessingTime}
             .vpuProcessingTime=${this.vpuProcessingTime}
-            .messageStatuses=${this.turnManager.messageStatuses}
-            .messageRetryCount=${this.turnManager.messageRetryCount}
+            .messageStatuses=${this.messageStatuses}
+            .messageRetryCount=${this.messageRetryCount}
             .phase=${this.turnManager.turnState.phase}
             .hardDeadlineMs=${this.turnManager.vpuHardDeadline}
             .turnId=${this.turnManager.turnState.id || ''}

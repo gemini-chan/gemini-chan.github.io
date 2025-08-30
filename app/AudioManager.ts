@@ -8,13 +8,7 @@ import type { CallSessionManager } from "@features/vpu/VPUService";
 
 export interface AudioManagerDependencies {
 	getCallSessionManager: () => CallSessionManager;
-	getState: () => {
-		activeMode: "texting" | "calling" | null;
-		isCallActive: boolean;
-	};
-	updateStatus: (msg: string) => void;
-	updateError: (msg: string) => void;
-	scheduleUpdate: () => void;
+	hostElement: HTMLElement;
 	setSourceressMotion: (name: string) => void;
 	startIdleMotionCycle: () => void;
 }
@@ -79,7 +73,7 @@ export class AudioManager {
    );
   }
  
-  this.deps.updateStatus("");
+  this.deps.hostElement.dispatchEvent(new CustomEvent('status-update', { detail: { message: "" }, bubbles: true, composed: true }));
  
   // Live2D: greet motion for Sourceress on call start
   this.deps.setSourceressMotion("greet");
@@ -93,7 +87,7 @@ export class AudioManager {
   try {
     await sessionManager.sessionReady;
   } catch (e) {
-    this.deps.updateError("Call session failed to become ready in time.");
+    this.deps.hostElement.dispatchEvent(new CustomEvent('error-update', { detail: { message: "Call session failed to become ready in time." }, bubbles: true, composed: true }));
     return;
   }
  
@@ -133,7 +127,7 @@ export class AudioManager {
     });
    } catch (e) {
     const msg = String((e as Error)?.message || e || "");
-    this.deps.updateError(`Failed to stream audio: ${msg}`);
+    this.deps.hostElement.dispatchEvent(new CustomEvent('error-update', { detail: { message: `Failed to stream audio: ${msg}` }, bubbles: true, composed: true }));
    }
   };
  

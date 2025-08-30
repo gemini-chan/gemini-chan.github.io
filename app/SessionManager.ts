@@ -18,8 +18,6 @@ export interface SessionManagerDependencies {
 	energyBarService: EnergyBarService;
 	hostElement: HTMLElement;
 
-	updateStatus: (msg: string) => void;
-	updateError: (msg: string) => void;
 	handleCallRateLimit: () => void;
 	clearThinkingAll: () => void;
 	queryShadowRoot: (selector: string) => HTMLElement | null;
@@ -84,13 +82,11 @@ export class SessionManager {
   	!this.deps.textSessionManager ||
   	!this.deps.textSessionManager.isActive
   ) {
-  	this.deps.updateStatus("Initializing text session...");
+  	this.deps.hostElement.dispatchEvent(new CustomEvent('status-update', { detail: { message: "Initializing text session..." }, bubbles: true, composed: true }));
   	const ok = await this.deps.textSessionManager.initSession();
   	this.textSession = this.deps.textSessionManager.sessionInstance;
   	if (!ok || !this.deps.textSessionManager.sessionInstance) {
-  		this.deps.updateError(
-  			"Unable to start text session (rate limited or network error)",
-  		);
+  		this.deps.hostElement.dispatchEvent(new CustomEvent('error-update', { detail: { message: "Unable to start text session (rate limited or network error)" }, bubbles: true, composed: true }));
   		return false;
   	}
   }
@@ -98,7 +94,7 @@ export class SessionManager {
  }
 
  public async initCallSession() {
-  this.deps.updateStatus("Initializing call session...");
+  this.deps.hostElement.dispatchEvent(new CustomEvent('status-update', { detail: { message: "Initializing call session..." }, bubbles: true, composed: true }));
   const ok = await this.deps.callSessionManager.initSession();
   this.callSession = this.deps.callSessionManager.sessionInstance;
 
@@ -107,14 +103,10 @@ export class SessionManager {
   	const exhausted =
   		this.deps.energyBarService.getCurrentEnergyLevel() === 0;
   	if (exhausted) {
-  		this.deps.updateStatus(
-  			"Energy exhausted — please try again later.",
-  		);
+  		this.deps.hostElement.dispatchEvent(new CustomEvent('status-update', { detail: { message: "Energy exhausted — please try again later." }, bubbles: true, composed: true }));
   	} else {
   		this.deps.handleCallRateLimit();
-  		this.deps.updateStatus(
-  			"Unable to start call (rate limited or network error)",
-  		);
+  		this.deps.hostElement.dispatchEvent(new CustomEvent('status-update', { detail: { message: "Unable to start call (rate limited or network error)" }, bubbles: true, composed: true }));
   	}
   	return false;
   }
@@ -136,7 +128,7 @@ export class SessionManager {
   this.deps.clearThinkingAll();
 
   // Text session will be lazily initialized when user sends next message
-  this.deps.updateStatus("Text conversation cleared.");
+  this.deps.hostElement.dispatchEvent(new CustomEvent('status-update', { detail: { message: "Text conversation cleared." }, bubbles: true, composed: true }));
  }
 
  public resetCallContext() {
@@ -174,7 +166,7 @@ export class SessionManager {
 
   // Reinitialize call session if we're currently in a call
   // Note: We'll need to handle isCallActive state differently in the next step
-  this.deps.updateStatus("Call conversation cleared.");
+  this.deps.hostElement.dispatchEvent(new CustomEvent('status-update', { detail: { message: "Call conversation cleared." }, bubbles: true, composed: true }));
   // Reuse the existing call-start toasts when the next call starts (resume-first flow).
   // No additional toast here to avoid redundancy.
  }

@@ -15,9 +15,9 @@ export interface TurnState {
 }
 
 export interface TurnManagerDependencies {
+	hostElement: HTMLElement;
 	pruneMessageMeta: () => void;
 	armDevRaf: () => void;
-	scheduleUpdate: () => void;
 	readonly COMPLETE_TO_IDLE_DELAY_MS: number;
 	readonly ERROR_TO_IDLE_DELAY_MS: number;
 }
@@ -162,7 +162,7 @@ export class TurnManager {
 				break;
 		}
 
-		this.deps.scheduleUpdate();
+		this.deps.hostElement.dispatchEvent(new CustomEvent('state-update', { bubbles: true, composed: true }));
 	}
 
 	public resetVpuWatchdog() {
