@@ -16,11 +16,11 @@ export interface TurnState {
 
 export class TurnManager {
   private host: GdmLiveAudio; // GdmLiveAudio instance
-  private vpuWatchdogTimer: number | null = null;
-  private readonly VPU_WATCHDOG_MS = 2200;
-  private vpuHardMaxTimer: number | null = null;
-  private readonly VPU_HARD_MAX_MS = 7000;
-  private vpuHardDeadline: number = 0;
+  public vpuWatchdogTimer: number | null = null;
+  public readonly VPU_WATCHDOG_MS = 2200;
+  public vpuHardMaxTimer: number | null = null;
+  public readonly VPU_HARD_MAX_MS = 7000;
+  public vpuHardDeadline: number = 0;
   public EVENT_STATUS_MAP: Record<string, string> = { 
     'npu:thought': 'Thinking (Thought)...', 
     'npu:audio-out': 'Thinking (Audio)...' 
@@ -134,7 +134,7 @@ export class TurnManager {
     this.host._scheduleUpdate();
   }
 
-  resetVpuWatchdog() {
+  public resetVpuWatchdog() {
     // Clear existing timer
     if (this.vpuWatchdogTimer) {
       clearTimeout(this.vpuWatchdogTimer);
@@ -157,14 +157,14 @@ export class TurnManager {
     }
   }
   
-  clearVpuWatchdog() {
+  public clearVpuWatchdog() {
     if (this.vpuWatchdogTimer) {
       clearTimeout(this.vpuWatchdogTimer);
       this.vpuWatchdogTimer = null;
     }
   }
   
-  armVpuHardMaxTimer() {
+  public armVpuHardMaxTimer() {
     // Always clear any existing timer before setting a new one
     this.clearVpuHardMaxTimer(true); // silent clear
     
@@ -188,7 +188,7 @@ export class TurnManager {
     }
   }
   
-  clearVpuHardMaxTimer(silent = false) {
+  public clearVpuHardMaxTimer(silent = false) {
     if (this.vpuHardMaxTimer) {
       clearTimeout(this.vpuHardMaxTimer);
       this.vpuHardMaxTimer = null;

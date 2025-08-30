@@ -95,7 +95,6 @@ export class GdmLiveAudio extends LitElement {
   private _npuFirstEventForced = new Set<string>();
   private _vpuFirstEventForced = new Set<string>();
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
-  private vpuDevTicker: number | null = null;
   public devRemainingMs: number = 0;
   private _devRafId: number | null = null;
   
@@ -417,8 +416,8 @@ export class GdmLiveAudio extends LitElement {
 		// Initialize session managers after client is ready
 		if (this.client) {
 			this.textSessionManager = new TextSessionManager(
-				this.outputAudioContext,
-				this.textOutputNode,
+				this.audioManager.outputAudioContext,
+				this.audioManager.textOutputNode,
 				this.client,
 				this.updateStatus.bind(this),
 				this.updateError.bind(this),
@@ -429,8 +428,8 @@ export class GdmLiveAudio extends LitElement {
 				this,
 			);
 			this.callSessionManager = new CallSessionManager(
-				this.outputAudioContext,
-				this.callOutputNode,
+				this.audioManager.outputAudioContext,
+				this.audioManager.callOutputNode,
 				this.client,
 				this.updateStatus.bind(this),
 				this.updateError.bind(this),
@@ -445,14 +444,17 @@ export class GdmLiveAudio extends LitElement {
 
 
 	private async initClient() {
+		// Initialize AudioManager with the callSessionManager
+		this.audioManager = new AudioManager(this, this.callSessionManager);
+
 		this.audioManager.initAudio();
 
 		// Always initialize with texting mode by default (main UI)
 		this.activeMode = "texting";
 
 		// Connect both session output nodes to the main audio destination
-		this.textOutputNode.connect(this.audioManager.outputAudioContext.destination);
-		this.callOutputNode.connect(this.audioManager.outputAudioContext.destination);
+		this.audioManager.textOutputNode.connect(this.audioManager.outputAudioContext.destination);
+		this.audioManager.callOutputNode.connect(this.audioManager.outputAudioContext.destination);
 		this._updateActiveOutputNode();
 
 		const apiKey = localStorage.getItem("gemini-api-key");
@@ -491,18 +493,15 @@ export class GdmLiveAudio extends LitElement {
 		// Initialize session managers after client is ready
 		this.initSessionManagers();
 
-		// Initialize AudioManager with the callSessionManager
-		this.audioManager = new AudioManager(this, this.callSessionManager);
-
 		// Sessions will be created lazily when user actually interacts
 	}
 
 	private _updateActiveOutputNode() {
 		// Update the main outputNode to point to the active session's output node
 		if (this.activeMode === "texting") {
-			this.audioManager.outputNode = this.textOutputNode;
+			this.audioManager.outputNode = this.audioManager.textOutputNode;
 		} else if (this.activeMode === "calling") {
-			this.audioManager.outputNode = this.callOutputNode;
+			this.audioManager.outputNode = this.audioManager.callOutputNode;
 		}
 		// Trigger a re-render to pass the updated outputNode to live2d-gate
 		this._scheduleUpdate();
@@ -1233,109 +1232,6 @@ this.updateTextTranscript(this.ttsCaption);
       clearTimeout(this.vpuWatchdogTimer);
     }
     
-    // Set new timer only if we're in VPU phase
-    if (this.turnState.phase === 'vpu' && this.turnState.id) {
-      logger.debug("VPU watchdog armed", { 
-        turnId: this.turnState.id, 
-        timeoutMs: this.VPU_WATCHDOG_MS 
-      });
-      this.vpuWatchdogTimer = window.setTimeout(() => {
-        // Only trigger if this is still the current turn
-        if (this.turnState.id && this.turnState.phase === 'vpu') {
-          logger.debug("VPU watchdog fired", { turnId: this.turnState.id });
-          this._setTurnPhase('complete');
-        }
-        this.vpuWatchdogTimer = null;
-      }, this.VPU_WATCHDOG_MS);
-    }
-  }
-  
-  private _clearVpuWatchdog() {
-    if (this.vpuWatchdogTimer) {
-      clearTimeout(this.vpuWatchdogTimer);
-      this.vpuWatchdogTimer = null;
-    }
-  }
-  
-  private _armVpuDevTicker() {
-    // If vpuDevTicker exists, no-op
-    if (this.vpuDevTicker) {
-      logger.debug("VPU dev ticker already armed");
-      return;
-    }
-    
-    // Set new ticker
-    this.vpuDevTicker = window.setInterval(() => {
-      try {
-        if (this.turnState.phase !== 'vpu' || !this.turnState.id) { 
-          this._clearVpuDevTicker(); 
-          return; 
-        }
-        const now = Date.now();
-        this.devRemainingMs = Math.max(0, this.vpuHardDeadline ? (this.vpuHardDeadline - now) : 0);
-        // If deadline present and reached, force complete
-        if (this.vpuHardDeadline && now >= this.vpuHardDeadline) {
-          logger.debug('VPU DEV TICKER forcing completion');
-          this._clearVpuWatchdog();
-          this._clearVpuHardMaxTimer();
-          this.turnManager.setTurnPhase('complete');
-          this._clearVpuDevTicker();
-          this.requestUpdate();
-          return;
-        }
-        // Request update to refresh dev label countdown
-        this.requestUpdate();
-      } catch (e) {
-        logger.warn('VPU DEV TICKER error', { error: e });
-      }
-    }, 250);
-    
-    logger.debug("VPU dev ticker armed", { turnId: this.turnState.id });
-  }
-  
-  public _clearVpuDevTicker() {
-    if (this.vpuDevTicker) {
-      clearInterval(this.vpuDevTicker);
-      this.vpuDevTicker = null;
-      logger.debug("VPU dev ticker cleared");
-      this.devRemainingMs = 0;
-    }
-  }
-  
-  /**
-   * Constructs the VPU message payload by combining advisor context and user message
-   * @param advisorContext The context provided by the NPU
-   * @param userMessage The original user message
-   * @returns The formatted message payload for VPU
-   */
-  private _constructVpuMessagePayload(advisorContext: string, userMessage: string): string {
-    return advisorContext ? `${advisorContext}\n\n${userMessage}` : userMessage;
-  }
-  
-  private _armVpuHardMaxTimer() {
-    // Always clear any existing timer before setting a new one
-    this._clearVpuHardMaxTimer(true); // silent clear
-    
-    // Set new hard max timer
-    if (this.turnState.id) {
-      this.vpuHardDeadline = Date.now() + this.VPU_HARD_MAX_MS;
-      logger.debug("VPU hard max armed", { 
-        turnId: this.turnState.id, 
-        deadline: new Date(this.vpuHardDeadline).toISOString(),
-        timeoutMs: this.VPU_HARD_MAX_MS 
-      });
-      this.vpuHardMaxTimer = window.setTimeout(() => {
-        logger.debug("VPU HARD TIMEOUT fired", { turnId: this.turnState.id });
-        // Only trigger if this is still the current turn
-        if (this.turnState.id && this.turnState.phase === 'vpu') {
-          this.turnManager.setTurnPhase('complete');
-          this.requestUpdate();
-        }
-        this.vpuHardMaxTimer = null;
-        this.vpuHardDeadline = 0;
-      }, this.VPU_HARD_MAX_MS);
-    }
-  }
 	
 	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string) {
 		// Once a turn is complete or has errored, ignore subsequent events for it.
@@ -1681,18 +1577,18 @@ this.updateTextTranscript(this.ttsCaption);
       this._setTurnPhase('vpu');
       this.turnManager.armVpuHardMaxTimer();
       this.turnManager.resetVpuWatchdog();
-      this._armVpuDevTicker();
+      this.turnManager.armVpuDevTicker();
     } else if (ev.type === "vpu:response:complete") {
       // Update log before setting phase to complete
       this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
       this.turnManager.clearVpuWatchdog();
       this.turnManager.clearVpuHardMaxTimer();
-      this._clearVpuDevTicker();
+      this.turnManager.clearVpuDevTicker();
       this.turnManager.setTurnPhase('complete');
     } else if (ev.type === "vpu:message:error") {
       this.turnManager.clearVpuWatchdog();
       this.turnManager.clearVpuHardMaxTimer();
-      this._clearVpuDevTicker();
+      this.turnManager.clearVpuDevTicker();
       this.turnManager.setTurnPhase('error');
     }
     

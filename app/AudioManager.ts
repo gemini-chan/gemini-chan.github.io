@@ -11,16 +11,20 @@ export class AudioManager {
   mediaStream: MediaStream | null = null;
   sourceNode: MediaStreamAudioSourceNode | null = null;
   scriptProcessorNode: ScriptProcessorNode | null = null;
-  inputAudioContext: AudioContext;
-  outputAudioContext: AudioContext;
-  inputNode: GainNode;
-  outputNode: GainNode;
+  public inputAudioContext: AudioContext;
+  public outputAudioContext: AudioContext;
+  public inputNode: GainNode;
+  public outputNode: GainNode;
+  public textOutputNode: GainNode;
+  public callOutputNode: GainNode;
 
   constructor(private host: GdmLiveAudio, private callSessionManager: CallSessionManager) {
     this.inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     this.outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
     this.inputNode = this.inputAudioContext.createGain();
     this.outputNode = this.outputAudioContext.createGain();
+    this.textOutputNode = this.outputAudioContext.createGain();
+    this.callOutputNode = this.outputAudioContext.createGain();
   }
 
   initAudio() {
@@ -45,7 +49,7 @@ export class AudioManager {
     this.sourceNode = this.inputAudioContext.createMediaStreamSource(
       this.mediaStream,
     );
-    this.sourceNode.connect(this.host.inputNode);
+    this.sourceNode.connect(this.inputNode);
 
     const bufferSize = 1024;
     this.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
