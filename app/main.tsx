@@ -217,10 +217,6 @@ export class GdmLiveAudio extends LitElement {
 	// Track last analyzed position in the active transcript for efficient delta analysis
 	public lastAnalyzedTranscriptIndex = 0;
 
-	// Audio nodes for each session type
-	private textOutputNode = this.outputAudioContext.createGain();
-	private callOutputNode = this.outputAudioContext.createGain();
-
 	/**
 	 * Optimize re-renders by only updating when necessary
 	 */
