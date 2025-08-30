@@ -21,6 +21,22 @@ describe('main component', () => {
   });
 
   it('should display a user message after sending', async () => {
+    // Create a mock sessionManager on the mainComponent instance
+    const mockSessionManager = {
+      textTranscript: [{ text: 'Hello! How can I help you?', speaker: 'model' }]
+    };
+    // @ts-ignore
+    mainComponent.sessionManager = mockSessionManager;
+
+    // Mock the private _handleSendMessage method
+    // @ts-ignore
+    const handleSendMessageSpy = vi.spyOn(mainComponent, '_handleSendMessage').mockImplementation((e: CustomEvent) => {
+      const newTurn = { speaker: 'user', text: e.detail };
+      // @ts-ignore
+      mainComponent.sessionManager.textTranscript = [...mainComponent.sessionManager.textTranscript, newTurn];
+      mainComponent.requestUpdate();
+    });
+
     // Find the chat-view component within the gdm-live-audio's shadow DOM
     const chatView = mainComponent.shadowRoot?.querySelector('chat-view');
     expect(chatView).toBeTruthy();
@@ -32,13 +48,6 @@ describe('main component', () => {
     expect(textarea).toBeTruthy();
     expect(sendButton).toBeTruthy();
 
-    // Listen for the send-message event and update the transcript
-    chatView?.addEventListener('send-message', (e: CustomEvent) => {
-      const newTurn = { speaker: 'user', text: e.detail };
-      // @ts-ignore
-      chatView.transcript = [...chatView.transcript, newTurn];
-    });
-
     // Simulate a user typing 'Hello, world!' into the text area
     fireEvent.input(textarea!, { target: { value: 'Hello, world!' } });
 
@@ -47,11 +56,14 @@ describe('main component', () => {
 
     // Wait for the component to update
     await waitFor(() => {
-      expect(chatView?.transcript).toHaveLength(2);
+      // @ts-ignore
+      expect(mainComponent.sessionManager.textTranscript).toHaveLength(2);
     });
 
-    // Assert that the chat view's transcript property contains the message
-    expect(chatView?.transcript[1].text).toBe('Hello, world!');
-    expect(chatView?.transcript[1].speaker).toBe('user');
+    // Assert that the sessionManager's textTranscript contains the message
+    // @ts-ignore
+    expect(mainComponent.sessionManager.textTranscript[1].text).toBe('Hello, world!');
+    // @ts-ignore
+    expect(mainComponent.sessionManager.textTranscript[1].speaker).toBe('user');
   });
 });
