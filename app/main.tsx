@@ -1139,8 +1139,9 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
+		const vpuPayload = this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message);
 		this.textSessionManager.sendMessageWithProgress(
-			this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message), 
+			vpuPayload, 
 			turnId, 
 			(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId)
 		);
@@ -1495,8 +1496,9 @@ this.updateTextTranscript(this.ttsCaption);
 						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
+						const vpuPayload = this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message);
 						this.textSessionManager.sendMessageWithProgress(
-							this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message), 
+							vpuPayload, 
 							turnId, 
 							(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, true)
 						);
