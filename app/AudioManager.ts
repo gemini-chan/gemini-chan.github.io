@@ -51,10 +51,15 @@ export class AudioManager {
     if (this.mediaStream) {
       return;
     }
-    this.mediaStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: false,
-    });
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
+    } catch (error) {
+      console.error("Error acquiring microphone:", error);
+      throw error;
+    }
   }
 
   public async startAudioProcessing() {
@@ -76,7 +81,9 @@ export class AudioManager {
     this.sourceNode.connect(this.inputNode);
 
     // Add the audio worklet module
-    await this.inputAudioContext.audioWorklet.addModule('app/audio-processor.ts');
+    await this.inputAudioContext.audioWorklet.addModule(
+      new URL('./audio-processor.ts', import.meta.url).href
+    );
     
     // Create the AudioWorkletNode
     this.audioWorkletNode = new AudioWorkletNode(this.inputAudioContext, 'audio-processor');
