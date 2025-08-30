@@ -83,17 +83,11 @@ export class GdmLiveAudio extends LitElement {
 	@state() showSettings = false;
 	@state() toastMessage = "";
 	private lastAdvisorContext: string = "";
-  @state() public npuThinkingLog: string = "";
-  @state() public npuStatus: string = "";
-  @state() public npuSubStatus: string = "";
-  @state() public thinkingActive = false;
-  @state() public turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private turnManager: TurnManager;
   private vpuWaitTimer: number | null = null;
   private _npuFirstEventForced = new Set<string>();
   private _vpuFirstEventForced = new Set<string>();
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
-  public devRemainingMs: number = 0;
   private _devRafId: number | null = null;
   
   // Named constants for timeouts
@@ -123,8 +117,8 @@ export class GdmLiveAudio extends LitElement {
 
 	// Clear all thinking UI and timers
 	public _clearThinkingAll() {
-		// Clear thinking UI
-		this._clearThinkingUI();
+		// Reset turn manager state
+		this.turnManager.reset();
 		
 		// Clear timers
 		if (this.vpuWaitTimer) {
@@ -139,19 +133,6 @@ export class GdmLiveAudio extends LitElement {
 		
 		// Reset transcription state
 		this.pendingTranscriptionText = "";
-		
-		// Reset status and log
-		this.npuStatus = "";
-		this.npuThinkingLog = "";
-		
-		// Reset turn state
-		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
-		
-		// Clear VPU watchdog and hard max timer
-		this.turnManager.clearVpuWatchdog();
-		this.turnManager.clearVpuHardMaxTimer();
-		this.turnManager.clearVpuDevTicker();
-		this.devRemainingMs = 0;
 		
 		// Prune message metadata maps
 		this._pruneMessageMeta();
@@ -168,10 +149,6 @@ export class GdmLiveAudio extends LitElement {
 
 	// Dual-context state management
 	@state() activeMode: ActiveMode = null;
-	@state() textTranscript: Turn[] = [];
-	@state() callTranscript: Turn[] = [];
-	@state() public textSession: Session | null = null;
-	@state() public callSession: Session | null = null;
 	@state() activeTab: "chat" | "call-history" | "memory" = "chat";
 	@state() callHistory: CallSummary[] = [];
 
@@ -348,22 +325,13 @@ export class GdmLiveAudio extends LitElement {
 		super();
 		this.personaManager = new PersonaManager();
 
-		const turnManagerDeps: TurnManagerDependencies = {
-			getState: () => ({
-				turnState: this.turnState,
-				textTranscript: this.textTranscript,
-				messageStatuses: this.messageStatuses,
-			}),
-			setState: (newState) => {
-				Object.assign(this, newState);
-			},
+		this.turnManager = new TurnManager({
 			pruneMessageMeta: this._pruneMessageMeta.bind(this),
 			armDevRaf: this._armDevRaf.bind(this),
 			scheduleUpdate: this._scheduleUpdate.bind(this),
 			COMPLETE_TO_IDLE_DELAY_MS: this.COMPLETE_TO_IDLE_DELAY_MS,
 			ERROR_TO_IDLE_DELAY_MS: this.ERROR_TO_IDLE_DELAY_MS,
-		};
-		this.turnManager = new TurnManager(turnManagerDeps);
+		});
 
 		// AudioManager, SessionManager, etc. will be initialized later in initClient
 		// after the API key is validated and the client is created.
@@ -448,30 +416,18 @@ export class GdmLiveAudio extends LitElement {
 			this.summarizationService = new SummarizationService(this.client);
 
 			// Now that text/call managers exist, create the main session manager
-			const sessionManagerDeps: SessionManagerDependencies = {
+			this.sessionManager = new SessionManager({
 				personaManager: this.personaManager,
 				textSessionManager: this.textSessionManager,
 				callSessionManager: this.callSessionManager,
 				energyBarService: this.energyBarService,
-				getState: () => ({
-					isCallActive: this.isCallActive,
-					lastAnalyzedTranscriptIndex: this.lastAnalyzedTranscriptIndex,
-					textTranscript: this.textTranscript,
-					callTranscript: this.callTranscript,
-					_callReconnectingNotified: this._callReconnectingNotified,
-					_callRateLimitNotified: this._callRateLimitNotified,
-				}),
-				setState: (newState) => {
-					Object.assign(this, newState);
-				},
 				updateStatus: this.updateStatus.bind(this),
 				updateError: this.updateError.bind(this),
 				handleCallRateLimit: this._handleCallRateLimit.bind(this),
 				clearThinkingAll: this._clearThinkingAll.bind(this),
 				queryShadowRoot: (selector: string) =>
 					this.shadowRoot?.querySelector(selector) ?? null,
-			};
-			this.sessionManager = new SessionManager(sessionManagerDeps);
+			}, this);
 		}
 	}
 
@@ -1775,6 +1731,10 @@ this.updateTextTranscript(this.ttsCaption);
 		this.addEventListener("reconnecting", this._handleReconnecting);
 		this.addEventListener("reconnected", this._handleReconnected);
 		
+		// Add event listeners for manager events
+		this.addEventListener("status-update", this._handleStatusUpdate);
+		this.addEventListener("error-update", this._handleErrorUpdate);
+		
 		// Set default throttles
 		debugLogger.setThrottle('*', 250, { leading: true, trailing: false });
 		debugLogger.setThrottle('ChatView', 1000, { leading: true, trailing: false });
@@ -1799,6 +1759,8 @@ this.updateTextTranscript(this.ttsCaption);
 		);
 		this.removeEventListener("reconnecting", this._handleReconnecting);
 		this.removeEventListener("reconnected", this._handleReconnected);
+		this.removeEventListener("status-update", this._handleStatusUpdate);
+		this.removeEventListener("error-update", this._handleErrorUpdate);
 		this.stopEmotionAnalysis();
 		
 		// Stop dev RAF poller
@@ -1843,11 +1805,11 @@ this.updateTextTranscript(this.ttsCaption);
 
 			const transcript =
 				this.activeMode === "calling"
-					? this.callTranscript
-					: this.textTranscript;
+					? this.sessionManager.callTranscript
+					: this.sessionManager.textTranscript;
 
 			// Analyze only new transcript parts since the last analysis
-			const newTurns = transcript.slice(this.lastAnalyzedTranscriptIndex);
+			const newTurns = transcript.slice(this.sessionManager.lastAnalyzedTranscriptIndex);
 			if (newTurns.length === 0) {
 				return; // Nothing new to analyze
 			}
@@ -1867,7 +1829,7 @@ this.updateTextTranscript(this.ttsCaption);
 			}
 
 			// Update the index to the full length after processing
-			this.lastAnalyzedTranscriptIndex = transcript.length;
+			this.sessionManager.lastAnalyzedTranscriptIndex = transcript.length;
 		}, 10000); // Analyze every 10 seconds to stay within RPM limits
 		
 		// Start memory decay timer
@@ -1902,8 +1864,8 @@ this.updateTextTranscript(this.ttsCaption);
 		const toast = this.shadowRoot?.querySelector(
 			"toast-notification#inline-toast",
 		) as ToastNotification;
-		if (this.activeMode === "calling" && !this._callReconnectingNotified) {
-			this._callReconnectingNotified = true;
+		if (this.activeMode === "calling" && !this.sessionManager._callReconnectingNotified) {
+			this.sessionManager._callReconnectingNotified = true;
 			toast?.show("Reconnecting call…", "info", 2000, {
 				position: "bottom-right",
 				variant: "standard",
@@ -1929,7 +1891,7 @@ this.updateTextTranscript(this.ttsCaption);
 				position: "bottom-right",
 				variant: "standard",
 			});
-			this._callReconnectingNotified = false;
+			this.sessionManager._callReconnectingNotified = false;
 		} else if (this.activeMode === "texting") {
 			toast?.show("Chat reconnected", "success", 1200, {
 				position: "bottom-center",
@@ -1981,19 +1943,19 @@ this.updateTextTranscript(this.ttsCaption);
 			if (
 				mode === "sts" &&
 				this.activeMode === "calling" &&
-				this.callTranscript.length > 0
+				this.sessionManager.callTranscript.length > 0
 			) {
 				this.callSessionManager
-					.handleFallback(this.callTranscript, this.summarizationService)
+					.handleFallback(this.sessionManager.callTranscript, this.summarizationService)
 					.catch((error) => {
 						logger.error("Error handling fallback for call session", { error });
 					});
 			}
 
 			// For TTS (text session), handle fallback if we have text transcript
-			if (mode === "tts" && this.textTranscript.length > 0) {
+			if (mode === "tts" && this.sessionManager.textTranscript.length > 0) {
 				this.textSessionManager
-					.handleFallback(this.textTranscript, this.summarizationService)
+					.handleFallback(this.sessionManager.textTranscript, this.summarizationService)
 					.catch((error) => {
 						logger.error("Error handling fallback for text session", { error });
 					});
@@ -2036,19 +1998,19 @@ this.updateTextTranscript(this.ttsCaption);
             @tab-switch=${this._handleTabSwitch}
           ></tab-view>
           <chat-view
-            .transcript=${this.textTranscript}
+            .transcript=${this.sessionManager.textTranscript}
             .visible=${this.activeMode !== "calling" && this.activeTab === "chat"}
-            .thinkingStatus=${this.npuStatus}
-            .thinkingSubStatus=${this.npuSubStatus}
-            .thinkingText=${this.npuThinkingLog}
-            .thinkingActive=${this.thinkingActive}
+            .thinkingStatus=${this.turnManager.npuStatus}
+            .thinkingSubStatus=${this.turnManager.npuSubStatus}
+            .thinkingText=${this.turnManager.npuThinkingLog}
+            .thinkingActive=${this.turnManager.thinkingActive}
             .npuProcessingTime=${this.npuProcessingTime}
             .vpuProcessingTime=${this.vpuProcessingTime}
-            .messageStatuses=${this.messageStatuses}
-            .messageRetryCount=${this.messageRetryCount}
-            .phase=${this.turnState.phase}
+            .messageStatuses=${this.turnManager.messageStatuses}
+            .messageRetryCount=${this.turnManager.messageRetryCount}
+            .phase=${this.turnManager.turnState.phase}
             .hardDeadlineMs=${this.turnManager.vpuHardDeadline}
-            .turnId=${this.turnState.id || ''}
+            .turnId=${this.turnManager.turnState.id || ''}
             @send-message=${this._handleSendMessage}
             @reset-text=${this.sessionManager.resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}
@@ -2112,7 +2074,7 @@ this.updateTextTranscript(this.ttsCaption);
         </div>
 
         <call-transcript
-          .transcript=${this.callTranscript}
+          .transcript=${this.sessionManager.callTranscript}
           .visible=${this.activeMode === "calling"}
           .activePersonaName=${this.personaManager.getActivePersona().name}
           .callState=${this.callState}
