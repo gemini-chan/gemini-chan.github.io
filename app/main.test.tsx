@@ -27,7 +27,7 @@ describe('main component', () => {
 
     // Find the text input and send button within the chat-view's shadow DOM
     const textarea = chatView?.shadowRoot?.querySelector('textarea');
-    const sendButton = chatView?.shadowRoot?.querySelector('button[title="Send Message"]');
+    const sendButton = chatView?.shadowRoot?.querySelector('button[aria-label="Send Message"]');
     
     expect(textarea).toBeTruthy();
     expect(sendButton).toBeTruthy();
