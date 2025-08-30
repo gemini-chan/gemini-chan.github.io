@@ -8,12 +8,36 @@ import type { TextSessionManager, CallSessionManager } from "@features/vpu/VPUSe
 import type { Session } from "@google/genai";
 import type { ToastNotification } from "@components/ToastNotification";
 import { logger } from './main.tsx';
+import combinedPrompt from "@prompts/vpu/combined-vpu.prompt.md?raw";
 
 export class SessionManager {
   private host: GdmLiveAudio;
 
   constructor(host: GdmLiveAudio) {
     this.host = host;
+  }
+
+  private _buildVpuPrompt(
+    userMessage: string,
+    memoryContext: string,
+    systemPrompt: string,
+  ): string {
+    const ctxBlocks: string[] = [];
+    if (memoryContext?.trim()) {
+      ctxBlocks.push(
+        `RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}`,
+      );
+    }
+
+    const contextSection = ctxBlocks.length
+      ? `\n\n${ctxBlocks.join("\n\n")}`
+      : "";
+
+    // Use the combined markdown prompt template
+    return combinedPrompt
+      .replace("{systemPrompt}", systemPrompt)
+      .replace("{context}", contextSection)
+      .replace("{userMessage}", userMessage);
   }
 
   public constructVpuMessagePayload(
