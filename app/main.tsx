@@ -594,6 +594,12 @@ private updateTextTranscript(text: string) {
   }
 
 	private async _handleCallStart() {
+		// Check API key presence before proceeding
+		if (!this._checkApiKeyExists()) {
+			this._showApiKeyPrompt(() => this._handleCallStart());
+			return;
+		}
+
 		if (!this.sessionManager) return;
 		try {
 			// Acquire microphone FIRST, within the user gesture's direct context.
@@ -614,12 +620,6 @@ private updateTextTranscript(text: string) {
 					position: "bottom-right",
 					variant: "standard",
 				});
-				return;
-			}
-
-			// Check API key presence before proceeding
-			if (!this._checkApiKeyExists()) {
-				this._showApiKeyPrompt(() => this._handleCallStart());
 				return;
 			}
 
@@ -1347,15 +1347,15 @@ this.updateTextTranscript(this.ttsCaption);
 
 
 	private async _handleSendMessage(e: CustomEvent) {
-		if (!this.sessionManager) return;
-		const message = e.detail;
-		if (!message || !message.trim()) {
-			return;
-		}
-
 		// Check API key presence before proceeding
 		if (!this._checkApiKeyExists()) {
 			this._showApiKeyPrompt(() => this._handleSendMessage(e));
+			return;
+		}
+
+		if (!this.sessionManager) return;
+		const message = e.detail;
+		if (!message || !message.trim()) {
 			return;
 		}
 
