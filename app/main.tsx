@@ -153,9 +153,6 @@ export class GdmLiveAudio extends LitElement {
 		this.npuStatus = "";
 		this.npuThinkingLog = "";
 		
-		// Clear correlation
-		this.turnState = { ...this.turnState, id: null };
-		
 		// Reset turn state
 		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
 		
@@ -1845,9 +1842,6 @@ this.updateTextTranscript(this.ttsCaption);
 		// Send message to text session using NPU-VPU flow (memory-augmented)
 		if (this.textSessionManager?.isActive) {
 			try {
-				// Use the turn ID we already generated
-				this.currentTurnId = turnId;
-
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
 				this.lastAdvisorContext = "";
 				const personaId = this.personaManager.getActivePersona().id;
