@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { fireEvent, waitFor } from '@testing-library/dom';
 import { GdmLiveAudio } from './main';
 import { ChatView } from '../components/ChatView';
@@ -7,6 +7,9 @@ import { ChatView } from '../components/ChatView';
 const mockSessionManagerInstance = {
   textTranscript: [] as { text: string; speaker: string }[],
   constructVpuMessagePayload: vi.fn(),
+  initTextSession: vi.fn().mockResolvedValue(true),
+  messageStatuses: {},
+  messageRetryCount: {},
 };
 
 vi.mock('./SessionManager.ts', () => {
@@ -26,6 +29,19 @@ vi.mock('@features/vpu/VPUService', () => {
   };
 });
 
+// Mock the NPUService module
+vi.mock('@features/ai/NPUService', () => {
+  const mockNPUService = {
+    analyzeAndAdvise: vi.fn().mockResolvedValue({ 
+      suggestions: [],
+      analysis: 'Mock analysis'
+    }),
+  };
+  return {
+    NPUService: vi.fn(() => mockNPUService),
+  };
+});
+
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
@@ -36,6 +52,9 @@ describe('main component', () => {
   let mainComponent: GdmLiveAudio;
 
   beforeEach(async () => {
+    // Set up localStorage for API key
+    localStorage.setItem('gemini-api-key', 'test-key');
+    
     // Reset the mock's state
     mockSessionManagerInstance.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
     
@@ -45,6 +64,14 @@ describe('main component', () => {
     
     // Wait for the component to update
     await mainComponent.updateComplete;
+  });
+
+  afterEach(() => {
+    // Clean up the document body
+    document.body.innerHTML = '';
+    
+    // Remove API key from localStorage
+    localStorage.removeItem('gemini-api-key');
   });
 
   it('should display a user message after sending', async () => {
