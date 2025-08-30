@@ -487,14 +487,7 @@ export class GdmLiveAudio extends LitElement {
 	}
 
 	private _updateActiveOutputNode() {
-		// Update the main outputNode to point to the active session's output node
-		if (this.activeMode === "texting") {
-			this.audioManager.outputNode = this.audioManager.textOutputNode;
-		} else if (this.activeMode === "calling") {
-			this.audioManager.outputNode = this.audioManager.callOutputNode;
-		}
-		// Trigger a re-render to pass the updated outputNode to live2d-gate
-		this._scheduleUpdate();
+		this.audioManager.updateActiveOutputNode();
 	}
 
 

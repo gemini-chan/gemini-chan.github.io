@@ -36,6 +36,17 @@ export class AudioManager {
     this.callOutputNode.connect(this.outputAudioContext.destination);
   }
 
+  public updateActiveOutputNode() {
+    // Update the main outputNode to point to the active session's output node
+    if (this.host.activeMode === "texting") {
+      this.outputNode = this.textOutputNode;
+    } else if (this.host.activeMode === "calling") {
+      this.outputNode = this.callOutputNode;
+    }
+    // Trigger a re-render to pass the updated outputNode to live2d-gate
+    this.host._scheduleUpdate();
+  }
+
   public async startAudioProcessing() {
     this.mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
