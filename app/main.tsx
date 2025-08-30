@@ -600,8 +600,8 @@ if (lastMessage.speaker === "model") {
 	public _handleCallRateLimit() {
 		// Degrade only STS energy and notify UI
 		energyBarService.handleRateLimitError("sts");
-		if (this._callRateLimitNotified) return;
-		this._callRateLimitNotified = true;
+		if (this.sessionManager._callRateLimitNotified) return;
+		this.sessionManager._callRateLimitNotified = true;
 
 		// Also surface the banner in the call transcript
 		const callT = this.shadowRoot?.querySelector(
