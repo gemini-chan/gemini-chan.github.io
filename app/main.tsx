@@ -703,18 +703,8 @@ if (lastMessage.speaker === "model") {
 		this._updateActiveOutputNode();
 
 		const isResuming = this.callSessionManager.getResumptionHandle() !== null;
-		const ok = await this.sessionManager.initCallSession();
-		if (!ok || !this.callSession) {
-			// If energy is exhausted, reflect a different UX than rate limit
-			const exhausted = energyBarService.getCurrentEnergyLevel() === 0;
-			if (exhausted) {
-				this.updateStatus("Energy exhausted — please try again later.");
-			} else {
-				this._handleCallRateLimit();
-				this.updateStatus(
-					"Unable to start call (rate limited or network error)",
-				);
-			}
+		const ok = await this.sessionManager._initCallSession();
+		if (!ok) {
 			return;
 		}
 
@@ -1198,13 +1188,10 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
-		const ok = await this.sessionManager.initTextSession();
+		const ok = await this.sessionManager._initTextSession();
 
 		// If session initialization fails, show an error and abort.
-		if (!ok || !this.textSessionManager || !this.textSessionManager.isActive) {
-			this.updateError(
-				"Unable to start text session (rate limited or network error)",
-			);
+		if (!ok) {
 			return;
 		}
 
@@ -1630,15 +1617,9 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Ensure we have an active text session
-		if (!this.textSessionManager || !this.textSessionManager.isActive) {
-			this.updateStatus("Initializing text session...");
-			const ok = await this.sessionManager.initTextSession();
-			if (!ok || !this.textSession) {
-				this.updateError(
-					"Unable to start text session (rate limited or network error)",
-				);
-				return;
-			}
+		const ok = await this.sessionManager._initTextSession();
+		if (!ok) {
+			return;
 		}
 
 		// Send message to text session using NPU-VPU flow (memory-augmented)

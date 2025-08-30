@@ -29,6 +29,40 @@ export class SessionManager {
     return ok;
   }
 
+  public async _initTextSession(): Promise<boolean> {
+    // Ensure we have an active text session
+    if (!this.host.textSessionManager || !this.host.textSessionManager.isActive) {
+      this.host.updateStatus("Initializing text session...");
+      const ok = await this.initTextSession();
+      if (!ok || !this.host.textSession) {
+        this.host.updateError(
+          "Unable to start text session (rate limited or network error)",
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public async _initCallSession() {
+    this.host.updateStatus("Initializing call session...");
+    const ok = await this.initCallSession();
+    if (!ok || !this.host.callSession) {
+      // If energy is exhausted, reflect a different UX than rate limit
+      const exhausted = this.host.energyBarService.getCurrentEnergyLevel() === 0;
+      if (exhausted) {
+        this.host.updateStatus("Energy exhausted — please try again later.");
+      } else {
+        this.host._handleCallRateLimit();
+        this.host.updateStatus(
+          "Unable to start call (rate limited or network error)",
+        );
+      }
+      return false;
+    }
+    return true;
+  }
+
   public resetTextContext() {
     // Reset the delta-analysis index for text transcript
     this.host.lastAnalyzedTranscriptIndex = 0;
@@ -82,7 +116,7 @@ export class SessionManager {
 
     // Reinitialize call session if we're currently in a call
     if (this.host.isCallActive) {
-      this.initCallSession();
+      this._initCallSession();
     }
     this.host.updateStatus("Call conversation cleared.");
     // Reuse the existing call-start toasts when the next call starts (resume-first flow).
