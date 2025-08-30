@@ -89,7 +89,6 @@ export class GdmLiveAudio extends LitElement {
   @state() private thinkingActive = false;
   @state() private turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private turnManager: TurnManager;
-  private vpuHardDeadline: number = 0;
   private vpuWaitTimer: number | null = null;
   private _npuFirstEventForced = new Set<string>();
   private _vpuFirstEventForced = new Set<string>();

@@ -20,6 +20,7 @@ export class TurnManager {
   private readonly VPU_WATCHDOG_MS = 2200;
   private vpuHardMaxTimer: number | null = null;
   private readonly VPU_HARD_MAX_MS = 7000;
+  private vpuHardDeadline: number = 0;
 
   constructor(host: GdmLiveAudio) {
     this.host = host;
@@ -95,7 +96,6 @@ export class TurnManager {
         this.host.devRemainingMs = 0;
         this.host._clearVpuDevTicker();
         // Clear dev state
-        this.host.vpuHardDeadline = 0;
         
         // Set timeout to transition to idle after 1500ms
         setTimeout(() => {
@@ -111,7 +111,6 @@ export class TurnManager {
         this.host.devRemainingMs = 0;
         this.host._clearVpuDevTicker();
         // Clear dev state
-        this.host.vpuHardDeadline = 0;
         
         // Set timeout to transition to idle after 2500ms
         setTimeout(() => {
@@ -128,7 +127,6 @@ export class TurnManager {
         this.host.devRemainingMs = 0;
         this.host._clearVpuDevTicker();
         // Clear dev state
-        this.host.vpuHardDeadline = 0;
         break;
     }
     
@@ -171,10 +169,10 @@ export class TurnManager {
     
     // Set new hard max timer
     if (this.host.turnState.id) {
-      this.host.vpuHardDeadline = Date.now() + this.VPU_HARD_MAX_MS;
+      this.vpuHardDeadline = Date.now() + this.VPU_HARD_MAX_MS;
       console.debug("VPU hard max armed", { 
         turnId: this.host.turnState.id, 
-        deadline: new Date(this.host.vpuHardDeadline).toISOString(),
+        deadline: new Date(this.vpuHardDeadline).toISOString(),
         timeoutMs: this.VPU_HARD_MAX_MS 
       });
       this.vpuHardMaxTimer = window.setTimeout(() => {
@@ -184,7 +182,7 @@ export class TurnManager {
           this.setTurnPhase('complete');
         }
         this.vpuHardMaxTimer = null;
-        this.host.vpuHardDeadline = 0;
+        this.vpuHardDeadline = 0;
       }, this.VPU_HARD_MAX_MS);
     }
   }
@@ -198,7 +196,7 @@ export class TurnManager {
           turnId: this.host.turnState.id
         });
       }
-      this.host.vpuHardDeadline = 0;
+      this.vpuHardDeadline = 0;
     }
   }
 }
