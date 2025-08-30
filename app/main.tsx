@@ -760,7 +760,7 @@ if (lastMessage.speaker === "model") {
 	}
 
 	private async _handleCallEnd() {
-		if (!this.isCallActive && !this.audioManager.mediaStream && !this.inputAudioContext)
+		if (!this.isCallActive && !this.audioManager.mediaStream)
 			return;
 
 		this.updateStatus("");
