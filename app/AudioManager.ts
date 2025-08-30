@@ -27,8 +27,6 @@ export class AudioManager {
     this.outputNode = this.outputAudioContext.createGain();
     this.textOutputNode = this.outputAudioContext.createGain();
     this.callOutputNode = this.outputAudioContext.createGain();
-    this.micEnabled = true;
-    this.isMuted = false;
   }
 
   initAudio() {
