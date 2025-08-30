@@ -281,9 +281,7 @@ export class GdmLiveAudio extends LitElement {
 		return false;
 	}
 
-	private mediaStream: MediaStream;
-	private sourceNode: MediaStreamAudioSourceNode;
-	private scriptProcessorNode: ScriptProcessorNode;
+	private audioManager: AudioManager;
 
 	static styles = css`
     :host {
@@ -364,6 +362,7 @@ export class GdmLiveAudio extends LitElement {
 		this.personaManager = new PersonaManager();
 		this.turnManager = new TurnManager(this);
 		this.sessionManager = new SessionManager(this);
+		this.audioManager = new AudioManager(this);
 		// MemoryService will be initialized after the GoogleGenAI client is created.
 		// Client initialization is deferred to connectedCallback to avoid Lit update warnings.
 
@@ -447,10 +446,6 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 
-	private initAudio() {
-		// Audio initialization is now handled by individual session managers
-		// Each session manager maintains its own isolated audio timeline
-	}
 
 	private async initClient() {
 		this.initAudio();
@@ -729,7 +724,7 @@ if (lastMessage.speaker === "model") {
 		this.updateStatus("Starting call...");
 
 		try {
-			this.mediaStream = await navigator.mediaDevices.getUserMedia({
+			this.audioManager.mediaStream = await navigator.mediaDevices.getUserMedia({
 				audio: true,
 				video: false,
 			});
@@ -743,19 +738,19 @@ if (lastMessage.speaker === "model") {
 			// Start idle motion cycling while in call
 			this._startIdleMotionCycle();
 
-			this.sourceNode = this.inputAudioContext.createMediaStreamSource(
-				this.mediaStream,
+			this.audioManager.sourceNode = this.inputAudioContext.createMediaStreamSource(
+				this.audioManager.mediaStream,
 			);
-			this.sourceNode.connect(this.inputNode);
+			this.audioManager.sourceNode.connect(this.inputNode);
 
 			const bufferSize = 1024;
-			this.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
+			this.audioManager.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
 				bufferSize,
 				1,
 				1,
 			);
 
-			this.scriptProcessorNode.onaudioprocess = (audioProcessingEvent) => {
+			this.audioManager.scriptProcessorNode.onaudioprocess = (audioProcessingEvent) => {
 				if (!this.isCallActive) return;
 
 				const inputBuffer = audioProcessingEvent.inputBuffer;
@@ -777,8 +772,8 @@ if (lastMessage.speaker === "model") {
 				}
 			};
 
-			this.sourceNode.connect(this.scriptProcessorNode);
-			this.scriptProcessorNode.connect(this.inputAudioContext.destination);
+			this.audioManager.sourceNode.connect(this.audioManager.scriptProcessorNode);
+			this.audioManager.scriptProcessorNode.connect(this.inputAudioContext.destination);
 
 			this.isCallActive = true;
 
@@ -818,7 +813,7 @@ if (lastMessage.speaker === "model") {
 	}
 
 	private async _handleCallEnd() {
-		if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
+		if (!this.isCallActive && !this.audioManager.mediaStream && !this.inputAudioContext)
 			return;
 
 		this.updateStatus("");
@@ -833,19 +828,19 @@ if (lastMessage.speaker === "model") {
 		}
 		this.currentMotionName = "";
 
-		if (this.scriptProcessorNode && this.sourceNode && this.inputAudioContext) {
-			this.scriptProcessorNode.disconnect();
-			this.sourceNode.disconnect();
+		if (this.audioManager.scriptProcessorNode && this.audioManager.sourceNode && this.inputAudioContext) {
+			this.audioManager.scriptProcessorNode.disconnect();
+			this.audioManager.sourceNode.disconnect();
 		}
 
-		this.scriptProcessorNode = null;
-		this.sourceNode = null;
+		this.audioManager.scriptProcessorNode = null;
+		this.audioManager.sourceNode = null;
 
-		if (this.mediaStream) {
-			for (const track of this.mediaStream.getTracks()) {
+		if (this.audioManager.mediaStream) {
+			for (const track of this.audioManager.mediaStream.getTracks()) {
 				track.stop();
 			}
-			this.mediaStream = null;
+			this.audioManager.mediaStream = null;
 		}
 
 		// Switch back to texting mode
