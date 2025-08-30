@@ -43,10 +43,25 @@ class MockAudioContext {
 vi.stubGlobal('AudioContext', MockAudioContext);
 vi.stubGlobal('webkitAudioContext', MockAudioContext);
 
+// Mock MediaStream
+class MockMediaStream {
+  getTracks() {
+    return [];
+  }
+  
+  getAudioTracks() {
+    return [];
+  }
+  
+  getVideoTracks() {
+    return [];
+  }
+}
+
 // Mock MediaDevices
 if (!global.navigator.mediaDevices) {
   (global.navigator as any).mediaDevices = {};
 }
 vi.spyOn(global.navigator.mediaDevices, 'getUserMedia').mockImplementation(() => {
-  return Promise.resolve(new (class MockMediaStream {})());
+  return Promise.resolve(new MockMediaStream());
 });
