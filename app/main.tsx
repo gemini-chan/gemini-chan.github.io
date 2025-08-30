@@ -462,21 +462,22 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 private updateTextTranscript(text: string) {
-// This function is now only for LIVE updates to the model's last message.
-// The official, final message is added to the transcript in _handleTtsTurnComplete.
-if (this.sessionManager.textTranscript.length > 0) {
-const lastMessage = this.sessionManager.textTranscript[this.sessionManager.textTranscript.length - 1];
-if (lastMessage.speaker === "model") {
-	// If the last message was from the model, update it
-	// Create a new array to ensure Lit detects the change
-	const updatedTranscript = [...this.sessionManager.textTranscript];
-	updatedTranscript[updatedTranscript.length - 1] = {
-		...lastMessage,
-		text: text,
-	};
-	this.sessionManager.textTranscript = updatedTranscript;
-}
-}
+	if (!this.sessionManager) return;
+	// This function is now only for LIVE updates to the model's last message.
+	// The official, final message is added to the transcript in _handleTtsTurnComplete.
+	if (this.sessionManager.textTranscript.length > 0) {
+		const lastMessage = this.sessionManager.textTranscript[this.sessionManager.textTranscript.length - 1];
+		if (lastMessage.speaker === "model") {
+			// If the last message was from the model, update it
+			// Create a new array to ensure Lit detects the change
+			const updatedTranscript = [...this.sessionManager.textTranscript];
+			updatedTranscript[updatedTranscript.length - 1] = {
+				...lastMessage,
+				text: text,
+			};
+			this.sessionManager.textTranscript = updatedTranscript;
+		}
+	}
 }
 	private updateCallTranscript(text: string, speaker: "user" | "model") {
 		if (!this.sessionManager) return;
