@@ -8,6 +8,10 @@ import type { CallSessionManager } from "@features/vpu/VPUService";
 
 export interface AudioManagerDependencies {
 	getCallSessionManager: () => CallSessionManager;
+	getState: () => {
+		activeMode: "texting" | "calling" | null;
+		isCallActive: boolean;
+	};
 	hostElement: HTMLElement;
 	setSourceressMotion: (name: string) => void;
 	startIdleMotionCycle: () => void;
