@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, waitFor } from '@testing-library/dom';
 import './main';
-import { SessionManager } from '../services/SessionManager.ts';
+import { SessionManager } from './SessionManager.ts';
 
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
