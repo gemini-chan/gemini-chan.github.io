@@ -118,23 +118,6 @@ export class GdmLiveAudio extends LitElement {
 		// Reset turn manager state
 		this.turnManager.reset();
 		this.requestUpdate();
-		
-		// Clear timers
-		if (this.vpuWaitTimer) {
-			clearTimeout(this.vpuWaitTimer);
-			this.vpuWaitTimer = null;
-		}
-		
-		if (this.transcriptionDebounceTimer) {
-			clearTimeout(this.transcriptionDebounceTimer);
-			this.transcriptionDebounceTimer = null;
-		}
-		
-		// Reset transcription state
-		this.pendingTranscriptionText = "";
-		
-		// Prune message metadata maps via session manager
-		this.sessionManager.pruneMessageMeta();
 	}
 	
 	
@@ -1787,6 +1770,16 @@ this.updateTextTranscript(this.ttsCaption);
 		);
 	}
 	
+	private _resetTextContext() {
+		this.sessionManager.resetTextContext();
+		this.requestUpdate();
+	}
+
+	private _resetCallContext() {
+		this.sessionManager.resetCallContext();
+		this.requestUpdate();
+	}
+
 	private startEmotionAnalysis() {
 		this.stopEmotionAnalysis(); // Ensure no multiple timers
 		this.emotionAnalysisTimer = window.setInterval(async () => {
