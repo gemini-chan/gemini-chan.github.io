@@ -31,6 +31,8 @@ export class SessionManager {
 	public lastAnalyzedTranscriptIndex: number = 0;
 	public textTranscript: Turn[] = [];
 	public callTranscript: Turn[] = [];
+	public messageStatuses: Record<string, 'clock' | 'single' | 'double' | 'error'> = {};
+	public messageRetryCount: Record<string, number> = {};
 	public _callReconnectingNotified: boolean = false;
 	public _callRateLimitNotified: boolean = false;
 

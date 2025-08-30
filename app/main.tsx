@@ -168,8 +168,6 @@ export class GdmLiveAudio extends LitElement {
 	private memoryDecayTimer: number | null = null;
 	@state() private vpuDebugMode = false;
 	@state() private npuDebugMode = false;
-	// Track last analyzed position in the active transcript for efficient delta analysis
-	public lastAnalyzedTranscriptIndex = 0;
 
 	/**
 	 * Optimize re-renders by only updating when necessary
@@ -183,11 +181,6 @@ export class GdmLiveAudio extends LitElement {
 			"callState",
 			"activeTab",
 			"showSettings",
-			"thinkingActive",
-			"npuStatus",
-			"npuSubStatus",
-			"npuThinkingLog",
-			"turnState",
 		];
 		for (const prop of criticalProps) {
 			if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
@@ -416,6 +409,10 @@ export class GdmLiveAudio extends LitElement {
 		// Create AudioManager first; its dependencies are self-contained or host-provided getters.
 		const audioManagerDeps: AudioManagerDependencies = {
 			getCallSessionManager: () => this.callSessionManager,
+			getState: () => ({
+				activeMode: this.activeMode,
+				isCallActive: this.isCallActive,
+			}),
 			hostElement: this,
 			setSourceressMotion: this._setSourceressMotion.bind(this),
 			startIdleMotionCycle: this._startIdleMotionCycle.bind(this),
@@ -1079,9 +1076,9 @@ this.updateTextTranscript(this.ttsCaption);
 		this.sessionManager.resetTextContext();
 
 		// Initialize new turn and get turnId
-		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.messageStatuses);
+		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
 		this.sessionManager.textTranscript = newTranscript;
-		this.messageStatuses = newStatuses;
+		this.sessionManager.messageStatuses = newStatuses;
 		
 		this.requestUpdate();
 		await this.updateComplete;
