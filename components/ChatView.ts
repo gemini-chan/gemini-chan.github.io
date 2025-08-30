@@ -437,9 +437,6 @@ export class ChatView extends LitElement {
       color: var(--cp-green, #00c853);
     }
     
-    .msg-status.double svg:first-child {
-      margin-right: 2px;
-    }
     
     .msg-status.error {
       color: var(--cp-red, #ff1744);
