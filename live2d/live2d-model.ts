@@ -86,7 +86,7 @@ export class Live2DModelComponent extends LitElement {
     if (changed.has("app") && this.app && !this._app) {
       log.debug("app provided via prop");
       this._app = this.app;
-      this._maybeLoad();
+      setTimeout(() => this._maybeLoad(), 0);
     }
     if (changed.has("url")) {
       const oldUrl = changed.get("url") as string;
@@ -99,7 +99,6 @@ export class Live2DModelComponent extends LitElement {
       }
 
       log.debug("url changed, destroying current model", { oldUrl, newUrl });
-      this._destroyModel();
 
       // Cancel any pending load operation
       this._loadingPromise = undefined;
@@ -108,6 +107,9 @@ export class Live2DModelComponent extends LitElement {
       // Add a delay to ensure cleanup is complete and prevent race conditions
       this._loadingPromise = new Promise<void>((resolve) => {
         setTimeout(async () => {
+          // Destroy model asynchronously to prevent change-in-update warnings
+          this._destroyModel();
+
           // Check if URL changed again while we were waiting
           if (this._currentUrl !== newUrl) {
             log.debug("url changed during delay, skipping load", {
