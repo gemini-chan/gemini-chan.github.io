@@ -1,5 +1,7 @@
 // src/debug-logger.ts
 
+import { throttle } from "@shared/utils";
+
 declare const __DEBUG__: boolean;
 declare const __DEBUG_COMPONENTS__: string[];
 
@@ -125,6 +127,9 @@ class ConfigurationManager {
 export class DebugLogger {
   private config: DebugLoggerConfig;
   private configManager: ConfigurationManager;
+  private throttles = new Map<string, { wait: number; leading: boolean; trailing: boolean; last: number; timeoutId?: number | null; pending?: LogEntry | null }>();
+  private throttledWriters = new Map<string, (entry: LogEntry) => void>();
+  private globalThrottledWriter: ((entry: LogEntry) => void) | null = null;
 
   /**
    * Initializes a new instance of the DebugLogger.
@@ -273,6 +278,16 @@ export class DebugLogger {
   }
 
   private formatAndOutput(entry: LogEntry): void {
+    const writer = this.throttledWriters.get(entry.component) ?? this.globalThrottledWriter;
+    
+    if (writer) {
+      writer(entry);
+    } else {
+      this.outputLog(entry);
+    }
+  }
+
+  private outputLog(entry: LogEntry): void {
     const { component, level, message, data, timestamp } = entry;
     const parts = [];
 
@@ -319,6 +334,91 @@ export class DebugLogger {
    */
   error(component: string, message: string, data?: unknown): void {
     this.log("error", component, message, data);
+  }
+
+  /**
+   * Set throttling configuration for a component
+   */
+  public setThrottle(component: string, wait: number, opts?: { leading?: boolean; trailing?: boolean }): void {
+    const leading = opts?.leading !== false; // default true
+    const trailing = opts?.trailing !== false; // default true
+    
+    // Create throttled writer using shared throttle utility
+    const throttledWriter = throttle((entry: LogEntry) => this.outputLog(entry), wait, { leading, trailing });
+    
+    if (component === '*') {
+      this.globalThrottledWriter = throttledWriter;
+    } else {
+      this.throttledWriters.set(component, throttledWriter);
+    }
+    
+    // Keep existing config for backward compatibility
+    this.throttles.set(component, {
+      wait,
+      leading,
+      trailing,
+      last: 0
+    });
+  }
+
+  /**
+   * Clear throttling configuration for a component
+   */
+  public clearThrottle(component: string): void {
+    // Clear throttled writer
+    if (component === '*') {
+      this.globalThrottledWriter = null;
+    } else {
+      this.throttledWriters.delete(component);
+    }
+    
+    // Keep existing config removal for backward compatibility
+    const throttle = this.throttles.get(component);
+    if (throttle) {
+      if (throttle.timeoutId) {
+        clearTimeout(throttle.timeoutId);
+      }
+      this.throttles.delete(component);
+    }
+  }
+
+  /**
+   * Clear all throttling configurations
+   */
+  public clearAllThrottles(): void {
+    // Clear all throttled writers
+    this.throttledWriters.clear();
+    this.globalThrottledWriter = null;
+    
+    // Clear existing throttle configs
+    for (const throttle of this.throttles.values()) {
+      if (throttle.timeoutId) {
+        clearTimeout(throttle.timeoutId);
+      }
+    }
+    this.throttles.clear();
+  }
+
+  /**
+   * Set global throttle for all components
+   */
+  public setGlobalThrottle(wait: number): void {
+    if (wait <= 0) {
+      this.clearThrottle('*');
+    } else {
+      this.setThrottle('*', wait, { leading: true, trailing: false });
+    }
+  }
+
+  /**
+   * Set throttle for a specific category
+   */
+  public setCategoryThrottle(category: string, wait: number): void {
+    if (wait <= 0) {
+      this.clearThrottle(category);
+    } else {
+      this.setThrottle(category, wait, { leading: true, trailing: false });
+    }
   }
 
   /**
@@ -395,6 +495,17 @@ export class DebugLogger {
 
 // Global instance
 export const debugLogger = new DebugLogger();
+
+// Expose debugLogger on window for console access
+declare global {
+  interface Window {
+    debugLogger?: DebugLogger;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.debugLogger = debugLogger;
+}
 /**
  * Creates a simplified logger instance for a specific component.
  * @param component - The name of the component.

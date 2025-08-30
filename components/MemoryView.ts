@@ -17,6 +17,7 @@ export class MemoryView extends LitElement {
   @state() private isLoading = true;
   @state() private error: string | null = null;
   @state() private vpuDebugMode = false;
+  @state() private npuDebugMode = false;
   @state() private showHealthMetrics = false;
   @state() private healthMetrics: Partial<HealthMetrics> = {};
 
@@ -333,6 +334,20 @@ export class MemoryView extends LitElement {
     if (this.showHealthMetrics) {
       this.healthMetrics = healthMetricsService.getAverageMetrics();
     }
+    // Tie debug modes to health metrics toggle
+    this.vpuDebugMode = this.showHealthMetrics;
+    this.npuDebugMode = this.showHealthMetrics;
+    // Dispatch events for both debug modes
+    this.dispatchEvent(new CustomEvent('vpu-debug-toggle', {
+      detail: { enabled: this.showHealthMetrics },
+      bubbles: true,
+      composed: true
+    }));
+    this.dispatchEvent(new CustomEvent('npu-debug-toggle', {
+      detail: { enabled: this.showHealthMetrics },
+      bubbles: true,
+      composed: true
+    }));
   }
 
 
@@ -347,9 +362,11 @@ export class MemoryView extends LitElement {
 
     return html`
       <div class="controls">
-        <div class="debug-toggle" @click=${this.toggleHealthMetrics}>
-          <input type="checkbox" .checked=${this.showHealthMetrics} />
-          <span>Show Health Metrics</span>
+        <div style="display: flex; gap: 16px;">
+          <div class="debug-toggle" @click=${this.toggleHealthMetrics}>
+            <input type="checkbox" .checked=${this.showHealthMetrics} />
+            <span>Show Health Metrics</span>
+          </div>
         </div>
         <button class="btn btn-danger" @click=${this.deleteAllMemories}>
           Forget Everything

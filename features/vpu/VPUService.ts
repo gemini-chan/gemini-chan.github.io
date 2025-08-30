@@ -79,7 +79,7 @@
       const source = this.outputAudioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(this.outputNode);
-      source.addEventListener("ended", () => this.sources.delete(source));
+      source.addEventListener("ended", () => { this.sources.delete(source); this.onAudioEnded(); });
   
       source.start(this.nextStartTime);
       this.nextStartTime = this.nextStartTime + audioBuffer.duration;
@@ -140,13 +140,6 @@
             }
           }
   
-          // Generation complete acknowledgement
-          const genComplete = extendedMessage.serverContent?.generationComplete;
-          if (genComplete) {
-            // Hook for post-turn actions; for now, surface a status update
-            this.updateStatus(`${this.getSessionName()}: generation complete`);
-          }
-  
           // Audio handling
           const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData;
           if (audio) {
@@ -190,6 +183,10 @@
     protected abstract getModel(): string;
     protected abstract getConfig(): Record<string, unknown>;
     protected abstract getSessionName(): string;
+
+    protected onAudioEnded(): void {
+      // Default implementation - can be overridden by subclasses
+    }
   
     private async _connect(handle: string | null): Promise<Error | null> {
       try {
@@ -439,8 +436,13 @@
       return fallbackPrompt ? `${basePrompt}\n\n${fallbackPrompt}` : basePrompt;
     }
   }
+
   
   export class TextSessionManager extends BaseSessionManager {
+    private readonly TRANSCRIPTION_IDLE_TIMEOUT_MS = 1200;
+    private progressCb?: (event: Record<string, unknown>) => void;
+    private progressTurnId?: string | null = null;
+    private transcriptionIdleTimer: number | null = null;
     
     constructor(
       outputAudioContext: AudioContext,
@@ -482,7 +484,7 @@
           if (typeof base.onmessage === "function") {
             await base.onmessage(message);
           }
-  
+
           // Track VPU start latency on first output transcription or inline audio
           if (!this.firstOutputReceived && this.vpuStartTimer) {
             const hasOutputTranscription = !!message.serverContent?.outputTranscription?.text;
@@ -492,6 +494,8 @@
               this.firstOutputReceived = true;
               this.vpuStartTimer();
               this.vpuStartTimer = null;
+              // Emit first output event
+              this.progressCb?.({ type: "vpu:response:first-output", ts: Date.now(), data: { turnId: this.progressTurnId } });
               logger.debug("VPU start latency tracked", {
                 hasOutputTranscription,
                 hasInlineAudio,
@@ -499,21 +503,46 @@
             }
           }
           
-          // Handle audio transcription for captions
+          // Emit progress event for first output transcription
           if (message.serverContent?.outputTranscription?.text) {
+            // Reset idle timer on each transcription chunk
+            if (this.transcriptionIdleTimer) {
+              window.clearTimeout(this.transcriptionIdleTimer);
+            }
+            this.transcriptionIdleTimer = window.setTimeout(() => {
+              logger.debug('VPU completion: transcription idle fallback');
+              this._completeTurn("transcription idle");
+            }, this.TRANSCRIPTION_IDLE_TIMEOUT_MS); // 1.2s idle timeout
+
+            this.progressCb?.({ type: "vpu:response:transcription", ts: Date.now(), data: { text: message.serverContent.outputTranscription.text, turnId: this.progressTurnId } });
             this.updateTranscript(message.serverContent.outputTranscription.text);
           }
-  
+
           // After turn is complete, trigger turn complete handler
           const extendedMessage = message as ExtendedLiveServerMessage;
           const genComplete = extendedMessage.serverContent?.generationComplete;
           if (genComplete) {
-            this.onTurnComplete();
+            this._completeTurn("generationComplete");
           }
         },
       };
     }
   
+    private _completeTurn(reason: string): void {
+      if (this.progressCb) {
+        logger.debug(`VPU turn complete via ${reason}`);
+        this.progressCb({ type: "vpu:response:complete", ts: Date.now(), data: { turnId: this.progressTurnId } });
+        this.onTurnComplete();
+        
+        // Clear the callback only after both completion signals have been sent
+        this.progressCb = undefined;
+        this.progressTurnId = null;
+        if (this.transcriptionIdleTimer) {
+          window.clearTimeout(this.transcriptionIdleTimer);
+          this.transcriptionIdleTimer = null;
+        }
+      }
+    }
   
     protected getModel(): string {
       // Align text session with energy levels (TTS); if exhausted (level 0), refuse to provide a model
@@ -546,6 +575,15 @@
     protected getSessionName(): string {
       return "Text session";
     }
+    
+    protected override onAudioEnded(): void {
+      // Guard against audio-end firing after completion
+      if (this.sources.size === 0 && this.firstOutputReceived && this.progressCb) {
+        logger.debug('VPU completion: audio end fallback');
+        this._completeTurn("audio end");
+      }
+    }
+    
     public override reconnectSession(): Promise<void> {
       // Do nothing. Reconnect is disabled for TTS sessions.
       return Promise.resolve();
@@ -555,6 +593,51 @@
      * Send message through NPU-VPU flow: NPU retrieves memories and formulates RAG prompt,
      * then VPU (the session) responds with the enhanced context.
      */
+    public sendMessageWithProgress(message: string, turnId?: string, progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void): void {
+      if (!this.session) {
+        this.updateError(`${this.getSessionName()} not initialized`);
+        return;
+      }
+      try {
+        // Store progress callback and turn ID for use in onmessage handler
+        this.progressCb = progressCb;
+        this.progressTurnId = turnId;
+        
+        // Start VPU latency timer
+        this.vpuStartTimer = healthMetricsService.timeVPUStart();
+        this.firstOutputReceived = false;
+        
+        // Emit progress event for message sending
+        this.progressCb?.({ type: "vpu:message:sending", ts: Date.now(), data: { messageLength: message.length, turnId } });
+        
+        logger.debug(`Sending message to ${this.getSessionName()}`, {
+          textLength: message.length,
+        });
+        this.session.sendClientContent({
+          turns: [
+            {
+              role: "user",
+              parts: [{ text: message }],
+            },
+          ],
+          turnComplete: true,
+        });
+      } catch (error) {
+        logger.error(`Error sending message to ${this.getSessionName()}:`, {
+          error,
+        });
+        // Stop the timer on error
+        if (this.vpuStartTimer) {
+          this.vpuStartTimer();
+          this.vpuStartTimer = null;
+        }
+        this.progressCb?.({ type: "vpu:message:error", ts: Date.now(), data: { error: String((error as Error)?.message || error), turnId } });
+        // Clear progress callback and turn ID on error
+        this.progressCb = undefined;
+        this.progressTurnId = null;
+        this.updateError(`Failed to send message: ${(error as Error).message}`);
+      }
+    }
   }
   
   export class CallSessionManager extends BaseSessionManager {

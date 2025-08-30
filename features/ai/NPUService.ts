@@ -23,9 +23,19 @@ export class NPUService {
    * Analyze user input and return IntentionBridgePayload for VPU.
    * Passes original user message, retrieved RAG memories, and perceived emotional state based on last 5 messages.
    */
-  public async analyzeAndAdvise(userInput: string, personaId: string, transcript: Turn[], conversationContext?: string, emotionBias?: string): Promise<IntentionBridgePayload> {
+  public async analyzeAndAdvise(
+    userInput: string,
+    personaId: string,
+    transcript: Turn[],
+    conversationContext?: string,
+    emotionBias?: string,
+    turnId?: string,
+    progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void,
+  ): Promise<IntentionBridgePayload> {
     const stopTimer = healthMetricsService.timeNPUProcessing();
     
+    // No delay on first event
+    progressCb?.({ type: "npu:start", ts: Date.now(), data: { personaId, userInput, transcriptLength: transcript?.length ?? 0, turnId } });
     logger.debug("analyzeAndAdvise: start", {
       personaId,
       userInputLength: userInput?.length ?? 0,
@@ -35,6 +45,7 @@ export class NPUService {
 
     // Step 1: Retrieve memories to inform prompt (not exposed directly to VPU)
     let memories: Memory[] = [];
+    await this._sendProgress(progressCb, { type: "npu:memories:start", ts: Date.now(), data: { turnId } });
     try {
       memories = await this.memoryService.retrieveRelevantMemories(userInput, personaId, 5, { emotionBias });
     } catch (error) {
@@ -43,14 +54,21 @@ export class NPUService {
 
     // Build prompt
     logger.debug("analyzeAndAdvise: memories retrieved", { count: memories.length });
+    await this._sendProgress(progressCb, { type: "npu:memories:done", ts: Date.now(), data: { count: memories.length, memories, turnId } });
     
-    // Build memory context string from retrieved memories
-    const memoryContext = memories
-      .map(m => `- ${m.fact_key}: ${m.fact_value} (conf=${(m.confidence_score ?? 0).toFixed(2)}, perm=${m.permanence_score})`)
-      .join("\n");
+    // Build memory context string from retrieved memories with partial progress
+    const memoryLines = memories
+      .map(m => `- ${m.fact_key}: ${m.fact_value} (conf=${(m.confidence_score ?? 0).toFixed(2)}, perm=${m.permanence_score})`);
+    for (const line of memoryLines) {
+      // No delay for partials
+      progressCb?.({ type: "npu:prompt:partial", ts: Date.now(), data: { delta: line + "\n", turnId } });
+    }
+    const memoryContext = memoryLines.join("\n");
 
     // Build combined prompt for Flash Lite model
+    await this._sendProgress(progressCb, { type: "npu:prompt:build", ts: Date.now(), data: { turnId } });
     const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext);
+    await this._sendProgress(progressCb, { type: "npu:prompt:built", ts: Date.now(), data: { promptPreview: combinedPromptText.slice(0, 500), fullPrompt: combinedPromptText, turnId } });
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length, memoryLines: memories.length });
 
     // The full prompt is no longer needed after this point, so no need to store it.
@@ -58,19 +76,23 @@ export class NPUService {
 
     // Call model with retry - single call to Flash Lite model
     const model = "gemini-2.5-flash";
+    await this._sendProgress(progressCb, { type: "npu:model:start", ts: Date.now(), data: { model, turnId } });
     let responseText = "";
     const maxAttempts = 3;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        await this._sendProgress(progressCb, { type: "npu:model:attempt", ts: Date.now(), data: { attempt, turnId } });
         const result = await this.aiClient.models.generateContent({
           contents: [{ role: "user", parts: [{ text: combinedPromptText }] }],
           model,
         });
         responseText = (result.text || "").trim();
+        await this._sendProgress(progressCb, { type: "npu:model:response", ts: Date.now(), data: { length: responseText.length, turnId } });
         logger.debug("analyzeAndAdvise: model responded", { length: responseText.length, attempt });
         if (responseText) break;
       } catch (error) {
         logger.error("analyzeAndAdvise model call failed", { error, attempt });
+        await this._sendProgress(progressCb, { type: "npu:model:error", ts: Date.now(), data: { attempt, error: String((error as Error)?.message || error), turnId } }, 0);
         if (attempt < maxAttempts) {
           await new Promise((res) => setTimeout(res, Math.pow(2, attempt) * 200));
           continue;
@@ -80,6 +102,7 @@ export class NPUService {
 
     // Use the raw response text as the advisor context, with fallback to memory context
     const advisorContext = responseText || memoryContext || "";
+    await this._sendProgress(progressCb, { type: "npu:advisor:ready", ts: Date.now(), data: { length: advisorContext.length, turnId } });
     
     const payload: IntentionBridgePayload = {
       advisor_context: advisorContext,
@@ -91,6 +114,8 @@ export class NPUService {
     logger.info("analyzeAndAdvise: completed", {
       hasResponseText: !!responseText.length,
     });
+    // No delay on final event
+    progressCb?.({ type: "npu:complete", ts: Date.now(), data: { hasResponseText: !!responseText.length, turnId } });
 
     stopTimer();
     return payload;
@@ -100,6 +125,20 @@ export class NPUService {
     private aiClient: AIClient,
     private memoryService: MemoryService,
   ) {}
+
+  /**
+   * Send a progress event and introduce a small delay to allow the UI to update.
+   */
+  private async _sendProgress(
+    progressCb: ((event: { type: string; ts: number; data?: Record<string, unknown> }) => void) | undefined,
+    event: { type: string; ts: number; data?: Record<string, unknown> },
+    delayMs = 300
+  ) {
+    progressCb?.(event);
+    if (progressCb && delayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
 
   /**
    * Provide the last combined prompt that the NPU built, for AEI enrichment downstream.

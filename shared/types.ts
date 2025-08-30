@@ -3,6 +3,7 @@ export interface Turn {
   text: string;
   isSystemMessage?: boolean;
   timestamp?: Date;
+  turnId?: string;
 }
 
 export interface CallHistoryItem {

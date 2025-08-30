@@ -4,6 +4,58 @@
  */
 import type { Blob } from "@google/genai";
 
+export function throttle<T extends (...args: unknown[]) => void>(
+  fn: T,
+  wait: number,
+  opts?: { leading?: boolean; trailing?: boolean }
+): T & { cancel: () => void } {
+  const leading = opts?.leading !== false;
+  const trailing = opts?.trailing === true;
+  
+  let timeoutId: number | null = null;
+  let lastRunTime = 0;
+  let lastArgs: unknown[] | null = null;
+
+  function throttled(this: unknown, ...args: unknown[]) {
+    const now = Date.now();
+    lastArgs = args;
+
+    if (!lastRunTime && !leading) {
+      lastRunTime = now;
+    }
+
+    const remaining = wait - (now - lastRunTime);
+
+    if (remaining <= 0 || remaining > wait) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      lastRunTime = now;
+      fn.apply(this, args as Parameters<T>);
+    } else if (!timeoutId && trailing) {
+      timeoutId = window.setTimeout(() => {
+        lastRunTime = Date.now();
+        timeoutId = null;
+        if (lastArgs) {
+          fn.apply(this, lastArgs as Parameters<T>);
+        }
+      }, remaining);
+    }
+  }
+
+  throttled.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    lastRunTime = 0;
+    lastArgs = null;
+  };
+
+  return throttled as T & { cancel: () => void };
+}
+
 function encode(bytes) {
   let binary = "";
   const len = bytes.byteLength;

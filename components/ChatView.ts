@@ -2,12 +2,8 @@ import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
 import { createComponentLogger } from "@services/DebugLogger";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-
-interface Turn {
-  text: string;
-  author: "user" | "model";
-  isSystemMessage?: boolean;
-}
+import { throttle } from "@shared/utils";
+import type { Turn } from "@shared/types";
 
 const log = createComponentLogger("ChatView");
 
@@ -27,12 +23,63 @@ export class ChatView extends LitElement {
 
   @state()
   private isChatActive = false;
+
+  @property({ type: String })
+  thinkingStatus: string = "";
+
+  @property({ type: String })
+  thinkingSubStatus: string = "";
+
+  @property({ type: String })
+  thinkingText: string = "";
+
+  @property({ type: Boolean })
+  thinkingActive: boolean = false;
+  
+  @property({ type: Number })
+  npuProcessingTime: number | null = null;
+  
+  @property({ type: Number })
+  vpuProcessingTime: number | null = null;
+  
+  @property({ type: Object })
+  messageStatuses: Record<string, string> = {};
+  
+  @property({ type: Object })
+  messageRetryCount: Record<string, number> = {};
+  
+  @property({ type: String })
+  phase: 'idle'|'npu'|'vpu'|'complete'|'error' = 'idle';
+  
+  @property({ type: Number })
+  hardDeadlineMs: number = 0;
+  
+  @property({ type: String })
+  turnId: string = '';
+  
+  // Helper getter to determine if thinking UI should be shown
+  private get _showThinking(): boolean {
+    return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText;
+  }
   
   // Debounce timer for scroll events
   private scrollDebounceTimer: number | null = null;
+  private _transcriptEl: HTMLElement | null = null;
+  private _scrollHandler: () => void;
 
   private lastSeenMessageCount = 0;
   private textareaRef: HTMLTextAreaElement | null = null;
+  
+  // Previous scroll state tracking
+  private _prevShowButton: boolean | null = null;
+  private _prevNewMessageCount: number = 0;
+  
+  // Throttled loggers
+  private _logScrollState = throttle((detail: { showButton: boolean; newMessageCount: number }) => 
+    log.debug("Scroll state changed", detail), 250, { trailing: false });
+    
+  private _logScrollButton = throttle((detail: { showButton: boolean; newMessageCount: number }) => 
+    log.debug("Scroll to bottom state updated", detail), 250, { trailing: false });
 
   static styles = css`
     :host {
@@ -197,6 +244,11 @@ export class ChatView extends LitElement {
       scrollbar-width: thin;
       scrollbar-color: var(--cp-surface-strong) transparent;
     }
+    
+    textarea:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
 
     textarea::-webkit-scrollbar {
       width: 6px;
@@ -236,6 +288,7 @@ export class ChatView extends LitElement {
       background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
       transform: translateY(-1px);
     }
+    
 
     .scroll-to-bottom {
       position: absolute;
@@ -288,6 +341,55 @@ export class ChatView extends LitElement {
       border: 2px solid rgba(255, 255, 255, 0.8);
     }
 
+    .thinking {
+      /* Container for thinking indicator - visibility controlled by .hidden class */
+    }
+    .thinking.hidden {
+      display: none;
+    }
+    .thinking-badge { 
+      font-size: 12px; 
+      padding: 2px 6px; 
+      border-radius: 999px; 
+      background: var(--cp-surface-strong); 
+      border: 1px solid var(--cp-surface-border-2);
+    }
+    .header .thinking-badge {
+      padding: 4px 8px;
+      background: rgba(124, 77, 255, 0.1);
+      border: 1px solid rgba(124, 77, 255, 0.2);
+      align-self: center;
+      margin-left: 8px;
+    }
+    .thinking-badge.active {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .status-line.visible {
+      opacity: 1;
+    }
+    .thinking-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     .transcript-container {
       position: relative;
       flex: 1;
@@ -313,7 +415,126 @@ export class ChatView extends LitElement {
       height: 48px;
       opacity: 0.5;
     }
+    
+    .msg-status {
+      margin-left: 6px;
+      opacity: 0.7;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      vertical-align: middle;
+    }
+    
+    .msg-status.clock {
+      color: var(--cp-cyan, #00e5ff);
+    }
+    
+    .msg-status.single {
+      color: var(--cp-purple, #7c4dff);
+    }
+    
+    .msg-status.double {
+      color: var(--cp-green, #00c853);
+    }
+    
+    .msg-status.double svg:first-child {
+      margin-right: 2px;
+    }
+    
+    .msg-status.error {
+      color: var(--cp-red, #ff1744);
+    }
+    
+    .retry-badge {
+      font-size: 10px;
+      opacity: 0.8;
+      margin-left: 2px;
+      vertical-align: super;
+      background: var(--cp-surface-strong);
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    
+    .msg-status .status-icon {
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+    
+    @keyframes tick-pop {
+      0% { transform: scale(0.8); opacity: 0.4; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes tick-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+    
+    .msg-status.single .status-icon {
+      animation: tick-pop 160ms ease;
+    }
+    
+    .msg-status.double .status-icon {
+      animation: tick-pulse 800ms ease-in-out 2;
+    }
+    
+    .dev-meta {
+      font-size: 11px;
+      opacity: 0.6;
+      padding-left: 16px; /* to align with text after spinner */
+    }
+
+    .status-primary {
+      /* Main status text is default weight */
+    }
+    .status-secondary {
+      margin-left: 6px;
+      opacity: 0.7;
+    }
   `;
+
+  private _renderMessageStatus(id: string) {
+    const status = this.messageStatuses[id];
+    const retryCount = this.messageRetryCount[id];
+    
+    let title = '';
+    let ariaLabel = '';
+    
+    switch (status) {
+      case 'clock':
+        title = 'Analyzing…';
+        ariaLabel = 'Message status: Analyzing';
+        break;
+      case 'single':
+        title = 'Sent to NPU';
+        ariaLabel = 'Message status: Sent to NPU';
+        break;
+      case 'double':
+        title = 'Advisor responded';
+        ariaLabel = 'Message status: Advisor responded';
+        break;
+      default:
+        title = 'Error';
+        ariaLabel = 'Message status: Error';
+    }
+    
+    return html`<span 
+      class="msg-status ${status}" 
+      title="${title}"
+      aria-label="${ariaLabel}"
+      @click=${(e: Event) => e.stopPropagation()}>
+        ${status === 'clock' 
+          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/clock.svg" class="status-icon" height="14px" alt="Analyzing">`
+          : status === 'single'
+          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/tick.svg" class="status-icon" height="14px" alt="Sent to NPU">`
+          : status === 'double'
+          ? html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/double-tick.svg" class="status-icon" height="14px" alt="Advisor responded">`
+          : html`<img src="/home/vi/anima/assets/icons/ui/xnix/chat/error.svg" class="status-icon" height="14px" alt="Error">`}
+        ${retryCount && retryCount > 0 
+          ? html`<span class="retry-badge" title="Retrying… (x${retryCount})" aria-label="Retry count: ${retryCount}">×</span>`
+          : ''}
+    </span>`;
+  }
 
   private _handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
@@ -347,6 +568,7 @@ export class ChatView extends LitElement {
     );
   }
 
+   
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
     // Reset height to recalculate
     textarea.style.height = "auto";
@@ -383,26 +605,75 @@ export class ChatView extends LitElement {
     );
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    log.debug("Component mounted", { 
+      isConnected: this.isConnected,
+      visibilityState: document.visibilityState 
+    });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._transcriptEl && this._scrollHandler) {
+      this._transcriptEl.removeEventListener("scroll", this._scrollHandler);
+    }
+    log.debug("Component unmounted");
+  }
+
+  updated(changedProperties: Map<string | number | symbol, unknown>) {
+    if (changedProperties.has("transcript")) {
+      const oldTranscript = (
+        changedProperties.get("transcript") as Turn[]
+      ) || [];
+      defaultAutoScroll.handleTranscriptUpdate(
+        this._transcriptEl,
+        oldTranscript.length,
+        this.transcript.length,
+      );
+
+      // Update scroll-to-bottom button state
+      this._updateScrollToBottomState();
+    }
+
+    if (changedProperties.has("visible")) {
+      if (this.visible) {
+        this.removeAttribute("hidden");
+      } else {
+        this.setAttribute("hidden", "");
+      }
+
+      if (this._transcriptEl) {
+        defaultAutoScroll.handleVisibilityChange(
+          this._transcriptEl,
+          this.visible,
+          this.transcript.length > 0,
+        );
+      }
+    }
+  }
+
   firstUpdated() {
     log.debug("Component first updated");
     // Add scroll event listener to update scroll-to-bottom button visibility
-    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-    if (transcriptEl) {
-      transcriptEl.addEventListener("scroll", () => {
+    this._transcriptEl = this.shadowRoot?.querySelector(".transcript") as HTMLElement;
+    if (this._transcriptEl) {
+      this._scrollHandler = () => {
         // Debounce scroll events to reduce UI churn
         if (this.scrollDebounceTimer) {
           clearTimeout(this.scrollDebounceTimer);
         }
         
         this.scrollDebounceTimer = window.setTimeout(() => {
-          const isAtBottom = defaultAutoScroll.handleScrollEvent(transcriptEl);
+          const isAtBottom = defaultAutoScroll.handleScrollEvent(this._transcriptEl as HTMLElement);
           if (isAtBottom) {
             this.lastSeenMessageCount = this.transcript.length;
           }
           this._updateScrollToBottomState();
           this.scrollDebounceTimer = null;
         }, 100); // Debounce for 100ms
-      });
+      };
+      this._transcriptEl.addEventListener("scroll", this._scrollHandler);
     }
 
     // Store reference to textarea for height management
@@ -411,70 +682,40 @@ export class ChatView extends LitElement {
     ) as HTMLTextAreaElement;
   }
 
-  updated(changedProperties: Map<string | number | symbol, unknown>) {
-    if (changedProperties.has("transcript")) {
-      // Use generic auto-scroll utility
-      const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-      if (transcriptEl) {
-        const oldTranscript =
-          (changedProperties.get("transcript") as Turn[]) || [];
-        log.debug("Transcript updated", {
-          oldLength: oldTranscript.length,
-          newLength: this.transcript.length,
-        });
-        defaultAutoScroll.handleTranscriptUpdate(
-          transcriptEl,
-          oldTranscript.length,
-          this.transcript.length,
-        );
-
-        // Update scroll-to-bottom button state
-        this._updateScrollToBottomState();
-      }
-    }
-
-    if (changedProperties.has("visible")) {
-      log.debug(`Visibility changed to ${this.visible}`);
-      if (this.visible) {
-        this.removeAttribute("hidden");
-
-        // Use generic auto-scroll utility for visibility changes
-        const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-        if (transcriptEl) {
-          defaultAutoScroll.handleVisibilityChange(
-            transcriptEl,
-            this.visible,
-            this.transcript.length > 0,
-          );
-        }
-      } else {
-        this.setAttribute("hidden", "");
-      }
-    }
-  }
 private async _updateScrollToBottomState() {
   // Await a microtask to allow the DOM to update before we measure it
   await new Promise(resolve => setTimeout(resolve, 0));
 
-  const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-  if (transcriptEl) {
+  if (this._transcriptEl) {
     const state = defaultAutoScroll.getScrollToBottomState(
-      transcriptEl,
+      this._transcriptEl,
       this.transcript.length,
       this.lastSeenMessageCount,
     );
     this.newMessageCount = state.newMessageCount;
-    log.debug("Scroll to bottom state updated", {
-      showButton: state.showButton,
-      newMessageCount: state.newMessageCount,
-    });
+
+    // Only log when state actually changes
+    if (this._prevShowButton !== state.showButton || this._prevNewMessageCount !== state.newMessageCount) {
+      this._logScrollButton({
+        showButton: state.showButton,
+        newMessageCount: state.newMessageCount,
+      });
+        
+      this._prevShowButton = state.showButton;
+      this._prevNewMessageCount = state.newMessageCount;
+    }
 
     // Dispatch event to notify parent component of scroll state changes
     const detail = {
       showButton: state.showButton,
       newMessageCount: state.newMessageCount,
     };
-    log.debug("Scroll state changed", detail);
+      
+    // Only log scroll state when it changes
+    if (this._prevShowButton !== detail.showButton || this._prevNewMessageCount !== detail.newMessageCount) {
+      this._logScrollState(detail);
+    }
+      
     this.dispatchEvent(
       new CustomEvent("scroll-state-changed", {
         detail,
@@ -486,9 +727,8 @@ private async _updateScrollToBottomState() {
 }
   private _scrollToBottom() {
     log.debug("Scrolling to bottom");
-    const transcriptEl = this.shadowRoot?.querySelector(".transcript");
-    if (transcriptEl) {
-      defaultAutoScroll.scrollToBottom(transcriptEl, true);
+    if (this._transcriptEl) {
+      defaultAutoScroll.scrollToBottom(this._transcriptEl, true);
       this.lastSeenMessageCount = this.transcript.length;
     }
   }
@@ -501,6 +741,15 @@ private async _updateScrollToBottomState() {
             <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"/>
           </svg>
           <span>Chat</span>
+        </div>
+        <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
+          <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
+            <div class="status-line ${this._showThinking ? 'visible' : ''}">
+              ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
+              <span class="status-primary">${this.thinkingStatus}</span>
+              ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
+            </div>
+          </span>
         </div>
         <div class="header-actions">
           <button class="reset-button" @click=${this._resetText} title="Clear conversation">
@@ -532,15 +781,22 @@ private async _updateScrollToBottomState() {
                   </div>
                 `
               : this.transcript.map(
-                  (turn) => html`
-                    <div
-                      class="turn ${turn.author} ${turn.isSystemMessage
-                        ? "system"
-                        : ""}"
-                    >
-                      ${turn.text}
-                    </div>
-                  `,
+                  (turn) => {
+                    const who = turn.speaker;
+                    const id = turn.turnId;
+                    return html`
+                      <div
+                        class="turn ${who} ${turn.isSystemMessage
+                          ? "system"
+                          : ""}"
+                      >
+                        ${turn.text}
+                        ${who === "user" && id && this.messageStatuses[id] 
+                          ? this._renderMessageStatus(id)
+                          : ''}
+                      </div>
+                    `;
+                  }
                 )
           }
         </div>
@@ -560,10 +816,11 @@ private async _updateScrollToBottomState() {
           placeholder="Type a message..."
           rows="1"
         ></textarea>
-        <button @click=${this._sendMessage}>
+        <button @click=${this._sendMessage} aria-label="Send Message">
             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z"/></svg>
         </button>
       </div>
     `;
   }
+
 }

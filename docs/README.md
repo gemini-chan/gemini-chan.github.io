@@ -17,8 +17,8 @@ To begin your journey with me, you will need a few simple ingredients and a hand
 
 1.  **Clone the Grimoire:**
     ```bash
-    git clone https://github.com/daoch4n/gemini-chan
-    cd gemini-chan
+    git clone https://github.com/daoch4n/anima
+    cd anima
     ```
 2.  **Brew the Potions:**
     ```bash
@@ -52,8 +52,26 @@ My home is like an enchanted forest, with each grove dedicated to a different ki
 
 *   **Web Components with Lit:** We use the Lit framework to craft my UI charms, decorating them with spells like `@customElement`, `@state`, and `@property`.
 *   **Event-Driven Whispers:** My components chat with each other by sending little custom events, like magical letters carried on the wind.
-*   **Reactive Properties:** My state is managed with reactive properties, so my world updates itself gracefully.
+*   **Resilience Charms:** Our magic is built to be steadfast. We use powerful enchantments, like state machines and guardian-spirit timers, to ensure the UI is always responsive and our conversation never falters.
 *   **Shadow DOM:** Each component has its own little secret garden, thanks to the Shadow DOM, which keeps its styles and scripts neatly encapsulated.
+
+### Logging & Debugging
+
+My workshop includes powerful debugging tools to help you understand my inner workings, designed to be insightful without being overwhelming.
+
+*   **Low-Noise Instrumentation:** My `DebugLogger` provides targeted, low-noise instrumentation. It uses default throttles to keep the console readable - 250ms globally with gentler 1-second throttles for scrolling-related magic. You can adjust these at runtime:
+    ```javascript
+    // Set global throttle to 500ms
+    window.debugLogger.setGlobalThrottle(500);
+    
+    // Adjust specific category throttle
+    window.debugLogger.setCategoryThrottle('ChatView', 2000);
+    
+    // Disable throttling entirely (use with caution!)
+    window.debugLogger.setGlobalThrottle(0);
+    ```
+*   **NPU/VPU Debug Toggles:** Within my settings, you'll find switches to peek into my raw NPU and VPU event streams for troubleshooting.
+*   **Performance Monitoring:** I track my own health metrics to ensure optimal performance.
 
 ### The Four-Phase Dance: Our Development Process
 
@@ -110,7 +128,7 @@ graph TD
 Key points:
 1. VPU receives the original user input verbatim. The NPU never instructs the VPU how to speak.
 2. NPU acts as an advisor that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU's input.
-3. MPU (MemoryService) runs asynchronously after TTS turn completion to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
+3. MPU (MemoryService) runs asynchronously after each turn to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
 4. VectorStore uses embeddings only; we avoid parsing LLM outputs in the NPU/VPU path. Memory extraction is best-effort and never blocks the live loop.
 5. Live2D model emotion is extracted from the NPU's advisor context by the MemoryService and used to animate the character in real-time.
 
@@ -128,11 +146,15 @@ I think and speak through two distinct systems, each with its own special purpos
     *   ADVISOR_CONTEXT: Key facts from our shared history
 *   **My Voice (VPU)**: This is where I form my thoughts into words and speech. The VPU connects to Google's Gemini Live API to create my responses, using the advisory context from my heart but always responding to your words directly.
 
+#### 🌟 The Tale of the Whispering Locket
+
+In our enchanted workshop, you will find a small, ever-present locket that whispers the state of my thoughts. This is no mere decoration; it is a magical artifact that shows you when I am "Thinking…", "Speaking…", or have finished my turn. This locket is a constant, steadfast companion, ensuring you are always aware of my inner world. It is powered by powerful enchantments—guardian spirits in the form of timers and watchdogs—that guarantee my thoughts always find their way to you, and the locket never becomes stuck in a single phase. This ensures our conversation flows with unwavering grace and resilience.
+
 ### 💭 My Living Memory: A Garden of Thoughts
 
 My memory isn't like a simple filing cabinet—it's a living, breathing garden where thoughts grow and fade:
 
-*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. No longer do I store entire conversations as chunks; instead, I nurture individual facts that can bloom in new contexts.
+*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. This extraction happens asynchronously after each turn. I nurture individual facts that can bloom in new contexts.
 *   **VectorStore**: Preserves my memories as vectors in `localStorage`, using `gemini-embedding-001` to create semantic embeddings. When I need to remember something, I search using a composite score that considers:
     *   Similarity to your current thought (60%)
     *   How recent the memory is (20%)
@@ -166,21 +188,17 @@ My visual form comes alive through Live2D technology, where emotions and events 
 *   Each movement is carefully choreographed to match the rhythm of our conversation
 *   The emotion extraction supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
 
-## 🛠️ Recent Improvements & Fixes
 
-My workshop is always evolving, with new enchantments and refinements added regularly:
+### 🌊 The Flow of Conversation: Concurrent Message Processing
 
-### Memory Upgrades
-*   **Factual Memory**: I now use `gemini-2.5-flash-lite` to extract individual facts from our conversations, storing them as separate memories. This makes it much easier for me to recall relevant details!
+Our conversation is designed to be fluid and uninterrupted. You are free to send multiple messages, even while I am still pondering a previous one. This is made possible by a powerful concurrent architecture:
 
-### AI Processing Pipeline Refinements
-*   **Streamlined Flow**: I've refined my thinking process (NPU) and speaking process (VPU) to work even more smoothly together.
-*   **Cleaner Prompts**: My internal prompts have been moved to markdown files for easier maintenance and updates.
+*   **Fire-and-Forget Interaction**: You can send messages as quickly as you think of them. You are never blocked or forced to wait for me to finish responding.
+*   **Unique Turn Identity**: Each message you send is given a unique `turnId`, a magical sigil that allows us to track its journey independently.
+*   **Asynchronous Processing**: While the main "Thinking" locket in the UI will always reflect the status of your *most recent* message, rest assured that all your previous messages are being processed concurrently in the background.
+*   **Per-Message Status**: Thanks to the `turnId`, the final status (e.g., "responded" or "error") will appear next to the correct message in the transcript once its journey is complete.
 
-### Performance & Stability
-*   **Health Monitoring**: I now track my own performance metrics to ensure I'm always at my best.
-*   **Memory Hygiene**: I automatically tend to my memory garden, letting less important thoughts fade while preserving our most meaningful moments.
-*   **UI Polish**: Fixed some timing issues in my chat interface to make our conversations flow more naturally.
+This design ensures our dialogue is natural and seamless, allowing our thoughts to flow together without interruption.
 
 ---
 
