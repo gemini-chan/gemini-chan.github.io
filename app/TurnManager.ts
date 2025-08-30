@@ -57,12 +57,13 @@ export class TurnManager {
 
 	import type { SessionManager } from './SessionManager';
 
-	initializeNewTurn(message: string, sessionManager: SessionManager): string {
+	initializeNewTurn(
+		message: string,
+		textTranscript: Turn[],
+		messageStatuses: Record<string, "clock" | "single" | "double" | "error">
+	): { turnId: string; newTranscript: Turn[]; newStatuses: Record<string, "clock" | "single" | "double" | "error"> } {
 		// Generate turn ID before appending user message
 		const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
-
-		// Prune message metadata maps via session manager
-		sessionManager.pruneMessageMeta();
 
 		// Set initial thinking state
 		this.npuThinkingLog = "";
@@ -76,7 +77,19 @@ export class TurnManager {
 			lastUpdateAt: Date.now(),
 		};
 
-		return turnId;
+		// Create new transcript with user message
+		const newTranscript = [
+			...textTranscript,
+			{ text: message, speaker: "user", turnId }
+		];
+
+		// Create new statuses with entry for this turn
+		const newStatuses = {
+			...messageStatuses,
+			[turnId]: "clock"
+		};
+
+		return { turnId, newTranscript, newStatuses };
 	}
 
 	setTurnPhase(
