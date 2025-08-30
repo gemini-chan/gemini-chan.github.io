@@ -47,11 +47,20 @@ export class AudioManager {
     this.host._scheduleUpdate();
   }
 
-  public async startAudioProcessing() {
+  public async acquireMicrophone() {
+    if (this.mediaStream) {
+      return;
+    }
     this.mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: false,
     });
+  }
+
+  public async startAudioProcessing() {
+    if (!this.mediaStream) {
+      throw new Error("Media stream has not been acquired. Call acquireMicrophone first.");
+    }
 
     this.host.updateStatus("");
 
