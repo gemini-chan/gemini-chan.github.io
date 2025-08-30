@@ -18,6 +18,8 @@ export default defineConfig({
       "@tests": path.resolve(__dirname, "tests"),
       "@live2d": path.resolve(__dirname, "live2d"),
       "@prompts": path.resolve(__dirname, "prompts"),
+      "@live2d/live2d-gate": path.resolve(__dirname, "tests/mocks/live2d-gate.mock.ts"),
+      "@live2d/zip-loader": path.resolve(__dirname, "tests/mocks/empty.mock.ts"),
     },
   },
 });
