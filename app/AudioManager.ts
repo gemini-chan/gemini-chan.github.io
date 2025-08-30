@@ -17,6 +17,8 @@ export class AudioManager {
   public outputNode: GainNode;
   public textOutputNode: GainNode;
   public callOutputNode: GainNode;
+  public micEnabled: boolean = true;
+  public isMuted: boolean = false;
 
   constructor(private host: GdmLiveAudio, private callSessionManager: CallSessionManager) {
     this.inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
@@ -25,6 +27,8 @@ export class AudioManager {
     this.outputNode = this.outputAudioContext.createGain();
     this.textOutputNode = this.outputAudioContext.createGain();
     this.callOutputNode = this.outputAudioContext.createGain();
+    this.micEnabled = true;
+    this.isMuted = false;
   }
 
   initAudio() {
