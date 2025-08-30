@@ -179,6 +179,7 @@ export class GdmLiveAudio extends LitElement {
 	// Session managers
 	private textSessionManager: TextSessionManager;
 	private callSessionManager: CallSessionManager;
+	private sessionManager: SessionManager;
 	private summarizationService: SummarizationService;
 	private personaManager: PersonaManager;
 	private vectorStore: VectorStore;
@@ -362,6 +363,7 @@ export class GdmLiveAudio extends LitElement {
 		super();
 		this.personaManager = new PersonaManager();
 		this.turnManager = new TurnManager(this);
+		this.sessionManager = new SessionManager(this);
 		// MemoryService will be initialized after the GoogleGenAI client is created.
 		// Client initialization is deferred to connectedCallback to avoid Lit update warnings.
 
@@ -511,18 +513,6 @@ export class GdmLiveAudio extends LitElement {
 		this._scheduleUpdate();
 	}
 
-	private async _initTextSession() {
-		const ok = await this.textSessionManager.initSession();
-		this.textSession = this.textSessionManager.sessionInstance;
-		return ok;
-	}
-
-	private async _initCallSession() {
-		logger.debug("Initializing new call session.");
-		const ok = await this.callSessionManager.initSession();
-		this.callSession = this.callSessionManager.sessionInstance;
-		return ok;
-	}
 
 	private updateStatus(msg: string) {
 		this.status = msg;
@@ -713,7 +703,7 @@ if (lastMessage.speaker === "model") {
 		this._updateActiveOutputNode();
 
 		const isResuming = this.callSessionManager.getResumptionHandle() !== null;
-		const ok = await this._initCallSession();
+		const ok = await this.sessionManager.initCallSession();
 		if (!ok || !this.callSession) {
 			// If energy is exhausted, reflect a different UX than rate limit
 			const exhausted = energyBarService.getCurrentEnergyLevel() === 0;
@@ -899,25 +889,6 @@ if (lastMessage.speaker === "model") {
 		logger.debug("Call ended. callSession preserved:", this.callSession);
 	}
 
-	private _resetTextContext() {
-		// Reset the delta-analysis index for text transcript
-		this.lastAnalyzedTranscriptIndex = 0;
-		// Close existing text session using session manager
-		if (this.textSessionManager) {
-			this.textSessionManager.closeSession();
-			this.textSession = null;
-		}
-
-		// Clear text transcript
-		this.textTranscript = [];
-		this.lastAnalyzedTranscriptIndex = 0;
-
-		// Clear thinking UI and timers
-		this._clearThinkingAll();
-
-		// Text session will be lazily initialized when user sends next message
-		this.updateStatus("Text conversation cleared.");
-	}
 private _handleTtsCaptionUpdate(text: string) {
 // Clear any pending timer to clear the caption
 if (this.ttsCaptionClearTimer) {
@@ -968,45 +939,6 @@ this.updateTextTranscript(this.ttsCaption);
 		}, 2500); // Keep caption on screen for 2.5s after speech ends
 	}
 
-	private _resetCallContext() {
-		// Reset the delta-analysis index for call transcript
-		this.lastAnalyzedTranscriptIndex = 0;
-		// Also clear the persisted resumption handle so the next call starts fresh
-		try {
-			this.callSessionManager?.clearResumptionHandle();
-		} catch (e) {
-			logger.warn("Failed to clear call session resumption handle:", e);
-		}
-		// Reset reconnection toast guard
-		this._callReconnectingNotified = false;
-		logger.debug("Resetting call context. Closing session.");
-		// Close existing call session using session manager
-		if (this.callSessionManager) {
-			this.callSessionManager.closeSession();
-			this.callSession = null;
-		}
-
-		// Clear call transcript and reset rate-limit states
-		this.callTranscript = [];
-		this._callRateLimitNotified = false;
-		const callT = this.shadowRoot?.querySelector(
-			"call-transcript",
-		) as HTMLElement & { rateLimited?: boolean };
-		if (callT) {
-			callT.rateLimited = false;
-		}
-
-		// Clear thinking UI and timers
-		this._clearThinkingAll();
-
-		// Reinitialize call session if we're currently in a call
-		if (this.isCallActive) {
-			this._initCallSession();
-		}
-		this.updateStatus("Call conversation cleared.");
-		// Reuse the existing call-start toasts when the next call starts (resume-first flow).
-		// No additional toast here to avoid redundancy.
-	}
 
 	private _toggleSettings() {
 		this.showSettings = !this.showSettings;
@@ -1266,7 +1198,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
-		const ok = await this._initTextSession();
+		const ok = await this.sessionManager.initTextSession();
 
 		// If session initialization fails, show an error and abort.
 		if (!ok || !this.textSessionManager || !this.textSessionManager.isActive) {
@@ -1700,7 +1632,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// Ensure we have an active text session
 		if (!this.textSessionManager || !this.textSessionManager.isActive) {
 			this.updateStatus("Initializing text session...");
-			const ok = await this._initTextSession();
+			const ok = await this.sessionManager.initTextSession();
 			if (!ok || !this.textSession) {
 				this.updateError(
 					"Unable to start text session (rate limited or network error)",
@@ -1747,7 +1679,7 @@ this.updateTextTranscript(this.ttsCaption);
 				this.updateError(`Failed to send message: ${msg}`);
 
 				// Try to reinitialize the session and resend once.
-				const ok = await this._initTextSession();
+				const ok = await this.sessionManager.initTextSession();
 				if (ok && this.textSessionManager?.isActive) {
 					try {
 						this.lastAdvisorContext = "";
