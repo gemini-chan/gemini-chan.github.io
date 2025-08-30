@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { GdmLiveAudio } from './main.tsx';
+
 // Define type aliases for turn state
 export type TurnPhase = 'idle' | 'npu' | 'vpu' | 'complete' | 'error';
 export interface TurnState { 
@@ -13,9 +15,9 @@ export interface TurnState {
 }
 
 export class TurnManager {
-  private host: any; // GdmLiveAudio instance
+  private host: GdmLiveAudio; // GdmLiveAudio instance
 
-  constructor(host: any) {
+  constructor(host: GdmLiveAudio) {
     this.host = host;
   }
 
@@ -52,6 +54,7 @@ export class TurnManager {
   }
 
   setTurnPhase(phase: 'idle'|'npu'|'vpu'|'complete'|'error', eventType?: string) {
+    const turnId = this.host.turnState.id;
     const previousPhase = this.host.turnState.phase;
     const now = Date.now();
     this.host.turnState = {
@@ -92,7 +95,7 @@ export class TurnManager {
         
         // Set timeout to transition to idle after 1500ms
         setTimeout(() => {
-          if (this.host.turnState.id === this.host.currentTurnId && this.host.turnState.phase === 'complete') {
+          if (this.host.turnState.id === turnId && this.host.turnState.phase === 'complete') {
             this.setTurnPhase('idle');
           }
         }, this.host.COMPLETE_TO_IDLE_DELAY_MS);
@@ -108,7 +111,7 @@ export class TurnManager {
         
         // Set timeout to transition to idle after 2500ms
         setTimeout(() => {
-          if (this.host.turnState.id === this.host.currentTurnId && this.host.turnState.phase === 'error') {
+          if (this.host.turnState.id === turnId && this.host.turnState.phase === 'error') {
             this.setTurnPhase('idle');
           }
         }, this.host.ERROR_TO_IDLE_DELAY_MS);
