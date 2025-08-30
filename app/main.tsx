@@ -85,10 +85,10 @@ export class GdmLiveAudio extends LitElement {
 	@state() showSettings = false;
 	@state() toastMessage = "";
 	private lastAdvisorContext: string = "";
-  @state() private npuThinkingLog: string = "";
-  @state() private npuStatus: string = "";
+  @state() public npuThinkingLog: string = "";
+  @state() public npuStatus: string = "";
   @state() public npuSubStatus: string = "";
-  @state() private thinkingActive = false;
+  @state() public thinkingActive = false;
   @state() public turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private turnManager: TurnManager;
   private vpuWaitTimer: number | null = null;
@@ -99,7 +99,7 @@ export class GdmLiveAudio extends LitElement {
   private _devRafId: number | null = null;
   
   // Named constants for timeouts
-  private readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
+  public readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
   public readonly ERROR_TO_IDLE_DELAY_MS = 2500;
 
 	// Make these properties public for SessionManager access
@@ -606,7 +606,7 @@ if (lastMessage.speaker === "model") {
 		this._scheduleUpdate();
 	}
 
-	private _handleCallRateLimit() {
+	public _handleCallRateLimit() {
 		// Degrade only STS energy and notify UI
 		energyBarService.handleRateLimitError("sts");
 		if (this._callRateLimitNotified) return;
@@ -759,7 +759,7 @@ if (lastMessage.speaker === "model") {
 		this._idleMotionTimer = window.setTimeout(step, 1500); // initial delay after greet
 	}
 
-	private async _handleCallEnd() {
+	public async _handleCallEnd() {
 		if (!this.isCallActive && !this.audioManager.mediaStream)
 			return;
 
@@ -1378,7 +1378,7 @@ this.updateTextTranscript(this.ttsCaption);
 	}
   
 
-  private _armDevRaf() {
+  public _armDevRaf() {
     // Only run in development mode
     if (!import.meta.env.DEV) return;
     
