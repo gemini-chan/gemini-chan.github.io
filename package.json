@@ -9,7 +9,7 @@
     "lint": "eslint . --ext .ts --fix",
     "prepare": "husky install",
     "build": "vite build",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@google/genai": "^1.13.0",
