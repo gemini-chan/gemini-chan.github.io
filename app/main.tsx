@@ -1401,6 +1401,8 @@ this.updateTextTranscript(this.ttsCaption);
 		this.sessionManager.messageStatuses = newStatuses;
 		this._pruneMessageMeta();
 		
+		debugLogger.debug("Transcript after optimistic update", this.sessionManager.textTranscript);
+		
 		// Flush synchronously
 		this.requestUpdate();
 		debugLogger.debug("requestUpdate() called");
