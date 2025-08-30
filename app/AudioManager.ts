@@ -90,7 +90,7 @@ export class AudioManager {
  
   try {
     await sessionManager.sessionReady;
-  } catch (e) {
+  } catch {
     this.deps.hostElement.dispatchEvent(new CustomEvent('error-update', { detail: { message: "Call session failed to become ready in time." }, bubbles: true, composed: true }));
     return;
   }

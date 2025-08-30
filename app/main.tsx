@@ -8,7 +8,6 @@ import { SummarizationService } from "@features/summarization/SummarizationServi
 import {
 	GoogleGenAI,
 	type LiveServerMessage,
-	type Session,
 } from "@google/genai";
 import { createComponentLogger, debugLogger } from "@services/DebugLogger";
 import { VectorStore } from "@store/VectorStore";
@@ -63,10 +62,7 @@ export const logger = createComponentLogger("GdmLiveAudio");
 import type { NpuProgressEvent, VpuProgressEvent } from "@shared/progress";
 import {
 	TurnManager,
-	type TurnState,
-	type TurnManagerDependencies,
 } from "./TurnManager";
-import type { SessionManagerDependencies } from "./SessionManager";
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -1870,7 +1866,7 @@ this.updateTextTranscript(this.ttsCaption);
 		this.updateError(message);
 	}
 
-	private _handleStateUpdate(_e: CustomEvent) {
+	private _handleStateUpdate() {
 		this.requestUpdate();
 	}
 
