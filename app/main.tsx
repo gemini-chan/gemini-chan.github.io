@@ -1981,7 +1981,7 @@ this.updateTextTranscript(this.ttsCaption);
             .hardDeadlineMs=${this.turnManager.vpuHardDeadline}
             .turnId=${this.turnManager.turnState.id || ''}
             @send-message=${this._handleSendMessage}
-            @reset-text=${this.sessionManager.resetTextContext}
+            @reset-text=${this._resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}
             @chat-active-changed=${this._handleChatActiveChanged}
           >
@@ -2047,7 +2047,7 @@ this.updateTextTranscript(this.ttsCaption);
           .visible=${this.activeMode === "calling"}
           .activePersonaName=${this.personaManager.getActivePersona().name}
           .callState=${this.callState}
-          @reset-call=${this.sessionManager.resetCallContext}
+          @reset-call=${this._resetCallContext}
           @scroll-state-changed=${this._handleCallScrollStateChanged}
         ></call-transcript>
       </div>
