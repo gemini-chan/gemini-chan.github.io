@@ -89,16 +89,12 @@ export class AudioManager {
  
   // Wait for the call session to become active before processing audio
   const sessionManager = this.deps.getCallSessionManager();
-  const startTime = Date.now();
-  const timeout = 5000; // 5 seconds
  
-  while (!sessionManager.isActive) {
-   if (Date.now() - startTime > timeout) {
-    this.deps.updateError("Call session failed to start in time.");
+  try {
+    await sessionManager.sessionReady;
+  } catch (e) {
+    this.deps.updateError("Call session failed to become ready in time.");
     return;
-   }
-    
-   await new Promise((resolve) => setTimeout(resolve, 100)); // Poll every 100ms
   }
  
   this.sourceNode = this.inputAudioContext.createMediaStreamSource(
