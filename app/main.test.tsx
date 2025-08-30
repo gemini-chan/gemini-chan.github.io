@@ -47,11 +47,11 @@ describe('main component', () => {
 
     // Wait for the component to update
     await waitFor(() => {
-      expect(chatView?.transcript).toHaveLength(1);
+      expect(chatView?.transcript).toHaveLength(2);
     });
 
     // Assert that the chat view's transcript property contains the message
-    expect(chatView?.transcript[0].text).toBe('Hello, world!');
-    expect(chatView?.transcript[0].speaker).toBe('user');
+    expect(chatView?.transcript[1].text).toBe('Hello, world!');
+    expect(chatView?.transcript[1].speaker).toBe('user');
   });
 });
