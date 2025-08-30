@@ -211,12 +211,4 @@ export class TurnManager {
     }
   }
   
-  public armVpuWatchdog() {
-    this.clearVpuWatchdog();
-    this.vpuWatchdogTimer = window.setTimeout(() => {
-      console.warn('VPU watchdog triggered');
-      this.setTurnPhase('idle');
-    }, this.VPU_WATCHDOG_MS);
-  }
-
 }
