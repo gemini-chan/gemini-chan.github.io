@@ -78,59 +78,73 @@ export class AudioManager {
     "Media stream has not been acquired. Call acquireMicrophone first.",
    );
   }
-
+ 
   this.deps.updateStatus("");
-
+ 
   // Live2D: greet motion for Sourceress on call start
   this.deps.setSourceressMotion("greet");
-
+ 
   // Start idle motion cycling while in call
   this.deps.startIdleMotionCycle();
-
+ 
+  // Wait for the call session to become active before processing audio
+  const sessionManager = this.deps.getCallSessionManager();
+  const startTime = Date.now();
+  const timeout = 5000; // 5 seconds
+ 
+  while (!sessionManager.isActive) {
+   if (Date.now() - startTime > timeout) {
+    this.deps.updateError("Call session failed to start in time.");
+    return;
+   }
+    
+   await new Promise((resolve) => setTimeout(resolve, 100)); // Poll every 100ms
+  }
+ 
   this.sourceNode = this.inputAudioContext.createMediaStreamSource(
    this.mediaStream,
   );
   this.sourceNode.connect(this.inputNode);
-
+ 
   // Add the audio worklet module
   await this.inputAudioContext.audioWorklet.addModule(
    new URL("./audio-processor.ts", import.meta.url).href,
   );
-
+ 
   // Create the AudioWorkletNode
   this.audioWorkletNode = new AudioWorkletNode(
    this.inputAudioContext,
    "audio-processor",
   );
-
+ 
   // Set up message handling from the worklet
   this.audioWorkletNode.port.onmessage = (event) => {
    const { isCallActive, activeMode } = this.deps.getState();
-   if (!isCallActive) return;
-
-   const pcmData = event.data;
-   // Send audio to the active call session using session manager
+   const callSessionManager = this.deps.getCallSessionManager();
+ 
    if (
-   	activeMode === "calling" &&
-   	this.deps.getCallSessionManager() &&
-   	this.deps.getCallSessionManager().isActive
+    !isCallActive ||
+    activeMode !== "calling" ||
+    !callSessionManager?.isActive
    ) {
-   	try {
-   		this.deps.getCallSessionManager().sendRealtimeInput({
-   			media: createBlob(pcmData),
-   		});
-    } catch (e) {
-    	const msg = String((e as Error)?.message || e || "");
-    	this.deps.updateError(`Failed to stream audio: ${msg}`);
-    }
+    return;
+   }
+ 
+   const pcmData = event.data;
+   try {
+    callSessionManager.sendRealtimeInput({
+     media: createBlob(pcmData),
+    });
+   } catch (e) {
+    const msg = String((e as Error)?.message || e || "");
+    this.deps.updateError(`Failed to stream audio: ${msg}`);
    }
   };
-
-    // Connect the audio nodes
-    this.sourceNode.connect(this.audioWorkletNode);
-    // Do not connect the worklet to the destination, as it's for processing, not playback.
-    // this.audioWorkletNode.connect(this.inputAudioContext.destination);
-  }
+ 
+  // Connect the audio nodes
+  this.sourceNode.connect(this.audioWorkletNode);
+  // Do not connect the worklet to the destination, as it's for processing, not playback.
+ }
 
   public stopAudioProcessing() {
     if (this.audioWorkletNode && this.sourceNode) {
