@@ -186,36 +186,6 @@ export class GdmLiveAudio extends LitElement {
 			if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
 		}
 
-		// More robust transcript update check
-		const checkTranscript = (
-			propName: "textTranscript" | "callTranscript",
-		): boolean => {
-			if (changedProperties.has(propName)) {
-				const oldT = (changedProperties.get(propName) as Turn[]) || [];
-				const newT = this.sessionManager[propName] || [];
-				if (oldT.length !== newT.length) return true;
-
-				const lastOld = oldT[oldT.length - 1];
-				const lastNew = newT[newT.length - 1];
-				if (
-					!lastOld ||
-					!lastNew ||
-					lastOld.text !== lastNew.text ||
-					lastOld.speaker !== lastNew.speaker ||
-					lastOld.isSystemMessage !== lastNew.isSystemMessage
-				) {
-					return true;
-				}
-			}
-			return false;
-		};
-
-		if (
-			checkTranscript("textTranscript") ||
-			checkTranscript("callTranscript")
-		) {
-			return true;
-		}
 
 		return false;
 	}
@@ -656,7 +626,7 @@ if (lastMessage.speaker === "model") {
 			// Switch to calling mode
 			this.activeMode = "calling";
 			// When switching to calling mode, reset delta index so we analyze from the start of the call transcript
-			this.lastAnalyzedTranscriptIndex = 0;
+			this.sessionManager.lastAnalyzedTranscriptIndex = 0;
 			this.callState = "connecting";
 			this._updateActiveOutputNode();
 
@@ -748,7 +718,7 @@ if (lastMessage.speaker === "model") {
 		// Switch back to texting mode
 		this.activeMode = "texting";
 		// Reset index when switching back to texting mode; next analysis will start fresh on text transcript
-		this.lastAnalyzedTranscriptIndex = 0;
+		this.sessionManager.lastAnalyzedTranscriptIndex = 0;
 		this._updateActiveOutputNode();
 
 		// Summarize the call
