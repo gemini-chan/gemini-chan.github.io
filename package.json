@@ -8,7 +8,8 @@
     "type": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "lint": "eslint . --ext .ts --fix",
     "prepare": "husky install",
-    "build": "vite build"
+    "build": "vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "@google/genai": "^1.13.0",
@@ -24,6 +25,8 @@
   "devDependencies": {
     "@open-wc/testing": "^4.0.0",
     "@proj-airi/unplugin-live2d-sdk": "^0.1.5",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/chai": "^4.3.18",
     "@types/mocha": "^10.0.7",
     "@types/node": "^24.2.0",
