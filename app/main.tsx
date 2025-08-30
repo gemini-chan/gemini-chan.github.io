@@ -383,6 +383,10 @@ export class GdmLiveAudio extends LitElement {
 		const ttsLevel = energyBarService.getCurrentEnergyLevel("tts");
 		const personaName = this.personaManager.getActivePersona().name;
 
+	private _triggerInitialTTSGreeting() {
+		const ttsLevel = energyBarService.getCurrentEnergyLevel("tts");
+		const personaName = this.personaManager.getActivePersona().name;
+
 		logger.debug("Triggering initial TTS greeting", { ttsLevel, personaName });
 
 		if (ttsLevel === 2) {
