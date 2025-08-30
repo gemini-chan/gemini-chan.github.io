@@ -94,7 +94,6 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuStatus: string = "";
   @state() private npuSubStatus: string = "";
   @state() private thinkingActive = false;
-  @state() private currentTurnId: string | null = null;
   @state() private turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private vpuWatchdogTimer: number | null = null;
   private readonly VPU_WATCHDOG_MS = 2200;
@@ -155,7 +154,7 @@ export class GdmLiveAudio extends LitElement {
 		this.npuThinkingLog = "";
 		
 		// Clear correlation
-		this.currentTurnId = null;
+		this.turnState = { ...this.turnState, id: null };
 		
 		// Reset turn state
 		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
@@ -1326,7 +1325,7 @@ this.updateTextTranscript(this.ttsCaption);
 		const personaId = this.personaManager.getActivePersona().id;
 		/* conversationContext removed: memory now stores facts only */
 		// Set current turn ID to ensure only this turn drives the Thinking UI
-		this.currentTurnId = turnId;
+		this.turnState = { ...this.turnState, id: turnId };
 		const intention = await this.npuService.analyzeAndAdvise(
 			message,
 			personaId,
@@ -1511,7 +1510,7 @@ this.updateTextTranscript(this.ttsCaption);
       });
       this.vpuWatchdogTimer = window.setTimeout(() => {
         // Only trigger if this is still the current turn
-        if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
+        if (this.turnState.id && this.turnState.phase === 'vpu') {
           logger.debug("VPU watchdog fired", { turnId: this.turnState.id });
           this._setTurnPhase('complete');
         }
@@ -1610,7 +1609,7 @@ this.updateTextTranscript(this.ttsCaption);
       this.vpuHardMaxTimer = window.setTimeout(() => {
         logger.debug("VPU HARD TIMEOUT fired", { turnId: this.turnState.id });
         // Only trigger if this is still the current turn
-        if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
+        if (this.turnState.id && this.turnState.phase === 'vpu') {
           this._setTurnPhase('complete');
           this.requestUpdate();
         }
@@ -1626,10 +1625,10 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
 		// Ignore events for other turns - with type safety check
-		if (this.currentTurnId && 
+		if (this.turnState.id && 
 			ev.data?.turnId && 
 			typeof ev.data.turnId === 'string' && 
-			this.currentTurnId !== ev.data.turnId) {
+			this.turnState.id !== ev.data.turnId) {
 			return;
 		}
     
@@ -1661,7 +1660,7 @@ this.updateTextTranscript(this.ttsCaption);
     }
 
 		// Force immediate update on first NPU event for this turn
-		const eventTurnId = (ev.data?.turnId as string) || this.currentTurnId;
+		const eventTurnId = (ev.data?.turnId as string) || this.turnState.id;
 		if (eventTurnId && !this._npuFirstEventForced.has(eventTurnId)) {
 			this._npuFirstEventForced.add(eventTurnId);
 			this.requestUpdate();
