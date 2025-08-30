@@ -97,6 +97,7 @@ export class GdmLiveAudio extends LitElement {
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
   public devRemainingMs: number = 0;
   private _devRafId: number | null = null;
+  public vpuHardDeadline: number = 0;
   
   // Named constants for timeouts
   private readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
@@ -150,9 +151,9 @@ export class GdmLiveAudio extends LitElement {
 		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
 		
 		// Clear VPU watchdog and hard max timer
-		this._clearVpuWatchdog();
-		this._clearVpuHardMaxTimer();
-		this._clearVpuDevTicker();
+		this.turnManager.clearVpuWatchdog();
+		this.turnManager.clearVpuHardMaxTimer();
+		this.turnManager.clearVpuDevTicker();
 		this.devRemainingMs = 0;
 		
 		// Prune message metadata maps
