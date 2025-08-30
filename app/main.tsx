@@ -11,7 +11,6 @@ import {
 	type Session,
 } from "@google/genai";
 import { createComponentLogger, debugLogger } from "@services/DebugLogger";
-import { createBlob } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
 import type { EmotionMapping } from "@services/Live2DMappingService";
@@ -65,7 +64,7 @@ import type {
   NpuProgressEvent,
   VpuProgressEvent
 } from "@shared/progress";
-import { TurnManager, type TurnState, type TurnPhase } from "./TurnManager";
+import { TurnManager, type TurnState } from "./TurnManager";
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {

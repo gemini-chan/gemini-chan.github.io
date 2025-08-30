@@ -4,9 +4,6 @@
  */
 
 import { GdmLiveAudio } from './main.tsx';
-import type { TextSessionManager, CallSessionManager } from "@features/vpu/VPUService";
-import type { Session } from "@google/genai";
-import type { ToastNotification } from "@components/ToastNotification";
 import { logger } from './main.tsx';
 import combinedPrompt from "@prompts/vpu/combined-vpu.prompt.md?raw";
 
