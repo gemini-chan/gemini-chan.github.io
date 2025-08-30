@@ -53,7 +53,7 @@ export class AudioManager {
    this.outputNode = this.callOutputNode;
   }
   // Trigger a re-render to pass the updated outputNode to live2d-gate
-  this.deps.scheduleUpdate();
+  this.deps.hostElement.dispatchEvent(new CustomEvent('state-update', { bubbles: true, composed: true }));
  }
 
  public async acquireMicrophone() {
