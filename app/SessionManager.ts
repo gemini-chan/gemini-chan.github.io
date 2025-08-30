@@ -5,7 +5,7 @@
 
 import { GdmLiveAudio } from './main.tsx';
 import { logger } from './main.tsx';
-import combinedPrompt from "@prompts/vpu/combined-vpu.prompt.md?raw";
+import combinedPrompt from "@prompts/npu/combined-npu.prompt.md?raw";
 
 export class SessionManager {
   private host: GdmLiveAudio;
