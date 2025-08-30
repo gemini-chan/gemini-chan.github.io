@@ -153,9 +153,6 @@ export class GdmLiveAudio extends LitElement {
 		
 		// Prune message metadata maps
 		this._pruneMessageMeta();
-		
-		// Force a re-render to update the UI
-		this._scheduleUpdate();
 	}
 	
 	
@@ -587,9 +584,6 @@ if (lastMessage.speaker === "model") {
 			newLength: this.textTranscript.length,
 			lastMessage: this.textTranscript[this.textTranscript.length - 1],
 		});
-
-		// Force a re-render to ensure the UI updates
-		this._scheduleUpdate();
 	}
 
 	public _handleCallRateLimit() {
@@ -629,7 +623,6 @@ if (lastMessage.speaker === "model") {
     // Reset back to empty after a short delay to allow re-triggering the same motion later
     setTimeout(() => {
       if (this.currentMotionName === name) this.currentMotionName = "";
-      this._scheduleUpdate();
     }, 200);
   }
 
@@ -670,41 +663,44 @@ if (lastMessage.speaker === "model") {
 			return;
 		}
 
-		logger.debug("Call start. Existing callSession:", this.callSession);
-		// Switch to calling mode
-		this.activeMode = "calling";
-		// When switching to calling mode, reset delta index so we analyze from the start of the call transcript
-		this.lastAnalyzedTranscriptIndex = 0;
-		this.callState = "connecting";
-		this._updateActiveOutputNode();
-
-		const isResuming = this.callSessionManager.getResumptionHandle() !== null;
-		const ok = await this.sessionManager.initCallSession();
-		if (!ok) {
-			return;
-		}
-
-		// After successful session init, show toast
-		const toast = this.shadowRoot?.querySelector(
-			"toast-notification#inline-toast",
-		) as ToastNotification;
-		if (isResuming) {
-			toast?.show("Resumed previous call session", "success", 1200, {
-				position: "bottom-right",
-				variant: "standard",
-			});
-		} else {
-			this.callTranscript = []; // Clear transcript only for new sessions
-			toast?.show("Started a new call session", "success", 1500, {
-				position: "bottom-right",
-				variant: "standard",
-			});
-		}
-
-		this.audioManager.inputAudioContext.resume();
-		this.updateStatus("Starting call...");
-
 		try {
+			await this.audioManager.acquireMicrophone();
+
+			logger.debug("Call start. Existing callSession:", this.callSession);
+			// Switch to calling mode
+			this.activeMode = "calling";
+			// When switching to calling mode, reset delta index so we analyze from the start of the call transcript
+			this.lastAnalyzedTranscriptIndex = 0;
+			this.callState = "connecting";
+			this._updateActiveOutputNode();
+
+			const isResuming = this.callSessionManager.getResumptionHandle() !== null;
+			const ok = await this.sessionManager.initCallSession();
+			if (!ok) {
+				this.audioManager.stopAudioProcessing();
+				return;
+			}
+
+			// After successful session init, show toast
+			const toast = this.shadowRoot?.querySelector(
+				"toast-notification#inline-toast",
+			) as ToastNotification;
+			if (isResuming) {
+				toast?.show("Resumed previous call session", "success", 1200, {
+					position: "bottom-right",
+					variant: "standard",
+				});
+			} else {
+				this.callTranscript = []; // Clear transcript only for new sessions
+				toast?.show("Started a new call session", "success", 1500, {
+					position: "bottom-right",
+					variant: "standard",
+				});
+			}
+
+			this.audioManager.inputAudioContext.resume();
+			this.updateStatus("Starting call...");
+
 			await this.audioManager.startAudioProcessing();
 
 			this.callState = "active";
@@ -1204,8 +1200,6 @@ this.updateTextTranscript(this.ttsCaption);
 	private _clearThinkingUI() {
 		this.npuStatus = "";
 		this.npuThinkingLog = "";
-		// Force a re-render to update the UI
-		this._scheduleUpdate();
 	}
   
   
@@ -1361,7 +1355,6 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Schedule update for frame-based batching
-		this._scheduleUpdate();
 	}
   
 
@@ -1702,7 +1695,6 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 		
 		// Schedule update for frame-based batching
-		this._scheduleUpdate();
 	}
 
 
