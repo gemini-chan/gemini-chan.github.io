@@ -1074,8 +1074,6 @@ this.updateTextTranscript(this.ttsCaption);
 		this.sessionManager.messageStatuses = newStatuses;
 		this._pruneMessageMeta();
 		
-		debugLogger.debug("Transcript after optimistic update", this.sessionManager.textTranscript);
-		
 		this.requestUpdate();
 		await this.updateComplete;
 		
