@@ -448,7 +448,7 @@ export class GdmLiveAudio extends LitElement {
 
 
 	private async initClient() {
-		this.initAudio();
+		this.audioManager.initAudio();
 
 		// Always initialize with texting mode by default (main UI)
 		this.activeMode = "texting";
