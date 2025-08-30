@@ -89,10 +89,6 @@ export class GdmLiveAudio extends LitElement {
   @state() private thinkingActive = false;
   @state() private turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private turnManager: TurnManager;
-  private vpuWatchdogTimer: number | null = null;
-  private readonly VPU_WATCHDOG_MS = 2200;
-  private vpuHardMaxTimer: number | null = null;
-  private readonly VPU_HARD_MAX_MS = 7000;
   private vpuHardDeadline: number = 0;
   private vpuWaitTimer: number | null = null;
   private _npuFirstEventForced = new Set<string>();
@@ -1850,19 +1846,19 @@ this.updateTextTranscript(this.ttsCaption);
         ev.type === "vpu:response:first-output" || 
         ev.type === "vpu:response:transcription") {
       this._setTurnPhase('vpu');
-      this._armVpuHardMaxTimer();
-      this._resetVpuWatchdog();
+      this.turnManager.armVpuHardMaxTimer();
+      this.turnManager.resetVpuWatchdog();
       this._armVpuDevTicker();
     } else if (ev.type === "vpu:response:complete") {
       // Update log before setting phase to complete
       this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
-      this._clearVpuWatchdog();
-      this._clearVpuHardMaxTimer();
+      this.turnManager.clearVpuWatchdog();
+      this.turnManager.clearVpuHardMaxTimer();
       this._clearVpuDevTicker();
       this.turnManager.setTurnPhase('complete');
     } else if (ev.type === "vpu:message:error") {
-      this._clearVpuWatchdog();
-      this._clearVpuHardMaxTimer();
+      this.turnManager.clearVpuWatchdog();
+      this.turnManager.clearVpuHardMaxTimer();
       this._clearVpuDevTicker();
       this.turnManager.setTurnPhase('error');
     }

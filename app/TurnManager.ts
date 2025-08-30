@@ -16,6 +16,10 @@ export interface TurnState {
 
 export class TurnManager {
   private host: GdmLiveAudio; // GdmLiveAudio instance
+  private vpuWatchdogTimer: number | null = null;
+  private readonly VPU_WATCHDOG_MS = 2200;
+  private vpuHardMaxTimer: number | null = null;
+  private readonly VPU_HARD_MAX_MS = 7000;
 
   constructor(host: GdmLiveAudio) {
     this.host = host;
@@ -129,5 +133,72 @@ export class TurnManager {
     }
     
     this.host._scheduleUpdate();
+  }
+
+  resetVpuWatchdog() {
+    // Clear existing timer
+    if (this.vpuWatchdogTimer) {
+      clearTimeout(this.vpuWatchdogTimer);
+    }
+    
+    // Set new timer only if we're in VPU phase
+    if (this.host.turnState.phase === 'vpu' && this.host.turnState.id) {
+      console.debug("VPU watchdog armed", { 
+        turnId: this.host.turnState.id, 
+        timeoutMs: this.VPU_WATCHDOG_MS 
+      });
+      this.vpuWatchdogTimer = window.setTimeout(() => {
+        // Only trigger if this is still the current turn
+        if (this.host.turnState.id && this.host.turnState.phase === 'vpu') {
+          console.debug("VPU watchdog fired", { turnId: this.host.turnState.id });
+          this.setTurnPhase('complete');
+        }
+        this.vpuWatchdogTimer = null;
+      }, this.VPU_WATCHDOG_MS);
+    }
+  }
+  
+  clearVpuWatchdog() {
+    if (this.vpuWatchdogTimer) {
+      clearTimeout(this.vpuWatchdogTimer);
+      this.vpuWatchdogTimer = null;
+    }
+  }
+  
+  armVpuHardMaxTimer() {
+    // Always clear any existing timer before setting a new one
+    this.clearVpuHardMaxTimer(true); // silent clear
+    
+    // Set new hard max timer
+    if (this.host.turnState.id) {
+      this.host.vpuHardDeadline = Date.now() + this.VPU_HARD_MAX_MS;
+      console.debug("VPU hard max armed", { 
+        turnId: this.host.turnState.id, 
+        deadline: new Date(this.host.vpuHardDeadline).toISOString(),
+        timeoutMs: this.VPU_HARD_MAX_MS 
+      });
+      this.vpuHardMaxTimer = window.setTimeout(() => {
+        console.debug("VPU HARD TIMEOUT fired", { turnId: this.host.turnState.id });
+        // Only trigger if this is still the current turn
+        if (this.host.turnState.id && this.host.turnState.phase === 'vpu') {
+          this.setTurnPhase('complete');
+        }
+        this.vpuHardMaxTimer = null;
+        this.host.vpuHardDeadline = 0;
+      }, this.VPU_HARD_MAX_MS);
+    }
+  }
+  
+  clearVpuHardMaxTimer(silent = false) {
+    if (this.vpuHardMaxTimer) {
+      clearTimeout(this.vpuHardMaxTimer);
+      this.vpuHardMaxTimer = null;
+      if (!silent) {
+        console.debug("VPU hard max timer cleared", {
+          turnId: this.host.turnState.id
+        });
+      }
+      this.host.vpuHardDeadline = 0;
+    }
   }
 }
