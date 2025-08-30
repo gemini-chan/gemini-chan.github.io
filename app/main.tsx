@@ -55,14 +55,6 @@ interface ExtendedLiveServerMessage extends LiveServerMessage {
 
 type ActiveMode = "texting" | "calling" | null;
 
-// Define type aliases for turn state
-type TurnPhase = 'idle' | 'npu' | 'vpu' | 'complete' | 'error';
-interface TurnState { 
-  id: string | null; 
-  phase: TurnPhase; 
-  startedAt: number; 
-  lastUpdateAt: number; 
-}
 
 const logger = createComponentLogger("GdmLiveAudio");
 
@@ -74,6 +66,7 @@ import type {
 import {
   EVENT_STATUS_MAP
 } from "@shared/progress";
+import { TurnManager, type TurnState, type TurnPhase } from "./TurnManager";
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -95,6 +88,7 @@ export class GdmLiveAudio extends LitElement {
   @state() private npuSubStatus: string = "";
   @state() private thinkingActive = false;
   @state() private turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
+  private turnManager: TurnManager;
   private vpuWatchdogTimer: number | null = null;
   private readonly VPU_WATCHDOG_MS = 2200;
   private vpuHardMaxTimer: number | null = null;
@@ -372,6 +366,7 @@ export class GdmLiveAudio extends LitElement {
 	constructor() {
 		super();
 		this.personaManager = new PersonaManager();
+		this.turnManager = new TurnManager(this);
 		// MemoryService will be initialized after the GoogleGenAI client is created.
 		// Client initialization is deferred to connectedCallback to avoid Lit update warnings.
 
@@ -1245,37 +1240,6 @@ this.updateTextTranscript(this.ttsCaption);
 		this.callHistory = [newSummary, ...this.callHistory];
 	}
 
-	private _initializeNewTurn(message: string): string {
-		// Generate turn ID before appending user message
-		const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
-		
-		// Add message to text transcript with turnId
-		this.textTranscript = [
-			...this.textTranscript,
-			{ text: message, speaker: "user", turnId }
-		];
-
-		// Initialize status to clock (analyzing)
-		this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
-
-		// Prune message metadata maps
-		this._pruneMessageMeta();
-
-		// Set initial thinking state BEFORE any awaits
-		this.npuThinkingLog = "";
-		this.npuStatus = "Thinking…";
-		this.thinkingActive = true;
-		
-		// Initialize turn state machine
-		this.turnState = {
-			id: turnId,
-			phase: 'npu',
-			startedAt: Date.now(),
-			lastUpdateAt: Date.now()
-		};
-		
-		return turnId;
-	}
 
 	private async _startTtsFromSummary(e: CustomEvent) {
 		const summary = e.detail.summary as CallSummary;
@@ -1298,7 +1262,7 @@ this.updateTextTranscript(this.ttsCaption);
 		this._resetTextContext();
 
 		// Initialize new turn and get turnId
-		const turnId = this._initializeNewTurn(message);
+		const turnId = this.turnManager.initializeNewTurn(message);
 		
 		this.requestUpdate();
 		await this.updateComplete;
@@ -1414,82 +1378,6 @@ this.updateTextTranscript(this.ttsCaption);
 		this._scheduleUpdate();
 	}
   
-  private _setTurnPhase(phase: 'idle'|'npu'|'vpu'|'complete'|'error', eventType?: string) {
-    const previousPhase = this.turnState.phase;
-    const now = Date.now();
-    this.turnState = {
-      ...this.turnState,
-      phase,
-      lastUpdateAt: now
-    };
-    
-    // Log phase transition
-    if (previousPhase !== phase) {
-      logger.debug("Turn phase transition", { 
-        turnId: this.turnState.id, 
-        from: previousPhase, 
-        to: phase, 
-        eventType 
-      });
-    }
-    
-    switch (phase) {
-      case 'npu':
-        this.thinkingActive = true;
-        this.npuStatus = EVENT_STATUS_MAP[eventType] || 'Thinking...';
-        logger.debug('Status badge updated', { status: this.npuStatus });
-        break;
-      case 'vpu':
-        this.thinkingActive = true;
-        this.npuStatus = "Speaking…";
-        break;
-      case 'complete':
-        this.thinkingActive = false;
-        this.npuStatus = "";
-        this.npuSubStatus = "";
-        this.npuThinkingLog = "";
-        this.devRemainingMs = 0;
-        this._clearVpuDevTicker();
-        // Clear dev state
-        this.vpuHardDeadline = 0;
-        
-        // Set timeout to transition to idle after 1500ms
-        setTimeout(() => {
-          if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'complete') {
-            this._setTurnPhase('idle');
-          }
-        }, this.COMPLETE_TO_IDLE_DELAY_MS);
-        break;
-      case 'error':
-        this.thinkingActive = false;
-        this.npuStatus = "";
-        this.npuSubStatus = "";
-        this.devRemainingMs = 0;
-        this._clearVpuDevTicker();
-        // Clear dev state
-        this.vpuHardDeadline = 0;
-        
-        // Set timeout to transition to idle after 2500ms
-        setTimeout(() => {
-          if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'error') {
-            this._setTurnPhase('idle');
-          }
-        }, this.ERROR_TO_IDLE_DELAY_MS);
-        break;
-      case 'idle':
-        this.thinkingActive = false;
-        this.npuStatus = "";
-        this.npuSubStatus = "";
-        this.npuThinkingLog = ""; // Clear thinking log text
-        this.devRemainingMs = 0;
-        this._clearVpuDevTicker();
-        // Clear dev state
-        this.vpuHardDeadline = 0;
-        break;
-    }
-    
-    this._scheduleUpdate();
-  }
   
   private _resetVpuWatchdog() {
     // Clear existing timer
@@ -1555,7 +1443,7 @@ this.updateTextTranscript(this.ttsCaption);
           logger.debug('VPU DEV TICKER forcing completion');
           this._clearVpuWatchdog();
           this._clearVpuHardMaxTimer();
-          this._setTurnPhase('complete');
+          this.turnManager.setTurnPhase('complete');
           this._clearVpuDevTicker();
           this.requestUpdate();
           return;
@@ -1605,7 +1493,7 @@ this.updateTextTranscript(this.ttsCaption);
         logger.debug("VPU HARD TIMEOUT fired", { turnId: this.turnState.id });
         // Only trigger if this is still the current turn
         if (this.turnState.id && this.turnState.phase === 'vpu') {
-          this._setTurnPhase('complete');
+          this.turnManager.setTurnPhase('complete');
           this.requestUpdate();
         }
         this.vpuHardMaxTimer = null;
@@ -1651,7 +1539,7 @@ this.updateTextTranscript(this.ttsCaption);
     
     // Update turn state if we have a valid phase
     if (phase !== null) {
-      this._setTurnPhase(phase, eventType);
+      this.turnManager.setTurnPhase(phase, eventType);
     }
 
 		// Force immediate update on first NPU event for this turn
@@ -1808,7 +1696,7 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Initialize new turn and get turnId
-		const turnId = this._initializeNewTurn(message);
+		const turnId = this.turnManager.initializeNewTurn(message);
 		
 		// Flush synchronously
 		this.requestUpdate();
@@ -1971,7 +1859,7 @@ this.updateTextTranscript(this.ttsCaption);
       this._clearVpuWatchdog();
       this._clearVpuHardMaxTimer();
       this._clearVpuDevTicker();
-      this._setTurnPhase('complete');
+      this.turnManager.setTurnPhase('complete');
     } else if (ev.type === "vpu:message:error") {
       this._clearVpuWatchdog();
       this._clearVpuHardMaxTimer();
