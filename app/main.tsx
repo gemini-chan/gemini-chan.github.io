@@ -97,7 +97,6 @@ export class GdmLiveAudio extends LitElement {
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
   public devRemainingMs: number = 0;
   private _devRafId: number | null = null;
-  public vpuHardDeadline: number = 0;
   
   // Named constants for timeouts
   private readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
@@ -1385,9 +1384,9 @@ this.updateTextTranscript(this.ttsCaption);
     
     const loop = () => {
       // Only check if we're in VPU phase
-      if (this.turnState.phase === 'vpu' && this.vpuHardDeadline > 0) {
+      if (this.turnState.phase === 'vpu' && this.turnManager.vpuHardDeadline > 0) {
         const now = Date.now();
-        if (now >= this.vpuHardDeadline) {
+        if (now >= this.turnManager.vpuHardDeadline) {
           logger.debug('DEV RAF: Forcing turn completion due to hard deadline');
           this._setTurnPhase('complete');
           this.requestUpdate();
