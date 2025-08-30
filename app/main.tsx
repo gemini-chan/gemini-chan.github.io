@@ -1140,7 +1140,7 @@ this.updateTextTranscript(this.ttsCaption);
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
 		this.textSessionManager.sendMessageWithProgress(
-			this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+			this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message), 
 			turnId, 
 			(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId)
 		);
@@ -1496,7 +1496,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
 						this.textSessionManager.sendMessageWithProgress(
-							this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+							this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message), 
 							turnId, 
 							(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, true)
 						);
@@ -1561,7 +1561,7 @@ this.updateTextTranscript(this.ttsCaption);
     if (ev.type === "vpu:message:sending" || 
         ev.type === "vpu:response:first-output" || 
         ev.type === "vpu:response:transcription") {
-      this._setTurnPhase('vpu');
+      this.turnManager.setTurnPhase('vpu');
       this.turnManager.armVpuHardMaxTimer();
       this.turnManager.resetVpuWatchdog();
       this.turnManager.armVpuDevTicker();
@@ -2004,7 +2004,7 @@ this.updateTextTranscript(this.ttsCaption);
             .messageStatuses=${this.messageStatuses}
             .messageRetryCount=${this.messageRetryCount}
             .phase=${this.turnState.phase}
-            .hardDeadlineMs=${this.vpuHardDeadline}
+            .hardDeadlineMs=${this.turnManager.vpuHardDeadline}
             .turnId=${this.turnState.id || ''}
             @send-message=${this._handleSendMessage}
             @reset-text=${this.sessionManager.resetTextContext}
