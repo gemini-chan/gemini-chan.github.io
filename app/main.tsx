@@ -703,7 +703,7 @@ if (lastMessage.speaker === "model") {
 		this._updateActiveOutputNode();
 
 		const isResuming = this.callSessionManager.getResumptionHandle() !== null;
-		const ok = await this.sessionManager._initCallSession();
+		const ok = await this.sessionManager.initCallSession();
 		if (!ok) {
 			return;
 		}
