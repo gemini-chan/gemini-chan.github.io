@@ -43,14 +43,16 @@ export class SessionManager {
   public constructVpuMessagePayload(
     advisor_context: string,
     user_input: string,
-  ) {
+  ): string {
     const persona = this.host.personaManager.getActivePersona();
-    return {
-      system_prompt: persona.systemPrompt,
-      user_input: user_input,
-      advisor_context: advisor_context,
-      model: this.host.energyBarService.getCurrentModel("tts"),
-    };
+    const systemPrompt = persona.systemPrompt;
+
+    // Use the new private method to build the combined prompt string
+    return this._buildVpuPrompt(
+      user_input,
+      advisor_context,
+      systemPrompt,
+    );
   }
 
   public async initTextSession(): Promise<boolean> {
