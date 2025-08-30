@@ -62,6 +62,7 @@ class MockMediaStream {
 if (!global.navigator.mediaDevices) {
   (global.navigator as any).mediaDevices = {};
 }
-vi.spyOn(global.navigator.mediaDevices, 'getUserMedia').mockImplementation(() => {
+
+(global.navigator.mediaDevices as any).getUserMedia = vi.fn().mockImplementation(() => {
   return Promise.resolve(new MockMediaStream());
 });
