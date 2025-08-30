@@ -1135,17 +1135,17 @@ this.updateTextTranscript(this.ttsCaption);
 	private _handleDebouncedTranscription(text: string) {
 		// Accumulate text until debounce period expires
 		this.pendingTranscriptionText += text;
-		
+			
 		// Clear existing timer
 		if (this.transcriptionDebounceTimer) {
 			clearTimeout(this.transcriptionDebounceTimer);
 		}
-		
+			
 		// Set new timer
 		this.transcriptionDebounceTimer = window.setTimeout(() => {
 			// Update the thinking log with accumulated text
 			if (this.pendingTranscriptionText) {
-				this.npuThinkingLog += `\n[model]: ${this.pendingTranscriptionText}`;
+				this.turnManager.npuThinkingLog += `\n[model]: ${this.pendingTranscriptionText}`;
 				this.pendingTranscriptionText = "";
 				// Force a re-render to update the UI
 				this._scheduleUpdate();
