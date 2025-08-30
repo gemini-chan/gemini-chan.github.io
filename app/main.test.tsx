@@ -32,6 +32,13 @@ describe('main component', () => {
     expect(textarea).toBeTruthy();
     expect(sendButton).toBeTruthy();
 
+    // Listen for the send-message event and update the transcript
+    chatView?.addEventListener('send-message', (e: CustomEvent) => {
+      const newTurn = { speaker: 'user', text: e.detail };
+      // @ts-ignore
+      chatView.transcript = [...chatView.transcript, newTurn];
+    });
+
     // Simulate a user typing 'Hello, world!' into the text area
     fireEvent.input(textarea!, { target: { value: 'Hello, world!' } });
 
