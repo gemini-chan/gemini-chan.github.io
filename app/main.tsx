@@ -1465,7 +1465,7 @@ this.updateTextTranscript(this.ttsCaption);
 				// this.npuStatus = "Sending to VPU…";
 
 				this.textSessionManager.sendMessageWithProgress(
-					this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+					this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message), 
 					turnId, 
 					(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, false)
 				);
