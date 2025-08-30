@@ -655,7 +655,7 @@ if (lastMessage.speaker === "model") {
 				return;
 			}
 
-			logger.debug("Call start. Existing callSession:", this.callSession);
+			logger.debug("Call start. Existing callSession:", this.sessionManager.callSession);
 			// Switch to calling mode
 			this.activeMode = "calling";
 			// When switching to calling mode, reset delta index so we analyze from the start of the call transcript
@@ -680,7 +680,7 @@ if (lastMessage.speaker === "model") {
 					variant: "standard",
 				});
 			} else {
-				this.callTranscript = []; // Clear transcript only for new sessions
+				this.sessionManager.callTranscript = []; // Clear transcript only for new sessions
 				toast?.show("Started a new call session", "success", 1500, {
 					position: "bottom-right",
 					variant: "standard",
@@ -755,8 +755,8 @@ if (lastMessage.speaker === "model") {
 		this._updateActiveOutputNode();
 
 		// Summarize the call
-		const transcriptToSummarize = [...this.callTranscript];
-		this.callTranscript = [];
+		const transcriptToSummarize = [...this.sessionManager.callTranscript];
+		this.sessionManager.callTranscript = [];
 		const summary = await this.summarizationService.summarize(
 			transcriptToSummarize,
 		);
@@ -776,7 +776,7 @@ if (lastMessage.speaker === "model") {
 
 		this.updateStatus("");
 		this.callState = "idle";
-		logger.debug("Call ended. callSession preserved:", this.callSession);
+		logger.debug("Call ended. callSession preserved:", this.sessionManager.callSession);
 	}
 
 private _handleTtsCaptionUpdate(text: string) {
@@ -987,15 +987,15 @@ this.updateTextTranscript(this.ttsCaption);
 			if (this.textSessionManager) {
 				await this.textSessionManager.closeSession();
 				this.textSessionManager.clearResumptionHandle(); // Clear session token
-				this.textSession = null;
+				this.sessionManager.textSession = null;
 			}
 			// Also disconnect the call session to ensure it picks up the new persona
 			if (this.callSessionManager) {
 				await this.callSessionManager.closeSession();
 				this.callSessionManager.clearResumptionHandle(); // Clear session token
-				this.callSession = null;
+				this.sessionManager.callSession = null;
 			}
-			this.textTranscript = [];
+			this.sessionManager.textTranscript = [];
 
 			// Reset energy levels to full for the new persona
 			energyBarService.resetEnergyLevel("session-reset", "sts");
