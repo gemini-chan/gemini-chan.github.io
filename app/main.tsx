@@ -1290,7 +1290,7 @@ this.updateTextTranscript(this.ttsCaption);
     logger.debug("VPU dev ticker armed", { turnId: this.turnState.id });
   }
   
-  private _clearVpuDevTicker() {
+  public _clearVpuDevTicker() {
     if (this.vpuDevTicker) {
       clearInterval(this.vpuDevTicker);
       this.vpuDevTicker = null;
