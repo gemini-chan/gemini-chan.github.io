@@ -10,8 +10,13 @@ export class AudioManager {
   mediaStream: MediaStream | null = null;
   sourceNode: MediaStreamAudioSourceNode | null = null;
   scriptProcessorNode: ScriptProcessorNode | null = null;
+  inputAudioContext: AudioContext;
+  outputAudioContext: AudioContext;
 
-  constructor(private host: GdmLiveAudio) {}
+  constructor(private host: GdmLiveAudio) {
+    this.inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    this.outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+  }
 
   initAudio() {
     // Audio initialization is now handled by individual session managers
@@ -32,13 +37,13 @@ export class AudioManager {
     // Start idle motion cycling while in call
     this.host._startIdleMotionCycle();
 
-    this.sourceNode = this.host.inputAudioContext.createMediaStreamSource(
+    this.sourceNode = this.inputAudioContext.createMediaStreamSource(
       this.mediaStream,
     );
     this.sourceNode.connect(this.host.inputNode);
 
     const bufferSize = 1024;
-    this.scriptProcessorNode = this.host.inputAudioContext.createScriptProcessor(
+    this.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
       bufferSize,
       1,
       1,

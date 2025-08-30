@@ -187,14 +187,8 @@ export class GdmLiveAudio extends LitElement {
 	private npuService: NPUService;
 
 	private client: GoogleGenAI;
-	private inputAudioContext = new (
-		window.AudioContext || window.webkitAudioContext
-	)({ sampleRate: 16000 });
-	private outputAudioContext = new (
-		window.AudioContext || window.webkitAudioContext
-	)({ sampleRate: 24000 });
-	@state() inputNode = this.inputAudioContext.createGain();
-	@state() outputNode = this.outputAudioContext.createGain();
+	@state() inputNode = this.audioManager.inputAudioContext.createGain();
+	@state() outputNode = this.audioManager.outputAudioContext.createGain();
 
 	// Rate-limit UX state for calls
 	private _callRateLimitNotified = false;
@@ -454,8 +448,8 @@ export class GdmLiveAudio extends LitElement {
 		this.activeMode = "texting";
 
 		// Connect both session output nodes to the main audio destination
-		this.textOutputNode.connect(this.outputAudioContext.destination);
-		this.callOutputNode.connect(this.outputAudioContext.destination);
+		this.textOutputNode.connect(this.audioManager.outputAudioContext.destination);
+		this.callOutputNode.connect(this.audioManager.outputAudioContext.destination);
 		this._updateActiveOutputNode();
 
 		const apiKey = localStorage.getItem("gemini-api-key");
@@ -720,7 +714,7 @@ if (lastMessage.speaker === "model") {
 			});
 		}
 
-		this.inputAudioContext.resume();
+		this.audioManager.inputAudioContext.resume();
 		this.updateStatus("Starting call...");
 
 		try {
