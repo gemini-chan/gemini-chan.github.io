@@ -182,7 +182,7 @@ export class GdmLiveAudio extends LitElement {
 	public callSessionManager: CallSessionManager;
 	private sessionManager: SessionManager;
 	private summarizationService: SummarizationService;
-	private personaManager: PersonaManager;
+	public personaManager: PersonaManager;
 	private vectorStore: VectorStore;
 	memoryService: MemoryService;
 	private npuService: NPUService;

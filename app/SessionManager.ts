@@ -16,6 +16,19 @@ export class SessionManager {
     this.host = host;
   }
 
+  public constructVpuMessagePayload(
+    advisor_context: string,
+    user_input: string,
+  ) {
+    const persona = this.host.personaManager.getActivePersona();
+    return {
+      system_prompt: persona.systemPrompt,
+      user_input: user_input,
+      advisor_context: advisor_context,
+      model: this.host.energyBarService.getCurrentModel("tts"),
+    };
+  }
+
   public async initTextSession(): Promise<boolean> {
     // Ensure we have an active text session
     if (!this.host.textSessionManager || !this.host.textSessionManager.isActive) {
