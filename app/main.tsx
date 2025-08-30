@@ -1897,6 +1897,20 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 	};
 
+	private _handleStatusUpdate(e: CustomEvent) {
+		const message = e.detail?.message || "";
+		this.updateStatus(message);
+	}
+
+	private _handleErrorUpdate(e: CustomEvent) {
+		const message = e.detail?.message || "";
+		this.updateError(message);
+	}
+
+	private _handleStateUpdate(_e: CustomEvent) {
+		this.requestUpdate();
+	}
+
 	private _onEnergyLevelChanged = (e: Event) => {
 		const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
 			.detail;
