@@ -129,6 +129,7 @@ export class GdmLiveAudioVisuals3D extends LitElement {
 
     new EXRLoader().load("piz_compressed.exr", (texture: THREE.Texture) => {
       texture.mapping = THREE.EquirectangularReflectionMapping;
+      // PERFORMANCE: The EXR texture is memory-intensive. Downsampling to 512x256 before PMREM generation significantly reduces processing time and prevents hitches.
       texture.source.data.width = 512;
       texture.source.data.height = 256;
       const exrCubeRenderTarget = pmremGenerator.fromEquirectangular(texture);
