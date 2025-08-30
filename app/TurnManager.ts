@@ -16,7 +16,6 @@ export interface TurnState {
 
 export interface TurnManagerDependencies {
 	hostElement: HTMLElement;
-	pruneMessageMeta: () => void;
 	armDevRaf: () => void;
 	readonly COMPLETE_TO_IDLE_DELAY_MS: number;
 	readonly ERROR_TO_IDLE_DELAY_MS: number;
@@ -56,12 +55,14 @@ export class TurnManager {
 		this.deps = deps;
 	}
 
-	initializeNewTurn(message: string): string {
+	import type { SessionManager } from './SessionManager';
+
+	initializeNewTurn(message: string, sessionManager: SessionManager): string {
 		// Generate turn ID before appending user message
 		const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
 
-		// Prune message metadata maps
-		this.deps.pruneMessageMeta();
+		// Prune message metadata maps via session manager
+		sessionManager.pruneMessageMeta();
 
 		// Set initial thinking state
 		this.npuThinkingLog = "";

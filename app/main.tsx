@@ -108,8 +108,6 @@ export class GdmLiveAudio extends LitElement {
 	@state() public vpuProcessingTime: number | null = null;
 	private npuStartTime: number | null = null;
 	private vpuStartTime: number | null = null;
-	@state() public messageStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
-	@state() public messageRetryCount: Record<string, number> = {};
 	
 	// Debouncing for vpu:response:transcription events
 	private transcriptionDebounceTimer: number | null = null;
@@ -135,8 +133,8 @@ export class GdmLiveAudio extends LitElement {
 		// Reset transcription state
 		this.pendingTranscriptionText = "";
 		
-		// Prune message metadata maps
-		this._pruneMessageMeta();
+		// Prune message metadata maps via session manager
+		this.sessionManager.pruneMessageMeta();
 	}
 	
 	
@@ -328,7 +326,6 @@ export class GdmLiveAudio extends LitElement {
 
 		this.turnManager = new TurnManager({
 			hostElement: this,
-			pruneMessageMeta: this._pruneMessageMeta.bind(this),
 			armDevRaf: this._armDevRaf.bind(this),
 			COMPLETE_TO_IDLE_DELAY_MS: this.COMPLETE_TO_IDLE_DELAY_MS,
 			ERROR_TO_IDLE_DELAY_MS: this.ERROR_TO_IDLE_DELAY_MS,
@@ -1099,12 +1096,12 @@ this.updateTextTranscript(this.ttsCaption);
 		this.sessionManager.resetTextContext();
 
 		// Initialize new turn and get turnId
-		const turnId = this.turnManager.initializeNewTurn(message);
+		const turnId = this.turnManager.initializeNewTurn(message, this.sessionManager);
 		
 		this.requestUpdate();
 		await this.updateComplete;
 		
-		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
+		logger.debug("UI INIT: Thinking set pre-await", { status: this.turnManager.npuStatus, active: this.turnManager.thinkingActive });
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
@@ -1122,7 +1119,7 @@ this.updateTextTranscript(this.ttsCaption);
 		const intention = await this.npuService.analyzeAndAdvise(
 			message,
 			personaId,
-			this.textTranscript,
+			this.sessionManager.textTranscript,
 			undefined,
 			undefined,
 			turnId,
@@ -1406,13 +1403,13 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Initialize new turn and get turnId
-		const turnId = this.turnManager.initializeNewTurn(message);
+		const turnId = this.turnManager.initializeNewTurn(message, this.sessionManager);
 		
 		// Flush synchronously
 		this.requestUpdate();
 		await this.updateComplete;
 
-		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
+		logger.debug("UI INIT: Thinking set pre-await", { status: this.turnManager.npuStatus, active: this.turnManager.thinkingActive });
 
 		// Clear any existing captions when the user sends a new message
 		this.ttsCaption = "";
@@ -1442,7 +1439,7 @@ this.updateTextTranscript(this.ttsCaption);
 				const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
-					this.textTranscript,
+					this.sessionManager.textTranscript,
 					undefined,
 					undefined,
 					turnId,
@@ -1454,7 +1451,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 				// NPU advisor ready — now sending to VPU
 				// Note: We don't set npuStatus here anymore as it's handled by the advisor:ready event
-				// this.npuStatus = "Sending to VPU…";
+				// this.turnManager.npuStatus = "Sending to VPU…";
 
 				const vpuPayload = this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message);
 				this.textSessionManager.sendMessageWithProgress(
@@ -1479,7 +1476,7 @@ this.updateTextTranscript(this.ttsCaption);
 						const intention = await this.npuService.analyzeAndAdvise(
 							message,
 							personaId,
-							this.textTranscript,
+							this.sessionManager.textTranscript,
 							undefined,
 							undefined,
 							turnId,
@@ -2016,8 +2013,8 @@ this.updateTextTranscript(this.ttsCaption);
             .thinkingActive=${this.turnManager.thinkingActive}
             .npuProcessingTime=${this.npuProcessingTime}
             .vpuProcessingTime=${this.vpuProcessingTime}
-            .messageStatuses=${this.messageStatuses}
-            .messageRetryCount=${this.messageRetryCount}
+            .messageStatuses=${this.sessionManager.messageStatuses}
+            .messageRetryCount=${this.sessionManager.messageRetryCount}
             .phase=${this.turnManager.turnState.phase}
             .hardDeadlineMs=${this.turnManager.vpuHardDeadline}
             .turnId=${this.turnManager.turnState.id || ''}
