@@ -10,7 +10,7 @@ import type { CallSessionManager } from "@features/vpu/VPUService";
 export class AudioManager {
   mediaStream: MediaStream | null = null;
   sourceNode: MediaStreamAudioSourceNode | null = null;
-  scriptProcessorNode: ScriptProcessorNode | null = null;
+  audioWorkletNode: AudioWorkletNode | null = null;
   public inputAudioContext: AudioContext;
   public outputAudioContext: AudioContext;
   public inputNode: GainNode;
@@ -66,18 +66,17 @@ export class AudioManager {
     );
     this.sourceNode.connect(this.inputNode);
 
-    const bufferSize = 1024;
-    this.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
-      bufferSize,
-      1,
-      1,
-    );
-
-    this.scriptProcessorNode.onaudioprocess = (audioProcessingEvent) => {
+    // Add the audio worklet module
+    await this.inputAudioContext.audioWorklet.addModule('/audio-processor.js');
+    
+    // Create the AudioWorkletNode
+    this.audioWorkletNode = new AudioWorkletNode(this.inputAudioContext, 'audio-processor');
+    
+    // Set up message handling from the worklet
+    this.audioWorkletNode.port.onmessage = (event) => {
       if (!this.host.isCallActive) return;
-
-      const inputBuffer = audioProcessingEvent.inputBuffer;
-      const pcmData = inputBuffer.getChannelData(0);
+      
+      const pcmData = event.data;
       // Send audio to the active call session using session manager
       if (
         this.host.activeMode === "calling" &&
@@ -95,17 +94,18 @@ export class AudioManager {
       }
     };
 
-    this.sourceNode.connect(this.scriptProcessorNode);
-    this.scriptProcessorNode.connect(this.inputAudioContext.destination);
+    // Connect the audio nodes
+    this.sourceNode.connect(this.audioWorkletNode);
+    this.audioWorkletNode.connect(this.inputAudioContext.destination);
   }
 
   public stopAudioProcessing() {
-    if (this.scriptProcessorNode && this.sourceNode) {
-      this.scriptProcessorNode.disconnect();
+    if (this.audioWorkletNode && this.sourceNode) {
+      this.audioWorkletNode.disconnect();
       this.sourceNode.disconnect();
     }
 
-    this.scriptProcessorNode = null;
+    this.audioWorkletNode = null;
     this.sourceNode = null;
 
     if (this.mediaStream) {

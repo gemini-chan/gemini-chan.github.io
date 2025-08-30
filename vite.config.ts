@@ -29,5 +29,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [DownloadLive2DSDK()],
+    worker: {
+      format: 'es'
+    }
   };
 });
