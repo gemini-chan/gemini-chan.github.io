@@ -1299,7 +1299,7 @@ this.updateTextTranscript(this.ttsCaption);
 					// Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
 					const retries = Math.max(0, (ev.data.attempt as number) - 1);
 					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
-					this.turnManager.npuThinkingLog += `\n[NPU attempt #${ev.data.attempt}]"; // Concise log line
+					this.turnManager.npuThinkingLog += `\n[NPU attempt #${ev.data.attempt}]`; // Concise log line
 				}
 				break;
 			case "npu:model:error":
@@ -1311,7 +1311,7 @@ this.updateTextTranscript(this.ttsCaption);
 						this.transcriptionDebounceTimer = null;
 						this.pendingTranscriptionText = "";
 					}
-					this.turnManager.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]"; // Concise log line
+					this.turnManager.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:response":
