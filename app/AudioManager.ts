@@ -51,15 +51,10 @@ export class AudioManager {
     if (this.mediaStream) {
       return;
     }
-    try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false,
-      });
-    } catch (error) {
-      console.error("Error acquiring microphone:", error);
-      throw error;
-    }
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false,
+    });
   }
 
   public async startAudioProcessing() {

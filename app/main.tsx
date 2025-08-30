@@ -639,32 +639,33 @@ if (lastMessage.speaker === "model") {
   }
 
 	private async _handleCallStart() {
-		// On new call session, reset STS energy
-		energyBarService.resetEnergyLevel("session-reset", "sts");
-		if (this.isCallActive) return;
-
-		// PRE-FLIGHT CHECK: Verify STS energy before proceeding
-		const stsEnergy = energyBarService.getCurrentEnergyLevel("sts");
-		if (stsEnergy === 0) {
-			this.updateStatus("Energy exhausted — call unavailable.");
-			const toast = this.shadowRoot?.querySelector(
-				"toast-notification#inline-toast",
-			) as ToastNotification;
-			toast?.show("Cannot start call: energy exhausted.", "error", 3000, {
-				position: "bottom-right",
-				variant: "standard",
-			});
-			return;
-		}
-
-		// Check API key presence before proceeding
-		if (!this._checkApiKeyExists()) {
-			this._showApiKeyPrompt(() => this._handleCallStart());
-			return;
-		}
-
 		try {
+			// Acquire microphone FIRST, within the user gesture's direct context.
 			await this.audioManager.acquireMicrophone();
+
+			// On new call session, reset STS energy
+			energyBarService.resetEnergyLevel("session-reset", "sts");
+			if (this.isCallActive) return;
+
+			// PRE-FLIGHT CHECK: Verify STS energy before proceeding
+			const stsEnergy = energyBarService.getCurrentEnergyLevel("sts");
+			if (stsEnergy === 0) {
+				this.updateStatus("Energy exhausted — call unavailable.");
+				const toast = this.shadowRoot?.querySelector(
+					"toast-notification#inline-toast",
+				) as ToastNotification;
+				toast?.show("Cannot start call: energy exhausted.", "error", 3000, {
+					position: "bottom-right",
+					variant: "standard",
+				});
+				return;
+			}
+
+			// Check API key presence before proceeding
+			if (!this._checkApiKeyExists()) {
+				this._showApiKeyPrompt(() => this._handleCallStart());
+				return;
+			}
 
 			logger.debug("Call start. Existing callSession:", this.callSession);
 			// Switch to calling mode
