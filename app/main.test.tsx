@@ -15,6 +15,17 @@ vi.mock('./SessionManager.ts', () => {
   };
 });
 
+// Mock the VPUService module
+vi.mock('@features/vpu/VPUService', () => {
+  const mockVPUService = {
+    sendMessageWithProgress: vi.fn(),
+  };
+  return {
+    TextSessionManager: vi.fn(() => mockVPUService),
+    CallSessionManager: vi.fn(() => mockVPUService),
+  };
+});
+
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
@@ -37,11 +48,6 @@ describe('main component', () => {
   });
 
   it('should display a user message after sending', async () => {
-    // Create a mock for the vpu property with a sendMessage method
-    mainComponent.vpu = {
-      sendMessage: vi.fn().mockResolvedValue({ messageId: 'mock-id' })
-    };
-
     // Find the chat-view component within the gdm-live-audio's shadow DOM
     const chatView = mainComponent.shadowRoot?.querySelector('chat-view') as ChatView;
     expect(chatView).toBeTruthy();
