@@ -15,7 +15,7 @@ export interface TurnState {
 }
 
 export class TurnManager {
-  private static readonly EVENT_STATUS_MAP: Record<string, string> = { 
+  public static readonly EVENT_STATUS_MAP: Record<string, string> = { 
     'npu:thought': 'Thinking (Thought)...', 
     'npu:audio-out': 'Thinking (Audio)...' 
   };
