@@ -55,8 +55,6 @@ export class TurnManager {
 		this.deps = deps;
 	}
 
-	import type { SessionManager } from './SessionManager';
-
 	initializeNewTurn(
 		message: string,
 		textTranscript: Turn[],
@@ -78,7 +76,7 @@ export class TurnManager {
 		};
 
 		// Create new transcript with user message
-		const newTranscript = [
+		const newTranscript: Turn[] = [
 			...textTranscript,
 			{ text: message, speaker: "user", turnId }
 		];
@@ -86,7 +84,7 @@ export class TurnManager {
 		// Create new statuses with entry for this turn
 		const newStatuses = {
 			...messageStatuses,
-			[turnId]: "clock"
+			[turnId]: "clock" as const
 		};
 
 		return { turnId, newTranscript, newStatuses };
