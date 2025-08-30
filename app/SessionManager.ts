@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { GdmLiveAudio } from './main.tsx';
+import { GdmLiveAudio } from './main.tsx';
 import type { TextSessionManager, CallSessionManager } from "@features/vpu/VPUService";
 import type { Session } from "@google/genai";
 import type { ToastNotification } from "@components/ToastNotification";
