@@ -1370,7 +1370,7 @@ this.updateTextTranscript(this.ttsCaption);
     
     const loop = () => {
       // Only check if we're in VPU phase
-      if (this.turnState.phase === 'vpu' && this.turnManager.vpuHardDeadline > 0) {
+      if (this.turnManager.turnState.phase === 'vpu' && this.turnManager.vpuHardDeadline > 0) {
         const now = Date.now();
         if (now >= this.turnManager.vpuHardDeadline) {
           logger.debug('DEV RAF: Forcing turn completion due to hard deadline');
