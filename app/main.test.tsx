@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, waitFor } from '@testing-library/dom';
 import './main';
+import { SessionManager } from '../services/SessionManager';
 
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
@@ -21,22 +22,17 @@ describe('main component', () => {
   });
 
   it('should display a user message after sending', async () => {
-    // Create a mock sessionManager on the mainComponent instance
-    const mockSessionManager = {
-      textTranscript: [{ text: 'Hello! How can I help you?', speaker: 'model' }],
-      messageRetries: new Map()
-    };
+    // Create a real SessionManager instance for the mock
+    const mockSessionManager = new SessionManager();
+    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
     // @ts-ignore
     mainComponent.sessionManager = mockSessionManager;
 
-    // Mock the private _handleSendMessage method
+    // Create a mock for the vpu property with a sendMessage method
     // @ts-ignore
-    const handleSendMessageSpy = vi.spyOn(mainComponent, '_handleSendMessage').mockImplementation((e: CustomEvent) => {
-      const newTurn = { speaker: 'user', text: e.detail };
-      // @ts-ignore
-      mainComponent.sessionManager.textTranscript = [...mainComponent.sessionManager.textTranscript, newTurn];
-      mainComponent.requestUpdate();
-    });
+    mainComponent.vpu = {
+      sendMessage: vi.fn().mockResolvedValue({ messageId: 'mock-id' })
+    };
 
     // Find the chat-view component within the gdm-live-audio's shadow DOM
     const chatView = mainComponent.shadowRoot?.querySelector('chat-view');
