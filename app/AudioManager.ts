@@ -128,7 +128,8 @@ export class AudioManager {
 
     // Connect the audio nodes
     this.sourceNode.connect(this.audioWorkletNode);
-    this.audioWorkletNode.connect(this.inputAudioContext.destination);
+    // Do not connect the worklet to the destination, as it's for processing, not playback.
+    // this.audioWorkletNode.connect(this.inputAudioContext.destination);
   }
 
   public stopAudioProcessing() {

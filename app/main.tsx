@@ -1042,7 +1042,7 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 	}
 
-	private async _handlePersonaChanged() {
+	private _handlePersonaChanged = async () => {
 		// Clear thinking UI and timers before changing persona
 		this._clearThinkingAll();
 
@@ -1770,7 +1770,7 @@ this.updateTextTranscript(this.ttsCaption);
 		);
 		window.addEventListener(
 			"persona-changed",
-			this._handlePersonaChanged.bind(this),
+			this._handlePersonaChanged,
 		);
 		this.addEventListener("reconnecting", this._handleReconnecting);
 		this.addEventListener("reconnected", this._handleReconnected);
@@ -1795,7 +1795,7 @@ this.updateTextTranscript(this.ttsCaption);
 		super.disconnectedCallback();
 		window.removeEventListener(
 			"persona-changed",
-			this._handlePersonaChanged.bind(this),
+			this._handlePersonaChanged,
 		);
 		this.removeEventListener("reconnecting", this._handleReconnecting);
 		this.removeEventListener("reconnected", this._handleReconnected);
