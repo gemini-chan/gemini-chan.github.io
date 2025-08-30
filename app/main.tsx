@@ -199,7 +199,7 @@ export class GdmLiveAudio extends LitElement {
 		): boolean => {
 			if (changedProperties.has(propName)) {
 				const oldT = (changedProperties.get(propName) as Turn[]) || [];
-				const newT = this[propName] || [];
+				const newT = this.sessionManager[propName] || [];
 				if (oldT.length !== newT.length) return true;
 
 				const lastOld = oldT[oldT.length - 1];
@@ -501,17 +501,17 @@ export class GdmLiveAudio extends LitElement {
 private updateTextTranscript(text: string) {
 // This function is now only for LIVE updates to the model's last message.
 // The official, final message is added to the transcript in _handleTtsTurnComplete.
-if (this.textTranscript.length > 0) {
-const lastMessage = this.textTranscript[this.textTranscript.length - 1];
+if (this.sessionManager.textTranscript.length > 0) {
+const lastMessage = this.sessionManager.textTranscript[this.sessionManager.textTranscript.length - 1];
 if (lastMessage.speaker === "model") {
 	// If the last message was from the model, update it
 	// Create a new array to ensure Lit detects the change
-	const updatedTranscript = [...this.textTranscript];
+	const updatedTranscript = [...this.sessionManager.textTranscript];
 	updatedTranscript[updatedTranscript.length - 1] = {
 		...lastMessage,
 		text: text,
 	};
-	this.textTranscript = updatedTranscript;
+	this.sessionManager.textTranscript = updatedTranscript;
 }
 }
 }
@@ -519,20 +519,20 @@ if (lastMessage.speaker === "model") {
 		logger.debug(`Received ${speaker} text:`, text);
 
 		// For audio transcription, we get incremental chunks that should be appended
-		const lastTurn = this.callTranscript[this.callTranscript.length - 1];
+		const lastTurn = this.sessionManager.callTranscript[this.sessionManager.callTranscript.length - 1];
 
 		if (lastTurn?.speaker === speaker) {
 			// Append to the existing turn by creating a new array
 			// This ensures Lit detects the change
-			const updatedTranscript = [...this.callTranscript];
+			const updatedTranscript = [...this.sessionManager.callTranscript];
 			updatedTranscript[updatedTranscript.length - 1] = {
 				...lastTurn,
 				text: lastTurn.text + text,
 			};
-			this.callTranscript = updatedTranscript;
+			this.sessionManager.callTranscript = updatedTranscript;
 		} else {
 			// Create a new turn for this author
-			this.callTranscript = [...this.callTranscript, { text, speaker }];
+			this.sessionManager.callTranscript = [...this.sessionManager.callTranscript, { text, speaker }];
 		}
 	}
 
@@ -544,7 +544,7 @@ if (lastMessage.speaker === "model") {
 			timestamp: new Date(),
 			isSystemMessage: true,
 		};
-		this.callTranscript = [...this.callTranscript, notice];
+		this.sessionManager.callTranscript = [...this.sessionManager.callTranscript, notice];
 	}
 
 	private _appendTextMessage(
@@ -557,17 +557,17 @@ if (lastMessage.speaker === "model") {
 			text,
 			speaker,
 			isSystemMessage,
-			currentLength: this.textTranscript.length,
+			currentLength: this.sessionManager.textTranscript.length,
 		});
 
-		this.textTranscript = [
-			...this.textTranscript,
+		this.sessionManager.textTranscript = [
+			...this.sessionManager.textTranscript,
 			{ text, speaker, isSystemMessage },
 		];
 
 		logger.debug("Text message appended", {
-			newLength: this.textTranscript.length,
-			lastMessage: this.textTranscript[this.textTranscript.length - 1],
+			newLength: this.sessionManager.textTranscript.length,
+			lastMessage: this.sessionManager.textTranscript[this.sessionManager.textTranscript.length - 1],
 		});
 	}
 
@@ -1079,7 +1079,9 @@ this.updateTextTranscript(this.ttsCaption);
 		this.sessionManager.resetTextContext();
 
 		// Initialize new turn and get turnId
-		const turnId = this.turnManager.initializeNewTurn(message, this.sessionManager);
+		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.messageStatuses);
+		this.sessionManager.textTranscript = newTranscript;
+		this.messageStatuses = newStatuses;
 		
 		this.requestUpdate();
 		await this.updateComplete;
