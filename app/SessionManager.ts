@@ -16,27 +16,7 @@ export interface SessionManagerDependencies {
 	textSessionManager: TextSessionManager;
 	callSessionManager: CallSessionManager;
 	energyBarService: EnergyBarService;
-
-	getState: () => {
-		isCallActive: boolean;
-		lastAnalyzedTranscriptIndex: number;
-		textTranscript: Turn[];
-		callTranscript: Turn[];
-		_callReconnectingNotified: boolean;
-		_callRateLimitNotified: boolean;
-	};
-
-	setState: (
-		newState: Partial<{
-			textSession: Session | null;
-			callSession: Session | null;
-			lastAnalyzedTranscriptIndex: number;
-			textTranscript: Turn[];
-			callTranscript: Turn[];
-			_callReconnectingNotified: boolean;
-			_callRateLimitNotified: boolean;
-		}>,
-	) => void;
+	hostElement: HTMLElement;
 
 	updateStatus: (msg: string) => void;
 	updateError: (msg: string) => void;
@@ -47,6 +27,14 @@ export interface SessionManagerDependencies {
 
 export class SessionManager {
 	private deps: SessionManagerDependencies;
+
+	public textSession: Session | null = null;
+	public callSession: Session | null = null;
+	public lastAnalyzedTranscriptIndex: number = 0;
+	public textTranscript: Turn[] = [];
+	public callTranscript: Turn[] = [];
+	public _callReconnectingNotified: boolean = false;
+	public _callRateLimitNotified: boolean = false;
 
 	constructor(deps: SessionManagerDependencies) {
 		this.deps = deps;
@@ -98,9 +86,7 @@ export class SessionManager {
   ) {
   	this.deps.updateStatus("Initializing text session...");
   	const ok = await this.deps.textSessionManager.initSession();
-  	this.deps.setState({
-  		textSession: this.deps.textSessionManager.sessionInstance,
-  	});
+  	this.textSession = this.deps.textSessionManager.sessionInstance;
   	if (!ok || !this.deps.textSessionManager.sessionInstance) {
   		this.deps.updateError(
   			"Unable to start text session (rate limited or network error)",
@@ -114,9 +100,7 @@ export class SessionManager {
  public async initCallSession() {
   this.deps.updateStatus("Initializing call session...");
   const ok = await this.deps.callSessionManager.initSession();
-  this.deps.setState({
-  	callSession: this.deps.callSessionManager.sessionInstance,
-  });
+  this.callSession = this.deps.callSessionManager.sessionInstance;
 
   if (!ok || !this.deps.callSessionManager.sessionInstance) {
   	// If energy is exhausted, reflect a different UX than rate limit
@@ -139,11 +123,9 @@ export class SessionManager {
 
  public resetTextContext() {
   // Reset the delta-analysis index for text transcript
-  this.deps.setState({
-  	lastAnalyzedTranscriptIndex: 0,
-  	textTranscript: [],
-  	textSession: null,
-  });
+  this.lastAnalyzedTranscriptIndex = 0;
+  this.textTranscript = [];
+  this.textSession = null;
 
   // Close existing text session using session manager
   if (this.deps.textSessionManager) {
@@ -159,7 +141,7 @@ export class SessionManager {
 
  public resetCallContext() {
   // Reset the delta-analysis index for call transcript
-  this.deps.setState({ lastAnalyzedTranscriptIndex: 0 });
+  this.lastAnalyzedTranscriptIndex = 0;
   // Also clear the persisted resumption handle so the next call starts fresh
   try {
   	this.deps.callSessionManager?.clearResumptionHandle();
@@ -167,20 +149,18 @@ export class SessionManager {
   	logger.warn("Failed to clear call session resumption handle:", e);
   }
   // Reset reconnection toast guard
-  this.deps.setState({ _callReconnectingNotified: false });
+  this._callReconnectingNotified = false;
 
   logger.debug("Resetting call context. Closing session.");
   // Close existing call session using session manager
   if (this.deps.callSessionManager) {
   	this.deps.callSessionManager.closeSession();
-  	this.deps.setState({ callSession: null });
+  	this.callSession = null;
   }
 
   // Clear call transcript and reset rate-limit states
-  this.deps.setState({
-  	callTranscript: [],
-  	_callRateLimitNotified: false,
-  });
+  this.callTranscript = [];
+  this._callRateLimitNotified = false;
 
   const callT = this.deps.queryShadowRoot("call-transcript") as HTMLElement & {
   	rateLimited?: boolean;
@@ -193,9 +173,7 @@ export class SessionManager {
   this.deps.clearThinkingAll();
 
   // Reinitialize call session if we're currently in a call
-  if (this.deps.getState().isCallActive) {
-  	this.initCallSession();
-  }
+  // Note: We'll need to handle isCallActive state differently in the next step
   this.deps.updateStatus("Call conversation cleared.");
   // Reuse the existing call-start toasts when the next call starts (resume-first flow).
   // No additional toast here to avoid redundancy.
