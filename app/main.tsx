@@ -87,7 +87,7 @@ export class GdmLiveAudio extends LitElement {
 	private lastAdvisorContext: string = "";
   @state() private npuThinkingLog: string = "";
   @state() private npuStatus: string = "";
-  @state() private npuSubStatus: string = "";
+  @state() public npuSubStatus: string = "";
   @state() private thinkingActive = false;
   @state() public turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
   private turnManager: TurnManager;
@@ -105,10 +105,6 @@ export class GdmLiveAudio extends LitElement {
 
 	// Make these properties public for SessionManager access
 	public energyBarService = energyBarService;
-	public _handleCallRateLimit = this._handleCallRateLimit.bind(this);
-	public lastAnalyzedTranscriptIndex = 0;
-	public _callReconnectingNotified = false;
-	public _callRateLimitNotified = false;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
@@ -198,9 +194,9 @@ export class GdmLiveAudio extends LitElement {
 	private client: GoogleGenAI;
 
 	// Rate-limit UX state for calls
-	private _callRateLimitNotified = false;
+	public _callRateLimitNotified = false;
 	// Reconnection toast state to avoid spamming
-	private _callReconnectingNotified = false;
+	public _callReconnectingNotified = false;
 	private _textReconnectingNotified = false;
 
 	// Scroll-to-bottom state for call transcript
@@ -220,7 +216,7 @@ export class GdmLiveAudio extends LitElement {
 	@state() private vpuDebugMode = false;
 	@state() private npuDebugMode = false;
 	// Track last analyzed position in the active transcript for efficient delta analysis
-	private lastAnalyzedTranscriptIndex = 0;
+	public lastAnalyzedTranscriptIndex = 0;
 
 	// Audio nodes for each session type
 	private textOutputNode = this.outputAudioContext.createGain();
@@ -1886,7 +1882,7 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 	}
 
-	private _pruneMessageMeta() {
+	public _pruneMessageMeta() {
 		// Create a set of current user turn IDs
 		const currentUserTurnIds = new Set(
 			this.textTranscript

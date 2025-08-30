@@ -21,6 +21,10 @@ export class TurnManager {
   private vpuHardMaxTimer: number | null = null;
   private readonly VPU_HARD_MAX_MS = 7000;
   private vpuHardDeadline: number = 0;
+  public EVENT_STATUS_MAP: Record<string, string> = { 
+    'npu:thought': 'Thinking (Thought)...', 
+    'npu:audio-out': 'Thinking (Audio)...' 
+  };
 
   constructor(host: GdmLiveAudio) {
     this.host = host;
