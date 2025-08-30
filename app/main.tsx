@@ -2149,7 +2149,7 @@ this.updateTextTranscript(this.ttsCaption);
 		) {
 			this.updateStatus("Rate limited — switching to a lower tier...");
 			// Re-initialize the call session to apply the downgraded model
-			this._initCallSession();
+			this.sessionManager.initCallSession();
 		}
 	};
 
