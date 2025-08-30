@@ -65,9 +65,6 @@ import type {
   NpuProgressEvent,
   VpuProgressEvent
 } from "@shared/progress";
-import {
-  EVENT_STATUS_MAP
-} from "@shared/progress";
 import { TurnManager, type TurnState, type TurnPhase } from "./TurnManager";
 
 @customElement("gdm-live-audio")
@@ -1538,9 +1535,9 @@ this.updateTextTranscript(this.ttsCaption);
 			case "vpu:response:complete":
 				return "";
 			default:
-				// Use EVENT_STATUS_MAP for other events
-				if (EVENT_STATUS_MAP[ev.type as string]) {
-					return EVENT_STATUS_MAP[ev.type as string];
+				// Use TurnManager.EVENT_STATUS_MAP for other events
+				if (TurnManager.EVENT_STATUS_MAP[ev.type as string]) {
+					return TurnManager.EVENT_STATUS_MAP[ev.type as string];
 				}
 				return "";
 		}
