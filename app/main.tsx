@@ -800,7 +800,7 @@ this.updateTextTranscript(this.ttsCaption);
 	private _handleTtsTurnComplete() {
 		// Store the completed turn in memory
 		if (this.ttsCaption.trim()) {
-			const lastUserTurn = this.textTranscript
+			const lastUserTurn = this.sessionManager.textTranscript
 				.slice()
 				.reverse()
 				.find((t) => t.speaker === "user");
