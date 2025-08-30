@@ -1807,6 +1807,12 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
 
+		// Check API key presence before proceeding
+		if (!this._checkApiKeyExists()) {
+			this._showApiKeyPrompt(() => this._handleSendMessage(e));
+			return;
+		}
+
 		// Initialize new turn and get turnId
 		const turnId = this._initializeNewTurn(message);
 		
@@ -1815,12 +1821,6 @@ this.updateTextTranscript(this.ttsCaption);
 		await this.updateComplete;
 
 		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
-
-		// Check API key presence before proceeding
-		if (!this._checkApiKeyExists()) {
-			this._showApiKeyPrompt(() => this._handleSendMessage(e));
-			return;
-		}
 
 		// Clear any existing captions when the user sends a new message
 		this.ttsCaption = "";
