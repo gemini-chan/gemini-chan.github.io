@@ -1864,7 +1864,7 @@ this.updateTextTranscript(this.ttsCaption);
       this._clearVpuWatchdog();
       this._clearVpuHardMaxTimer();
       this._clearVpuDevTicker();
-      this._setTurnPhase('error');
+      this.turnManager.setTurnPhase('error');
     }
     
     // Update sub status using the new helper method
