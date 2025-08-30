@@ -1204,22 +1204,22 @@ this.updateTextTranscript(this.ttsCaption);
 	
 	// Clear thinking UI
 	private _clearThinkingUI() {
-		this.npuStatus = "";
-		this.npuThinkingLog = "";
+		this.turnManager.npuStatus = "";
+		this.turnManager.npuThinkingLog = "";
 	}
   
   
 	
 	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string) {
 		// Once a turn is complete or has errored, ignore subsequent events for it.
-		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
+		if (this.turnManager.turnState.id === turnId && (this.turnManager.turnState.phase === 'complete' || this.turnManager.turnState.phase === 'error')) {
 			return;
 		}
 		// Ignore events for other turns - with type safety check
-		if (this.turnState.id && 
+		if (this.turnManager.turnState.id && 
 			ev.data?.turnId && 
 			typeof ev.data.turnId === 'string' && 
-			this.turnState.id !== ev.data.turnId) {
+			this.turnManager.turnState.id !== ev.data.turnId) {
 			return;
 		}
     
@@ -1251,7 +1251,7 @@ this.updateTextTranscript(this.ttsCaption);
     }
 
 		// Force immediate update on first NPU event for this turn
-		const eventTurnId = (ev.data?.turnId as string) || this.turnState.id;
+		const eventTurnId = (ev.data?.turnId as string) || this.turnManager.turnState.id;
 		if (eventTurnId && !this._npuFirstEventForced.has(eventTurnId)) {
 			this._npuFirstEventForced.add(eventTurnId);
 			this.requestUpdate();
@@ -1284,79 +1284,79 @@ this.updateTextTranscript(this.ttsCaption);
 		// Handle log updates
 		switch (ev.type) {
 			case "npu:start":
-				this.npuThinkingLog += "\n[Thinking...]"; // Concise log line
+				this.turnManager.npuThinkingLog += "\n[Thinking...]"; // Concise log line
 				break;
 			case "npu:model:start":
 				if (ev.data?.model) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'single' };
 					// Initialize retry count
-					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
-					this.npuThinkingLog += `\n[Preparing NPU: ${ev.data.model as string}]`; // Concise log line
+					this.sessionManager.messageRetryCount = { ...this.sessionManager.messageRetryCount, [turnId]: 0 };
+					this.turnManager.npuThinkingLog += `\n[Preparing NPU: ${ev.data.model as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:attempt":
 				if (ev.data?.attempt) {
 					// Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
 					const retries = Math.max(0, (ev.data.attempt as number) - 1);
-					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
-					this.npuThinkingLog += `\n[NPU attempt #${ev.data.attempt}]`; // Concise log line
+					this.sessionManager.messageRetryCount = { ...this.sessionManager.messageRetryCount, [turnId]: Math.max(this.sessionManager.messageRetryCount[turnId] ?? 0, retries) };
+					this.turnManager.npuThinkingLog += `\n[NPU attempt #${ev.data.attempt}]`; // Concise log line
 				}
 				break;
 			case "npu:model:error":
 				if (ev.data?.attempt && ev.data?.error) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'error' };
 					// Clear any pending transcription timers on error
 					if (this.transcriptionDebounceTimer) {
 						clearTimeout(this.transcriptionDebounceTimer);
 						this.transcriptionDebounceTimer = null;
 						this.pendingTranscriptionText = "";
 					}
-					this.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]`; // Concise log line
+					this.turnManager.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:response":
 				if (ev.data?.length) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
-					this.npuThinkingLog += "\n[NPU ready]"; // Concise log line
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'double' };
+					this.turnManager.npuThinkingLog += "\n[NPU ready]"; // Concise log line
 				}
 				break;
 			case "npu:complete":
 				// Set fallback status based on whether NPU produced a response
 				const ok = !!ev.data?.hasResponseText;
-				this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
-				this.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
+				this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: ok ? 'double' : 'error' };
+				this.turnManager.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
 				break;
 		}
 
 		// Handle prompt partial updates
 		if (ev.type === "npu:prompt:partial" && ev.data?.delta) {
-			this.npuThinkingLog += ev.data.delta as string;
+			this.turnManager.npuThinkingLog += ev.data.delta as string;
 		}
 
 		// Handle memory events
 		if (ev.type === "npu:memories:start") {
-			this.npuThinkingLog += "\n[Retrieving memories...]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Retrieving memories...]"; // Concise log line
 		} else if (ev.type === "npu:memories:done") {
-			this.npuThinkingLog += "\n[Memories retrieved]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Memories retrieved]"; // Concise log line
 		}
 
 		// Handle prompt build events
 		if (ev.type === "npu:prompt:build") {
-			this.npuThinkingLog += "\n[Building prompt...]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Building prompt...]"; // Concise log line
 		} else if (ev.type === "npu:prompt:built") {
-			this.npuThinkingLog += "\n[Prompt built]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Prompt built]"; // Concise log line
 		}
 
 		// Handle advisor ready event
 		if (ev.type === "npu:advisor:ready") {
-			this.npuThinkingLog += "\n[NPU context ready]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[NPU context ready]"; // Concise log line
 		}
 
 		// Handle prompt built with optional full prompt display
 		if (ev.type === "npu:prompt:built" && ev.data?.fullPrompt) {
 			// Optionally, keep partial stream; or replace with full prompt
 			if (this.showInternalPrompts) {
-				this.npuThinkingLog = ev.data.fullPrompt as string;
+				this.turnManager.npuThinkingLog = ev.data.fullPrompt as string;
 			}
 		}
 
@@ -1403,7 +1403,10 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Initialize new turn and get turnId
-		const turnId = this.turnManager.initializeNewTurn(message, this.sessionManager);
+		const result = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
+		this.sessionManager.textTranscript = result.updatedTranscript;
+		this.sessionManager.messageStatuses = result.updatedMessageStatuses;
+		const turnId = result.turnId;
 		
 		// Flush synchronously
 		this.requestUpdate();
@@ -1536,15 +1539,15 @@ this.updateTextTranscript(this.ttsCaption);
 
 	private _handleVpuProgress(ev: VpuProgressEvent, turnId?: string, isRetry = false) {
 		// Once a turn is complete or has errored, ignore subsequent events for it.
-		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
+		if (this.turnManager.turnState.id === turnId && (this.turnManager.turnState.phase === 'complete' || this.turnManager.turnState.phase === 'error')) {
 			return;
 		}
 		// Ignore events for other turns - with type safety check
-		if (this.turnState.id && 
+		if (this.turnManager.turnState.id && 
 			turnId && 
 			ev.data?.turnId && 
 			typeof ev.data.turnId === 'string' && 
-			this.turnState.id !== ev.data.turnId) {
+			this.turnManager.turnState.id !== ev.data.turnId) {
 			return;
 		}
     
@@ -1558,7 +1561,7 @@ this.updateTextTranscript(this.ttsCaption);
       this.turnManager.armVpuDevTicker();
     } else if (ev.type === "vpu:response:complete") {
       // Update log before setting phase to complete
-      this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
+      this.turnManager.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
       this.turnManager.clearVpuWatchdog();
       this.turnManager.clearVpuHardMaxTimer();
       this.turnManager.clearVpuDevTicker();
@@ -1571,7 +1574,7 @@ this.updateTextTranscript(this.ttsCaption);
     }
     
     // Update sub status using the new helper method
-    this.npuSubStatus = this._getVpuSubStatus(ev, isRetry);
+    this.turnManager.npuSubStatus = this._getVpuSubStatus(ev, isRetry);
 		
 		// Force immediate update on first VPU event for this turn
 		const eventTurnId = (ev.data?.turnId as string) || turnId;
@@ -1600,10 +1603,10 @@ this.updateTextTranscript(this.ttsCaption);
 				this.vpuWaitTimer = null;
 			}
 			// Set new timer
-			if (!turnId || this.turnState.id === turnId) {
+			if (!turnId || this.turnManager.turnState.id === turnId) {
 				this.vpuWaitTimer = window.setTimeout(() => {
-					if (!turnId || this.turnState.id === turnId) {
-						this.npuSubStatus = "Waiting for response…";
+					if (!turnId || this.turnManager.turnState.id === turnId) {
+						this.turnManager.npuSubStatus = "Waiting for response…";
 					}
 					this.vpuWaitTimer = null;
 				}, 800);
@@ -1644,14 +1647,14 @@ this.updateTextTranscript(this.ttsCaption);
 		// Handle log updates and other state changes
 		switch (ev.type) {
 			case "vpu:message:sending":
-				this.thinkingActive = true;
-				this.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
+				this.turnManager.thinkingActive = true;
+				this.turnManager.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
 				break;
 			case "vpu:message:error":
 				if (ev.data?.error) {
-					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
-					this.thinkingActive = false;
-					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}]`;
+					this.turnManager.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
+					this.turnManager.thinkingActive = false;
+					this.turnManager.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}]`;
 					// Reset transcription aggregation for this turn on error
 					if (ev.data?.turnId) {
 						this.vpuTranscriptionAgg.delete(ev.data.turnId as string);
@@ -1661,11 +1664,11 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:first-output":
-				this.thinkingActive = true;
-				this.npuThinkingLog += isRetry ? "\n[VPU first output received (retry)]" : "\n[VPU first output received]";
+				this.turnManager.thinkingActive = true;
+				this.turnManager.npuThinkingLog += isRetry ? "\n[VPU first output received (retry)]" : "\n[VPU first output received]";
 				break;
 			case "vpu:response:transcription":
-				this.thinkingActive = true;
+				this.turnManager.thinkingActive = true;
 				if (ev.data?.text) {
 					// Use debounced transcription updates
 					this._handleDebouncedTranscription(ev.data.text as string);
@@ -1689,7 +1692,7 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:complete":
-				this.thinkingActive = false;
+				this.turnManager.thinkingActive = false;
 				// Reset transcription aggregation for this turn on completion
 				if (ev.data?.turnId) {
 					this.vpuTranscriptionAgg.delete(ev.data.turnId as string);
