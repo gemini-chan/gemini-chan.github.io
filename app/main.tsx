@@ -1403,10 +1403,9 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Initialize new turn and get turnId
-		const result = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
-		this.sessionManager.textTranscript = result.updatedTranscript;
-		this.sessionManager.messageStatuses = result.updatedMessageStatuses;
-		const turnId = result.turnId;
+		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
+		this.sessionManager.textTranscript = newTranscript;
+		this.sessionManager.messageStatuses = newStatuses;
 		
 		// Flush synchronously
 		this.requestUpdate();
