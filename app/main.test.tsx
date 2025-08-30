@@ -42,6 +42,18 @@ vi.mock('@features/ai/NPUService', () => {
   };
 });
 
+// Mock the GoogleGenAI module
+vi.mock('@google/genai', () => {
+  return {
+    GoogleGenAI: vi.fn().mockImplementation(() => {
+      return {
+        initialize: vi.fn().mockResolvedValue(undefined),
+        // Add other methods that might be called
+      };
+    }),
+  };
+});
+
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
