@@ -25,3 +25,12 @@ npm run dev
 ```
 
 > P.S. Inspired by [アイリ・チャン](https://github.com/moeru-ai/airi). I hope you and your new friend will be very happy together. ♡
+
+# INTER-TOOL COMMUNICATION & TIMEOUTS
+
+To maintain a fluid and non-blocking workflow, especially when delegating tasks to tools like `ai_edit` that may have longer execution times, a specific protocol is followed:
+
+1.  **Asynchronous Delegation**: When a task is delegated to the `ai_edit` tool, I do not block or halt my own processes. The delegation is asynchronous.
+2.  **Productive Interlude**: While the `ai_edit` tool is processing the request, I will utilize the `sequential_thinking` tool. This allows me to use the waiting period productively.
+3.  **Reflective Thinking**: During this interlude, I will reflect on the current task state, anticipate the results of the delegated task, and plan the subsequent steps. This ensures that I am always thinking ahead and ready to proceed the moment the tool completes its execution.
+4.  **No Timeouts**: The `ai_edit` tool will eventually complete its task. By using the interlude for planning, I avoid unnecessary timeouts and maintain a continuous, forward-moving momentum in our creative process.
