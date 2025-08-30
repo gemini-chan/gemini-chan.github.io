@@ -1405,19 +1405,6 @@ this.updateTextTranscript(this.ttsCaption);
     }
   }
   
-  private _clearVpuHardMaxTimer(silent = false) {
-    if (this.vpuHardMaxTimer) {
-      clearTimeout(this.vpuHardMaxTimer);
-      this.vpuHardMaxTimer = null;
-      if (!silent) {
-        logger.debug("VPU hard max timer cleared", {
-          turnId: this.turnState.id
-        });
-      }
-      this.vpuHardDeadline = 0;
-    }
-  }
-  
   private _armVpuDevTicker() {
     // If vpuDevTicker exists, no-op
     if (this.vpuDevTicker) {
