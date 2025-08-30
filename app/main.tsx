@@ -1324,8 +1324,6 @@ this.updateTextTranscript(this.ttsCaption);
 		this.lastAdvisorContext = "";
 		const personaId = this.personaManager.getActivePersona().id;
 		/* conversationContext removed: memory now stores facts only */
-		// Set current turn ID to ensure only this turn drives the Thinking UI
-		this.turnState = { ...this.turnState, id: turnId };
 		const intention = await this.npuService.analyzeAndAdvise(
 			message,
 			personaId,
@@ -1888,9 +1886,6 @@ this.updateTextTranscript(this.ttsCaption);
 				const ok = await this._initTextSession();
 				if (ok && this.textSessionManager?.isActive) {
 					try {
-						// Reuse the original turnId for correlation
-						this.currentTurnId = turnId;
-
 						this.lastAdvisorContext = "";
 						const personaId = this.personaManager.getActivePersona().id;
 						/* conversationContext removed: memory now stores facts only */
@@ -1960,11 +1955,11 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
 		// Ignore events for other turns - with type safety check
-		if (this.currentTurnId && 
+		if (this.turnState.id && 
 			turnId && 
 			ev.data?.turnId && 
 			typeof ev.data.turnId === 'string' && 
-			this.currentTurnId !== ev.data.turnId) {
+			this.turnState.id !== ev.data.turnId) {
 			return;
 		}
     
@@ -2020,9 +2015,9 @@ this.updateTextTranscript(this.ttsCaption);
 				this.vpuWaitTimer = null;
 			}
 			// Set new timer
-			if (!turnId || this.currentTurnId === turnId) {
+			if (!turnId || this.turnState.id === turnId) {
 				this.vpuWaitTimer = window.setTimeout(() => {
-					if (!turnId || this.currentTurnId === turnId) {
+					if (!turnId || this.turnState.id === turnId) {
 						this.npuSubStatus = "Waiting for response…";
 					}
 					this.vpuWaitTimer = null;
