@@ -1176,7 +1176,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// Clear the previous text chat context. This clears the transcript and
 		// ensures we start with a fresh session.
-		this._resetTextContext();
+		this.sessionManager.resetTextContext();
 
 		// Initialize new turn and get turnId
 		const turnId = this.turnManager.initializeNewTurn(message);
@@ -1188,7 +1188,7 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
-		const ok = await this.sessionManager._initTextSession();
+		const ok = await this.sessionManager.initTextSession();
 
 		// If session initialization fails, show an error and abort.
 		if (!ok) {
@@ -1617,7 +1617,7 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Ensure we have an active text session
-		const ok = await this.sessionManager._initTextSession();
+		const ok = await this.sessionManager.initTextSession();
 		if (!ok) {
 			return;
 		}
@@ -2190,7 +2190,7 @@ this.updateTextTranscript(this.ttsCaption);
             .hardDeadlineMs=${this.vpuHardDeadline}
             .turnId=${this.turnState.id || ''}
             @send-message=${this._handleSendMessage}
-            @reset-text=${this._resetTextContext}
+            @reset-text=${this.sessionManager.resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}
             @chat-active-changed=${this._handleChatActiveChanged}
           >
@@ -2256,7 +2256,7 @@ this.updateTextTranscript(this.ttsCaption);
           .visible=${this.activeMode === "calling"}
           .activePersonaName=${this.personaManager.getActivePersona().name}
           .callState=${this.callState}
-          @reset-call=${this._resetCallContext}
+          @reset-call=${this.sessionManager.resetCallContext}
           @scroll-state-changed=${this._handleCallScrollStateChanged}
         ></call-transcript>
       </div>

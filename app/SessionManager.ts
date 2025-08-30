@@ -17,23 +17,11 @@ export class SessionManager {
   }
 
   public async initTextSession(): Promise<boolean> {
-    const ok = await this.host.textSessionManager.initSession();
-    this.host.textSession = this.host.textSessionManager.sessionInstance;
-    return ok;
-  }
-
-  public async initCallSession(): Promise<boolean> {
-    logger.debug("Initializing new call session.");
-    const ok = await this.host.callSessionManager.initSession();
-    this.host.callSession = this.host.callSessionManager.sessionInstance;
-    return ok;
-  }
-
-  public async _initTextSession(): Promise<boolean> {
     // Ensure we have an active text session
     if (!this.host.textSessionManager || !this.host.textSessionManager.isActive) {
       this.host.updateStatus("Initializing text session...");
-      const ok = await this.initTextSession();
+      const ok = await this.host.textSessionManager.initSession();
+      this.host.textSession = this.host.textSessionManager.sessionInstance;
       if (!ok || !this.host.textSession) {
         this.host.updateError(
           "Unable to start text session (rate limited or network error)",
@@ -44,9 +32,10 @@ export class SessionManager {
     return true;
   }
 
-  public async _initCallSession() {
+  public async initCallSession() {
     this.host.updateStatus("Initializing call session...");
-    const ok = await this.initCallSession();
+    const ok = await this.host.callSessionManager.initSession();
+    this.host.callSession = this.host.callSessionManager.sessionInstance;
     if (!ok || !this.host.callSession) {
       // If energy is exhausted, reflect a different UX than rate limit
       const exhausted = this.host.energyBarService.getCurrentEnergyLevel() === 0;
@@ -116,7 +105,7 @@ export class SessionManager {
 
     // Reinitialize call session if we're currently in a call
     if (this.host.isCallActive) {
-      this._initCallSession();
+      this.initCallSession();
     }
     this.host.updateStatus("Call conversation cleared.");
     // Reuse the existing call-start toasts when the next call starts (resume-first flow).
