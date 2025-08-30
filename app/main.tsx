@@ -187,8 +187,6 @@ export class GdmLiveAudio extends LitElement {
 	private npuService: NPUService;
 
 	private client: GoogleGenAI;
-	@state() inputNode = this.audioManager.inputAudioContext.createGain();
-	@state() outputNode = this.audioManager.outputAudioContext.createGain();
 
 	// Rate-limit UX state for calls
 	private _callRateLimitNotified = false;
@@ -356,7 +354,7 @@ export class GdmLiveAudio extends LitElement {
 		this.personaManager = new PersonaManager();
 		this.turnManager = new TurnManager(this);
 		this.sessionManager = new SessionManager(this);
-		this.audioManager = new AudioManager(this);
+		// AudioManager will be initialized after session managers are created
 		// MemoryService will be initialized after the GoogleGenAI client is created.
 		// Client initialization is deferred to connectedCallback to avoid Lit update warnings.
 
@@ -488,15 +486,18 @@ export class GdmLiveAudio extends LitElement {
 		// Initialize session managers after client is ready
 		this.initSessionManagers();
 
+		// Initialize AudioManager with the callSessionManager
+		this.audioManager = new AudioManager(this, this.callSessionManager);
+
 		// Sessions will be created lazily when user actually interacts
 	}
 
 	private _updateActiveOutputNode() {
 		// Update the main outputNode to point to the active session's output node
 		if (this.activeMode === "texting") {
-			this.outputNode = this.textOutputNode;
+			this.audioManager.outputNode = this.textOutputNode;
 		} else if (this.activeMode === "calling") {
-			this.outputNode = this.callOutputNode;
+			this.audioManager.outputNode = this.callOutputNode;
 		}
 		// Trigger a re-render to pass the updated outputNode to live2d-gate
 		this._scheduleUpdate();
@@ -2086,8 +2087,8 @@ this.updateTextTranscript(this.ttsCaption);
       <div class="live2d-container">
         <live2d-gate
           .modelUrl=${this.personaManager.getActivePersona().live2dModelUrl || ""}
-          .inputNode=${this.inputNode}
-          .outputNode=${this.outputNode}
+          .inputNode=${this.audioManager.inputNode}
+          .outputNode=${this.audioManager.outputNode}
           .emotion=${this.currentEmotion}
           .motionName=${this.currentMotionName}
           .personaName=${this.personaManager.getActivePersona().name}

@@ -5,6 +5,7 @@
 
 import type { GdmLiveAudio } from "./main.tsx";
 import { createBlob } from "@shared/utils";
+import type { CallSessionManager } from "@features/vpu/VPUService";
 
 export class AudioManager {
   mediaStream: MediaStream | null = null;
@@ -12,10 +13,14 @@ export class AudioManager {
   scriptProcessorNode: ScriptProcessorNode | null = null;
   inputAudioContext: AudioContext;
   outputAudioContext: AudioContext;
+  inputNode: GainNode;
+  outputNode: GainNode;
 
-  constructor(private host: GdmLiveAudio) {
+  constructor(private host: GdmLiveAudio, private callSessionManager: CallSessionManager) {
     this.inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     this.outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+    this.inputNode = this.inputAudioContext.createGain();
+    this.outputNode = this.outputAudioContext.createGain();
   }
 
   initAudio() {
@@ -57,11 +62,11 @@ export class AudioManager {
       // Send audio to the active call session using session manager
       if (
         this.host.activeMode === "calling" &&
-        this.host.callSessionManager &&
-        this.host.callSessionManager.isActive
+        this.callSessionManager &&
+        this.callSessionManager.isActive
       ) {
         try {
-          this.host.callSessionManager.sendRealtimeInput({
+          this.callSessionManager.sendRealtimeInput({
             media: createBlob(pcmData),
           });
         } catch (e) {
@@ -72,7 +77,7 @@ export class AudioManager {
     };
 
     this.sourceNode.connect(this.scriptProcessorNode);
-    this.scriptProcessorNode.connect(this.host.inputAudioContext.destination);
+    this.scriptProcessorNode.connect(this.inputAudioContext.destination);
   }
 
   public stopAudioProcessing() {
