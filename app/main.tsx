@@ -1222,12 +1222,6 @@ this.updateTextTranscript(this.ttsCaption);
 	}
   
   
-  private _resetVpuWatchdog() {
-    // Clear existing timer
-    if (this.vpuWatchdogTimer) {
-      clearTimeout(this.vpuWatchdogTimer);
-    }
-    
 	
 	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string) {
 		// Once a turn is complete or has errored, ignore subsequent events for it.

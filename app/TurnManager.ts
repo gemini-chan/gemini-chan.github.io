@@ -209,4 +209,38 @@ export class TurnManager {
       this.vpuHardDeadline = 0;
     }
   }
+  
+  public armVpuWatchdog() {
+    this.clearVpuWatchdog();
+    this.vpuWatchdogTimer = window.setTimeout(() => {
+      console.warn('VPU watchdog triggered');
+      this.setTurnPhase('idle');
+    }, this.VPU_WATCHDOG_MS);
+  }
+
+  public clearVpuWatchdog() {
+    if (this.vpuWatchdogTimer) {
+      clearTimeout(this.vpuWatchdogTimer);
+      this.vpuWatchdogTimer = null;
+    }
+  }
+
+  public armVpuHardMaxTimer() {
+    this.clearVpuHardMaxTimer();
+    this.vpuHardDeadline = Date.now() + this.VPU_HARD_MAX_MS;
+    this.vpuHardMaxTimer = window.setTimeout(() => {
+      if (this.host.turnState.phase !== 'user-speaking') {
+        console.warn('VPU hard max timer triggered');
+        this.host.endCall();
+      }
+    }, this.VPU_HARD_MAX_MS);
+  }
+
+  public clearVpuHardMaxTimer() {
+    if (this.vpuHardMaxTimer) {
+      clearTimeout(this.vpuHardMaxTimer);
+      this.vpuHardMaxTimer = null;
+      this.vpuHardDeadline = 0;
+    }
+  }
 }
