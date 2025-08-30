@@ -1967,7 +1967,7 @@ this.updateTextTranscript(this.ttsCaption);
             @tab-switch=${this._handleTabSwitch}
           ></tab-view>
           <chat-view
-            .transcript=${this.sessionManager.textTranscript}
+            .transcript=${this.sessionManager?.textTranscript ?? []}
             .visible=${this.activeMode !== "calling" && this.activeTab === "chat"}
             .thinkingStatus=${this.turnManager.npuStatus}
             .thinkingSubStatus=${this.turnManager.npuSubStatus}
@@ -1975,8 +1975,8 @@ this.updateTextTranscript(this.ttsCaption);
             .thinkingActive=${this.turnManager.thinkingActive}
             .npuProcessingTime=${this.npuProcessingTime}
             .vpuProcessingTime=${this.vpuProcessingTime}
-            .messageStatuses=${this.sessionManager.messageStatuses}
-            .messageRetryCount=${this.sessionManager.messageRetryCount}
+            .messageStatuses=${this.sessionManager?.messageStatuses ?? {}}
+            .messageRetryCount=${this.sessionManager?.messageRetryCount ?? {}}
             .phase=${this.turnManager.turnState.phase}
             .hardDeadlineMs=${this.turnManager.vpuHardDeadline}
             .turnId=${this.turnManager.turnState.id || ''}
@@ -2043,7 +2043,7 @@ this.updateTextTranscript(this.ttsCaption);
         </div>
 
         <call-transcript
-          .transcript=${this.sessionManager.callTranscript}
+          .transcript=${this.sessionManager?.callTranscript ?? []}
           .visible=${this.activeMode === "calling"}
           .activePersonaName=${this.personaManager.getActivePersona().name}
           .callState=${this.callState}
