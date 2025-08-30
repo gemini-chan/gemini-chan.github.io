@@ -1049,6 +1049,7 @@ this.updateTextTranscript(this.ttsCaption);
 		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
 		this.sessionManager.textTranscript = newTranscript;
 		this.sessionManager.messageStatuses = newStatuses;
+		this._pruneMessageMeta();
 		
 		this.requestUpdate();
 		await this.updateComplete;
