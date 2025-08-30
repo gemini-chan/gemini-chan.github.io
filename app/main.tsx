@@ -168,23 +168,23 @@ export class GdmLiveAudio extends LitElement {
 	/**
 	 * Optimize re-renders by only updating when necessary
 	 */
-	protected shouldUpdate(changedProperties: PropertyValues<this>): boolean {
-		if (!this.hasUpdated) return true;
+	// protected shouldUpdate(changedProperties: PropertyValues<this>): boolean {
+	// 	if (!this.hasUpdated) return true;
 
-		const criticalProps = [
-			"activeMode",
-			"isCallActive",
-			"callState",
-			"activeTab",
-			"showSettings",
-		];
-		for (const prop of criticalProps) {
-			if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
-		}
+	// 	const criticalProps = [
+	// 		"activeMode",
+	// 		"isCallActive",
+	// 		"callState",
+	// 		"activeTab",
+	// 		"showSettings",
+	// 	];
+	// 	for (const prop of criticalProps) {
+	// 		if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
+	// 	}
 
 
-		return false;
-	}
+	// 	return false;
+	// }
 
 	private audioManager: AudioManager;
 
@@ -1392,8 +1392,6 @@ this.updateTextTranscript(this.ttsCaption);
 				return;
 			}
 		}
-		
-		debugLogger.debug("Transcript before optimistic update", this.sessionManager.textTranscript);
 
 		// Initialize new turn and get turnId
 		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
@@ -1401,11 +1399,8 @@ this.updateTextTranscript(this.ttsCaption);
 		this.sessionManager.messageStatuses = newStatuses;
 		this._pruneMessageMeta();
 		
-		debugLogger.debug("Transcript after optimistic update", this.sessionManager.textTranscript);
-		
 		// Flush synchronously
 		this.requestUpdate();
-		debugLogger.debug("requestUpdate() called");
 		await this.updateComplete;
 
 		logger.debug("UI INIT: Thinking set pre-await", { status: this.turnManager.npuStatus, active: this.turnManager.thinkingActive });
