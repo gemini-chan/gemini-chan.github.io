@@ -1388,7 +1388,7 @@ this.updateTextTranscript(this.ttsCaption);
         const now = Date.now();
         if (now >= this.turnManager.vpuHardDeadline) {
           logger.debug('DEV RAF: Forcing turn completion due to hard deadline');
-          this._setTurnPhase('complete');
+          this.turnManager.setTurnPhase('complete');
           this.requestUpdate();
         }
       }

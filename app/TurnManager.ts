@@ -107,7 +107,7 @@ export class TurnManager {
         this.host.npuSubStatus = "";
         this.host.npuThinkingLog = "";
         this.host.devRemainingMs = 0;
-        this.host._clearVpuDevTicker();
+        this.clearVpuDevTicker();
         
         // Set timeout to transition to idle after 1500ms
         setTimeout(() => {
@@ -121,7 +121,7 @@ export class TurnManager {
         this.host.npuStatus = "";
         this.host.npuSubStatus = "";
         this.host.devRemainingMs = 0;
-        this.host._clearVpuDevTicker();
+        this.clearVpuDevTicker();
         
         // Set timeout to transition to idle after 2500ms
         setTimeout(() => {
@@ -136,7 +136,7 @@ export class TurnManager {
         this.host.npuSubStatus = "";
         this.host.npuThinkingLog = ""; // Clear thinking log text
         this.host.devRemainingMs = 0;
-        this.host._clearVpuDevTicker();
+        this.clearVpuDevTicker();
         break;
     }
     
