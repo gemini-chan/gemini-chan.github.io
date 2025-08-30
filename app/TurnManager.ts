@@ -17,10 +17,10 @@ export interface TurnState {
 export class TurnManager {
   private host: GdmLiveAudio; // GdmLiveAudio instance
   public vpuWatchdogTimer: number | null = null;
-  public readonly VPU_WATCHDOG_MS = 2200;
+  public vpuHardDeadline = 0;
   public vpuHardMaxTimer: number | null = null;
-  public readonly VPU_HARD_MAX_MS = 7000;
-  public vpuHardDeadline: number = 0;
+  private readonly VPU_WATCHDOG_MS = 15000;
+  private readonly VPU_HARD_MAX_MS = 25000;
   public EVENT_STATUS_MAP: Record<string, string> = { 
     'npu:thought': 'Thinking (Thought)...', 
     'npu:audio-out': 'Thinking (Audio)...' 
