@@ -103,6 +103,13 @@ export class GdmLiveAudio extends LitElement {
   private readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
   public readonly ERROR_TO_IDLE_DELAY_MS = 2500;
 
+	// Make these properties public for SessionManager access
+	public energyBarService = energyBarService;
+	public _handleCallRateLimit = this._handleCallRateLimit.bind(this);
+	public lastAnalyzedTranscriptIndex = 0;
+	public _callReconnectingNotified = false;
+	public _callRateLimitNotified = false;
+
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
 	
