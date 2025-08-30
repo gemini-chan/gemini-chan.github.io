@@ -18,11 +18,6 @@ class AudioProcessor extends AudioWorkletProcessor {
       if (pcmData) {
         this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
         this.frameCounter++;
-        if (this.frameCounter % 100 === 0) {
-          console.log(
-            `[AudioWorklet] Processing audio frame ${this.frameCounter}, buffer size: ${pcmData.byteLength}`
-          );
-        }
       }
     }
     return true;
