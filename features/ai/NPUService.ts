@@ -135,7 +135,7 @@ export class NPUService {
     delayMs = 300
   ) {
     progressCb?.(event);
-    if (delayMs > 0) {
+    if (progressCb && delayMs > 0) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
