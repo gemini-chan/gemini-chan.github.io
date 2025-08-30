@@ -56,14 +56,11 @@ describe('main component', () => {
 
     // Wait for the component to update
     await waitFor(() => {
-      // @ts-ignore
-      expect(mainComponent.sessionManager.textTranscript).toHaveLength(2);
+      expect(chatView?.transcript).toHaveLength(2);
     });
 
-    // Assert that the sessionManager's textTranscript contains the message
-    // @ts-ignore
-    expect(mainComponent.sessionManager.textTranscript[1].text).toBe('Hello, world!');
-    // @ts-ignore
-    expect(mainComponent.sessionManager.textTranscript[1].speaker).toBe('user');
+    // Assert that the chat view's transcript property contains the message
+    expect(chatView?.transcript[1].text).toBe('Hello, world!');
+    expect(chatView?.transcript[1].speaker).toBe('user');
   });
 });
