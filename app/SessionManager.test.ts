@@ -16,15 +16,28 @@ const mockConfig = {
   },
 };
 
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+};
+
+const mockEventBus = {
+  emit: jest.fn(),
+  on: jest.fn(),
+};
+
 describe('SessionManager', () => {
   let sessionManager: SessionManager;
 
   beforeEach(() => {
-    // Create a new SessionManager instance with mock dependencies
+    // Create a new SessionManager instance with all required mock dependencies
     sessionManager = new SessionManager({
       vpuService: mockVpuService as any,
       memoryService: mockMemoryService as any,
-      config: mockConfig as any
+      config: mockConfig as any,
+      logger: mockLogger as any,
+      eventBus: mockEventBus as any
     });
     
     // Clear mock calls between tests
@@ -45,9 +58,8 @@ describe('SessionManager', () => {
       const userInput = 'What about tomorrow?';
       const payload = (sessionManager as any).constructVpuMessagePayload(advisorContext, userInput);
       
-      // When advisor_context has content, payload should contain both context and user input
-      expect(payload).toContain(advisorContext);
-      expect(payload).toContain(userInput);
+      // When advisor_context has content, payload should be formatted as: advisor_context + \n\n + user_input
+      expect(payload).toEqual(`${advisorContext}\n\n${userInput}`);
     });
   });
 });
