@@ -5,7 +5,7 @@ import { SessionManager } from './SessionManager.ts';
 import { GdmLiveAudio } from './main.ts';
 import { ChatView } from '../components/ChatView.ts';
 
-vi.mock('./SessionManager');
+vi.mock('./SessionManager.ts');
 vi.mock('../src/app/AudioManager');
 vi.mock('../store/VectorStore');
 
