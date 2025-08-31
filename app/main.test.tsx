@@ -27,7 +27,8 @@ describe('main component', () => {
         vpu: {
           transcript: [],
           sendMessage: vi.fn()
-        }
+        },
+        textTranscript: []
       } as any;
     });
     // Set a dummy API key in localStorage
