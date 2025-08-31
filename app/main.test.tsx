@@ -21,6 +21,14 @@ describe('main component', () => {
 
   beforeEach(async () => {
     MockSessionManager.mockClear();
+    // Configure the SessionManager mock before component creation
+    MockSessionManager.mockImplementation(() => {
+      return {
+        vpu: {
+          transcript: []
+        }
+      } as any;
+    });
     // Set a dummy API key in localStorage
     localStorage.setItem('gemini-api-key', 'test-api-key');
     // Create and append the gdm-live-audio element to the document body
