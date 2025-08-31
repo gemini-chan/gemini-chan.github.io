@@ -5,6 +5,8 @@ import { SessionManager } from './SessionManager.ts';
 import { GdmLiveAudio } from './main.ts';
 import { ChatView } from '../components/ChatView.ts';
 
+vi.mock('./SessionManager');
+
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
@@ -13,8 +15,10 @@ Object.defineProperty(window, 'scrollTo', {
 
 describe('main component', () => {
   let mainComponent: GdmLiveAudio;
+  const MockSessionManager = vi.mocked(SessionManager);
 
   beforeEach(async () => {
+    MockSessionManager.mockClear();
     // Create and append the gdm-live-audio element to the document body
     mainComponent = document.createElement('gdm-live-audio') as GdmLiveAudio;
     document.body.appendChild(mainComponent);
@@ -24,16 +28,6 @@ describe('main component', () => {
   });
 
   it('should display a user message after sending', async () => {
-    // Create a real SessionManager instance for the mock
-    const mockSessionManager = new SessionManager();
-    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
-    mainComponent.sessionManager = mockSessionManager;
-
-    // Create a mock for the vpu property with a sendMessage method
-    mainComponent.vpu = {
-      sendMessage: vi.fn().mockResolvedValue({ messageId: 'mock-id' })
-    };
-
     // Find the chat-view component within the gdm-live-audio's shadow DOM
     const chatView = mainComponent.shadowRoot?.querySelector('chat-view') as ChatView;
     expect(chatView).toBeTruthy();
