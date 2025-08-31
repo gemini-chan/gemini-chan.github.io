@@ -54,6 +54,21 @@ vi.mock('@google/genai', () => {
   };
 });
 
+// Mock the AudioManager module
+vi.mock('./AudioManager.ts', () => {
+  const mockAudioManager = {
+    initAudio: vi.fn().mockResolvedValue(undefined),
+    acquireMicrophone: vi.fn().mockResolvedValue(undefined),
+    startAudioProcessing: vi.fn().mockResolvedValue(undefined),
+    stopAudioProcessing: vi.fn().mockResolvedValue(undefined),
+    updateActiveOutputNode: vi.fn().mockResolvedValue(undefined),
+  };
+  
+  return {
+    AudioManager: vi.fn(() => mockAudioManager),
+  };
+});
+
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
