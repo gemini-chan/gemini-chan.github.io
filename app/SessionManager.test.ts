@@ -1,29 +1,55 @@
 import { SessionManager } from './SessionManager';
 
+// Mock dependencies
+const mockVpuService = {
+  sendMessage: jest.fn(),
+};
+
+const mockMemoryService = {
+  searchMemories: jest.fn(),
+  storeMemory: jest.fn(),
+};
+
+const mockConfig = {
+  vpu: {
+    endpoint: 'test-endpoint',
+  },
+};
+
 describe('SessionManager', () => {
+  let sessionManager: SessionManager;
+
+  beforeEach(() => {
+    // Create a new SessionManager instance with mock dependencies
+    sessionManager = new SessionManager(
+      mockVpuService as any,
+      mockMemoryService as any,
+      mockConfig as any
+    );
+    
+    // Clear mock calls between tests
+    jest.clearAllMocks();
+  });
+
   describe('VPU payload construction', () => {
     it('should construct VPU payload with only user input when advisor context is "none"', () => {
-      const sessionManager = new SessionManager();
-      
-      // Mock the getAdvisorContext to return "none"
-      jest.spyOn(sessionManager as any, 'getAdvisorContext').mockReturnValue('none');
+      // Mock searchMemories to return "none" indicating no relevant memories
+      mockMemoryService.searchMemories.mockReturnValue('none');
       
       const userInput = 'Hello, how are you?';
-      const payload = (sessionManager as any).constructVPUPayload(userInput);
+      const payload = (sessionManager as any).constructVpuMessagePayload(userInput);
       
       // When advisor_context is "none", payload should only contain user input
       expect(payload).toEqual(userInput);
     });
 
     it('should construct VPU payload with both advisor context and user input when advisor context has content', () => {
-      const sessionManager = new SessionManager();
-      
-      // Mock the getAdvisorContext to return actual content
+      // Mock searchMemories to return actual content
       const advisorContext = 'Previous conversation about weather';
-      jest.spyOn(sessionManager as any, 'getAdvisorContext').mockReturnValue(advisorContext);
+      mockMemoryService.searchMemories.mockReturnValue(advisorContext);
       
       const userInput = 'What about tomorrow?';
-      const payload = (sessionManager as any).constructVPUPayload(userInput);
+      const payload = (sessionManager as any).constructVpuMessagePayload(userInput);
       
       // When advisor_context has content, payload should contain both context and user input
       expect(payload).toContain(advisorContext);
