@@ -327,6 +327,20 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 
+	private _initializeSessionManager() {
+		return new SessionManager({
+			personaManager: this.personaManager,
+			textSessionManager: this.textSessionManager,
+			callSessionManager: this.callSessionManager,
+			energyBarService: this.energyBarService,
+			hostElement: this,
+			handleCallRateLimit: this._handleCallRateLimit.bind(this),
+			clearThinkingAll: this._clearThinkingAll.bind(this),
+			queryShadowRoot: (selector: string) =>
+				this.shadowRoot?.querySelector(selector) ?? null,
+		});
+	}
+
 	private initSessionManagers() {
 		// Initialize session managers after client is ready
 		if (this.client) {
@@ -356,17 +370,7 @@ export class GdmLiveAudio extends LitElement {
 			this.summarizationService = new SummarizationService(this.client);
 
 			// Now that text/call managers exist, create the main session manager
-			this.sessionManager = new SessionManager({
-				personaManager: this.personaManager,
-				textSessionManager: this.textSessionManager,
-				callSessionManager: this.callSessionManager,
-				energyBarService: this.energyBarService,
-				hostElement: this,
-				handleCallRateLimit: this._handleCallRateLimit.bind(this),
-				clearThinkingAll: this._clearThinkingAll.bind(this),
-				queryShadowRoot: (selector: string) =>
-					this.shadowRoot?.querySelector(selector) ?? null,
-			});
+			this.sessionManager = this._initializeSessionManager();
 		}
 	}
 
