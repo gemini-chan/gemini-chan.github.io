@@ -8,6 +8,7 @@ import { ChatView } from '../components/ChatView.ts';
 vi.mock('./SessionManager.ts');
 vi.mock('../src/app/AudioManager');
 vi.mock('../store/VectorStore');
+vi.mock('@google/generative-ai');
 
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
