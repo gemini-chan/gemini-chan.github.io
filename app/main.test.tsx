@@ -23,23 +23,16 @@ describe('main component', () => {
   beforeEach(async () => {
     MockSessionManager.mockClear();
     // Configure the SessionManager mock before component creation
-    const mockInitTextSession = vi.fn().mockResolvedValue(true);
-    const mockInstance = {
-      vpu: {
-        transcript: [],
-        sendMessage: vi.fn()
-      },
-      textTranscript: [],
-      messageStatuses: {},
-      messageRetryCount: {},
-      initTextSession: mockInitTextSession
-    };
-    
-    console.log('Creating mock instance with spy:', mockInitTextSession);
-    
     MockSessionManager.mockImplementation(() => {
-      console.log('SessionManager constructor called, returning mock instance');
-      return mockInstance as any;
+      return {
+        vpu: {
+          transcript: [],
+          sendMessage: vi.fn()
+        },
+        textTranscript: [],
+        messageStatuses: {},
+        messageRetryCount: {}
+      } as any;
     });
     
     // Set a dummy API key in localStorage
@@ -51,13 +44,11 @@ describe('main component', () => {
     // First, await the initial render to let the component instantiate SessionManager
     await mainComponent.updateComplete;
     
-    // Log to debug
-    console.log('MockSessionManager.mock.instances:', MockSessionManager.mock.instances);
-    
     // Get reference to the mock SessionManager instance
     const mockSessionManager = MockSessionManager.mock.instances[0] as any;
-    console.log('mockSessionManager:', mockSessionManager);
-    console.log('mockInitTextSession from instance:', mockSessionManager?.initTextSession);
+    
+    // Spy on the initTextSession method
+    const mockInitTextSession = vi.spyOn(mockSessionManager, 'initTextSession').mockResolvedValue(true);
     
     // Provide initial conversation history
     mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
@@ -95,14 +86,7 @@ describe('main component', () => {
     expect(chatView?.transcript[1].speaker).toBe('user');
     
     // Verify that initTextSession was called on the sessionManager
-    // Log to debug
-    console.log('Mock instances after test:', MockSessionManager.mock.instances);
     const mockSessionManager = MockSessionManager.mock.instances[0];
-    console.log('mockSessionManager after test:', mockSessionManager);
-    console.log('mockSessionManager.initTextSession:', mockSessionManager?.initTextSession);
-    console.log('Call count:', mockSessionManager?.initTextSession?.mock?.calls?.length);
-    
-    // The initTextSession method should have been called
     expect(mockSessionManager.initTextSession).toHaveBeenCalled();
   });
 });
