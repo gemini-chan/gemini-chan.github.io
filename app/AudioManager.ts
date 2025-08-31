@@ -89,7 +89,12 @@ export class AudioManager {
   const sessionManager = this.deps.getCallSessionManager();
  
   try {
-    await sessionManager.sessionReady;
+    await Promise.race([
+      sessionManager.sessionReady,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Session ready timeout")), 10000)
+      )
+    ]);
   } catch {
     this.deps.hostElement.dispatchEvent(new CustomEvent('error-update', { detail: { message: "Call session failed to become ready in time." }, bubbles: true, composed: true }));
     return;
