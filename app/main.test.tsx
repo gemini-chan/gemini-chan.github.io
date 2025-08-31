@@ -48,7 +48,7 @@ describe('main component', () => {
     // Get reference to the mock SessionManager instance
     const mockSessionManager = MockSessionManager.mock.instances[0] as any;
     // Provide initial conversation history
-    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' };
+    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
     
     // Trigger a re-render and wait for it to finish
     mainComponent.requestUpdate();
