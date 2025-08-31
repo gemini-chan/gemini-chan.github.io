@@ -990,6 +990,8 @@ this.updateTextTranscript(this.ttsCaption);
 				this.sessionManager.callSession = null;
 			}
 			this.sessionManager.textTranscript = [];
+			this.sessionManager.callTranscript = [];
+			this.sessionManager.lastAnalyzedTranscriptIndex = 0;
 
 			// Reset energy levels to full for the new persona
 			energyBarService.resetEnergyLevel("session-reset", "sts");
