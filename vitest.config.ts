@@ -8,6 +8,23 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      exclude: [
+        'node_modules/**',
+        'tests/**',
+        'coverage/**',
+        'dist/**',
+        '**/*.d.ts',
+        '**/*.test.*',
+        '**/*.spec.*',
+        'vitest.config.ts',
+        'vite.config.ts',
+        'eslint.config.js',
+        // Add any other files/directories you want to exclude from coverage
+      ],
+    },
   },
   resolve: {
     alias: {
