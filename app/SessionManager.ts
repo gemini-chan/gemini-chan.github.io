@@ -67,15 +67,18 @@ export class SessionManager {
   advisor_context: string,
   user_input: string,
  ): string {
-  const persona = this.deps.personaManager.getActivePersona();
-  const systemPrompt = persona.systemPrompt;
-
-  // Use the new private method to build the combined prompt string
-  return this._buildVpuPrompt(
-  	user_input,
-  	advisor_context,
-  	systemPrompt,
-  );
+  // According to NPU instructions:
+  // 1. The NPU acts as an advisor and should NOT instruct the VPU how to speak
+  // 2. The user's text should be appended verbatim after the advisor context
+  // 3. When there are no relevant facts, the NPU should write "ADVISOR_CONTEXT: none"
+  
+  if (advisor_context === "none") {
+    // When advisor context is "none", only send the user's original message
+    return user_input;
+  } else {
+    // Include the advisor context followed by the user's original message
+    return `${advisor_context}\n\n${user_input}`;
+  }
  }
 
  public async initTextSession(): Promise<boolean> {
