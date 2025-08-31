@@ -24,18 +24,24 @@ describe('main component', () => {
     MockSessionManager.mockClear();
     // Configure the SessionManager mock before component creation
     const mockInitTextSession = vi.fn().mockResolvedValue(true);
+    const mockInstance = {
+      vpu: {
+        transcript: [],
+        sendMessage: vi.fn()
+      },
+      textTranscript: [],
+      messageStatuses: {},
+      messageRetryCount: {},
+      initTextSession: mockInitTextSession
+    };
+    
+    console.log('Creating mock instance with spy:', mockInitTextSession);
+    
     MockSessionManager.mockImplementation(() => {
-      return {
-        vpu: {
-          transcript: [],
-          sendMessage: vi.fn()
-        },
-        textTranscript: [],
-        messageStatuses: {},
-        messageRetryCount: {},
-        initTextSession: mockInitTextSession
-      } as any;
+      console.log('SessionManager constructor called, returning mock instance');
+      return mockInstance as any;
     });
+    
     // Set a dummy API key in localStorage
     localStorage.setItem('gemini-api-key', 'test-api-key');
     // Create and append the gdm-live-audio element to the document body
@@ -51,7 +57,7 @@ describe('main component', () => {
     // Get reference to the mock SessionManager instance
     const mockSessionManager = MockSessionManager.mock.instances[0] as any;
     console.log('mockSessionManager:', mockSessionManager);
-    console.log('mockInitTextSession:', mockInitTextSession);
+    console.log('mockInitTextSession from instance:', mockSessionManager?.initTextSession);
     
     // Provide initial conversation history
     mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
