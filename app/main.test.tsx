@@ -6,6 +6,7 @@ import { GdmLiveAudio } from './main.ts';
 import { ChatView } from '../components/ChatView.ts';
 
 vi.mock('./SessionManager');
+vi.mock('../src/app/AudioManager');
 
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
@@ -19,6 +20,8 @@ describe('main component', () => {
 
   beforeEach(async () => {
     MockSessionManager.mockClear();
+    // Set a dummy API key in localStorage
+    localStorage.setItem('gemini-api-key', 'test-api-key');
     // Create and append the gdm-live-audio element to the document body
     mainComponent = document.createElement('gdm-live-audio') as GdmLiveAudio;
     document.body.appendChild(mainComponent);
