@@ -23,7 +23,14 @@ describe('main component', () => {
     mainComponent = document.createElement('gdm-live-audio') as GdmLiveAudio;
     document.body.appendChild(mainComponent);
     
-    // Wait for the component to update
+    // Get reference to the mock SessionManager instance
+    const mockSessionManager = MockSessionManager.mock.instances[0];
+    // Give the mock instance a voice with a mock sendMessage function
+    mockSessionManager.vpu = { sendMessage: vi.fn() };
+    // Provide initial conversation history
+    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
+    
+    // Wait for the component to update with the new data
     await mainComponent.updateComplete;
   });
 
