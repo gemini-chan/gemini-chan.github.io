@@ -17,13 +17,6 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
-    "memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
-    },
     "devtools": {
       "url": "http://127.0.0.1:1337/sse"
     }
