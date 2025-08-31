@@ -23,6 +23,7 @@ describe('main component', () => {
   beforeEach(async () => {
     MockSessionManager.mockClear();
     // Configure the SessionManager mock before component creation
+    const mockInitTextSession = vi.fn().mockResolvedValue(true);
     MockSessionManager.mockImplementation(() => {
       return {
         vpu: {
@@ -32,7 +33,7 @@ describe('main component', () => {
         textTranscript: [],
         messageStatuses: {},
         messageRetryCount: {},
-        initTextSession: vi.fn().mockResolvedValue(true)
+        initTextSession: mockInitTextSession
       } as any;
     });
     // Set a dummy API key in localStorage
@@ -47,7 +48,7 @@ describe('main component', () => {
     // Get reference to the mock SessionManager instance
     const mockSessionManager = MockSessionManager.mock.instances[0] as any;
     // Provide initial conversation history
-    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
+    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' };
     
     // Trigger a re-render and wait for it to finish
     mainComponent.requestUpdate();
