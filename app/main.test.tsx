@@ -79,5 +79,9 @@ describe('main component', () => {
     // Assert that the chat view's transcript property contains the message
     expect(chatView?.transcript[1].text).toBe('Hello, world!');
     expect(chatView?.transcript[1].speaker).toBe('user');
+    
+    // Verify that initTextSession was called on the sessionManager
+    const mockSessionManager = MockSessionManager.mock.instances[0];
+    expect(mockSessionManager.initTextSession).toHaveBeenCalled();
   });
 });
