@@ -28,7 +28,8 @@ describe('main component', () => {
           transcript: [],
           sendMessage: vi.fn()
         },
-        textTranscript: []
+        textTranscript: [],
+        messageMeta: {}
       } as any;
     });
     // Set a dummy API key in localStorage
