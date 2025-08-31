@@ -21,11 +21,11 @@ describe('SessionManager', () => {
 
   beforeEach(() => {
     // Create a new SessionManager instance with mock dependencies
-    sessionManager = new SessionManager(
-      mockVpuService as any,
-      mockMemoryService as any,
-      mockConfig as any
-    );
+    sessionManager = new SessionManager({
+      vpuService: mockVpuService as any,
+      memoryService: mockMemoryService as any,
+      config: mockConfig as any
+    });
     
     // Clear mock calls between tests
     jest.clearAllMocks();
@@ -33,23 +33,17 @@ describe('SessionManager', () => {
 
   describe('VPU payload construction', () => {
     it('should construct VPU payload with only user input when advisor context is "none"', () => {
-      // Mock searchMemories to return "none" indicating no relevant memories
-      mockMemoryService.searchMemories.mockReturnValue('none');
-      
       const userInput = 'Hello, how are you?';
-      const payload = (sessionManager as any).constructVpuMessagePayload(userInput);
+      const payload = (sessionManager as any).constructVpuMessagePayload('none', userInput);
       
       // When advisor_context is "none", payload should only contain user input
       expect(payload).toEqual(userInput);
     });
 
     it('should construct VPU payload with both advisor context and user input when advisor context has content', () => {
-      // Mock searchMemories to return actual content
       const advisorContext = 'Previous conversation about weather';
-      mockMemoryService.searchMemories.mockReturnValue(advisorContext);
-      
       const userInput = 'What about tomorrow?';
-      const payload = (sessionManager as any).constructVpuMessagePayload(userInput);
+      const payload = (sessionManager as any).constructVpuMessagePayload(advisorContext, userInput);
       
       // When advisor_context has content, payload should contain both context and user input
       expect(payload).toContain(advisorContext);
