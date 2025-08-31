@@ -7,16 +7,6 @@ class MockGainNode {
   gain = { value: 1 };
 }
 
-// Mock AudioWorkletNode
-class MockAudioWorkletNode {
-  connect = vi.fn();
-  disconnect = vi.fn();
-  port = {
-    postMessage: vi.fn(),
-    onmessage: null,
-  };
-}
-
 // Mock MediaStreamAudioSourceNode
 class MockMediaStreamAudioSourceNode {
   connect = vi.fn();
@@ -60,9 +50,9 @@ class MockMediaStream {
 
 // Mock MediaDevices
 if (!global.navigator.mediaDevices) {
-  (global.navigator as any).mediaDevices = {};
+  (global.navigator as unknown as { mediaDevices: MediaDevices }).mediaDevices = {} as MediaDevices;
 }
 
-(global.navigator.mediaDevices as any).getUserMedia = vi.fn().mockImplementation(() => {
+(global.navigator.mediaDevices as MediaDevices).getUserMedia = vi.fn().mockImplementation(() => {
   return Promise.resolve(new MockMediaStream());
 });
