@@ -25,7 +25,8 @@ describe('main component', () => {
     MockSessionManager.mockImplementation(() => {
       return {
         vpu: {
-          transcript: []
+          transcript: [],
+          sendMessage: vi.fn()
         }
       } as any;
     });
@@ -39,9 +40,7 @@ describe('main component', () => {
     await mainComponent.updateComplete;
     
     // Get reference to the mock SessionManager instance
-    const mockSessionManager = MockSessionManager.mock.instances[0];
-    // Give the mock instance a voice with a mock sendMessage function
-    mockSessionManager.vpu = { sendMessage: vi.fn() };
+    const mockSessionManager = MockSessionManager.mock.instances[0] as any;
     // Provide initial conversation history
     mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
     
