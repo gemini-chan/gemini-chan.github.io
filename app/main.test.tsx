@@ -1,90 +1,20 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, waitFor } from '@testing-library/dom';
-import { GdmLiveAudio } from './main';
-import { ChatView } from '../components/ChatView';
-
-// Mock the SessionManager module
-const mockSessionManagerInstance = {
-  textTranscript: [] as { text: string; speaker: string }[],
-  constructVpuMessagePayload: vi.fn(),
-  initTextSession: vi.fn().mockResolvedValue(true),
-  messageStatuses: {},
-  messageRetryCount: {},
-};
-
-vi.mock('./SessionManager.ts', () => {
-  return {
-    SessionManager: vi.fn(() => mockSessionManagerInstance),
-  };
-});
-
-// Mock the VPUService module
-vi.mock('@features/vpu/VPUService', () => {
-  const mockVPUService = {
-    sendMessageWithProgress: vi.fn(),
-  };
-  return {
-    TextSessionManager: vi.fn(() => mockVPUService),
-    CallSessionManager: vi.fn(() => mockVPUService),
-  };
-});
-
-// Mock the NPUService module
-vi.mock('@features/ai/NPUService', () => {
-  const mockNPUService = {
-    analyzeAndAdvise: vi.fn().mockResolvedValue({ 
-      suggestions: [],
-      analysis: 'Mock analysis'
-    }),
-  };
-  return {
-    NPUService: vi.fn(() => mockNPUService),
-  };
-});
-
-// Mock the GoogleGenAI module
-vi.mock('@google/genai', () => {
-  return {
-    GoogleGenAI: vi.fn().mockImplementation(() => {
-      return {
-        initialize: vi.fn().mockResolvedValue(undefined),
-        // Add other methods that might be called
-      };
-    }),
-  };
-});
-
-// Mock the AudioManager module
-vi.mock('./AudioManager.ts', () => {
-  const mockAudioManager = {
-    initAudio: vi.fn().mockResolvedValue(undefined),
-    acquireMicrophone: vi.fn().mockResolvedValue(undefined),
-    startAudioProcessing: vi.fn().mockResolvedValue(undefined),
-    stopAudioProcessing: vi.fn().mockResolvedValue(undefined),
-    updateActiveOutputNode: vi.fn().mockResolvedValue(undefined),
-  };
-  
-  return {
-    AudioManager: vi.fn(() => mockAudioManager),
-  };
-});
+import './main';
+import { SessionManager } from './SessionManager.ts';
+import { GdmLiveAudio } from './main.ts';
+import { ChatView } from '../components/ChatView.ts';
 
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
   writable: true,
-  value: vi.fn(() => ({})),
+  value: vi.fn(),
 });
 
 describe('main component', () => {
   let mainComponent: GdmLiveAudio;
 
   beforeEach(async () => {
-    // Set up localStorage for API key
-    localStorage.setItem('gemini-api-key', 'test-key');
-    
-    // Reset the mock's state
-    mockSessionManagerInstance.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
-    
     // Create and append the gdm-live-audio element to the document body
     mainComponent = document.createElement('gdm-live-audio') as GdmLiveAudio;
     document.body.appendChild(mainComponent);
@@ -93,21 +23,20 @@ describe('main component', () => {
     await mainComponent.updateComplete;
   });
 
-  afterEach(() => {
-    // Clean up the document body
-    document.body.innerHTML = '';
-    
-    // Remove API key from localStorage
-    localStorage.removeItem('gemini-api-key');
-  });
-
   it('should display a user message after sending', async () => {
+    // Create a real SessionManager instance for the mock
+    const mockSessionManager = new SessionManager();
+    mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
+    mainComponent.sessionManager = mockSessionManager;
+
+    // Create a mock for the vpu property with a sendMessage method
+    mainComponent.vpu = {
+      sendMessage: vi.fn().mockResolvedValue({ messageId: 'mock-id' })
+    };
+
     // Find the chat-view component within the gdm-live-audio's shadow DOM
-    let chatView: ChatView | null = null;
-    await waitFor(() => {
-      chatView = mainComponent.shadowRoot?.querySelector('chat-view') as ChatView;
-      expect(chatView).toBeTruthy();
-    });
+    const chatView = mainComponent.shadowRoot?.querySelector('chat-view') as ChatView;
+    expect(chatView).toBeTruthy();
 
     // Find the text input and send button within the chat-view's shadow DOM
     const textarea = chatView?.shadowRoot?.querySelector('textarea');
