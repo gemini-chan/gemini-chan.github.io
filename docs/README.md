@@ -61,7 +61,7 @@ Every enchantment must be tested for resilience and truth. We use a suite of mod
 
 *   **Vitest:** Our testing oracle, allowing us to run tests in a fast and modern environment.
 *   **JSDOM:** Creates a simulated browser environment for our tests to run in, allowing us to test DOM interactions without a full browser.
-*   **React Testing Library:** Helps us write tests that focus on user behavior and accessibility, ensuring our UI charms are not just functional but also delightful to use.
+*   **@testing-library/dom:** Helps us write tests that focus on user behavior and accessibility, ensuring our UI charms are not just functional but also delightful to use.
 *   **Mocking:** For spirits and browser APIs that do not exist in the silent world of JSDOM (like `Live2D`, `AudioContext`, or the Web Audio API), we craft convincing illusions using Vitest's powerful mocking features. This ensures our tests are focused and run swiftly.
 
 #### Key Testing Patterns & Lessons
