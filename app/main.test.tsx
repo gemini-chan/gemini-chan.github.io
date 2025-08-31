@@ -23,6 +23,9 @@ describe('main component', () => {
     mainComponent = document.createElement('gdm-live-audio') as GdmLiveAudio;
     document.body.appendChild(mainComponent);
     
+    // First, await the initial render to let the component instantiate SessionManager
+    await mainComponent.updateComplete;
+    
     // Get reference to the mock SessionManager instance
     const mockSessionManager = MockSessionManager.mock.instances[0];
     // Give the mock instance a voice with a mock sendMessage function
@@ -30,7 +33,8 @@ describe('main component', () => {
     // Provide initial conversation history
     mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
     
-    // Wait for the component to update with the new data
+    // Trigger a re-render and wait for it to finish
+    mainComponent.requestUpdate();
     await mainComponent.updateComplete;
   });
 
