@@ -19,9 +19,13 @@ Object.defineProperty(window, 'scrollTo', {
 describe('main component', () => {
   let mainComponent: GdmLiveAudio;
   const MockSessionManager = vi.mocked(SessionManager);
+  let mockInitTextSessionSpy: any;
 
   beforeEach(async () => {
     MockSessionManager.mockClear();
+    // Create the spy for initTextSession
+    mockInitTextSessionSpy = vi.fn().mockResolvedValue(true);
+    
     // Configure the SessionManager mock before component creation
     MockSessionManager.mockImplementation(() => {
       return {
@@ -31,7 +35,8 @@ describe('main component', () => {
         },
         textTranscript: [],
         messageStatuses: {},
-        messageRetryCount: {}
+        messageRetryCount: {},
+        initTextSession: mockInitTextSessionSpy
       } as any;
     });
     
@@ -46,9 +51,6 @@ describe('main component', () => {
     
     // Get reference to the mock SessionManager instance
     const mockSessionManager = MockSessionManager.mock.instances[0] as any;
-    
-    // Spy on the initTextSession method
-    const mockInitTextSession = vi.spyOn(mockSessionManager, 'initTextSession').mockResolvedValue(true);
     
     // Provide initial conversation history
     mockSessionManager.textTranscript = [{ text: 'Hello! How can I help you?', speaker: 'model' }];
@@ -86,7 +88,6 @@ describe('main component', () => {
     expect(chatView?.transcript[1].speaker).toBe('user');
     
     // Verify that initTextSession was called on the sessionManager
-    const mockSessionManager = MockSessionManager.mock.instances[0];
-    expect(mockSessionManager.initTextSession).toHaveBeenCalled();
+    expect(mockInitTextSessionSpy).toHaveBeenCalled();
   });
 });
