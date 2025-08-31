@@ -7,6 +7,7 @@ import { ChatView } from '../components/ChatView.ts';
 
 vi.mock('./SessionManager');
 vi.mock('../src/app/AudioManager');
+vi.mock('../store/VectorStore');
 
 // Mock window.scrollTo as it's not implemented in JSDOM
 Object.defineProperty(window, 'scrollTo', {
