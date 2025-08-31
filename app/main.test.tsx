@@ -30,7 +30,8 @@ describe('main component', () => {
         },
         textTranscript: [],
         messageStatuses: {},
-        messageRetryCount: {}
+        messageRetryCount: {},
+        initTextSession: vi.fn().mockResolvedValue(true)
       } as any;
     });
     // Set a dummy API key in localStorage
