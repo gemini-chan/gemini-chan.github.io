@@ -4,6 +4,7 @@
  */
 
 import type { Turn } from '@shared/types';
+import { TurnStartEvent, TurnEndEvent } from '../shared/events';
 
 // Define type aliases for turn state
 export type TurnPhase = 'idle' | 'npu' | 'vpu' | 'complete' | 'error';
@@ -75,6 +76,9 @@ export class TurnManager {
 			lastUpdateAt: Date.now(),
 		};
 
+		// Dispatch turn start event
+		this.deps.hostElement.dispatchEvent(new TurnStartEvent({ turnId }));
+
 		// Create new transcript with user message
 		const newTranscript: Turn[] = [
 			...textTranscript,
@@ -137,6 +141,11 @@ export class TurnManager {
 				this.devRemainingMs = 0;
 				this.clearVpuDevTicker();
 
+				// Dispatch turn end event
+				if (turnId) {
+					this.deps.hostElement.dispatchEvent(new TurnEndEvent({ turnId, status: 'complete' }));
+				}
+
 				// Set timeout to transition to idle after 1500ms
 				setTimeout(() => {
 					if (
@@ -153,6 +162,11 @@ export class TurnManager {
 				this.npuSubStatus = "";
 				this.devRemainingMs = 0;
 				this.clearVpuDevTicker();
+
+				// Dispatch turn end event
+				if (turnId) {
+					this.deps.hostElement.dispatchEvent(new TurnEndEvent({ turnId, status: 'error' }));
+				}
 
 				// Set timeout to transition to idle after 2500ms
 				setTimeout(() => {
