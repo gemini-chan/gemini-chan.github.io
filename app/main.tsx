@@ -63,6 +63,8 @@ import type { NpuProgressEvent, VpuProgressEvent } from "@shared/progress";
 import {
 	TurnManager,
 } from "./TurnManager";
+// Import typed turn events
+import type { TurnStartEvent, TurnEndEvent } from "../shared/events.ts";
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -301,8 +303,20 @@ export class GdmLiveAudio extends LitElement {
 				setTimeout(() => { this.currentMotionName = ""; }, 200);
 			}
 		});
+		// Listen for typed turn lifecycle events
+		this.addEventListener('turn-start', this.handleTurnStart as EventListener);
+		this.addEventListener('turn-end', this.handleTurnEnd as EventListener);
 		// Trigger initial TTS greeting once the UI is ready
 		this._triggerInitialTTSGreeting();
+	}
+
+	// Handlers for typed turn events (log-only for now)
+	private handleTurnStart(e: TurnStartEvent) {
+		console.log('Turn started:', e.detail.turnId);
+	}
+
+	private handleTurnEnd(e: TurnEndEvent) {
+		console.log('Turn ended:', e.detail.turnId, 'with status:', e.detail.status);
 	}
 
 	private _triggerInitialTTSGreeting() {
@@ -1760,6 +1774,9 @@ this.updateTextTranscript(this.ttsCaption);
 		this.removeEventListener("status-update", this._handleStatusUpdate);
 		this.removeEventListener("error-update", this._handleErrorUpdate);
 		this.removeEventListener("state-update", this._handleStateUpdate);
+		// Remove typed turn event listeners
+		this.removeEventListener('turn-start', this.handleTurnStart as EventListener);
+		this.removeEventListener('turn-end', this.handleTurnEnd as EventListener);
 		this.stopEmotionAnalysis();
 		
 		// Stop dev RAF poller
