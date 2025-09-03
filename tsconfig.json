@@ -26,7 +26,7 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "typeRoots": ["node_modules/@types", "node_modules"],
-    "types": ["mocha", "chai", "vite/client"]
+    "types": ["vite/client"]
   },
   "include": [
     "app",
