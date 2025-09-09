@@ -576,6 +576,23 @@ export class Live2DModelComponent extends LitElement {
     this._loopCb = undefined;
   }
 
+  private _extractEmotionNames(model: Live2DModelLike): string[] {
+    // NOTE: This relies on internal properties of the Live2D model from `pixi-live2d-display`.
+    // There is no public API to list motion groups. This may break with library updates,
+    // so we use careful type guards and bail out safely when shapes differ.
+    const internalModel = (model as { internalModel?: unknown }).internalModel;
+    const motionManager =
+      internalModel && typeof internalModel === 'object' && 'motionManager' in internalModel
+        ? (internalModel as { motionManager?: unknown }).motionManager
+        : undefined;
+    const motionGroups =
+      motionManager && typeof motionManager === 'object' && 'motionGroups' in motionManager
+        ? (motionManager as { motionGroups?: Record<string, unknown> }).motionGroups
+        : undefined;
+    if (!motionGroups) return [];
+    return Object.keys(motionGroups).filter((name) => name !== 'idle' && name !== 'tap');
+  }
+
   private _applyPlacement(modelArg?: Live2DModelLike) {
     if (!this.fitToCanvas) return;
     const m = modelArg ?? this._model;
