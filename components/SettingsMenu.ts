@@ -156,6 +156,7 @@ export class SettingsMenu extends LitElement {
   private _toast: string = "";
 
   private personaManager: PersonaManager;
+  // Timer for debouncing API key input validation.
   private _apiKeyInputDebounceTimer: number | undefined;
 
   constructor() {
