@@ -1,9 +1,12 @@
+import { createComponentLogger } from "@services/DebugLogger";
+
 export interface ModelMapping {
   modelUrl: string;
   availableEmotions?: string[];
 }
 
 const STORAGE_KEY = "live2d-model-mappings";
+const log = createComponentLogger("Live2DMappingService");
 
 export class Live2DMappingService {
   static getAll(): ModelMapping[] {
@@ -13,7 +16,8 @@ export class Live2DMappingService {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed as ModelMapping[];
       return [];
-    } catch {
+    } catch (error) {
+      log.error("Failed to parse Live2D mappings from localStorage", { error, raw: localStorage.getItem(STORAGE_KEY) });
       return [];
     }
   }
