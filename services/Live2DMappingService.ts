@@ -46,9 +46,11 @@ export class Live2DMappingService {
   static set(modelUrl: string, emotions: Record<EmotionKey, EmotionMapping>) {
     const all = this.getAll();
     const idx = all.findIndex((m) => m.modelUrl === modelUrl);
-    const prev = idx >= 0 ? all[idx] : undefined;
-    const entry: ModelMapping = { modelUrl, emotions, availableEmotions: prev?.availableEmotions };
-    if (idx >= 0) all[idx] = entry; else all.push(entry);
+    if (idx >= 0) {
+      all[idx] = { ...all[idx], emotions };
+    } else {
+      all.push({ modelUrl, emotions, availableEmotions: [] });
+    }
     this.saveAll(all);
   }
 
