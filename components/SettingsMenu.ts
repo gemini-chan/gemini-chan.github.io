@@ -1181,10 +1181,10 @@ export class SettingsMenu extends LitElement {
     }, durationMs);
   }
 
-  private _onLive2dUrlBlur() {
+  private _onLive2dUrlBlur = () => {
     this._ensurePersonaEmotionValid();
     this._onSavePersona();
-  }
+  };
 
   private _ensurePersonaEmotionValid() {
     if (this._editingPersona?.live2dModelUrl && this._editingPersona?.emotion) {
