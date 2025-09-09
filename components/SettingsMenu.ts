@@ -1103,7 +1103,7 @@ export class SettingsMenu extends LitElement {
               );
               this._validateLive2dUrl((e.target as HTMLInputElement).value);
             }}
-            @blur=${() => { this._ensurePersonaEmotionValid(); this._onSavePersona(); }}
+            @blur=${this._onLive2dUrlBlur}
             placeholder="Live2D Model URL"
           />
           <div
@@ -1179,6 +1179,11 @@ export class SettingsMenu extends LitElement {
       this._toast = "";
       this.requestUpdate();
     }, durationMs);
+  }
+
+  private _onLive2dUrlBlur() {
+    this._ensurePersonaEmotionValid();
+    this._onSavePersona();
   }
 
   private _ensurePersonaEmotionValid() {
