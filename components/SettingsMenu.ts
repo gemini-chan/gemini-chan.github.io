@@ -1062,7 +1062,7 @@ export class SettingsMenu extends LitElement {
               @change=${(e: Event) => {
                 const select = e.target as HTMLSelectElement;
                 this._handlePersonaFormInput("emotion", select.value || undefined);
-                this._onSavePersona();
+                this._updatePersona();
               }}
             >
               <option value="">Default Emotion</option>
@@ -1195,6 +1195,14 @@ export class SettingsMenu extends LitElement {
       }
     }
   }
+
+  private _updatePersona = () => {
+    if (this._editingPersona) {
+      this.personaManager.updatePersona(this._editingPersona);
+      this._loadPersonas();
+      this.requestUpdate();
+    }
+  };
 
   private _onSavePersona = () => {
     if (this._editingPersona) {
