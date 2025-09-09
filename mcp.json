@@ -23,21 +23,12 @@
         "git_status",
         "git_stage_and_commit",
         "ai_edit",
-        "execute_command",
-        "git_apply_diff",
-        "write_to_file",
-        "git_show",
-        "git_branch",
-        "git_log",
-        "git_diff"
-      ],
-      "timeout": 300,
-      "disabledTools": [
-        "aider_status",
-        "read_file",
-        "write_to_file",
-        "git_apply_diff"
+        "execute_command"
       ]
     }
-  }
+  },
+  "coreTools": [
+    "read_many_files",
+    "web_fetch"
+  ]
 }
