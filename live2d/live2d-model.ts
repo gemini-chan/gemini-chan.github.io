@@ -46,6 +46,7 @@ export class Live2DModelComponent extends LitElement {
   private _lastLoggedEmotion: string = "";
   private _lastLoggedMappingTag: string = "";
   private _lastParamsAlwaysSignature: string = "";
+  private _currentEmotion = "";
 
   // Audio nodes for future integration
   @property({ attribute: false }) inputNode?: AudioNode;
@@ -138,6 +139,9 @@ export class Live2DModelComponent extends LitElement {
     }
     if (changed.has("containerWidth") || changed.has("containerHeight")) {
       this._applyPlacement();
+    }
+    if (changed.has("emotion")) {
+      this.setEmotion(this.emotion);
     }
   }
 
@@ -398,8 +402,6 @@ export class Live2DModelComponent extends LitElement {
           );
         }
 
-        this.setEmotion(this.emotion);
-
         // No persona-based rules anymore; mapping above handles params and motion for the current emotion
 
         // Trigger motions by name (if provided)
@@ -550,6 +552,8 @@ export class Live2DModelComponent extends LitElement {
 
   public setEmotion(emotionName: string) {
     if (!this._model || !emotionName) return;
+    if (emotionName === this._currentEmotion) return;
+    this._currentEmotion = emotionName;
 
     const internal = this._model?.internalModel as {
       motionManager?: { startMotion: (group: string, index: number, priority?: number) => void },
