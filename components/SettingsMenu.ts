@@ -1103,7 +1103,7 @@ export class SettingsMenu extends LitElement {
               );
               this._validateLive2dUrl((e.target as HTMLInputElement).value);
             }}
-            @blur=${this._ensurePersonaEmotionValid}
+            @blur=${() => { this._ensurePersonaEmotionValid(); this._onSavePersona(); }}
             placeholder="Live2D Model URL"
           />
           <div
