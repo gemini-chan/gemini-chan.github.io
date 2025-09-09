@@ -1,16 +1,5 @@
-export type EmotionKey = "neutral" | "joy" | "sadness" | "anger" | "fear" | "surprise" | "curiosity" | string;
-
-export interface ParamKV { id: string; value: number }
-export interface MotionRef { group: string; index: number }
-
-export interface EmotionMapping {
-  params?: ParamKV[];
-  motion?: MotionRef;
-}
-
 export interface ModelMapping {
   modelUrl: string;
-  emotions: Record<EmotionKey, EmotionMapping>;
   availableEmotions?: string[];
 }
 
@@ -43,17 +32,6 @@ export class Live2DMappingService {
     return entry?.availableEmotions ?? [];
   }
 
-  static set(modelUrl: string, emotions: Record<EmotionKey, EmotionMapping>) {
-    const all = this.getAll();
-    const idx = all.findIndex((m) => m.modelUrl === modelUrl);
-    if (idx >= 0) {
-      all[idx] = { ...all[idx], emotions };
-    } else {
-      all.push({ modelUrl, emotions, availableEmotions: [] });
-    }
-    this.saveAll(all);
-  }
-
   static setAvailableEmotions(modelUrl: string, availableEmotions: string[]) {
     const all = this.getAll();
     const idx = all.findIndex((m) => m.modelUrl === modelUrl);
@@ -61,7 +39,7 @@ export class Live2DMappingService {
       const existing = all[idx];
       all[idx] = { ...existing, availableEmotions };
     } else {
-      all.push({ modelUrl, emotions: {}, availableEmotions });
+      all.push({ modelUrl, availableEmotions });
     }
     this.saveAll(all);
   }

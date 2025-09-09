@@ -1,5 +1,4 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
-import "./Live2DModelMapper";
 import { Live2DMappingService } from "@services/Live2DMappingService";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -1153,20 +1152,6 @@ export class SettingsMenu extends LitElement {
           </button>
         </div>
         
-        ${this._editingPersona.live2dModelUrl ? html`
-        <details style="margin-top: 1em;">
-          <summary>Live2D Mapping (per model)</summary>
-          <div style="margin-top: 12px;">
-            <live2d-model-mapper .modelUrl=${this._editingPersona.live2dModelUrl}></live2d-model-mapper>
-          </div>
-        </details>
-        ` : html`
-          <div class="emotion-notice">
-            <p>
-              Set a Live2D model URL above to enable emotion mapping configuration.
-            </p>
-          </div>
-        `}
         ${
           !this._editingPersona.isDefault
             ? html`

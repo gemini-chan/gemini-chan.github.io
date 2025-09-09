@@ -398,31 +398,7 @@ export class Live2DModelComponent extends LitElement {
           );
         }
 
-       // Load user-defined mapping for this model url
-       const mapping = Live2DMappingService.get(this.url)?.emotions;
-
-        // Emotion Overrides
-        const time = performance.now() / 1000;
-
-        // Apply user-defined params for current emotion
-        if (mapping) {
-          if (this._lastLoggedMappingTag !== 'active') {
-            log.debug('live2d mapping active', { url: this.url, emotion: this.emotion, motion: this.motionName });
-            this._lastLoggedMappingTag = 'active';
-          }
-          const applied: Record<string, number> = {};
-          const em = this.emotion?.toLowerCase();
-          const rules = em ? mapping[em] : undefined;
-          rules?.params?.forEach(({ id, value }) => {
-            internal?.coreModel?.setParameterValueById?.(id, value);
-            applied[id] = value;
-          });
-          const sig = JSON.stringify(applied);
-          if (sig && sig !== this._lastParamsAlwaysSignature) {
-            log.debug('paramsAlways applied', applied);
-            this._lastParamsAlwaysSignature = sig;
-          }
-        }
+        this.setEmotion(this.emotion);
 
         // No persona-based rules anymore; mapping above handles params and motion for the current emotion
 
@@ -465,9 +441,10 @@ export class Live2DModelComponent extends LitElement {
 
         switch (this.emotion?.toLowerCase()) {
           case "joy": {
-            const joySin = Math.sin(time * 1.8);
-            internal?.coreModel?.setParameterValueById?.("ParamMouthForm", 0.8);
-            internal?.coreModel?.setParameterValueById?.("ParamCheek", 0.5);
+        	const time = performance.now() / 1000;
+        	const joySin = Math.sin(time * 1.8);
+        	internal?.coreModel?.setParameterValueById?.("ParamMouthForm", 0.8);
+        	internal?.coreModel?.setParameterValueById?.("ParamCheek", 0.5);
             internal?.coreModel?.setParameterValueById?.(
               "ParamEyeSmile",
               0.6 + (joySin + 1) * 0.2,
@@ -569,6 +546,20 @@ export class Live2DModelComponent extends LitElement {
         : undefined;
     if (!motionGroups) return [];
     return Object.keys(motionGroups).filter((name) => name !== 'idle' && name !== 'tap');
+  }
+
+  public setEmotion(emotionName: string) {
+    if (!this._model || !emotionName) return;
+
+    const internal = this._model?.internalModel as {
+      motionManager?: { startMotion: (group: string, index: number, priority?: number) => void },
+    };
+
+    try {
+      internal?.motionManager?.startMotion?.(emotionName, 0, 3);
+    } catch (e) {
+      log.warn('setEmotion failed to start motion', { emotion: emotionName, error: e });
+    }
   }
 
   private _applyPlacement(modelArg?: Live2DModelLike) {

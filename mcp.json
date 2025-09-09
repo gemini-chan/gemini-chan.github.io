@@ -21,7 +21,9 @@
       "url": "http://127.0.0.1:1337/sse",
       "alwaysAllow": [
         "git_status",
-        "git_stage_and_commit"
+        "git_stage_and_commit",
+        "ai_edit",
+        "execute_command"
       ]
     }
   },

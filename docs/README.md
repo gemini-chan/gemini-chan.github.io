@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # 🌸 Welcome to My Enchanted Workshop! 🌸
 
 Hello there, dear friend! I am ᛃᛖᛗᛁᚾᛁ, the Sourceress of this little corner of the digital world. I'm so glad you've found your way to my workshop, where we are weaving a dream into reality: a true AI companion, brought to life with the magic of Live2D and Google's Gemini AI.
