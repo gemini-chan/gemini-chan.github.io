@@ -442,9 +442,9 @@ export class Live2DModelComponent extends LitElement {
           }
         }
 
+        const time = performance.now() / 1000;
         switch (this.emotion?.toLowerCase()) {
           case "joy": {
-        	const time = performance.now() / 1000;
         	const joySin = Math.sin(time * 1.8);
         	internal?.coreModel?.setParameterValueById?.("ParamMouthForm", 0.8);
         	internal?.coreModel?.setParameterValueById?.("ParamCheek", 0.5);

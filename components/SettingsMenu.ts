@@ -1070,10 +1070,7 @@ export class SettingsMenu extends LitElement {
               <option value="">Default Emotion</option>
               ${emotions.map(
                 (emotion) => html`
-                  <option 
-                    value="${emotion}" 
-                    ?selected=${this._editingPersona?.emotion === emotion}
-                  >
+                  <option value="${emotion}">
                     ${emotion}
                   </option>
                 `
@@ -1699,7 +1696,7 @@ export class SettingsMenu extends LitElement {
     this._handlePaste("apiKey");
   };
 
-  private _validateApiKey(key: string): boolean {
+  private _validateApiKey = (key: string): boolean => {
     if (!key) {
       this._error = "API key cannot be empty.";
       return false;
@@ -1710,7 +1707,7 @@ export class SettingsMenu extends LitElement {
       return false;
     }
     return true;
-  }
+  };
 
   private _validateLive2dUrl(url: string): boolean {
     const isValid = this._checkLive2dUrl(url);
