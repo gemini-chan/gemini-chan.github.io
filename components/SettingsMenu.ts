@@ -743,6 +743,20 @@ export class SettingsMenu extends LitElement {
       margin-top: 1em;
     }
 
+    .emotion-notice {
+      margin-top: 1em;
+      padding: 0.5em;
+      background: var(--cp-surface-strong);
+      border-radius: 8px;
+      border: 1px solid var(--cp-surface-border);
+    }
+
+    .emotion-notice p {
+      margin: 0;
+      font-size: 0.9em;
+      color: var(--cp-muted);
+    }
+
     /* Micro-interactions and Animations */
     @keyframes theme-card-select {
       0% { transform: scale(1); }
@@ -1066,14 +1080,14 @@ export class SettingsMenu extends LitElement {
             </select>
           </div>
         ` : this._editingPersona.live2dModelUrl ? html`
-          <div style="margin-top: 1em; padding: 0.5em; background: var(--cp-surface-strong); border-radius: 8px; border: 1px solid var(--cp-surface-border);">
-            <p style="margin: 0; font-size: 0.9em; color: var(--cp-muted);">
+          <div class="emotion-notice">
+            <p>
               No emotions available for this model.
             </p>
           </div>
         ` : html`
-          <div style="margin-top: 1em; padding: 0.5em; background: var(--cp-surface-strong); border-radius: 8px; border: 1px solid var(--cp-surface-border);">
-            <p style="margin: 0; font-size: 0.9em; color: var(--cp-muted);">
+          <div class="emotion-notice">
+            <p>
               Set a Live2D model URL above to enable emotion selection.
             </p>
           </div>
@@ -1147,8 +1161,8 @@ export class SettingsMenu extends LitElement {
           </div>
         </details>
         ` : html`
-          <div style="margin-top: 1em; padding: 0.5em; background: var(--cp-surface-strong); border-radius: 8px; border: 1px solid var(--cp-surface-border);">
-            <p style="margin: 0; font-size: 0.9em; color: var(--cp-muted);">
+          <div class="emotion-notice">
+            <p>
               Set a Live2D model URL above to enable emotion mapping configuration.
             </p>
           </div>
