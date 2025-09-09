@@ -156,6 +156,7 @@ export class SettingsMenu extends LitElement {
   private _toast: string = "";
 
   private personaManager: PersonaManager;
+  private _apiKeyInputDebounceTimer: number | undefined;
 
   constructor() {
     super();
@@ -1526,12 +1527,15 @@ export class SettingsMenu extends LitElement {
     }
   };
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._apiKeyInputDebounceTimer);
+  }
+
   private _stopPropagation(e: Event) {
     // Prevent clicks inside the container from closing the modal
     e.stopPropagation();
   }
-
-  private _apiKeyInputDebounceTimer: number | undefined;
 
   private _onApiKeyInput = (e: Event) => {
     const input = e.target as HTMLInputElement;
