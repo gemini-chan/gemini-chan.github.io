@@ -266,28 +266,6 @@ export class Live2DModelComponent extends LitElement {
     }
   }
 
-  private _extractEmotionNames(model: Live2DModelLike): string[] {
-    // Access the internal model to get motion groups
-    const internalModel = (model as { internalModel?: unknown }).internalModel;
-    if (
-      typeof internalModel === 'object' &&
-      internalModel !== null &&
-      'motionManager' in internalModel
-    ) {
-      const motionManager = (internalModel as { motionManager?: unknown }).motionManager;
-      if (
-        typeof motionManager === 'object' &&
-        motionManager !== null &&
-        'motionGroups' in motionManager
-      ) {
-        const motionGroups = (motionManager as { motionGroups?: Record<string, unknown> }).motionGroups;
-        return Object.keys(motionGroups || {})
-          .filter(groupName => groupName !== 'idle' && groupName !== 'tap');
-      }
-    }
-
-    return [];
-  }
 
   private _destroyModel() {
     log.debug("destroying model", {
