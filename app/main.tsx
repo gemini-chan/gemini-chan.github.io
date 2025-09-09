@@ -12,7 +12,6 @@ import {
 import { createComponentLogger, debugLogger } from "@services/DebugLogger";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
-import type { EmotionMapping } from "@services/Live2DMappingService";
 import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
@@ -291,18 +290,6 @@ export class GdmLiveAudio extends LitElement {
 	protected override firstUpdated(changedProperties: PropertyValues): void {
 		super.firstUpdated(changedProperties);
 		
-		// Handle Live2D test events from settings
-		this.addEventListener('live2d-test-emotion', (e: Event) => {
-			const ce = e as CustomEvent<{ emotion: string; mapping: EmotionMapping }>;
-			const { emotion, mapping } = ce.detail || { emotion: 'neutral', mapping: {} as EmotionMapping };
-			logger.debug('live2d-test-emotion', { emotion, mapping });
-			// UI-driven emotion disabled; rely on NPU-inferred emotions in advisor_context
-			if (mapping.motion) {
-				// For manual test, forward motion name as group:index to be mapped downstream if desired
-				this.currentMotionName = `${mapping.motion.group}:${mapping.motion.index}`;
-				setTimeout(() => { this.currentMotionName = ""; }, 200);
-			}
-		});
 		// Listen for typed turn lifecycle events
 		this.addEventListener('turn-start', this.handleTurnStart as EventListener);
 		this.addEventListener('turn-end', this.handleTurnEnd as EventListener);

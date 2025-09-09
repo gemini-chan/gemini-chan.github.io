@@ -1,5 +1,5 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
-import "./Live2DModelMapper";
+import { Live2DMappingService } from "@services/Live2DMappingService";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
@@ -152,7 +152,12 @@ export class SettingsMenu extends LitElement {
   @state()
   private _showDeleteConfirmation = false;
 
+  @state()
+  private _toast: string = "";
+
   private personaManager: PersonaManager;
+  // Timer for debouncing API key input validation.
+  private _apiKeyInputDebounceTimer: number | undefined;
 
   constructor() {
     super();
@@ -739,6 +744,20 @@ export class SettingsMenu extends LitElement {
       margin-top: 1em;
     }
 
+    .emotion-notice {
+      margin-top: 1em;
+      padding: 0.5em;
+      background: var(--cp-surface-strong);
+      border-radius: 8px;
+      border: 1px solid var(--cp-surface-border);
+    }
+
+    .emotion-notice p {
+      margin: 0;
+      font-size: 0.9em;
+      color: var(--cp-muted);
+    }
+
     /* Micro-interactions and Animations */
     @keyframes theme-card-select {
       0% { transform: scale(1); }
@@ -969,6 +988,28 @@ export class SettingsMenu extends LitElement {
       justify-content: center;
     }
 
+    /* Toast notification styles */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      background: var(--cp-surface-strong);
+      color: var(--cp-text);
+      border: 1px solid var(--cp-surface-border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      box-shadow: var(--cp-glow-purple);
+      z-index: 10000;
+      font-size: 0.9em;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
     /* Accessibility Enhancements */
     @media (prefers-reduced-motion: reduce) {
       .theme-card,
@@ -987,6 +1028,11 @@ export class SettingsMenu extends LitElement {
       return html``;
     }
 
+    // Get available emotions for the current model URL
+    const emotions = this._editingPersona.live2dModelUrl 
+      ? Live2DMappingService.getAvailableEmotions(this._editingPersona.live2dModelUrl)
+      : [];
+
     return html`
       <div class="persona-editor">
         <input
@@ -997,7 +1043,7 @@ export class SettingsMenu extends LitElement {
               "name",
               (e.target as HTMLInputElement).value,
             )}
-          @blur=${() => this._onSavePersona()}
+          @blur=${this._onSavePersona}
         />
         <textarea
           .value=${this._editingPersona.systemPrompt}
@@ -1006,9 +1052,45 @@ export class SettingsMenu extends LitElement {
               "systemPrompt",
               (e.target as HTMLTextAreaElement).value,
             )}
-          @blur=${() => this._onSavePersona()}
+          @blur=${this._onSavePersona}
           placeholder="System Prompt"
         ></textarea>
+        
+        <!-- Emotion Selection Dropdown -->
+        ${this._editingPersona.live2dModelUrl && emotions.length > 0 ? html`
+          <div class="input-group">
+            <select
+              .value=${this._editingPersona.emotion || ""}
+              @change=${(e: Event) => {
+                const select = e.target as HTMLSelectElement;
+                this._handlePersonaFormInput("emotion", select.value || undefined);
+                this._updatePersona();
+              }}
+            >
+              <option value="">Default Emotion</option>
+              ${emotions.map(
+                (emotion) => html`
+                  <option value="${emotion}">
+                    ${emotion}
+                  </option>
+                `
+              )}
+            </select>
+          </div>
+        ` : this._editingPersona.live2dModelUrl ? html`
+          <div class="emotion-notice">
+            <p>
+              No emotions available for this model.
+            </p>
+          </div>
+        ` : html`
+          <div class="emotion-notice">
+            <p>
+              Set a Live2D model URL above to enable emotion selection.
+            </p>
+          </div>
+        `}
+        
         <div class="input-group">
           <input
             type="text"
@@ -1020,7 +1102,7 @@ export class SettingsMenu extends LitElement {
               );
               this._validateLive2dUrl((e.target as HTMLInputElement).value);
             }}
-            @blur=${() => this._onSavePersona()}
+            @blur=${this._onLive2dUrlBlur}
             placeholder="Live2D Model URL"
           />
           <div
@@ -1066,20 +1148,6 @@ export class SettingsMenu extends LitElement {
           </button>
         </div>
         
-        ${this._editingPersona.live2dModelUrl ? html`
-        <details style="margin-top: 1em;">
-          <summary>Live2D Mapping (per model)</summary>
-          <div style="margin-top: 12px;">
-            <live2d-model-mapper .modelUrl=${this._editingPersona.live2dModelUrl}></live2d-model-mapper>
-          </div>
-        </details>
-        ` : html`
-          <div style="margin-top: 1em; padding: 0.5em; background: var(--cp-surface-strong); border-radius: 8px; border: 1px solid var(--cp-surface-border);">
-            <p style="margin: 0; font-size: 0.9em; color: var(--cp-muted);">
-              Set a Live2D model URL above to enable emotion mapping configuration.
-            </p>
-          </div>
-        `}
         ${
           !this._editingPersona.isDefault
             ? html`
@@ -1098,32 +1166,63 @@ export class SettingsMenu extends LitElement {
     `;
   }
 
-  private _handlePersonaFormInput(field: keyof Persona, value: string | boolean) {
+  private _handlePersonaFormInput(field: keyof Persona, value: string | boolean | undefined) {
     if (this._editingPersona) {
       this._editingPersona = { ...this._editingPersona, [field]: value };
     }
   }
 
-  private _onSavePersona() {
+  private _showToast(message: string, durationMs = 2500) {
+    this._toast = message;
+    setTimeout(() => {
+      this._toast = "";
+      this.requestUpdate();
+    }, durationMs);
+  }
+
+  private _onLive2dUrlBlur = () => {
+    this._ensurePersonaEmotionValid();
+    this._onSavePersona();
+  };
+
+  private _ensurePersonaEmotionValid() {
+    if (this._editingPersona?.live2dModelUrl && this._editingPersona?.emotion) {
+      const availableEmotions = Live2DMappingService.getAvailableEmotions(this._editingPersona.live2dModelUrl);
+      if (!availableEmotions.includes(this._editingPersona.emotion)) {
+        this._editingPersona = { ...this._editingPersona, emotion: undefined };
+        this._showToast("Emotion reset: not available for this model");
+      }
+    }
+  }
+
+  private _updatePersona = () => {
+    if (this._editingPersona) {
+      this.personaManager.updatePersona(this._editingPersona);
+      this._loadPersonas();
+      this.requestUpdate();
+    }
+  };
+
+  private _onSavePersona = () => {
     if (this._editingPersona) {
       this.personaManager.updatePersona(this._editingPersona);
       this._loadPersonas();
       this._editingPersona = null;
       this.requestUpdate();
     }
-  }
+  };
 
-  private _cancelPersonaEdit() {
+  private _cancelPersonaEdit = () => {
     this._editingPersona = null;
     this.requestUpdate();
-  }
+  };
 
-  private _onDeletePersona() {
+  private _onDeletePersona = () => {
     this._showDeleteConfirmation = true;
     this.requestUpdate();
-  }
+  };
 
-  private _confirmDeletePersona() {
+  private _confirmDeletePersona = () => {
     if (this._editingPersona && !this._editingPersona.isDefault) {
       const wasActive = this._activePersona?.id === this._editingPersona.id;
       const personaToDelete = this._editingPersona;
@@ -1157,12 +1256,12 @@ export class SettingsMenu extends LitElement {
       this._loadPersonas();
       this.requestUpdate();
     }
-  }
+  };
 
-  private _cancelDeletePersona() {
+  private _cancelDeletePersona = () => {
     this._showDeleteConfirmation = false;
     this.requestUpdate();
-  }
+  };
 
   private _renderDeleteConfirmation() {
     if (!this._editingPersona) return html``;
@@ -1268,7 +1367,7 @@ export class SettingsMenu extends LitElement {
     `;
   }
 
-  private _handleThemeCardKeydown(e: KeyboardEvent) {
+  private _handleThemeCardKeydown = (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       const target = e.target as HTMLElement;
@@ -1282,7 +1381,7 @@ export class SettingsMenu extends LitElement {
       e.preventDefault();
       this._navigateThemeCards(e.key, e.target as HTMLElement);
     }
-  }
+  };
 
   private _navigateThemeCards(key: string, currentElement: HTMLElement) {
     const themeCards = Array.from(
@@ -1317,9 +1416,9 @@ export class SettingsMenu extends LitElement {
     this._themeOptionsOpen = true;
   }
 
-  private _handleThemeOptionsToggle(e: Event) {
+  private _handleThemeOptionsToggle = (e: Event) => {
     this._themeOptionsOpen = (e.target as HTMLDetailsElement).open;
-  }
+  };
 
   render() {
     return html`
@@ -1394,6 +1493,7 @@ export class SettingsMenu extends LitElement {
       </div>
       
       ${this._showDeleteConfirmation ? this._renderDeleteConfirmation() : ""}
+      ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}
     `;
   }
 
@@ -1417,12 +1517,17 @@ export class SettingsMenu extends LitElement {
     // Store reference to system prompt textarea and set initial height
   }
 
-  private _handleBackdropClick(e: Event) {
+  private _handleBackdropClick = (e: Event) => {
     // Only close if clicking directly on the backdrop element
     if (e.target === e.currentTarget) {
       localStorage.setItem("theme", this._theme);
       this.dispatchEvent(new CustomEvent("close"));
     }
+  };
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearTimeout(this._apiKeyInputDebounceTimer);
   }
 
   private _stopPropagation(e: Event) {
@@ -1430,9 +1535,7 @@ export class SettingsMenu extends LitElement {
     e.stopPropagation();
   }
 
-  private _apiKeyInputDebounceTimer: number | undefined;
-
-  private _onApiKeyInput(e: Event) {
+  private _onApiKeyInput = (e: Event) => {
     const input = e.target as HTMLInputElement;
     this.apiKey = input.value;
     this._error = ""; // Clear error on input
@@ -1445,7 +1548,7 @@ export class SettingsMenu extends LitElement {
         input.value,
         {
           storageKey: "gemini-api-key",
-          validator: this._validateApiKey.bind(this),
+          validator: this._validateApiKey,
           eventName: "api-key-changed",
           required: true,
           preserveOnEmpty: true,
@@ -1453,7 +1556,7 @@ export class SettingsMenu extends LitElement {
         "apiKey",
       );
     }, 500); // 500ms debounce
-  }
+  };
 
   private _autoSave(
     value: string,
@@ -1535,21 +1638,21 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _onApiKeyBlur(e: Event) {
+  private _onApiKeyBlur = (e: Event) => {
     const input = e.target as HTMLInputElement;
     // Save and validate, emit api-key-changed event for client reinitialization
     this._autoSave(
       input.value,
       {
         storageKey: "gemini-api-key",
-        validator: this._validateApiKey.bind(this),
+        validator: this._validateApiKey,
         eventName: "api-key-changed",
         required: true,
         preserveOnEmpty: true,
       },
       "apiKey",
     );
-  }
+  };
 
   private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
@@ -1566,7 +1669,7 @@ export class SettingsMenu extends LitElement {
             text,
             {
               storageKey: "gemini-api-key",
-              validator: this._validateApiKey.bind(this),
+              validator: this._validateApiKey,
               eventName: "api-key-changed",
               required: true,
               preserveOnEmpty: true,
@@ -1589,11 +1692,11 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _onPaste() {
+  private _onPaste = () => {
     this._handlePaste("apiKey");
-  }
+  };
 
-  private _validateApiKey(key: string): boolean {
+  private _validateApiKey = (key: string): boolean => {
     if (!key) {
       this._error = "API key cannot be empty.";
       return false;
@@ -1604,7 +1707,7 @@ export class SettingsMenu extends LitElement {
       return false;
     }
     return true;
-  }
+  };
 
   private _validateLive2dUrl(url: string): boolean {
     const isValid = this._checkLive2dUrl(url);
@@ -1721,7 +1824,7 @@ export class SettingsMenu extends LitElement {
     );
   }
 
-  private _onCircuitryEnabledChange(e: Event) {
+  private _onCircuitryEnabledChange = (e: Event) => {
     const checkbox = e.target as HTMLInputElement;
     this._circuitryEnabled = checkbox.checked;
     localStorage.setItem(
@@ -1729,26 +1832,26 @@ export class SettingsMenu extends LitElement {
       this._circuitryEnabled.toString(),
     );
     this._applyCircuitrySettings();
-  }
+  };
 
-  private _onCircuitrySpeedChange(e: Event) {
+  private _onCircuitrySpeedChange = (e: Event) => {
     const range = e.target as HTMLInputElement;
     this._circuitrySpeed = Number.parseInt(range.value);
     localStorage.setItem("circuitry-speed", this._circuitrySpeed.toString());
     this._applyCircuitrySettings();
-  }
+  };
 
-  private _onCreatePersona() {
+  private _onCreatePersona = () => {
     const newPersona = this.personaManager.createPersona("New Persona");
     this._loadPersonas();
     this._editingPersona = newPersona;
     this.requestUpdate();
-  }
+  };
 
-  private _onSelectPersona(personaId: string) {
+  private _onSelectPersona = (personaId: string) => {
     this.personaManager.setActivePersona(personaId);
     this._activePersona = this.personaManager.getActivePersona();
     this._editingPersona = this._activePersona;
     this.requestUpdate();
-  }
+  };
 }

@@ -1,19 +1,12 @@
-export type EmotionKey = "neutral" | "joy" | "sadness" | "anger" | "fear" | "surprise" | "curiosity" | string;
-
-export interface ParamKV { id: string; value: number }
-export interface MotionRef { group: string; index: number }
-
-export interface EmotionMapping {
-  params?: ParamKV[];
-  motion?: MotionRef;
-}
+import { createComponentLogger } from "@services/DebugLogger";
 
 export interface ModelMapping {
   modelUrl: string;
-  emotions: Record<EmotionKey, EmotionMapping>;
+  availableEmotions?: string[];
 }
 
 const STORAGE_KEY = "live2d-model-mappings";
+const log = createComponentLogger("Live2DMappingService");
 
 export class Live2DMappingService {
   static getAll(): ModelMapping[] {
@@ -23,7 +16,8 @@ export class Live2DMappingService {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed as ModelMapping[];
       return [];
-    } catch {
+    } catch (error) {
+      log.error("Failed to parse Live2D mappings from localStorage", { error, raw: localStorage.getItem(STORAGE_KEY) });
       return [];
     }
   }
@@ -37,11 +31,20 @@ export class Live2DMappingService {
     return all.find((m) => m.modelUrl === modelUrl);
   }
 
-  static set(modelUrl: string, emotions: Record<EmotionKey, EmotionMapping>) {
+  static getAvailableEmotions(modelUrl: string): string[] {
+    const entry = this.get(modelUrl);
+    return entry?.availableEmotions ?? [];
+  }
+
+  static setAvailableEmotions(modelUrl: string, availableEmotions: string[]) {
     const all = this.getAll();
     const idx = all.findIndex((m) => m.modelUrl === modelUrl);
-    const entry: ModelMapping = { modelUrl, emotions };
-    if (idx >= 0) all[idx] = entry; else all.push(entry);
+    if (idx >= 0) {
+      const existing = all[idx];
+      all[idx] = { ...existing, availableEmotions };
+    } else {
+      all.push({ modelUrl, availableEmotions });
+    }
     this.saveAll(all);
   }
 }
