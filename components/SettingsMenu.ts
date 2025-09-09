@@ -153,6 +153,9 @@ export class SettingsMenu extends LitElement {
   @state()
   private _showDeleteConfirmation = false;
 
+  @state()
+  private _toast: string = "";
+
   private personaManager: PersonaManager;
 
   constructor() {
@@ -970,6 +973,28 @@ export class SettingsMenu extends LitElement {
       justify-content: center;
     }
 
+    /* Toast notification styles */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      background: var(--cp-surface-strong);
+      color: var(--cp-text);
+      border: 1px solid var(--cp-surface-border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      box-shadow: var(--cp-glow-purple);
+      z-index: 10000;
+      font-size: 0.9em;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
     /* Accessibility Enhancements */
     @media (prefers-reduced-motion: reduce) {
       .theme-card,
@@ -1065,7 +1090,10 @@ export class SettingsMenu extends LitElement {
               );
               this._validateLive2dUrl((e.target as HTMLInputElement).value);
             }}
-            @blur=${() => this._onSavePersona()}
+            @blur=${() => {
+              this._onSavePersona();
+              this._ensurePersonaEmotionValid();
+            }}
             placeholder="Live2D Model URL"
           />
           <div
@@ -1146,6 +1174,25 @@ export class SettingsMenu extends LitElement {
   private _handlePersonaFormInput(field: keyof Persona, value: string | boolean | undefined) {
     if (this._editingPersona) {
       this._editingPersona = { ...this._editingPersona, [field]: value };
+    }
+  }
+
+  private _showToast(message: string, durationMs = 2500) {
+    this._toast = message;
+    setTimeout(() => {
+      this._toast = "";
+      this.requestUpdate();
+    }, durationMs);
+  }
+
+  private _ensurePersonaEmotionValid() {
+    if (this._editingPersona?.live2dModelUrl && this._editingPersona?.emotion) {
+      const availableEmotions = Live2DMappingService.getAvailableEmotions(this._editingPersona.live2dModelUrl);
+      if (!availableEmotions.includes(this._editingPersona.emotion)) {
+        this._editingPersona = { ...this._editingPersona, emotion: undefined };
+        this._onSavePersona();
+        this._showToast("Emotion reset: not available for this model");
+      }
     }
   }
 
@@ -1439,6 +1486,7 @@ export class SettingsMenu extends LitElement {
       </div>
       
       ${this._showDeleteConfirmation ? this._renderDeleteConfirmation() : ""}
+      ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}
     `;
   }
 
