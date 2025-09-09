@@ -305,6 +305,7 @@ export class Live2DModelComponent extends LitElement {
     this._model = undefined;
     this._error = "";
     this._loading = false;
+    this._currentEmotion = "";
   }
 
   render() {
