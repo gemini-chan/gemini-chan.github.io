@@ -368,6 +368,7 @@ export class Live2DModelComponent extends LitElement {
         };
       };
       const mouth = this._mapper?.mouthOpen ?? 0;
+      const time = performance.now() / 1000;
       // Set mouth parameter if available (Cubism standard parameter)
       try {
         internal?.coreModel?.setParameterValueById?.("ParamMouthOpenY", mouth);
@@ -378,8 +379,7 @@ export class Live2DModelComponent extends LitElement {
         // Apply some subtle idle motion to keep model alive when no audio
         if (mouth < 0.02 && this._idle) {
           // Breathing micro-motion
-          const t = performance.now() / 1000;
-          const breathe = (Math.sin(t * 1.1) + 1) * 0.025; // 0..0.05
+          const breathe = (Math.sin(time * 1.1) + 1) * 0.025; // 0..0.05
           internal?.coreModel?.setParameterValueById?.(
             "ParamBodyAngleX",
             breathe * 0.6,
@@ -442,7 +442,6 @@ export class Live2DModelComponent extends LitElement {
           }
         }
 
-        const time = performance.now() / 1000;
         switch (this.emotion?.toLowerCase()) {
           case "joy": {
         	const joySin = Math.sin(time * 1.8);
