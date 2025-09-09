@@ -8,7 +8,6 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       https: true,
-      open: true,
     },
     define: {
       // Note: This exposes the API key to the client.
