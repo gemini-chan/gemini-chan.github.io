@@ -1041,7 +1041,7 @@ export class SettingsMenu extends LitElement {
               "name",
               (e.target as HTMLInputElement).value,
             )}
-          @blur=${() => this._onSavePersona()}
+          @blur=${this._onSavePersona}
         />
         <textarea
           .value=${this._editingPersona.systemPrompt}
@@ -1050,7 +1050,7 @@ export class SettingsMenu extends LitElement {
               "systemPrompt",
               (e.target as HTMLTextAreaElement).value,
             )}
-          @blur=${() => this._onSavePersona()}
+          @blur=${this._onSavePersona}
           placeholder="System Prompt"
         ></textarea>
         
@@ -1103,9 +1103,7 @@ export class SettingsMenu extends LitElement {
               );
               this._validateLive2dUrl((e.target as HTMLInputElement).value);
             }}
-            @blur=${() => {
-              this._ensurePersonaEmotionValid();
-            }}
+            @blur=${this._ensurePersonaEmotionValid}
             placeholder="Live2D Model URL"
           />
           <div
