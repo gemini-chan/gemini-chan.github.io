@@ -1,5 +1,6 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
 import "./Live2DModelMapper";
+import { Live2DMappingService } from "@services/Live2DMappingService";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
@@ -987,6 +988,11 @@ export class SettingsMenu extends LitElement {
       return html``;
     }
 
+    // Get available emotions for the current model URL
+    const emotions = this._editingPersona.live2dModelUrl 
+      ? Live2DMappingService.getAvailableEmotions(this._editingPersona.live2dModelUrl)
+      : [];
+
     return html`
       <div class="persona-editor">
         <input
@@ -1009,6 +1015,45 @@ export class SettingsMenu extends LitElement {
           @blur=${() => this._onSavePersona()}
           placeholder="System Prompt"
         ></textarea>
+        
+        <!-- Emotion Selection Dropdown -->
+        ${this._editingPersona.live2dModelUrl && emotions.length > 0 ? html`
+          <div class="input-group">
+            <select
+              .value=${this._editingPersona.emotion || ""}
+              @change=${(e: Event) => {
+                const select = e.target as HTMLSelectElement;
+                this._handlePersonaFormInput("emotion", select.value || undefined);
+                this._onSavePersona();
+              }}
+            >
+              <option value="">Default Emotion</option>
+              ${emotions.map(
+                (emotion) => html`
+                  <option 
+                    value="${emotion}" 
+                    ?selected=${this._editingPersona?.emotion === emotion}
+                  >
+                    ${emotion}
+                  </option>
+                `
+              )}
+            </select>
+          </div>
+        ` : this._editingPersona.live2dModelUrl ? html`
+          <div style="margin-top: 1em; padding: 0.5em; background: var(--cp-surface-strong); border-radius: 8px; border: 1px solid var(--cp-surface-border);">
+            <p style="margin: 0; font-size: 0.9em; color: var(--cp-muted);">
+              No emotions available for this model.
+            </p>
+          </div>
+        ` : html`
+          <div style="margin-top: 1em; padding: 0.5em; background: var(--cp-surface-strong); border-radius: 8px; border: 1px solid var(--cp-surface-border);">
+            <p style="margin: 0; font-size: 0.9em; color: var(--cp-muted);">
+              Set a Live2D model URL above to enable emotion selection.
+            </p>
+          </div>
+        `}
+        
         <div class="input-group">
           <input
             type="text"
@@ -1098,7 +1143,7 @@ export class SettingsMenu extends LitElement {
     `;
   }
 
-  private _handlePersonaFormInput(field: keyof Persona, value: string | boolean) {
+  private _handlePersonaFormInput(field: keyof Persona, value: string | boolean | undefined) {
     if (this._editingPersona) {
       this._editingPersona = { ...this._editingPersona, [field]: value };
     }

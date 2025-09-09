@@ -11,6 +11,7 @@ export interface Persona {
   systemPrompt: string;
   live2dModelUrl: string;
   isDefault: boolean;
+  emotion?: string;
 }
 
 /**

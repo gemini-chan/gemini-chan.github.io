@@ -11,6 +11,7 @@ export interface EmotionMapping {
 export interface ModelMapping {
   modelUrl: string;
   emotions: Record<EmotionKey, EmotionMapping>;
+  availableEmotions?: string[];
 }
 
 const STORAGE_KEY = "live2d-model-mappings";
@@ -37,11 +38,29 @@ export class Live2DMappingService {
     return all.find((m) => m.modelUrl === modelUrl);
   }
 
+  static getAvailableEmotions(modelUrl: string): string[] {
+    const entry = this.get(modelUrl);
+    return entry?.availableEmotions ?? [];
+  }
+
   static set(modelUrl: string, emotions: Record<EmotionKey, EmotionMapping>) {
     const all = this.getAll();
     const idx = all.findIndex((m) => m.modelUrl === modelUrl);
-    const entry: ModelMapping = { modelUrl, emotions };
+    const prev = idx >= 0 ? all[idx] : undefined;
+    const entry: ModelMapping = { modelUrl, emotions, availableEmotions: prev?.availableEmotions };
     if (idx >= 0) all[idx] = entry; else all.push(entry);
+    this.saveAll(all);
+  }
+
+  static setAvailableEmotions(modelUrl: string, availableEmotions: string[]) {
+    const all = this.getAll();
+    const idx = all.findIndex((m) => m.modelUrl === modelUrl);
+    if (idx >= 0) {
+      const existing = all[idx];
+      all[idx] = { ...existing, availableEmotions };
+    } else {
+      all.push({ modelUrl, emotions: {}, availableEmotions });
+    }
     this.saveAll(all);
   }
 }
