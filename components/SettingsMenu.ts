@@ -1189,6 +1189,7 @@ export class SettingsMenu extends LitElement {
       const availableEmotions = Live2DMappingService.getAvailableEmotions(this._editingPersona.live2dModelUrl);
       if (!availableEmotions.includes(this._editingPersona.emotion)) {
         this._editingPersona = { ...this._editingPersona, emotion: undefined };
+        this._onSavePersona();
         this._showToast("Emotion reset: not available for this model");
       }
     }
