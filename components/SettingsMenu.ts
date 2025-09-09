@@ -1196,26 +1196,26 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _onSavePersona() {
+  private _onSavePersona = () => {
     if (this._editingPersona) {
       this.personaManager.updatePersona(this._editingPersona);
       this._loadPersonas();
       this._editingPersona = null;
       this.requestUpdate();
     }
-  }
+  };
 
-  private _cancelPersonaEdit() {
+  private _cancelPersonaEdit = () => {
     this._editingPersona = null;
     this.requestUpdate();
-  }
+  };
 
-  private _onDeletePersona() {
+  private _onDeletePersona = () => {
     this._showDeleteConfirmation = true;
     this.requestUpdate();
-  }
+  };
 
-  private _confirmDeletePersona() {
+  private _confirmDeletePersona = () => {
     if (this._editingPersona && !this._editingPersona.isDefault) {
       const wasActive = this._activePersona?.id === this._editingPersona.id;
       const personaToDelete = this._editingPersona;
@@ -1249,12 +1249,12 @@ export class SettingsMenu extends LitElement {
       this._loadPersonas();
       this.requestUpdate();
     }
-  }
+  };
 
-  private _cancelDeletePersona() {
+  private _cancelDeletePersona = () => {
     this._showDeleteConfirmation = false;
     this.requestUpdate();
-  }
+  };
 
   private _renderDeleteConfirmation() {
     if (!this._editingPersona) return html``;
@@ -1360,7 +1360,7 @@ export class SettingsMenu extends LitElement {
     `;
   }
 
-  private _handleThemeCardKeydown(e: KeyboardEvent) {
+  private _handleThemeCardKeydown = (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       const target = e.target as HTMLElement;
@@ -1374,7 +1374,7 @@ export class SettingsMenu extends LitElement {
       e.preventDefault();
       this._navigateThemeCards(e.key, e.target as HTMLElement);
     }
-  }
+  };
 
   private _navigateThemeCards(key: string, currentElement: HTMLElement) {
     const themeCards = Array.from(
@@ -1409,9 +1409,9 @@ export class SettingsMenu extends LitElement {
     this._themeOptionsOpen = true;
   }
 
-  private _handleThemeOptionsToggle(e: Event) {
+  private _handleThemeOptionsToggle = (e: Event) => {
     this._themeOptionsOpen = (e.target as HTMLDetailsElement).open;
-  }
+  };
 
   render() {
     return html`
@@ -1510,13 +1510,13 @@ export class SettingsMenu extends LitElement {
     // Store reference to system prompt textarea and set initial height
   }
 
-  private _handleBackdropClick(e: Event) {
+  private _handleBackdropClick = (e: Event) => {
     // Only close if clicking directly on the backdrop element
     if (e.target === e.currentTarget) {
       localStorage.setItem("theme", this._theme);
       this.dispatchEvent(new CustomEvent("close"));
     }
-  }
+  };
 
   private _stopPropagation(e: Event) {
     // Prevent clicks inside the container from closing the modal
@@ -1525,7 +1525,7 @@ export class SettingsMenu extends LitElement {
 
   private _apiKeyInputDebounceTimer: number | undefined;
 
-  private _onApiKeyInput(e: Event) {
+  private _onApiKeyInput = (e: Event) => {
     const input = e.target as HTMLInputElement;
     this.apiKey = input.value;
     this._error = ""; // Clear error on input
@@ -1538,7 +1538,7 @@ export class SettingsMenu extends LitElement {
         input.value,
         {
           storageKey: "gemini-api-key",
-          validator: this._validateApiKey.bind(this),
+          validator: this._validateApiKey,
           eventName: "api-key-changed",
           required: true,
           preserveOnEmpty: true,
@@ -1546,7 +1546,7 @@ export class SettingsMenu extends LitElement {
         "apiKey",
       );
     }, 500); // 500ms debounce
-  }
+  };
 
   private _autoSave(
     value: string,
@@ -1628,21 +1628,21 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _onApiKeyBlur(e: Event) {
+  private _onApiKeyBlur = (e: Event) => {
     const input = e.target as HTMLInputElement;
     // Save and validate, emit api-key-changed event for client reinitialization
     this._autoSave(
       input.value,
       {
         storageKey: "gemini-api-key",
-        validator: this._validateApiKey.bind(this),
+        validator: this._validateApiKey,
         eventName: "api-key-changed",
         required: true,
         preserveOnEmpty: true,
       },
       "apiKey",
     );
-  }
+  };
 
   private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
     try {
@@ -1659,7 +1659,7 @@ export class SettingsMenu extends LitElement {
             text,
             {
               storageKey: "gemini-api-key",
-              validator: this._validateApiKey.bind(this),
+              validator: this._validateApiKey,
               eventName: "api-key-changed",
               required: true,
               preserveOnEmpty: true,
@@ -1682,9 +1682,9 @@ export class SettingsMenu extends LitElement {
     }
   }
 
-  private _onPaste() {
+  private _onPaste = () => {
     this._handlePaste("apiKey");
-  }
+  };
 
   private _validateApiKey(key: string): boolean {
     if (!key) {
@@ -1814,7 +1814,7 @@ export class SettingsMenu extends LitElement {
     );
   }
 
-  private _onCircuitryEnabledChange(e: Event) {
+  private _onCircuitryEnabledChange = (e: Event) => {
     const checkbox = e.target as HTMLInputElement;
     this._circuitryEnabled = checkbox.checked;
     localStorage.setItem(
@@ -1822,26 +1822,26 @@ export class SettingsMenu extends LitElement {
       this._circuitryEnabled.toString(),
     );
     this._applyCircuitrySettings();
-  }
+  };
 
-  private _onCircuitrySpeedChange(e: Event) {
+  private _onCircuitrySpeedChange = (e: Event) => {
     const range = e.target as HTMLInputElement;
     this._circuitrySpeed = Number.parseInt(range.value);
     localStorage.setItem("circuitry-speed", this._circuitrySpeed.toString());
     this._applyCircuitrySettings();
-  }
+  };
 
-  private _onCreatePersona() {
+  private _onCreatePersona = () => {
     const newPersona = this.personaManager.createPersona("New Persona");
     this._loadPersonas();
     this._editingPersona = newPersona;
     this.requestUpdate();
-  }
+  };
 
-  private _onSelectPersona(personaId: string) {
+  private _onSelectPersona = (personaId: string) => {
     this.personaManager.setActivePersona(personaId);
     this._activePersona = this.personaManager.getActivePersona();
     this._editingPersona = this._activePersona;
     this.requestUpdate();
-  }
+  };
 }
