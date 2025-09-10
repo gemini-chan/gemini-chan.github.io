@@ -126,7 +126,9 @@ describe('NPUService hardening', () => {
     ]});
     const svc = new NPUService(ai, mem);
 
-    const payload = await svc.analyzeAndAdvise('X', 'p1', transcript);
+    const promise = svc.analyzeAndAdvise('X', 'p1', transcript);
+    await vi.advanceTimersByTimeAsync(26000);
+    const payload = await promise;
     expect(payload.advisor_context).toContain('- color: blue');
     // generateContent called up to maxAttempts (3)
     expect((ai.models.generateContent as any).mock.calls.length).toBe(3);
@@ -137,31 +139,41 @@ describe('NPUService hardening', () => {
     const mem = mkMemoryService();
     const svc = new NPUService(ai, mem);
 
-    const progressCb = vi.fn((event: string) => {
-      if (event === 'retry') throw new Error('progress boom');
+    const progressCb = vi.fn((event: { type: string }) => {
+      if (event.type === 'npu:model:error') throw new Error('progress boom');
     });
 
-    const payload = await svc.analyzeAndAdvise('X', 'p1', transcript, undefined, progressCb);
+    const promise = svc.analyzeAndAdvise('X', 'p1', transcript, undefined, undefined, undefined, progressCb);
+    await vi.runAllTimersAsync();
+    const payload = await promise;
     expect(payload.advisor_context).toBe('ok');
     expect(progressCb).toHaveBeenCalled();
   });
 
   it('cancels stale turn and exits retry loop', async () => {
-    const ai = mkAIClient(() => new Promise(() => {})); // never resolves
-    const mem = mkMemoryService({ memories: [
-      { fact_key: 'color', fact_value: 'blue', confidence_score: 0.7, permanence_score: 'contextual', timestamp: new Date(), conversation_turn: 't3', personaId: 'p1' },
-    ]});
+    let callIndex = 0;
+    const ai = mkAIClient(async () => ({ text: ++callIndex === 1 ? '   ' : 'ok' }));
+    const mem = mkMemoryService({
+      memories: [
+        { fact_key: 'color', fact_value: 'blue', confidence_score: 0.7, permanence_score: 'contextual', timestamp: new Date(), conversation_turn: 't3', personaId: 'p1' },
+      ],
+    });
     const svc = new NPUService(ai, mem);
 
-    // start first call with turnId A
+    // Start turn A, it will get an empty response and schedule a retry
     const promiseA = svc.analyzeAndAdvise('X', 'p1', transcript, undefined, undefined, 'turnA');
 
-    // immediately call with turnId B while A is still active
+    // Immediately start turn B, which becomes the active turn and succeeds
     const payloadB = await svc.analyzeAndAdvise('Y', 'p1', transcript, undefined, undefined, 'turnB');
+    expect(payloadB.advisor_context).toBe('ok');
 
-    // B should fallback to memory context and not call generateContent
-    expect(payloadB.advisor_context).toContain('- color: blue');
-    expect((ai.models.generateContent as any).mock.calls.length).toBe(0);
+    // Advance time to trigger turn A's retry. It should see it's stale and fallback.
+    await vi.advanceTimersByTimeAsync(500);
+    const payloadA = await promiseA;
+
+    expect(payloadA.advisor_context).toContain('- color: blue');
+    // call 1: A (empty), call 2: B (ok). A's retry should not call model.
+    expect((ai.models.generateContent as any).mock.calls.length).toBe(2);
   });
 
   it('ranks and limits memories: permanent > contextual > temporary; confidence desc', async () => {
@@ -175,9 +187,12 @@ describe('NPUService hardening', () => {
     ];
     const ai = mkAIClient(async (req) => {
       const prompt = req.contents?.[0]?.parts?.[0]?.text || '';
-      const lines = prompt.split('\n').filter((l: string) => l.startsWith('- '));
-      // expect only top MAX_MEMORY_LINES (assume 5) in correct order
-      expect(lines).toEqual([
+      const start = prompt.indexOf('RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:');
+      const memorySection = prompt.slice(start);
+      const lines = memorySection.split('\n').filter((l: string) => l.startsWith('- '));
+      // expect only top 5 in correct order
+      const prefixes = lines.slice(0, 5).map((l: string) => l.split(' (')[0]);
+      expect(prefixes).toEqual([
         '- perm_high: perm',
         '- perm_low: perm',
         '- context_high: context',

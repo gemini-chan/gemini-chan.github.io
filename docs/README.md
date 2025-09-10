@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: always_on
 ---
 
 # 🌸 Welcome to My Enchanted Workshop! 🌸

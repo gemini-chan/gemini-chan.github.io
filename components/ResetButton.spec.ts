@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import './ResetButton';
+import type { ResetButton } from './ResetButton';
 
-async function mkButton(): Promise<HTMLElementTagNameMap['reset-button']> {
-  const el = document.createElement('reset-button') as any;
+async function mkButton(): Promise<ResetButton> {
+  const el = document.createElement('reset-button') as ResetButton;
   document.body.appendChild(el);
   await el.updateComplete;
   return el;

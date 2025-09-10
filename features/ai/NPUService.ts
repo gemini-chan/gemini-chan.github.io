@@ -278,8 +278,8 @@ export class NPUService {
         }
         
         // Finally by timestamp if available
-        const tsA = a.created_at?.getTime() ?? 0;
-        const tsB = b.created_at?.getTime() ?? 0;
+        const tsA = a.timestamp?.getTime() ?? 0;
+        const tsB = b.timestamp?.getTime() ?? 0;
         return tsB - tsA;
       })
       .slice(0, limit);
