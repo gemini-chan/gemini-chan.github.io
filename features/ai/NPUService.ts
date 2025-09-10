@@ -183,7 +183,7 @@ export class NPUService {
    * Wrap a promise with a timeout.
    */
   private async _withTimeout<T>(p: Promise<T>, ms: number, label?: string): Promise<T> {
-    let timer: NodeJS.Timeout | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(new Error(`timeout: ${label || "op"}`)), ms);
     });
