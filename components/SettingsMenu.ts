@@ -216,6 +216,7 @@ export class SettingsMenu extends LitElement {
   static styles = css`
     /* Enhanced Design Tokens */
     :host {
+      --range-thumb-size: 18px;
       --theme-card-width: 90px;
       --theme-card-height: 60px;
       --theme-card-radius: 8px;
@@ -419,25 +420,52 @@ export class SettingsMenu extends LitElement {
       border-radius: 3px;
       outline: none;
       appearance: none;
+      padding: 0;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      background: transparent;
+    }
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      background: transparent;
     }
     input[type="range"]::-webkit-slider-thumb {
       appearance: none;
-      width: 18px;
-      height: 18px;
+      width: var(--range-thumb-size);
+      height: var(--range-thumb-size);
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(0,229,255,0.8), rgba(124,77,255,0.8));
+      background: linear-gradient(135deg, rgba(0,229,255,0.6), rgba(124,77,255,0.6));
       border: 2px solid var(--cp-surface-border);
       cursor: pointer;
       box-shadow: var(--cp-glow-cyan);
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.15s ease, transform 0.15s ease;
     }
     input[type="range"]::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
+      width: var(--range-thumb-size);
+      height: var(--range-thumb-size);
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(0,229,255,0.8), rgba(124,77,255,0.8));
+      background: linear-gradient(135deg, rgba(0,229,255,0.6), rgba(124,77,255,0.6));
       border: 2px solid var(--cp-surface-border);
       cursor: pointer;
       box-shadow: var(--cp-glow-cyan);
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    input[type="range"]:hover::-webkit-slider-thumb,
+    input[type="range"]:focus-visible::-webkit-slider-thumb,
+    input[type="range"]:active::-webkit-slider-thumb {
+      opacity: 1;
+      transform: scale(1);
+    }
+    input[type="range"]:hover::-moz-range-thumb,
+    input[type="range"]:focus-visible::-moz-range-thumb,
+    input[type="range"]:active::-moz-range-thumb {
+      opacity: 1;
+      transform: scale(1);
     }
     .range-value {
       min-width: 40px;
@@ -1470,7 +1498,8 @@ export class SettingsMenu extends LitElement {
   private _rangeStyle(current: number, min: number, max: number): string {
     const clamped = Math.max(min, Math.min(max, current));
     const percent = ((clamped - min) * 100) / (max - min);
-    return `background: linear-gradient(90deg, var(--cp-cyan) 0%, var(--cp-cyan) ${percent}%, var(--cp-surface) ${percent}%, var(--cp-surface) 100%)`;
+    const fillVar = "var(--range-fill, rgba(0,229,255,0.35))";
+    return `background: linear-gradient(90deg, ${fillVar} 0%, ${fillVar} ${percent}%, var(--cp-surface) ${percent}%, var(--cp-surface) 100%)`;
   }
 
   render() {
