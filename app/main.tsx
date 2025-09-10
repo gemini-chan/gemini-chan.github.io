@@ -385,8 +385,8 @@ export class GdmLiveAudio extends LitElement {
 				isCallActive: this.isCallActive,
 			}),
 			hostElement: this,
-			setSourceressMotion: this._setSourceressMotion.bind(this),
-			startIdleMotionCycle: this._startIdleMotionCycle.bind(this),
+			setSourceressMotion: this._setSourceressMotion,
+			startIdleMotionCycle: this._startIdleMotionCycle,
 		};
 		this.audioManager = new AudioManager(audioManagerDeps);
 		this.audioManager.initAudio();
@@ -573,7 +573,7 @@ private updateTextTranscript(text: string) {
     return name.toLowerCase().includes("sourceress");
   }
 
-  public _setSourceressMotion(name: string) {
+  private _setSourceressMotion = (name: string) => {
     logger.debug('set-motion', { name });
     if (!this._isSourceressActive()) return;
     this.currentMotionName = name;
@@ -704,7 +704,7 @@ private updateTextTranscript(text: string) {
 		}
 	}
 
-	public _startIdleMotionCycle(intervalMs = 25000) {
+	private _startIdleMotionCycle = (intervalMs = 25000) => {
 		logger.debug('idle-cycle:start', { intervalMs });
 		if (this._idleMotionTimer) {
 			clearTimeout(this._idleMotionTimer);
@@ -723,7 +723,7 @@ private updateTextTranscript(text: string) {
 		this._idleMotionTimer = window.setTimeout(step, 1500); // initial delay after greet
 	}
 
-	public async _handleCallEnd() {
+	private _handleCallEnd = async () => {
 		if (!this.sessionManager) return;
 		if (!this.isCallActive && !this.audioManager.mediaStream)
 			return;

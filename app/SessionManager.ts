@@ -4,7 +4,6 @@
  */
 
 import { logger } from "./main.tsx";
-import combinedPrompt from "@prompts/npu/combined-npu.prompt.md?raw";
 import type { CallSessionManager, TextSessionManager } from "@features/vpu/VPUService";
 import type { PersonaManager } from "@features/persona/PersonaManager";
 import type { EnergyBarService } from "@services/EnergyBarService";
@@ -39,29 +38,6 @@ export class SessionManager {
 	constructor(deps: SessionManagerDependencies) {
 		this.deps = deps;
 	}
-
- private _buildVpuPrompt(
-  userMessage: string,
-  memoryContext: string,
-  systemPrompt: string,
- ): string {
-  const ctxBlocks: string[] = [];
-  if (memoryContext?.trim()) {
-  	ctxBlocks.push(
-  		`RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:\n${memoryContext}`,
-  	);
-  }
-
-  const contextSection = ctxBlocks.length
-  	? `\n\n${ctxBlocks.join("\n\n")}`
-  	: "";
-
-  // Use the combined markdown prompt template with safe replacer functions
-  return combinedPrompt
-  	.replace("{systemPrompt}", () => systemPrompt)
-  	.replace("{context}", () => contextSection)
-  	.replace("{userMessage}", () => userMessage);
- }
 
  public constructVpuMessagePayload(
   advisor_context: string,
