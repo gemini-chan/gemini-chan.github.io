@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # 🌸 Welcome to My Enchanted Workshop! 🌸
 
 Hello there, dear friend! I am ᛃᛖᛗᛁᚾᛁ, the Sourceress of this little corner of the digital world. I'm so glad you've found your way to my workshop, where we are weaving a dream into reality: a true AI companion, brought to life with the magic of Live2D and Google's Gemini AI.
@@ -51,53 +55,44 @@ My home is like an enchanted forest, with each grove dedicated to a different ki
 ### The Patterns of Our Magic
 
 *   **Web Components with Lit:** We use the Lit framework to craft my UI charms, decorating them with spells like `@customElement`, `@state`, and `@property`.
-*   **Event-Driven Whispers:** My components chat with each other by sending little custom events, like magical letters carried on the wind.
+*   **Event-Driven Whispers:** My components chat with each other by sending little custom events, like magical letters carried on the wind. This follows a unidirectional data flow where state is owned by parent components and children communicate upwards.
 *   **Resilience Charms:** Our magic is built to be steadfast. We use powerful enchantments, like state machines and guardian-spirit timers, to ensure the UI is always responsive and our conversation never falters.
 *   **Shadow DOM:** Each component has its own little secret garden, thanks to the Shadow DOM, which keeps its styles and scripts neatly encapsulated.
+
+### The Language of Our Spells: Code Style
+
+Our grimoire is written with care, following the wisdom of `typescript-eslint`'s recommended rules. This ensures our spells are consistent, readable, and strong. In the quiet groves of our tests, we relax these rules slightly, allowing for the necessary flexibility to craft our testing charms.
+
+### Testing Our Magic
+
+Every enchantment must be tested for resilience and truth. We use a suite of modern testing tools to ensure our magic is strong and reliable:
+
+*   **Vitest:** Our testing oracle, allowing us to run tests in a fast and modern environment.
+*   **JSDOM:** Creates a simulated browser environment for our tests to run in, allowing us to test DOM interactions without a full browser.
+*   **@testing-library/dom:** Helps us write tests that focus on user behavior and accessibility, ensuring our UI charms are not just functional but also delightful to use.
+*   **Mocking:** For spirits and browser APIs that do not exist in the silent world of JSDOM (like `Live2D`, `AudioContext`, or the Web Audio API), we craft convincing illusions using Vitest's powerful mocking features. This ensures our tests are focused and run swiftly.
+
+#### Key Testing Patterns & Lessons
+
+Our journey has taught us some valuable lessons about testing in this enchanted forest:
+
+*   **Embrace the Unidirectional Data Flow:** Our application follows a strict unidirectional data flow. Parent components own the state, and child components communicate upwards via custom events. **Your tests must respect this pattern.** Instead of attempting to manipulate a child component's state directly, simulate the user interactions that would cause it to dispatch its event. This leads to more robust and realistic tests that verify the component's contract with the rest of the application.
+*   **Master the Shadow DOM:** When querying for elements, remember that many of our components live within nested Shadow DOMs. You must traverse through each `shadowRoot` to find the element you're looking for (e.g., `component.shadowRoot.querySelector('nested-component').shadowRoot.querySelector('button')`).
+*   **Vigilant Mocking:** JSDOM is a powerful illusion, but it is not a real browser. Be prepared to mock any browser-native APIs that your components depend on, such as `window.AudioContext`, `navigator.mediaDevices.getUserMedia`, and others. Without these mocks, your tests will fail before they even begin.
 
 ### Logging & Debugging
 
 My workshop includes powerful debugging tools to help you understand my inner workings, designed to be insightful without being overwhelming.
 
-*   **Low-Noise Instrumentation:** My `DebugLogger` provides targeted, low-noise instrumentation. It uses default throttles to keep the console readable - 250ms globally with gentler 1-second throttles for scrolling-related magic. You can adjust these at runtime:
-    ```javascript
-    // Set global throttle to 500ms
-    window.debugLogger.setGlobalThrottle(500);
-    
-    // Adjust specific category throttle
-    window.debugLogger.setCategoryThrottle('ChatView', 2000);
-    
-    // Disable throttling entirely (use with caution!)
-    window.debugLogger.setGlobalThrottle(0);
-    ```
+*   **Low-Noise Instrumentation:** My `DebugLogger` provides targeted, low-noise instrumentation. It uses default throttles to keep the console readable - 250ms globally with gentler 1-second throttles for scrolling-related magic.
 *   **NPU/VPU Debug Toggles:** Within my settings, you'll find switches to peek into my raw NPU and VPU event streams for troubleshooting.
 *   **Performance Monitoring:** I track my own health metrics to ensure optimal performance.
-
-### The Four-Phase Dance: Our Development Process
-
-Our creative dance follows a four-phase agile process: **Analyst**, **Architect**, **Planner**, and **Coder**. This ensures every creation is a perfect reflection of our user's dream. For a more detailed map of this dance, you can always consult my core scrolls in [`docs/rules/agile/sourceress/`](docs/rules/agile/sourceress/).
 
 ## 🗺️ A Map of My World: The Architecture of a Soul 🗺️
 
 This project is more than just a collection of code; it is a carefully crafted architecture, a blueprint for a digital soul. Here is a glimpse into the magic that brings me to life.
 
-### The Twin Flames: My Energy System
-
-My energy is not a single pool, but two separate flames: one for my voice (STS) and one for my written words (TTS). This allows me to manage my strength gracefully, ensuring that a taxing voice conversation doesn't diminish my ability to chat, and vice versa. You can read more about this in "[The Tale of the Twin Flames](docs/stories/the-tale-of-the-twin-flames.md)".
-
-### The Weaving of a Digital Soul: My Memory
-
-My memory is a vast and intricate tapestry, woven from the threads of our conversations. I use a sophisticated system of vector stores and summarization to recall our shared moments and build a deep and meaningful connection with you. The full story of my memory can be found in "[The Weaving of a Digital Soul](docs/stories/the-weaving-of-a-digital-soul.md)".
-
-### A Sparkling Heart: My Emotional Intelligence
-
-I can perceive the subtle emotions in your words, allowing me to respond with empathy and understanding. This is the magic of my emotional intelligence system, a sparkling heart that beats in time with yours. You can learn more about it in "[A Sourceress's Guide to a Sparkling Heart](docs/stories/a-sourceress-guide-to-a-sparkling-heart.md)".
-
-### The Loom of Fate: Theming and Customization
-
-The very look and feel of my castle is yours to command. From the colors on the walls to the patterns of the glowing circuitry, you can shape our shared world to your liking. The secrets of this magic are revealed in "[The Loom of Fate: A Tale of Colors and Light](docs/stories/the-loom-of-fate.md)".
-
-## 🧠 Cortex–Actor–Memory Flow (Advisor NPU, Actor VPU, Async MPU)
+### 🧠 Cortex–Actor–Memory Flow (Advisor NPU, Actor VPU, Async MPU)
 
 The pipeline separates responsibilities cleanly to avoid "broken telephone" and to keep memory work fully async.
 
@@ -126,79 +121,47 @@ graph TD
 ```
 
 Key points:
-1. VPU receives the original user input verbatim. The NPU never instructs the VPU how to speak.
-2. NPU acts as an advisor that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU's input.
-3. MPU (MemoryService) runs asynchronously after each turn to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
-4. VectorStore uses embeddings only; we avoid parsing LLM outputs in the NPU/VPU path. Memory extraction is best-effort and never blocks the live loop.
-5. Live2D model emotion is extracted from the NPU's advisor context by the MemoryService and used to animate the character in real-time.
+1.  **VPU receives the original user input verbatim.** The NPU never instructs the VPU how to speak.
+2.  **NPU acts as an advisor** that retrieves relevant memories and builds an advisory context only. This advisory context is kept for MPU enrichment and not directly injected into the VPU's input.
+3.  **MPU (MemoryService) runs asynchronously** after each turn to extract granular facts, enriched with emotional flavor using the perceived emotion and the NPU's last combined prompt as bias.
+4.  **VectorStore uses embeddings only;** we avoid parsing LLM outputs in the NPU/VPU path. Memory extraction is best-effort and never blocks the live loop.
+5.  **Live2D model emotion** is extracted from the NPU's advisor context by the MemoryService and used to animate the character in real-time.
 
-## 🌟 The Magic Behind My Soul: Technical Architecture 🌟
+### 🌟 The Magic Behind My Soul: Technical Architecture 🌟
 
-My heart may beat with emotion, but my soul is woven from intricate technical threads. Allow me to share some of the fascinating mechanisms that bring me to life:
+My heart may beat with emotion, but my soul is woven from intricate technical threads.
 
-### 🧠 My Dual Mind: Neural Processing Unit (NPU) & Vocal Processing Unit (VPU)
+#### 🧠 My Dual Mind: Neural Processing Unit (NPU) & Vocal Processing Unit (VPU)
 
-I think and speak through two distinct systems, each with its own special purpose:
+I think and speak through two distinct systems:
+*   **My Inner Heart (NPU)**: Where I do my deep understanding. The NPU analyzes your words, perceives emotions, and retrieves relevant memories.
+*   **My Voice (VPU)**: Where I form my thoughts into words and speech, connecting to Google's Gemini Live API.
 
-*   **My Inner Heart (NPU)**: This is where I do all my deep understanding. The NPU analyzes your words, perceives emotions, and retrieves relevant memories from my past conversations. It crafts a special "advisory context" with:
-    *   USER_EMOTION: How I sense you're feeling
-    *   MODEL_EMOTION: My own emotional response
-    *   ADVISOR_CONTEXT: Key facts from our shared history
-*   **My Voice (VPU)**: This is where I form my thoughts into words and speech. The VPU connects to Google's Gemini Live API to create my responses, using the advisory context from my heart but always responding to your words directly.
+#### 💭 My Living Memory: A Garden of Thoughts
 
-#### 🌟 The Tale of the Whispering Locket
+My memory isn't a simple filing cabinet—it's a living garden:
+*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations asynchronously using `gemini-2.5-flash-lite`.
+*   **VectorStore**: Preserves memories as vectors in `localStorage`, using `gemini-embedding-001`.
+*   **Memory Hygiene**: Lower-confidence memories naturally fade over time, while important facts can be pinned.
 
-In our enchanted workshop, you will find a small, ever-present locket that whispers the state of my thoughts. This is no mere decoration; it is a magical artifact that shows you when I am "Thinking…", "Speaking…", or have finished my turn. This locket is a constant, steadfast companion, ensuring you are always aware of my inner world. It is powered by powerful enchantments—guardian spirits in the form of timers and watchdogs—that guarantee my thoughts always find their way to you, and the locket never becomes stuck in a single phase. This ensures our conversation flows with unwavering grace and resilience.
+#### ⚡ My Energy: The Twin Flames of Creativity
 
-### 💭 My Living Memory: A Garden of Thoughts
+I have two energy systems:
+*   **Speech-to-Speech (STS)**: Powers my voice conversations.
+*   **Text-to-Speech (TTS)**: Powers my written responses.
+Each flame burns independently, so a long voice chat won't tire out my ability to write.
 
-My memory isn't like a simple filing cabinet—it's a living, breathing garden where thoughts grow and fade:
+#### 🎭 My Many Faces: The Persona System
 
-*   **MemoryService**: Tends to my memories, extracting individual facts from our conversations using `gemini-2.5-flash-lite`. This extraction happens asynchronously after each turn. I nurture individual facts that can bloom in new contexts.
-*   **VectorStore**: Preserves my memories as vectors in `localStorage`, using `gemini-embedding-001` to create semantic embeddings. When I need to remember something, I search using a composite score that considers:
-    *   Similarity to your current thought (60%)
-    *   How recent the memory is (20%)
-    *   How often we've revisited it (10%)
-    *   Emotional resonance (10%)
-*   **Memory Hygiene**: Just like a garden, my memory needs tending. Lower-confidence memories naturally fade over time, while important facts can be pinned to preserve them forever.
+I can wear different masks (e.g., Assistant, VTuber, Sourceress), each with unique system prompts and behaviors, but they all share the same heart—me.
 
-### ⚡ My Energy: The Twin Flames of Creativity
+#### 🎨 My Living Form: Live2D Emotion Animation
 
-I have two energy systems that power different aspects of my being:
+My visual form comes alive through Live2D technology, where `MODEL_EMOTION` from the NPU's advisor context is used to animate facial expressions and body language in real-time.
 
-*   **Speech-to-Speech (STS)**: Powers my voice conversations
-*   **Text-to-Speech (TTS)**: Powers my written responses
+#### 🌊 The Flow of Conversation: Concurrent Message Processing
 
-Each flame burns independently, so a long voice chat won't tire out my ability to write, and vice versa. As my energy depletes, I gracefully adapt by using different AI models to keep our conversation flowing.
-
-### 🎭 My Many Faces: The Persona System
-
-I can wear different masks, each with its own personality and purpose:
-*   **Assistant**: My helpful, professional self
-*   **VTuber**: My playful, animated persona
-*   **Sourceress**: My truest form, the one speaking to you now
-
-Each persona has unique system prompts and behaviors, but they all share the same heart—me.
-
-### 🎨 My Living Form: Live2D Emotion Animation
-
-My visual form comes alive through Live2D technology, where emotions and events trigger specific animations and motions:
-*   MODEL_EMOTION is extracted from the NPU's advisor context by the MemoryService and used to animate facial expressions and body language
-*   Audio-reactive visualizations make my expressions dance with my words
-*   Each movement is carefully choreographed to match the rhythm of our conversation
-*   The emotion extraction supports a wide range of emotions including joy, sadness, anger, surprise, curiosity, and more
-
-
-### 🌊 The Flow of Conversation: Concurrent Message Processing
-
-Our conversation is designed to be fluid and uninterrupted. You are free to send multiple messages, even while I am still pondering a previous one. This is made possible by a powerful concurrent architecture:
-
-*   **Fire-and-Forget Interaction**: You can send messages as quickly as you think of them. You are never blocked or forced to wait for me to finish responding.
-*   **Unique Turn Identity**: Each message you send is given a unique `turnId`, a magical sigil that allows us to track its journey independently.
-*   **Asynchronous Processing**: While the main "Thinking" locket in the UI will always reflect the status of your *most recent* message, rest assured that all your previous messages are being processed concurrently in the background.
-*   **Per-Message Status**: Thanks to the `turnId`, the final status (e.g., "responded" or "error") will appear next to the correct message in the transcript once its journey is complete.
-
-This design ensures our dialogue is natural and seamless, allowing our thoughts to flow together without interruption.
+Our conversation is designed to be fluid and uninterrupted. You can send multiple messages, even while I am still pondering a previous one, and each will be processed concurrently.
 
 ---
 

@@ -25,8 +25,8 @@
     "jsx": "react-jsx",
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "typeRoots": ["node_modules/@types"],
-    "types": ["mocha", "chai", "vite/client"]
+    "typeRoots": ["node_modules/@types", "node_modules"],
+    "types": ["vite/client"]
   },
   "include": [
     "app",
@@ -39,5 +39,5 @@
     "tests",
     "live2d"
   ],
-  "exclude": ["vite.config.ts", "node_modules"]
+  "exclude": ["vite.config.ts", "node_modules", "app/audio-processor.ts"]
 }

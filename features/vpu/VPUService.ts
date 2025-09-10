@@ -51,6 +51,10 @@
     // VPU latency tracking properties
     protected vpuStartTimer: (() => void) | null = null;
     protected firstOutputReceived = false;
+    
+    // Session ready promise
+    public sessionReady: Promise<void>;
+    private resolveSessionReady: (value: void | PromiseLike<void>) => void;
   
     constructor(
       protected outputAudioContext: AudioContext,
@@ -60,7 +64,11 @@
       protected updateError: (msg: string) => void,
       protected onRateLimit: () => void,
       protected hostElement: HTMLElement,
-    ) {}
+    ) {
+      this.sessionReady = new Promise(resolve => {
+        this.resolveSessionReady = resolve;
+      });
+    }
   
     // Common audio processing logic
     protected async handleAudioMessage(audio: { data?: string }): Promise<void> {
@@ -99,6 +107,7 @@
         onopen: () => {
           this.isConnected = true;
           this.reconnectAttempts = 0;
+          this.resolveSessionReady();
           this.updateStatus(`${this.getSessionName()} opened`);
         },
         onmessage: async (message: LiveServerMessage) => {
@@ -216,6 +225,11 @@
     }
   
     public async initSession(resumptionHandle?: string | null): Promise<boolean> {
+      // Reset session ready promise for new session
+      this.sessionReady = new Promise(resolve => {
+        this.resolveSessionReady = resolve;
+      });
+      
       // Merge resumption handle preference: explicit arg > in-memory handle > null
       const handleToUse = resumptionHandle ?? this.currentHandle ?? null;
   
@@ -325,6 +339,11 @@
         }
         this.session = null;
       }
+      
+      // Reset session ready promise for next session
+      this.sessionReady = new Promise(resolve => {
+        this.resolveSessionReady = resolve;
+      });
     }
   
   /**

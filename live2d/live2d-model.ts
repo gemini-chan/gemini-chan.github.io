@@ -46,6 +46,7 @@ export class Live2DModelComponent extends LitElement {
   private _lastLoggedEmotion: string = "";
   private _lastLoggedMappingTag: string = "";
   private _lastParamsAlwaysSignature: string = "";
+  private _currentEmotion = "";
 
   // Audio nodes for future integration
   @property({ attribute: false }) inputNode?: AudioNode;
@@ -86,7 +87,7 @@ export class Live2DModelComponent extends LitElement {
     if (changed.has("app") && this.app && !this._app) {
       log.debug("app provided via prop");
       this._app = this.app;
-      this._maybeLoad();
+      setTimeout(() => this._maybeLoad(), 0);
     }
     if (changed.has("url")) {
       const oldUrl = changed.get("url") as string;
@@ -99,7 +100,6 @@ export class Live2DModelComponent extends LitElement {
       }
 
       log.debug("url changed, destroying current model", { oldUrl, newUrl });
-      this._destroyModel();
 
       // Cancel any pending load operation
       this._loadingPromise = undefined;
@@ -108,6 +108,9 @@ export class Live2DModelComponent extends LitElement {
       // Add a delay to ensure cleanup is complete and prevent race conditions
       this._loadingPromise = new Promise<void>((resolve) => {
         setTimeout(async () => {
+          // Destroy model asynchronously to prevent change-in-update warnings
+          this._destroyModel();
+
           // Check if URL changed again while we were waiting
           if (this._currentUrl !== newUrl) {
             log.debug("url changed during delay, skipping load", {
@@ -136,6 +139,9 @@ export class Live2DModelComponent extends LitElement {
     }
     if (changed.has("containerWidth") || changed.has("containerHeight")) {
       this._applyPlacement();
+    }
+    if (changed.has("emotion")) {
+      this.setEmotion(this.emotion);
     }
   }
 
@@ -221,6 +227,12 @@ export class Live2DModelComponent extends LitElement {
       const model: Live2DModelLike = await attemptLoad(0);
       log.debug("model loaded", { model });
 
+      // Extract emotion names from motion groups
+      const emotionNames = this._extractEmotionNames(model);
+
+      // Save emotion mapping for this model
+      Live2DMappingService.setAvailableEmotions(url, emotionNames);
+
       // basic transform
       try {
         (
@@ -258,6 +270,7 @@ export class Live2DModelComponent extends LitElement {
     }
   }
 
+
   private _destroyModel() {
     log.debug("destroying model", {
       hasModel: !!this._model,
@@ -292,6 +305,7 @@ export class Live2DModelComponent extends LitElement {
     this._model = undefined;
     this._error = "";
     this._loading = false;
+    this._currentEmotion = "";
   }
 
   render() {
@@ -354,6 +368,7 @@ export class Live2DModelComponent extends LitElement {
         };
       };
       const mouth = this._mapper?.mouthOpen ?? 0;
+      const time = performance.now() / 1000;
       // Set mouth parameter if available (Cubism standard parameter)
       try {
         internal?.coreModel?.setParameterValueById?.("ParamMouthOpenY", mouth);
@@ -364,8 +379,7 @@ export class Live2DModelComponent extends LitElement {
         // Apply some subtle idle motion to keep model alive when no audio
         if (mouth < 0.02 && this._idle) {
           // Breathing micro-motion
-          const t = performance.now() / 1000;
-          const breathe = (Math.sin(t * 1.1) + 1) * 0.025; // 0..0.05
+          const breathe = (Math.sin(time * 1.1) + 1) * 0.025; // 0..0.05
           internal?.coreModel?.setParameterValueById?.(
             "ParamBodyAngleX",
             breathe * 0.6,
@@ -387,32 +401,6 @@ export class Live2DModelComponent extends LitElement {
             "ParamEyeROpen",
             this._idle.eyeOpen,
           );
-        }
-
-       // Load user-defined mapping for this model url
-       const mapping = Live2DMappingService.get(this.url)?.emotions;
-
-        // Emotion Overrides
-        const time = performance.now() / 1000;
-
-        // Apply user-defined params for current emotion
-        if (mapping) {
-          if (this._lastLoggedMappingTag !== 'active') {
-            log.debug('live2d mapping active', { url: this.url, emotion: this.emotion, motion: this.motionName });
-            this._lastLoggedMappingTag = 'active';
-          }
-          const applied: Record<string, number> = {};
-          const em = this.emotion?.toLowerCase();
-          const rules = em ? mapping[em] : undefined;
-          rules?.params?.forEach(({ id, value }) => {
-            internal?.coreModel?.setParameterValueById?.(id, value);
-            applied[id] = value;
-          });
-          const sig = JSON.stringify(applied);
-          if (sig && sig !== this._lastParamsAlwaysSignature) {
-            log.debug('paramsAlways applied', applied);
-            this._lastParamsAlwaysSignature = sig;
-          }
         }
 
         // No persona-based rules anymore; mapping above handles params and motion for the current emotion
@@ -456,9 +444,9 @@ export class Live2DModelComponent extends LitElement {
 
         switch (this.emotion?.toLowerCase()) {
           case "joy": {
-            const joySin = Math.sin(time * 1.8);
-            internal?.coreModel?.setParameterValueById?.("ParamMouthForm", 0.8);
-            internal?.coreModel?.setParameterValueById?.("ParamCheek", 0.5);
+        	const joySin = Math.sin(time * 1.8);
+        	internal?.coreModel?.setParameterValueById?.("ParamMouthForm", 0.8);
+        	internal?.coreModel?.setParameterValueById?.("ParamCheek", 0.5);
             internal?.coreModel?.setParameterValueById?.(
               "ParamEyeSmile",
               0.6 + (joySin + 1) * 0.2,
@@ -560,6 +548,22 @@ export class Live2DModelComponent extends LitElement {
         : undefined;
     if (!motionGroups) return [];
     return Object.keys(motionGroups).filter((name) => name !== 'idle' && name !== 'tap');
+  }
+
+  public setEmotion(emotionName: string) {
+    if (!this._model || !emotionName) return;
+    if (emotionName === this._currentEmotion) return;
+    this._currentEmotion = emotionName;
+
+    const internal = this._model?.internalModel as {
+      motionManager?: { startMotion: (group: string, index: number, priority?: number) => void },
+    };
+
+    try {
+      internal?.motionManager?.startMotion?.(emotionName, 0, 3);
+    } catch (e) {
+      log.warn('setEmotion failed to start motion', { emotion: emotionName, error: e });
+    }
   }
 
   private _applyPlacement(modelArg?: Live2DModelLike) {

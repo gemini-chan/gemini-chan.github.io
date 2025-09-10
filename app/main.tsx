@@ -8,13 +8,10 @@ import { SummarizationService } from "@features/summarization/SummarizationServi
 import {
 	GoogleGenAI,
 	type LiveServerMessage,
-	type Session,
 } from "@google/genai";
 import { createComponentLogger, debugLogger } from "@services/DebugLogger";
-import { createBlob } from "@shared/utils";
 import { VectorStore } from "@store/VectorStore";
 import { LitElement, type PropertyValues, css, html } from "lit";
-import type { EmotionMapping } from "@services/Live2DMappingService";
 import { customElement, state } from "lit/decorators.js";
 import "@live2d/zip-loader";
 import "@live2d/live2d-gate";
@@ -35,6 +32,8 @@ import {
 	TextSessionManager,
 } from "@features/vpu/VPUService";
 import type { CallSummary, Turn } from "@shared/types";
+import { SessionManager } from "./SessionManager";
+import { AudioManager, type AudioManagerDependencies } from "./AudioManager";
 
 declare global {
 	interface Window {
@@ -55,25 +54,16 @@ interface ExtendedLiveServerMessage extends LiveServerMessage {
 
 type ActiveMode = "texting" | "calling" | null;
 
-// Define type aliases for turn state
-type TurnPhase = 'idle' | 'npu' | 'vpu' | 'complete' | 'error';
-interface TurnState { 
-  id: string | null; 
-  phase: TurnPhase; 
-  startedAt: number; 
-  lastUpdateAt: number; 
-}
 
-const logger = createComponentLogger("GdmLiveAudio");
+export const logger = createComponentLogger("GdmLiveAudio");
 
 // Import progress event types and mappings
-import type {
-  NpuProgressEvent,
-  VpuProgressEvent
-} from "@shared/progress";
+import type { NpuProgressEvent, VpuProgressEvent } from "@shared/progress";
 import {
-  EVENT_STATUS_MAP
-} from "@shared/progress";
+	TurnManager,
+} from "./TurnManager";
+// Import typed turn events
+import type { TurnStartEvent, TurnEndEvent } from "../shared/events.ts";
 
 @customElement("gdm-live-audio")
 export class GdmLiveAudio extends LitElement {
@@ -90,92 +80,46 @@ export class GdmLiveAudio extends LitElement {
 	@state() showSettings = false;
 	@state() toastMessage = "";
 	private lastAdvisorContext: string = "";
-  @state() private npuThinkingLog: string = "";
-  @state() private npuStatus: string = "";
-  @state() private npuSubStatus: string = "";
-  @state() private thinkingActive = false;
-  @state() private currentTurnId: string | null = null;
-  @state() private turnState: TurnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
-  private vpuWatchdogTimer: number | null = null;
-  private readonly VPU_WATCHDOG_MS = 2200;
-  private vpuHardMaxTimer: number | null = null;
-  private readonly VPU_HARD_MAX_MS = 7000;
-  private vpuHardDeadline: number = 0;
+  private turnManager: TurnManager;
   private vpuWaitTimer: number | null = null;
   private _npuFirstEventForced = new Set<string>();
   private _vpuFirstEventForced = new Set<string>();
   private vpuTranscriptionAgg = new Map<string, { count: number; last: number }>();
-  private vpuDevTicker: number | null = null;
-  private devRemainingMs: number = 0;
   private _devRafId: number | null = null;
   
   // Named constants for timeouts
-  private readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
-  private readonly ERROR_TO_IDLE_DELAY_MS = 2500;
+  public readonly COMPLETE_TO_IDLE_DELAY_MS = 1500;
+  public readonly ERROR_TO_IDLE_DELAY_MS = 2500;
+
+	// Make these properties public for SessionManager access
+	public energyBarService = energyBarService;
 
 	// Track pending user action for API key validation flow
 	private pendingAction: (() => void) | null = null;
 	
 	// Settings
-	@state() private showInternalPrompts: boolean = false;
+	public showInternalPrompts: boolean = false;
 	
 	// Metrics
-	@state() private npuProcessingTime: number | null = null;
-	@state() private vpuProcessingTime: number | null = null;
+	@state() public npuProcessingTime: number | null = null;
+	@state() public vpuProcessingTime: number | null = null;
 	private npuStartTime: number | null = null;
 	private vpuStartTime: number | null = null;
-	@state() private messageStatuses: Record<string, 'clock'|'single'|'double'|'error'> = {};
-	@state() private messageRetryCount: Record<string, number> = {};
 	
 	// Debouncing for vpu:response:transcription events
 	private transcriptionDebounceTimer: number | null = null;
 	private pendingTranscriptionText: string = "";
 
 	// Clear all thinking UI and timers
-	private _clearThinkingAll() {
-		// Clear thinking UI
-		this._clearThinkingUI();
-		
-		// Clear timers
-		if (this.vpuWaitTimer) {
-			clearTimeout(this.vpuWaitTimer);
-			this.vpuWaitTimer = null;
-		}
-		
-		if (this.transcriptionDebounceTimer) {
-			clearTimeout(this.transcriptionDebounceTimer);
-			this.transcriptionDebounceTimer = null;
-		}
-		
-		// Reset transcription state
-		this.pendingTranscriptionText = "";
-		
-		// Reset status and log
-		this.npuStatus = "";
-		this.npuThinkingLog = "";
-		
-		// Clear correlation
-		this.currentTurnId = null;
-		
-		// Reset turn state
-		this.turnState = { id: null, phase: 'idle', startedAt: 0, lastUpdateAt: 0 };
-		
-		// Clear VPU watchdog and hard max timer
-		this._clearVpuWatchdog();
-		this._clearVpuHardMaxTimer();
-		this._clearVpuDevTicker();
-		this.devRemainingMs = 0;
-		
-		// Prune message metadata maps
-		this._pruneMessageMeta();
-		
-		// Force a re-render to update the UI
-		this._scheduleUpdate();
+	public _clearThinkingAll() {
+		// Reset turn manager state
+		this.turnManager.reset();
+		this.requestUpdate();
 	}
 	
 	
 	// Schedule immediate update without batching
-	private _scheduleUpdate() {
+	public _scheduleUpdate() {
 		this.requestUpdate();
 	}
 
@@ -184,36 +128,25 @@ export class GdmLiveAudio extends LitElement {
 
 	// Dual-context state management
 	@state() activeMode: ActiveMode = null;
-	@state() textTranscript: Turn[] = [];
-	@state() callTranscript: Turn[] = [];
-	@state() textSession: Session | null = null;
-	@state() callSession: Session | null = null;
 	@state() activeTab: "chat" | "call-history" | "memory" = "chat";
 	@state() callHistory: CallSummary[] = [];
 
 	// Session managers
-	private textSessionManager: TextSessionManager;
-	private callSessionManager: CallSessionManager;
+	public textSessionManager: TextSessionManager;
+	public callSessionManager: CallSessionManager;
+	private sessionManager: SessionManager;
 	private summarizationService: SummarizationService;
-	private personaManager: PersonaManager;
+	public personaManager: PersonaManager;
 	private vectorStore: VectorStore;
 	memoryService: MemoryService;
 	private npuService: NPUService;
 
 	private client: GoogleGenAI;
-	private inputAudioContext = new (
-		window.AudioContext || window.webkitAudioContext
-	)({ sampleRate: 16000 });
-	private outputAudioContext = new (
-		window.AudioContext || window.webkitAudioContext
-	)({ sampleRate: 24000 });
-	@state() inputNode = this.inputAudioContext.createGain();
-	@state() outputNode = this.outputAudioContext.createGain();
 
 	// Rate-limit UX state for calls
-	private _callRateLimitNotified = false;
+	public _callRateLimitNotified = false;
 	// Reconnection toast state to avoid spamming
-	private _callReconnectingNotified = false;
+	public _callReconnectingNotified = false;
 	private _textReconnectingNotified = false;
 
 	// Scroll-to-bottom state for call transcript
@@ -232,72 +165,29 @@ export class GdmLiveAudio extends LitElement {
 	private memoryDecayTimer: number | null = null;
 	@state() private vpuDebugMode = false;
 	@state() private npuDebugMode = false;
-	// Track last analyzed position in the active transcript for efficient delta analysis
-	private lastAnalyzedTranscriptIndex = 0;
-
-	// Audio nodes for each session type
-	private textOutputNode = this.outputAudioContext.createGain();
-	private callOutputNode = this.outputAudioContext.createGain();
 
 	/**
 	 * Optimize re-renders by only updating when necessary
 	 */
-	protected shouldUpdate(changedProperties: PropertyValues<this>): boolean {
-		if (!this.hasUpdated) return true;
+	// protected shouldUpdate(changedProperties: PropertyValues<this>): boolean {
+	// 	if (!this.hasUpdated) return true;
 
-		const criticalProps = [
-			"activeMode",
-			"isCallActive",
-			"callState",
-			"activeTab",
-			"showSettings",
-			"thinkingActive",
-			"npuStatus",
-			"npuSubStatus",
-			"npuThinkingLog",
-			"turnState",
-		];
-		for (const prop of criticalProps) {
-			if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
-		}
+	// 	const criticalProps = [
+	// 		"activeMode",
+	// 		"isCallActive",
+	// 		"callState",
+	// 		"activeTab",
+	// 		"showSettings",
+	// 	];
+	// 	for (const prop of criticalProps) {
+	// 		if (changedProperties.has(prop as keyof GdmLiveAudio)) return true;
+	// 	}
 
-		// More robust transcript update check
-		const checkTranscript = (
-			propName: "textTranscript" | "callTranscript",
-		): boolean => {
-			if (changedProperties.has(propName)) {
-				const oldT = (changedProperties.get(propName) as Turn[]) || [];
-				const newT = this[propName] || [];
-				if (oldT.length !== newT.length) return true;
 
-				const lastOld = oldT[oldT.length - 1];
-				const lastNew = newT[newT.length - 1];
-				if (
-					!lastOld ||
-					!lastNew ||
-					lastOld.text !== lastNew.text ||
-					lastOld.speaker !== lastNew.speaker ||
-					lastOld.isSystemMessage !== lastNew.isSystemMessage
-				) {
-					return true;
-				}
-			}
-			return false;
-		};
+	// 	return false;
+	// }
 
-		if (
-			checkTranscript("textTranscript") ||
-			checkTranscript("callTranscript")
-		) {
-			return true;
-		}
-
-		return false;
-	}
-
-	private mediaStream: MediaStream;
-	private sourceNode: MediaStreamAudioSourceNode;
-	private scriptProcessorNode: ScriptProcessorNode;
+	private audioManager: AudioManager;
 
 	static styles = css`
     :host {
@@ -376,8 +266,17 @@ export class GdmLiveAudio extends LitElement {
 	constructor() {
 		super();
 		this.personaManager = new PersonaManager();
-		// MemoryService will be initialized after the GoogleGenAI client is created.
-		// Client initialization is deferred to connectedCallback to avoid Lit update warnings.
+
+		this.turnManager = new TurnManager({
+			hostElement: this,
+			armDevRaf: this._armDevRaf.bind(this),
+			COMPLETE_TO_IDLE_DELAY_MS: this.COMPLETE_TO_IDLE_DELAY_MS,
+			ERROR_TO_IDLE_DELAY_MS: this.ERROR_TO_IDLE_DELAY_MS,
+		});
+
+		// AudioManager, SessionManager, etc. will be initialized later in initClient
+		// after the API key is validated and the client is created.
+		// This avoids circular dependencies and unnecessary work.
 
 		// Debug: Check initial TTS energy state
 		logger.debug("Initial TTS energy state", {
@@ -391,20 +290,20 @@ export class GdmLiveAudio extends LitElement {
 	protected override firstUpdated(changedProperties: PropertyValues): void {
 		super.firstUpdated(changedProperties);
 		
-		// Handle Live2D test events from settings
-		this.addEventListener('live2d-test-emotion', (e: Event) => {
-			const ce = e as CustomEvent<{ emotion: string; mapping: EmotionMapping }>;
-			const { emotion, mapping } = ce.detail || { emotion: 'neutral', mapping: {} as EmotionMapping };
-			logger.debug('live2d-test-emotion', { emotion, mapping });
-			// UI-driven emotion disabled; rely on NPU-inferred emotions in advisor_context
-			if (mapping.motion) {
-				// For manual test, forward motion name as group:index to be mapped downstream if desired
-				this.currentMotionName = `${mapping.motion.group}:${mapping.motion.index}`;
-				setTimeout(() => { this.currentMotionName = ""; }, 200);
-			}
-		});
+		// Listen for typed turn lifecycle events
+		this.addEventListener('turn-start', this.handleTurnStart as EventListener);
+		this.addEventListener('turn-end', this.handleTurnEnd as EventListener);
 		// Trigger initial TTS greeting once the UI is ready
 		this._triggerInitialTTSGreeting();
+	}
+
+	// Handlers for typed turn events (log-only for now)
+	private handleTurnStart(e: TurnStartEvent) {
+		console.log('Turn started:', e.detail.turnId);
+	}
+
+	private handleTurnEnd(e: TurnEndEvent) {
+		console.log('Turn ended:', e.detail.turnId, 'with status:', e.detail.status);
 	}
 
 	private _triggerInitialTTSGreeting() {
@@ -429,12 +328,26 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 
+	private _initializeSessionManager() {
+		return new SessionManager({
+			personaManager: this.personaManager,
+			textSessionManager: this.textSessionManager,
+			callSessionManager: this.callSessionManager,
+			energyBarService: this.energyBarService,
+			hostElement: this,
+			handleCallRateLimit: this._handleCallRateLimit.bind(this),
+			clearThinkingAll: this._clearThinkingAll.bind(this),
+			queryShadowRoot: (selector: string) =>
+				this.shadowRoot?.querySelector(selector) ?? null,
+		});
+	}
+
 	private initSessionManagers() {
 		// Initialize session managers after client is ready
 		if (this.client) {
 			this.textSessionManager = new TextSessionManager(
-				this.outputAudioContext,
-				this.textOutputNode,
+				this.audioManager.outputAudioContext,
+				this.audioManager.textOutputNode,
 				this.client,
 				this.updateStatus.bind(this),
 				this.updateError.bind(this),
@@ -445,8 +358,8 @@ export class GdmLiveAudio extends LitElement {
 				this,
 			);
 			this.callSessionManager = new CallSessionManager(
-				this.outputAudioContext,
-				this.callOutputNode,
+				this.audioManager.outputAudioContext,
+				this.audioManager.callOutputNode,
 				this.client,
 				this.updateStatus.bind(this),
 				this.updateError.bind(this),
@@ -456,23 +369,31 @@ export class GdmLiveAudio extends LitElement {
 				this,
 			);
 			this.summarizationService = new SummarizationService(this.client);
+
+			// Now that text/call managers exist, create the main session manager
+			this.sessionManager = this._initializeSessionManager();
 		}
 	}
 
-	private initAudio() {
-		// Audio initialization is now handled by individual session managers
-		// Each session manager maintains its own isolated audio timeline
-	}
 
 	private async initClient() {
-		this.initAudio();
+		// Create AudioManager first; its dependencies are self-contained or host-provided getters.
+		const audioManagerDeps: AudioManagerDependencies = {
+			getCallSessionManager: () => this.callSessionManager,
+			getState: () => ({
+				activeMode: this.activeMode,
+				isCallActive: this.isCallActive,
+			}),
+			hostElement: this,
+			setSourceressMotion: this._setSourceressMotion,
+			startIdleMotionCycle: this._startIdleMotionCycle,
+		};
+		this.audioManager = new AudioManager(audioManagerDeps);
+		this.audioManager.initAudio();
 
 		// Always initialize with texting mode by default (main UI)
 		this.activeMode = "texting";
 
-		// Connect both session output nodes to the main audio destination
-		this.textOutputNode.connect(this.outputAudioContext.destination);
-		this.callOutputNode.connect(this.outputAudioContext.destination);
 		this._updateActiveOutputNode();
 
 		const apiKey = localStorage.getItem("gemini-api-key");
@@ -515,30 +436,11 @@ export class GdmLiveAudio extends LitElement {
 	}
 
 	private _updateActiveOutputNode() {
-		// Update the main outputNode to point to the active session's output node
-		if (this.activeMode === "texting") {
-			this.outputNode = this.textOutputNode;
-		} else if (this.activeMode === "calling") {
-			this.outputNode = this.callOutputNode;
-		}
-		// Trigger a re-render to pass the updated outputNode to live2d-gate
-		this._scheduleUpdate();
+		this.audioManager.updateActiveOutputNode();
 	}
 
-	private async _initTextSession() {
-		const ok = await this.textSessionManager.initSession();
-		this.textSession = this.textSessionManager.sessionInstance;
-		return ok;
-	}
 
-	private async _initCallSession() {
-		logger.debug("Initializing new call session.");
-		const ok = await this.callSessionManager.initSession();
-		this.callSession = this.callSessionManager.sessionInstance;
-		return ok;
-	}
-
-	private updateStatus(msg: string) {
+	public updateStatus(msg: string) {
 		this.status = msg;
 		// Reset timers and show toast
 		if (this._statusHideTimer) clearTimeout(this._statusHideTimer);
@@ -556,7 +458,7 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 
-	private updateError(msg: string) {
+	public updateError(msg: string) {
 		this.error = msg;
 		// Non-silent failure during calls on rate limit
 		const isRateLimited = /rate[- ]?limit|quota/i.test(msg || "");
@@ -565,44 +467,47 @@ export class GdmLiveAudio extends LitElement {
 		}
 	}
 private updateTextTranscript(text: string) {
-// This function is now only for LIVE updates to the model's last message.
-// The official, final message is added to the transcript in _handleTtsTurnComplete.
-if (this.textTranscript.length > 0) {
-const lastMessage = this.textTranscript[this.textTranscript.length - 1];
-if (lastMessage.speaker === "model") {
-	// If the last message was from the model, update it
-	// Create a new array to ensure Lit detects the change
-	const updatedTranscript = [...this.textTranscript];
-	updatedTranscript[updatedTranscript.length - 1] = {
-		...lastMessage,
-		text: text,
-	};
-	this.textTranscript = updatedTranscript;
-}
-}
+	if (!this.sessionManager) return;
+	// This function is now only for LIVE updates to the model's last message.
+	// The official, final message is added to the transcript in _handleTtsTurnComplete.
+	if (this.sessionManager.textTranscript.length > 0) {
+		const lastMessage = this.sessionManager.textTranscript[this.sessionManager.textTranscript.length - 1];
+		if (lastMessage.speaker === "model") {
+			// If the last message was from the model, update it
+			// Create a new array to ensure Lit detects the change
+			const updatedTranscript = [...this.sessionManager.textTranscript];
+			updatedTranscript[updatedTranscript.length - 1] = {
+				...lastMessage,
+				text: text,
+			};
+			this.sessionManager.textTranscript = updatedTranscript;
+		}
+	}
 }
 	private updateCallTranscript(text: string, speaker: "user" | "model") {
+		if (!this.sessionManager) return;
 		logger.debug(`Received ${speaker} text:`, text);
 
 		// For audio transcription, we get incremental chunks that should be appended
-		const lastTurn = this.callTranscript[this.callTranscript.length - 1];
+		const lastTurn = this.sessionManager.callTranscript[this.sessionManager.callTranscript.length - 1];
 
 		if (lastTurn?.speaker === speaker) {
 			// Append to the existing turn by creating a new array
 			// This ensures Lit detects the change
-			const updatedTranscript = [...this.callTranscript];
+			const updatedTranscript = [...this.sessionManager.callTranscript];
 			updatedTranscript[updatedTranscript.length - 1] = {
 				...lastTurn,
 				text: lastTurn.text + text,
 			};
-			this.callTranscript = updatedTranscript;
+			this.sessionManager.callTranscript = updatedTranscript;
 		} else {
 			// Create a new turn for this author
-			this.callTranscript = [...this.callTranscript, { text, speaker }];
+			this.sessionManager.callTranscript = [...this.sessionManager.callTranscript, { text, speaker }];
 		}
 	}
 
 	private _appendCallNotice(text: string) {
+		if (!this.sessionManager) return;
 		// Append a system-style notice to the call transcript to avoid silent failures
 		const notice = {
 			text,
@@ -610,7 +515,7 @@ if (lastMessage.speaker === "model") {
 			timestamp: new Date(),
 			isSystemMessage: true,
 		};
-		this.callTranscript = [...this.callTranscript, notice];
+		this.sessionManager.callTranscript = [...this.sessionManager.callTranscript, notice];
 	}
 
 	private _appendTextMessage(
@@ -618,33 +523,31 @@ if (lastMessage.speaker === "model") {
 		speaker: "user" | "model",
 		isSystemMessage = false,
 	) {
+		if (!this.sessionManager) return;
 		// Append a message directly to the text transcript
 		logger.debug("Appending text message", {
 			text,
 			speaker,
 			isSystemMessage,
-			currentLength: this.textTranscript.length,
+			currentLength: this.sessionManager.textTranscript.length,
 		});
 
-		this.textTranscript = [
-			...this.textTranscript,
+		this.sessionManager.textTranscript = [
+			...this.sessionManager.textTranscript,
 			{ text, speaker, isSystemMessage },
 		];
 
 		logger.debug("Text message appended", {
-			newLength: this.textTranscript.length,
-			lastMessage: this.textTranscript[this.textTranscript.length - 1],
+			newLength: this.sessionManager.textTranscript.length,
+			lastMessage: this.sessionManager.textTranscript[this.sessionManager.textTranscript.length - 1],
 		});
-
-		// Force a re-render to ensure the UI updates
-		this._scheduleUpdate();
 	}
 
-	private _handleCallRateLimit() {
+	public _handleCallRateLimit() {
 		// Degrade only STS energy and notify UI
 		energyBarService.handleRateLimitError("sts");
-		if (this._callRateLimitNotified) return;
-		this._callRateLimitNotified = true;
+		if (this.sessionManager._callRateLimitNotified) return;
+		this.sessionManager._callRateLimitNotified = true;
 
 		// Also surface the banner in the call transcript
 		const callT = this.shadowRoot?.querySelector(
@@ -670,14 +573,16 @@ if (lastMessage.speaker === "model") {
     return name.toLowerCase().includes("sourceress");
   }
 
-  private _setSourceressMotion(name: string) {
+  private _setSourceressMotion = (name: string) => {
     logger.debug('set-motion', { name });
     if (!this._isSourceressActive()) return;
     this.currentMotionName = name;
     // Reset back to empty after a short delay to allow re-triggering the same motion later
     setTimeout(() => {
-      if (this.currentMotionName === name) this.currentMotionName = "";
-      this._scheduleUpdate();
+      if (this.currentMotionName === name) {
+        this.currentMotionName = "";
+        this._scheduleUpdate();
+      }
     }, 200);
   }
 
@@ -694,126 +599,93 @@ if (lastMessage.speaker === "model") {
   }
 
 	private async _handleCallStart() {
-		// On new call session, reset STS energy
-		energyBarService.resetEnergyLevel("session-reset", "sts");
-		if (this.isCallActive) return;
+		try {
+			// Guard: Ensure sessionManager exists before proceeding
+			if (!this.sessionManager) {
+				// Check if API key exists
+				if (!this._checkApiKeyExists()) {
+					// Show API key prompt and return
+					this._showApiKeyPrompt(() => this._handleCallStart());
+					return;
+				}
+				
+				// API key exists but session manager doesn't - try to initialize
+				await this.initClient();
+				
+				// If session manager still doesn't exist, show error and return
+				if (!this.sessionManager) {
+					this.updateError("Failed to initialize session. Please try again.");
+					return;
+				}
+			}
+			
+			// Acquire microphone FIRST, within the user gesture's direct context.
+			await this.audioManager.acquireMicrophone();
 
-		// PRE-FLIGHT CHECK: Verify STS energy before proceeding
-		const stsEnergy = energyBarService.getCurrentEnergyLevel("sts");
-		if (stsEnergy === 0) {
-			this.updateStatus("Energy exhausted — call unavailable.");
+			// On new call session, reset STS energy
+			energyBarService.resetEnergyLevel("session-reset", "sts");
+			if (this.isCallActive) return;
+
+			// PRE-FLIGHT CHECK: Verify STS energy before proceeding
+			const stsEnergy = energyBarService.getCurrentEnergyLevel("sts");
+			if (stsEnergy === 0) {
+				this.updateStatus("Energy exhausted — call unavailable.");
+				const toast = this.shadowRoot?.querySelector(
+					"toast-notification#inline-toast",
+				) as ToastNotification;
+				toast?.show("Cannot start call: energy exhausted.", "error", 3000, {
+					position: "bottom-right",
+					variant: "standard",
+				});
+				return;
+			}
+
+			logger.debug("Call start. Existing callSession:", this.sessionManager.callSession);
+			// Switch to calling mode
+			this.activeMode = "calling";
+			// When switching to calling mode, reset delta index so we analyze from the start of the call transcript
+			this.sessionManager.lastAnalyzedTranscriptIndex = 0;
+			this.callState = "connecting";
+			this._updateActiveOutputNode();
+
+			// Check API key presence before proceeding
+			if (!this._checkApiKeyExists()) {
+				this._showApiKeyPrompt(() => this._handleCallStart());
+				return;
+			}
+
+			if (!this.sessionManager) return;
+
+			const isResuming = this.callSessionManager.getResumptionHandle() !== null;
+			const ok = await this.sessionManager.initCallSession();
+			if (!ok) {
+				this.audioManager.stopAudioProcessing();
+				return;
+			}
+
+			// After successful session init, show toast
 			const toast = this.shadowRoot?.querySelector(
 				"toast-notification#inline-toast",
 			) as ToastNotification;
-			toast?.show("Cannot start call: energy exhausted.", "error", 3000, {
-				position: "bottom-right",
-				variant: "standard",
-			});
-			return;
-		}
-
-		// Check API key presence before proceeding
-		if (!this._checkApiKeyExists()) {
-			this._showApiKeyPrompt(() => this._handleCallStart());
-			return;
-		}
-
-		logger.debug("Call start. Existing callSession:", this.callSession);
-		// Switch to calling mode
-		this.activeMode = "calling";
-		// When switching to calling mode, reset delta index so we analyze from the start of the call transcript
-		this.lastAnalyzedTranscriptIndex = 0;
-		this.callState = "connecting";
-		this._updateActiveOutputNode();
-
-		const isResuming = this.callSessionManager.getResumptionHandle() !== null;
-		const ok = await this._initCallSession();
-		if (!ok || !this.callSession) {
-			// If energy is exhausted, reflect a different UX than rate limit
-			const exhausted = energyBarService.getCurrentEnergyLevel() === 0;
-			if (exhausted) {
-				this.updateStatus("Energy exhausted — please try again later.");
+			if (isResuming) {
+				toast?.show("Resumed previous call session", "success", 1200, {
+					position: "bottom-right",
+					variant: "standard",
+				});
 			} else {
-				this._handleCallRateLimit();
-				this.updateStatus(
-					"Unable to start call (rate limited or network error)",
-				);
+				this.sessionManager.callTranscript = []; // Clear transcript only for new sessions
+				toast?.show("Started a new call session", "success", 1500, {
+					position: "bottom-right",
+					variant: "standard",
+				});
 			}
-			return;
-		}
 
-		// After successful session init, show toast
-		const toast = this.shadowRoot?.querySelector(
-			"toast-notification#inline-toast",
-		) as ToastNotification;
-		if (isResuming) {
-			toast?.show("Resumed previous call session", "success", 1200, {
-				position: "bottom-right",
-				variant: "standard",
-			});
-		} else {
-			this.callTranscript = []; // Clear transcript only for new sessions
-			toast?.show("Started a new call session", "success", 1500, {
-				position: "bottom-right",
-				variant: "standard",
-			});
-		}
+			this.audioManager.inputAudioContext.resume();
+			this.updateStatus("Starting call...");
 
-		this.inputAudioContext.resume();
-		this.updateStatus("Starting call...");
+			await this.audioManager.startAudioProcessing();
 
-		try {
-			this.mediaStream = await navigator.mediaDevices.getUserMedia({
-				audio: true,
-				video: false,
-			});
-
-			this.updateStatus("");
 			this.callState = "active";
-
-			// Live2D: greet motion for Sourceress on call start
-			this._setSourceressMotion("greet");
-
-			// Start idle motion cycling while in call
-			this._startIdleMotionCycle();
-
-			this.sourceNode = this.inputAudioContext.createMediaStreamSource(
-				this.mediaStream,
-			);
-			this.sourceNode.connect(this.inputNode);
-
-			const bufferSize = 1024;
-			this.scriptProcessorNode = this.inputAudioContext.createScriptProcessor(
-				bufferSize,
-				1,
-				1,
-			);
-
-			this.scriptProcessorNode.onaudioprocess = (audioProcessingEvent) => {
-				if (!this.isCallActive) return;
-
-				const inputBuffer = audioProcessingEvent.inputBuffer;
-				const pcmData = inputBuffer.getChannelData(0);
-				// Send audio to the active call session using session manager
-				if (
-					this.activeMode === "calling" &&
-					this.callSessionManager &&
-					this.callSessionManager.isActive
-				) {
-					try {
-						this.callSessionManager.sendRealtimeInput({
-							media: createBlob(pcmData),
-						});
-					} catch (e) {
-						const msg = String((e as Error)?.message || e || "");
-						this.updateError(`Failed to stream audio: ${msg}`);
-					}
-				}
-			};
-
-			this.sourceNode.connect(this.scriptProcessorNode);
-			this.scriptProcessorNode.connect(this.inputAudioContext.destination);
-
 			this.isCallActive = true;
 
 			// Dispatch call-start event
@@ -832,7 +704,7 @@ if (lastMessage.speaker === "model") {
 		}
 	}
 
-	private _startIdleMotionCycle(intervalMs = 25000) {
+	private _startIdleMotionCycle = (intervalMs = 25000) => {
 		logger.debug('idle-cycle:start', { intervalMs });
 		if (this._idleMotionTimer) {
 			clearTimeout(this._idleMotionTimer);
@@ -851,8 +723,9 @@ if (lastMessage.speaker === "model") {
 		this._idleMotionTimer = window.setTimeout(step, 1500); // initial delay after greet
 	}
 
-	private async _handleCallEnd() {
-		if (!this.isCallActive && !this.mediaStream && !this.inputAudioContext)
+	private _handleCallEnd = async () => {
+		if (!this.sessionManager) return;
+		if (!this.isCallActive && !this.audioManager.mediaStream)
 			return;
 
 		this.updateStatus("");
@@ -867,30 +740,17 @@ if (lastMessage.speaker === "model") {
 		}
 		this.currentMotionName = "";
 
-		if (this.scriptProcessorNode && this.sourceNode && this.inputAudioContext) {
-			this.scriptProcessorNode.disconnect();
-			this.sourceNode.disconnect();
-		}
-
-		this.scriptProcessorNode = null;
-		this.sourceNode = null;
-
-		if (this.mediaStream) {
-			for (const track of this.mediaStream.getTracks()) {
-				track.stop();
-			}
-			this.mediaStream = null;
-		}
+		this.audioManager.stopAudioProcessing();
 
 		// Switch back to texting mode
 		this.activeMode = "texting";
 		// Reset index when switching back to texting mode; next analysis will start fresh on text transcript
-		this.lastAnalyzedTranscriptIndex = 0;
+		this.sessionManager.lastAnalyzedTranscriptIndex = 0;
 		this._updateActiveOutputNode();
 
 		// Summarize the call
-		const transcriptToSummarize = [...this.callTranscript];
-		this.callTranscript = [];
+		const transcriptToSummarize = [...this.sessionManager.callTranscript];
+		this.sessionManager.callTranscript = [];
 		const summary = await this.summarizationService.summarize(
 			transcriptToSummarize,
 		);
@@ -910,28 +770,9 @@ if (lastMessage.speaker === "model") {
 
 		this.updateStatus("");
 		this.callState = "idle";
-		logger.debug("Call ended. callSession preserved:", this.callSession);
+		logger.debug("Call ended. callSession preserved:", this.sessionManager.callSession);
 	}
 
-	private _resetTextContext() {
-		// Reset the delta-analysis index for text transcript
-		this.lastAnalyzedTranscriptIndex = 0;
-		// Close existing text session using session manager
-		if (this.textSessionManager) {
-			this.textSessionManager.closeSession();
-			this.textSession = null;
-		}
-
-		// Clear text transcript
-		this.textTranscript = [];
-		this.lastAnalyzedTranscriptIndex = 0;
-
-		// Clear thinking UI and timers
-		this._clearThinkingAll();
-
-		// Text session will be lazily initialized when user sends next message
-		this.updateStatus("Text conversation cleared.");
-	}
 private _handleTtsCaptionUpdate(text: string) {
 // Clear any pending timer to clear the caption
 if (this.ttsCaptionClearTimer) {
@@ -951,9 +792,10 @@ this.ttsCaption += text;
 this.updateTextTranscript(this.ttsCaption);
 }
 	private _handleTtsTurnComplete() {
+		if (!this.sessionManager) return;
 		// Store the completed turn in memory
 		if (this.ttsCaption.trim()) {
-			const lastUserTurn = this.textTranscript
+			const lastUserTurn = this.sessionManager.textTranscript
 				.slice()
 				.reverse()
 				.find((t) => t.speaker === "user");
@@ -982,45 +824,6 @@ this.updateTextTranscript(this.ttsCaption);
 		}, 2500); // Keep caption on screen for 2.5s after speech ends
 	}
 
-	private _resetCallContext() {
-		// Reset the delta-analysis index for call transcript
-		this.lastAnalyzedTranscriptIndex = 0;
-		// Also clear the persisted resumption handle so the next call starts fresh
-		try {
-			this.callSessionManager?.clearResumptionHandle();
-		} catch (e) {
-			logger.warn("Failed to clear call session resumption handle:", e);
-		}
-		// Reset reconnection toast guard
-		this._callReconnectingNotified = false;
-		logger.debug("Resetting call context. Closing session.");
-		// Close existing call session using session manager
-		if (this.callSessionManager) {
-			this.callSessionManager.closeSession();
-			this.callSession = null;
-		}
-
-		// Clear call transcript and reset rate-limit states
-		this.callTranscript = [];
-		this._callRateLimitNotified = false;
-		const callT = this.shadowRoot?.querySelector(
-			"call-transcript",
-		) as HTMLElement & { rateLimited?: boolean };
-		if (callT) {
-			callT.rateLimited = false;
-		}
-
-		// Clear thinking UI and timers
-		this._clearThinkingAll();
-
-		// Reinitialize call session if we're currently in a call
-		if (this.isCallActive) {
-			this._initCallSession();
-		}
-		this.updateStatus("Call conversation cleared.");
-		// Reuse the existing call-start toasts when the next call starts (resume-first flow).
-		// No additional toast here to avoid redundancy.
-	}
 
 	private _toggleSettings() {
 		this.showSettings = !this.showSettings;
@@ -1164,7 +967,7 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 	}
 
-	private async _handlePersonaChanged() {
+	private _handlePersonaChanged = async () => {
 		// Clear thinking UI and timers before changing persona
 		this._clearThinkingAll();
 
@@ -1179,15 +982,17 @@ this.updateTextTranscript(this.ttsCaption);
 			if (this.textSessionManager) {
 				await this.textSessionManager.closeSession();
 				this.textSessionManager.clearResumptionHandle(); // Clear session token
-				this.textSession = null;
+				this.sessionManager.textSession = null;
 			}
 			// Also disconnect the call session to ensure it picks up the new persona
 			if (this.callSessionManager) {
 				await this.callSessionManager.closeSession();
 				this.callSessionManager.clearResumptionHandle(); // Clear session token
-				this.callSession = null;
+				this.sessionManager.callSession = null;
 			}
-			this.textTranscript = [];
+			this.sessionManager.textTranscript = [];
+			this.sessionManager.callTranscript = [];
+			this.sessionManager.lastAnalyzedTranscriptIndex = 0;
 
 			// Reset energy levels to full for the new persona
 			energyBarService.resetEnergyLevel("session-reset", "sts");
@@ -1249,37 +1054,6 @@ this.updateTextTranscript(this.ttsCaption);
 		this.callHistory = [newSummary, ...this.callHistory];
 	}
 
-	private _initializeNewTurn(message: string): string {
-		// Generate turn ID before appending user message
-		const turnId = crypto?.randomUUID?.() ?? `t-${Date.now()}`;
-		
-		// Add message to text transcript with turnId
-		this.textTranscript = [
-			...this.textTranscript,
-			{ text: message, speaker: "user", turnId }
-		];
-
-		// Initialize status to clock (analyzing)
-		this.messageStatuses = { ...this.messageStatuses, [turnId]: 'clock' };
-
-		// Prune message metadata maps
-		this._pruneMessageMeta();
-
-		// Set initial thinking state BEFORE any awaits
-		this.npuThinkingLog = "";
-		this.npuStatus = "Thinking…";
-		this.thinkingActive = true;
-		
-		// Initialize turn state machine
-		this.turnState = {
-			id: turnId,
-			phase: 'npu',
-			startedAt: Date.now(),
-			lastUpdateAt: Date.now()
-		};
-		
-		return turnId;
-	}
 
 	private async _startTtsFromSummary(e: CustomEvent) {
 		const summary = e.detail.summary as CallSummary;
@@ -1299,25 +1073,25 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// Clear the previous text chat context. This clears the transcript and
 		// ensures we start with a fresh session.
-		this._resetTextContext();
+		this.sessionManager.resetTextContext();
 
 		// Initialize new turn and get turnId
-		const turnId = this._initializeNewTurn(message);
+		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
+		this.sessionManager.textTranscript = newTranscript;
+		this.sessionManager.messageStatuses = newStatuses;
+		this._pruneMessageMeta();
 		
 		this.requestUpdate();
 		await this.updateComplete;
 		
-		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
+		logger.debug("UI INIT: Thinking set pre-await", { status: this.turnManager.npuStatus, active: this.turnManager.thinkingActive });
 
 		// A new session must be initialized. Show status while this happens.
 		this.updateStatus("Initializing text session...");
-		const ok = await this._initTextSession();
+		const ok = await this.sessionManager.initTextSession();
 
 		// If session initialization fails, show an error and abort.
-		if (!ok || !this.textSessionManager || !this.textSessionManager.isActive) {
-			this.updateError(
-				"Unable to start text session (rate limited or network error)",
-			);
+		if (!ok) {
 			return;
 		}
 
@@ -1325,12 +1099,10 @@ this.updateTextTranscript(this.ttsCaption);
 		this.lastAdvisorContext = "";
 		const personaId = this.personaManager.getActivePersona().id;
 		/* conversationContext removed: memory now stores facts only */
-		// Set current turn ID to ensure only this turn drives the Thinking UI
-		this.currentTurnId = turnId;
 		const intention = await this.npuService.analyzeAndAdvise(
 			message,
 			personaId,
-			this.textTranscript,
+			this.sessionManager.textTranscript,
 			undefined,
 			undefined,
 			turnId,
@@ -1341,8 +1113,9 @@ this.updateTextTranscript(this.ttsCaption);
 
 		// The advisory prompt is now the user's direct input, so the debug message is redundant.
 
+		const vpuPayload = this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message);
 		this.textSessionManager.sendMessageWithProgress(
-			this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+			vpuPayload, 
 			turnId, 
 			(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId)
 		);
@@ -1393,17 +1166,17 @@ this.updateTextTranscript(this.ttsCaption);
 	private _handleDebouncedTranscription(text: string) {
 		// Accumulate text until debounce period expires
 		this.pendingTranscriptionText += text;
-		
+			
 		// Clear existing timer
 		if (this.transcriptionDebounceTimer) {
 			clearTimeout(this.transcriptionDebounceTimer);
 		}
-		
+			
 		// Set new timer
 		this.transcriptionDebounceTimer = window.setTimeout(() => {
 			// Update the thinking log with accumulated text
 			if (this.pendingTranscriptionText) {
-				this.npuThinkingLog += `\n[model]: ${this.pendingTranscriptionText}`;
+				this.turnManager.npuThinkingLog += `\n[model]: ${this.pendingTranscriptionText}`;
 				this.pendingTranscriptionText = "";
 				// Force a re-render to update the UI
 				this._scheduleUpdate();
@@ -1414,222 +1187,22 @@ this.updateTextTranscript(this.ttsCaption);
 	
 	// Clear thinking UI
 	private _clearThinkingUI() {
-		this.npuStatus = "";
-		this.npuThinkingLog = "";
-		// Force a re-render to update the UI
-		this._scheduleUpdate();
+		this.turnManager.npuStatus = "";
+		this.turnManager.npuThinkingLog = "";
 	}
   
-  private _setTurnPhase(phase: 'idle'|'npu'|'vpu'|'complete'|'error', eventType?: string) {
-    const previousPhase = this.turnState.phase;
-    const now = Date.now();
-    this.turnState = {
-      ...this.turnState,
-      phase,
-      lastUpdateAt: now
-    };
-    
-    // Log phase transition
-    if (previousPhase !== phase) {
-      logger.debug("Turn phase transition", { 
-        turnId: this.turnState.id, 
-        from: previousPhase, 
-        to: phase, 
-        eventType 
-      });
-    }
-    
-    switch (phase) {
-      case 'npu':
-        this.thinkingActive = true;
-        this.npuStatus = EVENT_STATUS_MAP[eventType] || 'Thinking...';
-        logger.debug('Status badge updated', { status: this.npuStatus });
-        break;
-      case 'vpu':
-        this.thinkingActive = true;
-        this.npuStatus = "Speaking…";
-        break;
-      case 'complete':
-        this.thinkingActive = false;
-        this.npuStatus = "";
-        this.npuSubStatus = "";
-        this.npuThinkingLog = "";
-        this.devRemainingMs = 0;
-        this._clearVpuDevTicker();
-        // Clear dev state
-        this.vpuHardDeadline = 0;
-        
-        // Set timeout to transition to idle after 1500ms
-        setTimeout(() => {
-          if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'complete') {
-            this._setTurnPhase('idle');
-          }
-        }, this.COMPLETE_TO_IDLE_DELAY_MS);
-        break;
-      case 'error':
-        this.thinkingActive = false;
-        this.npuStatus = "";
-        this.npuSubStatus = "";
-        this.devRemainingMs = 0;
-        this._clearVpuDevTicker();
-        // Clear dev state
-        this.vpuHardDeadline = 0;
-        
-        // Set timeout to transition to idle after 2500ms
-        setTimeout(() => {
-          if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'error') {
-            this._setTurnPhase('idle');
-          }
-        }, this.ERROR_TO_IDLE_DELAY_MS);
-        break;
-      case 'idle':
-        this.thinkingActive = false;
-        this.npuStatus = "";
-        this.npuSubStatus = "";
-        this.npuThinkingLog = ""; // Clear thinking log text
-        this.devRemainingMs = 0;
-        this._clearVpuDevTicker();
-        // Clear dev state
-        this.vpuHardDeadline = 0;
-        break;
-    }
-    
-    this._scheduleUpdate();
-  }
   
-  private _resetVpuWatchdog() {
-    // Clear existing timer
-    if (this.vpuWatchdogTimer) {
-      clearTimeout(this.vpuWatchdogTimer);
-    }
-    
-    // Set new timer only if we're in VPU phase
-    if (this.turnState.phase === 'vpu' && this.turnState.id) {
-      logger.debug("VPU watchdog armed", { 
-        turnId: this.turnState.id, 
-        timeoutMs: this.VPU_WATCHDOG_MS 
-      });
-      this.vpuWatchdogTimer = window.setTimeout(() => {
-        // Only trigger if this is still the current turn
-        if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
-          logger.debug("VPU watchdog fired", { turnId: this.turnState.id });
-          this._setTurnPhase('complete');
-        }
-        this.vpuWatchdogTimer = null;
-      }, this.VPU_WATCHDOG_MS);
-    }
-  }
-  
-  private _clearVpuWatchdog() {
-    if (this.vpuWatchdogTimer) {
-      clearTimeout(this.vpuWatchdogTimer);
-      this.vpuWatchdogTimer = null;
-    }
-  }
-  
-  private _clearVpuHardMaxTimer(silent = false) {
-    if (this.vpuHardMaxTimer) {
-      clearTimeout(this.vpuHardMaxTimer);
-      this.vpuHardMaxTimer = null;
-      if (!silent) {
-        logger.debug("VPU hard max timer cleared", {
-          turnId: this.turnState.id
-        });
-      }
-      this.vpuHardDeadline = 0;
-    }
-  }
-  
-  private _armVpuDevTicker() {
-    // If vpuDevTicker exists, no-op
-    if (this.vpuDevTicker) {
-      logger.debug("VPU dev ticker already armed");
-      return;
-    }
-    
-    // Set new ticker
-    this.vpuDevTicker = window.setInterval(() => {
-      try {
-        if (this.turnState.phase !== 'vpu' || !this.turnState.id) { 
-          this._clearVpuDevTicker(); 
-          return; 
-        }
-        const now = Date.now();
-        this.devRemainingMs = Math.max(0, this.vpuHardDeadline ? (this.vpuHardDeadline - now) : 0);
-        // If deadline present and reached, force complete
-        if (this.vpuHardDeadline && now >= this.vpuHardDeadline) {
-          logger.debug('VPU DEV TICKER forcing completion');
-          this._clearVpuWatchdog();
-          this._clearVpuHardMaxTimer();
-          this._setTurnPhase('complete');
-          this._clearVpuDevTicker();
-          this.requestUpdate();
-          return;
-        }
-        // Request update to refresh dev label countdown
-        this.requestUpdate();
-      } catch (e) {
-        logger.warn('VPU DEV TICKER error', { error: e });
-      }
-    }, 250);
-    
-    logger.debug("VPU dev ticker armed", { turnId: this.turnState.id });
-  }
-  
-  private _clearVpuDevTicker() {
-    if (this.vpuDevTicker) {
-      clearInterval(this.vpuDevTicker);
-      this.vpuDevTicker = null;
-      logger.debug("VPU dev ticker cleared");
-      this.devRemainingMs = 0;
-    }
-  }
-  
-  /**
-   * Constructs the VPU message payload by combining advisor context and user message
-   * @param advisorContext The context provided by the NPU
-   * @param userMessage The original user message
-   * @returns The formatted message payload for VPU
-   */
-  private _constructVpuMessagePayload(advisorContext: string, userMessage: string): string {
-    return advisorContext ? `${advisorContext}\n\n${userMessage}` : userMessage;
-  }
-  
-  private _armVpuHardMaxTimer() {
-    // Always clear any existing timer before setting a new one
-    this._clearVpuHardMaxTimer(true); // silent clear
-    
-    // Set new hard max timer
-    if (this.turnState.id) {
-      this.vpuHardDeadline = Date.now() + this.VPU_HARD_MAX_MS;
-      logger.debug("VPU hard max armed", { 
-        turnId: this.turnState.id, 
-        deadline: new Date(this.vpuHardDeadline).toISOString(),
-        timeoutMs: this.VPU_HARD_MAX_MS 
-      });
-      this.vpuHardMaxTimer = window.setTimeout(() => {
-        logger.debug("VPU HARD TIMEOUT fired", { turnId: this.turnState.id });
-        // Only trigger if this is still the current turn
-        if (this.turnState.id === this.currentTurnId && this.turnState.phase === 'vpu') {
-          this._setTurnPhase('complete');
-          this.requestUpdate();
-        }
-        this.vpuHardMaxTimer = null;
-        this.vpuHardDeadline = 0;
-      }, this.VPU_HARD_MAX_MS);
-    }
-  }
 	
 	private _handleNpuProgress(ev: NpuProgressEvent, turnId: string) {
 		// Once a turn is complete or has errored, ignore subsequent events for it.
-		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
+		if (this.turnManager.turnState.id === turnId && (this.turnManager.turnState.phase === 'complete' || this.turnManager.turnState.phase === 'error')) {
 			return;
 		}
 		// Ignore events for other turns - with type safety check
-		if (this.currentTurnId && 
+		if (this.turnManager.turnState.id && 
 			ev.data?.turnId && 
 			typeof ev.data.turnId === 'string' && 
-			this.currentTurnId !== ev.data.turnId) {
+			this.turnManager.turnState.id !== ev.data.turnId) {
 			return;
 		}
     
@@ -1657,11 +1230,11 @@ this.updateTextTranscript(this.ttsCaption);
     
     // Update turn state if we have a valid phase
     if (phase !== null) {
-      this._setTurnPhase(phase, eventType);
+      this.turnManager.setTurnPhase(phase, eventType);
     }
 
 		// Force immediate update on first NPU event for this turn
-		const eventTurnId = (ev.data?.turnId as string) || this.currentTurnId;
+		const eventTurnId = (ev.data?.turnId as string) || this.turnManager.turnState.id;
 		if (eventTurnId && !this._npuFirstEventForced.has(eventTurnId)) {
 			this._npuFirstEventForced.add(eventTurnId);
 			this.requestUpdate();
@@ -1694,98 +1267,97 @@ this.updateTextTranscript(this.ttsCaption);
 		// Handle log updates
 		switch (ev.type) {
 			case "npu:start":
-				this.npuThinkingLog += "\n[Thinking...]"; // Concise log line
+				this.turnManager.npuThinkingLog += "\n[Thinking...]"; // Concise log line
 				break;
 			case "npu:model:start":
 				if (ev.data?.model) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'single' };
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'single' };
 					// Initialize retry count
-					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: 0 };
-					this.npuThinkingLog += `\n[Preparing NPU: ${ev.data.model as string}]`; // Concise log line
+					this.sessionManager.messageRetryCount = { ...this.sessionManager.messageRetryCount, [turnId]: 0 };
+					this.turnManager.npuThinkingLog += `\n[Preparing NPU: ${ev.data.model as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:attempt":
 				if (ev.data?.attempt) {
 					// Update retry count (attempt 1 = 0 retries, attempt 2 = 1 retry, etc.)
 					const retries = Math.max(0, (ev.data.attempt as number) - 1);
-					this.messageRetryCount = { ...this.messageRetryCount, [turnId]: Math.max(this.messageRetryCount[turnId] ?? 0, retries) };
-					this.npuThinkingLog += `\n[NPU attempt #${ev.data.attempt}]`; // Concise log line
+					this.sessionManager.messageRetryCount = { ...this.sessionManager.messageRetryCount, [turnId]: Math.max(this.sessionManager.messageRetryCount[turnId] ?? 0, retries) };
+					this.turnManager.npuThinkingLog += `\n[NPU attempt #${ev.data.attempt}]`; // Concise log line
 				}
 				break;
 			case "npu:model:error":
 				if (ev.data?.attempt && ev.data?.error) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'error' };
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'error' };
 					// Clear any pending transcription timers on error
 					if (this.transcriptionDebounceTimer) {
 						clearTimeout(this.transcriptionDebounceTimer);
 						this.transcriptionDebounceTimer = null;
 						this.pendingTranscriptionText = "";
 					}
-					this.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]`; // Concise log line
+					this.turnManager.npuThinkingLog += `\n[NPU error (attempt ${ev.data.attempt}): ${ev.data.error as string}]`; // Concise log line
 				}
 				break;
 			case "npu:model:response":
 				if (ev.data?.length) {
-					this.messageStatuses = { ...this.messageStatuses, [turnId]: 'double' };
-					this.npuThinkingLog += "\n[NPU ready]"; // Concise log line
+					this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: 'double' };
+					this.turnManager.npuThinkingLog += "\n[NPU ready]"; // Concise log line
 				}
 				break;
 			case "npu:complete":
 				// Set fallback status based on whether NPU produced a response
 				const ok = !!ev.data?.hasResponseText;
-				this.messageStatuses = { ...this.messageStatuses, [turnId]: ok ? 'double' : 'error' };
-				this.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
+				this.sessionManager.messageStatuses = { ...this.sessionManager.messageStatuses, [turnId]: ok ? 'double' : 'error' };
+				this.turnManager.npuThinkingLog += "\n[Thinking complete]"; // Concise log line
 				break;
 		}
 
 		// Handle prompt partial updates
 		if (ev.type === "npu:prompt:partial" && ev.data?.delta) {
-			this.npuThinkingLog += ev.data.delta as string;
+			this.turnManager.npuThinkingLog += ev.data.delta as string;
 		}
 
 		// Handle memory events
 		if (ev.type === "npu:memories:start") {
-			this.npuThinkingLog += "\n[Retrieving memories...]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Retrieving memories...]"; // Concise log line
 		} else if (ev.type === "npu:memories:done") {
-			this.npuThinkingLog += "\n[Memories retrieved]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Memories retrieved]"; // Concise log line
 		}
 
 		// Handle prompt build events
 		if (ev.type === "npu:prompt:build") {
-			this.npuThinkingLog += "\n[Building prompt...]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Building prompt...]"; // Concise log line
 		} else if (ev.type === "npu:prompt:built") {
-			this.npuThinkingLog += "\n[Prompt built]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[Prompt built]"; // Concise log line
 		}
 
 		// Handle advisor ready event
 		if (ev.type === "npu:advisor:ready") {
-			this.npuThinkingLog += "\n[NPU context ready]"; // Concise log line
+			this.turnManager.npuThinkingLog += "\n[NPU context ready]"; // Concise log line
 		}
 
 		// Handle prompt built with optional full prompt display
 		if (ev.type === "npu:prompt:built" && ev.data?.fullPrompt) {
 			// Optionally, keep partial stream; or replace with full prompt
 			if (this.showInternalPrompts) {
-				this.npuThinkingLog = ev.data.fullPrompt as string;
+				this.turnManager.npuThinkingLog = ev.data.fullPrompt as string;
 			}
 		}
 
 		// Schedule update for frame-based batching
-		this._scheduleUpdate();
 	}
   
 
-  private _armDevRaf() {
+  public _armDevRaf() {
     // Only run in development mode
     if (!import.meta.env.DEV) return;
     
     const loop = () => {
       // Only check if we're in VPU phase
-      if (this.turnState.phase === 'vpu' && this.vpuHardDeadline > 0) {
+      if (this.turnManager.turnState.phase === 'vpu' && this.turnManager.vpuHardDeadline > 0) {
         const now = Date.now();
-        if (now >= this.vpuHardDeadline) {
+        if (now >= this.turnManager.vpuHardDeadline) {
           logger.debug('DEV RAF: Forcing turn completion due to hard deadline');
-          this._setTurnPhase('complete');
+          this.turnManager.setTurnPhase('complete');
           this.requestUpdate();
         }
       }
@@ -1807,20 +1379,44 @@ this.updateTextTranscript(this.ttsCaption);
 			return;
 		}
 
+		// Guard: Ensure sessionManager exists before proceeding
+		if (!this.sessionManager) {
+			// Check if API key exists
+			if (!this._checkApiKeyExists()) {
+				// Show API key prompt and return
+				this._showApiKeyPrompt(() => this._handleSendMessage(e));
+				return;
+			}
+			
+			// API key exists but session manager doesn't - try to initialize
+			await this.initClient();
+			
+			// If session manager still doesn't exist, show error and return
+			if (!this.sessionManager) {
+				this.updateError("Failed to initialize session. Please try again.");
+				return;
+			}
+		}
+
 		// Initialize new turn and get turnId
-		const turnId = this._initializeNewTurn(message);
+		const { turnId, newTranscript, newStatuses } = this.turnManager.initializeNewTurn(message, this.sessionManager.textTranscript, this.sessionManager.messageStatuses);
+		this.sessionManager.textTranscript = newTranscript;
+		this.sessionManager.messageStatuses = newStatuses;
+		this._pruneMessageMeta();
 		
 		// Flush synchronously
 		this.requestUpdate();
 		await this.updateComplete;
 
-		logger.debug("UI INIT: Thinking set pre-await", { status: this.npuStatus, active: this.thinkingActive });
+		logger.debug("UI INIT: Thinking set pre-await", { status: this.turnManager.npuStatus, active: this.turnManager.thinkingActive });
 
 		// Check API key presence before proceeding
 		if (!this._checkApiKeyExists()) {
 			this._showApiKeyPrompt(() => this._handleSendMessage(e));
 			return;
 		}
+
+		if (!this.sessionManager) return;
 
 		// Clear any existing captions when the user sends a new message
 		this.ttsCaption = "";
@@ -1834,23 +1430,14 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 
 		// Ensure we have an active text session
-		if (!this.textSessionManager || !this.textSessionManager.isActive) {
-			this.updateStatus("Initializing text session...");
-			const ok = await this._initTextSession();
-			if (!ok || !this.textSession) {
-				this.updateError(
-					"Unable to start text session (rate limited or network error)",
-				);
-				return;
-			}
+		const ok = await this.sessionManager.initTextSession();
+		if (!ok) {
+			return;
 		}
 
 		// Send message to text session using NPU-VPU flow (memory-augmented)
 		if (this.textSessionManager?.isActive) {
 			try {
-				// Use the turn ID we already generated
-				this.currentTurnId = turnId;
-
 				// Unified NPU flow: analyze emotion + prepare enhanced prompt in one step
 				this.lastAdvisorContext = "";
 				const personaId = this.personaManager.getActivePersona().id;
@@ -1859,7 +1446,7 @@ this.updateTextTranscript(this.ttsCaption);
 				const intention = await this.npuService.analyzeAndAdvise(
 					message,
 					personaId,
-					this.textTranscript,
+					this.sessionManager.textTranscript,
 					undefined,
 					undefined,
 					turnId,
@@ -1871,10 +1458,11 @@ this.updateTextTranscript(this.ttsCaption);
 
 				// NPU advisor ready — now sending to VPU
 				// Note: We don't set npuStatus here anymore as it's handled by the advisor:ready event
-				// this.npuStatus = "Sending to VPU…";
+				// this.turnManager.npuStatus = "Sending to VPU…";
 
+				const vpuPayload = this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message);
 				this.textSessionManager.sendMessageWithProgress(
-					this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+					vpuPayload, 
 					turnId, 
 					(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, false)
 				);
@@ -1886,19 +1474,16 @@ this.updateTextTranscript(this.ttsCaption);
 				this.updateError(`Failed to send message: ${msg}`);
 
 				// Try to reinitialize the session and resend once.
-				const ok = await this._initTextSession();
+				const ok = await this.sessionManager.initTextSession();
 				if (ok && this.textSessionManager?.isActive) {
 					try {
-						// Reuse the original turnId for correlation
-						this.currentTurnId = turnId;
-
 						this.lastAdvisorContext = "";
 						const personaId = this.personaManager.getActivePersona().id;
 						/* conversationContext removed: memory now stores facts only */
 						const intention = await this.npuService.analyzeAndAdvise(
 							message,
 							personaId,
-							this.textTranscript,
+							this.sessionManager.textTranscript,
 							undefined,
 							undefined,
 							turnId,
@@ -1907,8 +1492,9 @@ this.updateTextTranscript(this.ttsCaption);
 						this.lastAdvisorContext = intention?.advisor_context || "";
 
 						// The advisory prompt is now the user's direct input, so the debug message is redundant.
+						const vpuPayload = this.sessionManager.constructVpuMessagePayload(intention?.advisor_context || "", message);
 						this.textSessionManager.sendMessageWithProgress(
-							this._constructVpuMessagePayload(intention?.advisor_context || "", message), 
+							vpuPayload, 
 							turnId, 
 							(ev: VpuProgressEvent) => this._handleVpuProgress(ev, turnId, true)
 						);
@@ -1947,9 +1533,9 @@ this.updateTextTranscript(this.ttsCaption);
 			case "vpu:response:complete":
 				return "";
 			default:
-				// Use EVENT_STATUS_MAP for other events
-				if (EVENT_STATUS_MAP[ev.type as string]) {
-					return EVENT_STATUS_MAP[ev.type as string];
+				// Use TurnManager.EVENT_STATUS_MAP for other events
+				if (TurnManager.EVENT_STATUS_MAP[ev.type as string]) {
+					return TurnManager.EVENT_STATUS_MAP[ev.type as string];
 				}
 				return "";
 		}
@@ -1957,15 +1543,15 @@ this.updateTextTranscript(this.ttsCaption);
 
 	private _handleVpuProgress(ev: VpuProgressEvent, turnId?: string, isRetry = false) {
 		// Once a turn is complete or has errored, ignore subsequent events for it.
-		if (this.turnState.id === turnId && (this.turnState.phase === 'complete' || this.turnState.phase === 'error')) {
+		if (this.turnManager.turnState.id === turnId && (this.turnManager.turnState.phase === 'complete' || this.turnManager.turnState.phase === 'error')) {
 			return;
 		}
 		// Ignore events for other turns - with type safety check
-		if (this.currentTurnId && 
+		if (this.turnManager.turnState.id && 
 			turnId && 
 			ev.data?.turnId && 
 			typeof ev.data.turnId === 'string' && 
-			this.currentTurnId !== ev.data.turnId) {
+			this.turnManager.turnState.id !== ev.data.turnId) {
 			return;
 		}
     
@@ -1973,26 +1559,26 @@ this.updateTextTranscript(this.ttsCaption);
     if (ev.type === "vpu:message:sending" || 
         ev.type === "vpu:response:first-output" || 
         ev.type === "vpu:response:transcription") {
-      this._setTurnPhase('vpu');
-      this._armVpuHardMaxTimer();
-      this._resetVpuWatchdog();
-      this._armVpuDevTicker();
+      this.turnManager.setTurnPhase('vpu');
+      this.turnManager.armVpuHardMaxTimer();
+      this.turnManager.resetVpuWatchdog();
+      this.turnManager.armVpuDevTicker();
     } else if (ev.type === "vpu:response:complete") {
       // Update log before setting phase to complete
-      this.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
-      this._clearVpuWatchdog();
-      this._clearVpuHardMaxTimer();
-      this._clearVpuDevTicker();
-      this._setTurnPhase('complete');
+      this.turnManager.npuThinkingLog += isRetry ? "\n[VPU response complete (retry)]" : "\n[VPU response complete]";
+      this.turnManager.clearVpuWatchdog();
+      this.turnManager.clearVpuHardMaxTimer();
+      this.turnManager.clearVpuDevTicker();
+      this.turnManager.setTurnPhase('complete');
     } else if (ev.type === "vpu:message:error") {
-      this._clearVpuWatchdog();
-      this._clearVpuHardMaxTimer();
-      this._clearVpuDevTicker();
-      this._setTurnPhase('error');
+      this.turnManager.clearVpuWatchdog();
+      this.turnManager.clearVpuHardMaxTimer();
+      this.turnManager.clearVpuDevTicker();
+      this.turnManager.setTurnPhase('error');
     }
     
     // Update sub status using the new helper method
-    this.npuSubStatus = this._getVpuSubStatus(ev, isRetry);
+    this.turnManager.npuSubStatus = this._getVpuSubStatus(ev, isRetry);
 		
 		// Force immediate update on first VPU event for this turn
 		const eventTurnId = (ev.data?.turnId as string) || turnId;
@@ -2021,10 +1607,10 @@ this.updateTextTranscript(this.ttsCaption);
 				this.vpuWaitTimer = null;
 			}
 			// Set new timer
-			if (!turnId || this.currentTurnId === turnId) {
+			if (!turnId || this.turnManager.turnState.id === turnId) {
 				this.vpuWaitTimer = window.setTimeout(() => {
-					if (!turnId || this.currentTurnId === turnId) {
-						this.npuSubStatus = "Waiting for response…";
+					if (!turnId || this.turnManager.turnState.id === turnId) {
+						this.turnManager.npuSubStatus = "Waiting for response…";
 					}
 					this.vpuWaitTimer = null;
 				}, 800);
@@ -2065,14 +1651,14 @@ this.updateTextTranscript(this.ttsCaption);
 		// Handle log updates and other state changes
 		switch (ev.type) {
 			case "vpu:message:sending":
-				this.thinkingActive = true;
-				this.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
+				this.turnManager.thinkingActive = true;
+				this.turnManager.npuThinkingLog += isRetry ? "\n[Sending message to VPU (retry)]" : "\n[Sending message to VPU]";
 				break;
 			case "vpu:message:error":
 				if (ev.data?.error) {
-					this.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
-					this.thinkingActive = false;
-					this.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}]`;
+					this.turnManager.npuStatus = `VPU error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}`;
+					this.turnManager.thinkingActive = false;
+					this.turnManager.npuThinkingLog += `\n[VPU Error${isRetry ? ' (retry)' : ''}: ${ev.data.error as string}]`;
 					// Reset transcription aggregation for this turn on error
 					if (ev.data?.turnId) {
 						this.vpuTranscriptionAgg.delete(ev.data.turnId as string);
@@ -2082,11 +1668,11 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:first-output":
-				this.thinkingActive = true;
-				this.npuThinkingLog += isRetry ? "\n[VPU first output received (retry)]" : "\n[VPU first output received]";
+				this.turnManager.thinkingActive = true;
+				this.turnManager.npuThinkingLog += isRetry ? "\n[VPU first output received (retry)]" : "\n[VPU first output received]";
 				break;
 			case "vpu:response:transcription":
-				this.thinkingActive = true;
+				this.turnManager.thinkingActive = true;
 				if (ev.data?.text) {
 					// Use debounced transcription updates
 					this._handleDebouncedTranscription(ev.data.text as string);
@@ -2110,7 +1696,7 @@ this.updateTextTranscript(this.ttsCaption);
 				}
 				break;
 			case "vpu:response:complete":
-				this.thinkingActive = false;
+				this.turnManager.thinkingActive = false;
 				// Reset transcription aggregation for this turn on completion
 				if (ev.data?.turnId) {
 					this.vpuTranscriptionAgg.delete(ev.data.turnId as string);
@@ -2122,7 +1708,6 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 		
 		// Schedule update for frame-based batching
-		this._scheduleUpdate();
 	}
 
 
@@ -2139,10 +1724,15 @@ this.updateTextTranscript(this.ttsCaption);
 		);
 		window.addEventListener(
 			"persona-changed",
-			this._handlePersonaChanged.bind(this),
+			this._handlePersonaChanged,
 		);
 		this.addEventListener("reconnecting", this._handleReconnecting);
 		this.addEventListener("reconnected", this._handleReconnected);
+		
+		// Add event listeners for manager events
+		this.addEventListener("status-update", this._handleStatusUpdate);
+		this.addEventListener("error-update", this._handleErrorUpdate);
+		this.addEventListener("state-update", this._handleStateUpdate);
 		
 		// Set default throttles
 		debugLogger.setThrottle('*', 250, { leading: true, trailing: false });
@@ -2164,10 +1754,16 @@ this.updateTextTranscript(this.ttsCaption);
 		super.disconnectedCallback();
 		window.removeEventListener(
 			"persona-changed",
-			this._handlePersonaChanged.bind(this),
+			this._handlePersonaChanged,
 		);
 		this.removeEventListener("reconnecting", this._handleReconnecting);
 		this.removeEventListener("reconnected", this._handleReconnected);
+		this.removeEventListener("status-update", this._handleStatusUpdate);
+		this.removeEventListener("error-update", this._handleErrorUpdate);
+		this.removeEventListener("state-update", this._handleStateUpdate);
+		// Remove typed turn event listeners
+		this.removeEventListener('turn-start', this.handleTurnStart as EventListener);
+		this.removeEventListener('turn-end', this.handleTurnEnd as EventListener);
 		this.stopEmotionAnalysis();
 		
 		// Stop dev RAF poller
@@ -2177,31 +1773,45 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 	}
 
-	private _pruneMessageMeta() {
+	public _pruneMessageMeta() {
+		if (!this.sessionManager) return;
 		// Create a set of current user turn IDs
 		const currentUserTurnIds = new Set(
-			this.textTranscript
+			this.sessionManager.textTranscript
 				.filter(turn => turn.speaker === "user" && turn.turnId)
 				.map(turn => turn.turnId)
 		);
 		
 		// Filter messageStatuses and messageRetryCount to only include current turn IDs
-		this.messageStatuses = Object.fromEntries(
-			Object.entries(this.messageStatuses).filter(([turnId]) => 
+		this.sessionManager.messageStatuses = Object.fromEntries(
+			Object.entries(this.sessionManager.messageStatuses).filter(([turnId]) => 
 				currentUserTurnIds.has(turnId)
 			)
 		);
 		
-		this.messageRetryCount = Object.fromEntries(
-			Object.entries(this.messageRetryCount).filter(([turnId]) => 
+		this.sessionManager.messageRetryCount = Object.fromEntries(
+			Object.entries(this.sessionManager.messageRetryCount).filter(([turnId]) => 
 				currentUserTurnIds.has(turnId)
 			)
 		);
 	}
 	
+	private _resetTextContext() {
+		if (!this.sessionManager) return;
+		this.sessionManager.resetTextContext();
+		this.requestUpdate();
+	}
+
+	private _resetCallContext() {
+		if (!this.sessionManager) return;
+		this.sessionManager.resetCallContext();
+		this.requestUpdate();
+	}
+
 	private startEmotionAnalysis() {
 		this.stopEmotionAnalysis(); // Ensure no multiple timers
 		this.emotionAnalysisTimer = window.setInterval(async () => {
+			if (!this.sessionManager) return;
 			// Only run analysis if a call is active or a text chat is active
 			if (!this.isCallActive && !this.isChatActive) {
 				return;
@@ -2212,11 +1822,11 @@ this.updateTextTranscript(this.ttsCaption);
 
 			const transcript =
 				this.activeMode === "calling"
-					? this.callTranscript
-					: this.textTranscript;
+					? this.sessionManager.callTranscript
+					: this.sessionManager.textTranscript;
 
 			// Analyze only new transcript parts since the last analysis
-			const newTurns = transcript.slice(this.lastAnalyzedTranscriptIndex);
+			const newTurns = transcript.slice(this.sessionManager.lastAnalyzedTranscriptIndex);
 			if (newTurns.length === 0) {
 				return; // Nothing new to analyze
 			}
@@ -2236,7 +1846,7 @@ this.updateTextTranscript(this.ttsCaption);
 			}
 
 			// Update the index to the full length after processing
-			this.lastAnalyzedTranscriptIndex = transcript.length;
+			this.sessionManager.lastAnalyzedTranscriptIndex = transcript.length;
 		}, 10000); // Analyze every 10 seconds to stay within RPM limits
 		
 		// Start memory decay timer
@@ -2271,8 +1881,8 @@ this.updateTextTranscript(this.ttsCaption);
 		const toast = this.shadowRoot?.querySelector(
 			"toast-notification#inline-toast",
 		) as ToastNotification;
-		if (this.activeMode === "calling" && !this._callReconnectingNotified) {
-			this._callReconnectingNotified = true;
+		if (this.activeMode === "calling" && !this.sessionManager._callReconnectingNotified) {
+			this.sessionManager._callReconnectingNotified = true;
 			toast?.show("Reconnecting call…", "info", 2000, {
 				position: "bottom-right",
 				variant: "standard",
@@ -2298,7 +1908,7 @@ this.updateTextTranscript(this.ttsCaption);
 				position: "bottom-right",
 				variant: "standard",
 			});
-			this._callReconnectingNotified = false;
+			this.sessionManager._callReconnectingNotified = false;
 		} else if (this.activeMode === "texting") {
 			toast?.show("Chat reconnected", "success", 1200, {
 				position: "bottom-center",
@@ -2308,7 +1918,22 @@ this.updateTextTranscript(this.ttsCaption);
 		}
 	};
 
+	private _handleStatusUpdate(e: CustomEvent) {
+		const message = e.detail?.message || "";
+		this.updateStatus(message);
+	}
+
+	private _handleErrorUpdate(e: CustomEvent) {
+		const message = e.detail?.message || "";
+		this.updateError(message);
+	}
+
+	private _handleStateUpdate() {
+		this.requestUpdate();
+	}
+
 	private _onEnergyLevelChanged = (e: Event) => {
+		if (!this.sessionManager) return;
 		const { level, reason, mode } = (e as CustomEvent<EnergyLevelChangedDetail>)
 			.detail;
 
@@ -2350,19 +1975,19 @@ this.updateTextTranscript(this.ttsCaption);
 			if (
 				mode === "sts" &&
 				this.activeMode === "calling" &&
-				this.callTranscript.length > 0
+				this.sessionManager.callTranscript.length > 0
 			) {
 				this.callSessionManager
-					.handleFallback(this.callTranscript, this.summarizationService)
+					.handleFallback(this.sessionManager.callTranscript, this.summarizationService)
 					.catch((error) => {
 						logger.error("Error handling fallback for call session", { error });
 					});
 			}
 
 			// For TTS (text session), handle fallback if we have text transcript
-			if (mode === "tts" && this.textTranscript.length > 0) {
+			if (mode === "tts" && this.sessionManager.textTranscript.length > 0) {
 				this.textSessionManager
-					.handleFallback(this.textTranscript, this.summarizationService)
+					.handleFallback(this.sessionManager.textTranscript, this.summarizationService)
 					.catch((error) => {
 						logger.error("Error handling fallback for text session", { error });
 					});
@@ -2378,7 +2003,7 @@ this.updateTextTranscript(this.ttsCaption);
 		) {
 			this.updateStatus("Rate limited — switching to a lower tier...");
 			// Re-initialize the call session to apply the downgraded model
-			this._initCallSession();
+			this.sessionManager.initCallSession();
 		}
 	};
 
@@ -2387,8 +2012,8 @@ this.updateTextTranscript(this.ttsCaption);
       <div class="live2d-container">
         <live2d-gate
           .modelUrl=${this.personaManager.getActivePersona().live2dModelUrl || ""}
-          .inputNode=${this.inputNode}
-          .outputNode=${this.outputNode}
+          .inputNode=${this.audioManager.inputNode}
+          .outputNode=${this.audioManager.outputNode}
           .emotion=${this.currentEmotion}
           .motionName=${this.currentMotionName}
           .personaName=${this.personaManager.getActivePersona().name}
@@ -2405,19 +2030,19 @@ this.updateTextTranscript(this.ttsCaption);
             @tab-switch=${this._handleTabSwitch}
           ></tab-view>
           <chat-view
-            .transcript=${this.textTranscript}
+            .transcript=${this.sessionManager?.textTranscript ?? []}
             .visible=${this.activeMode !== "calling" && this.activeTab === "chat"}
-            .thinkingStatus=${this.npuStatus}
-            .thinkingSubStatus=${this.npuSubStatus}
-            .thinkingText=${this.npuThinkingLog}
-            .thinkingActive=${this.thinkingActive}
+            .thinkingStatus=${this.turnManager.npuStatus}
+            .thinkingSubStatus=${this.turnManager.npuSubStatus}
+            .thinkingText=${this.turnManager.npuThinkingLog}
+            .thinkingActive=${this.turnManager.thinkingActive}
             .npuProcessingTime=${this.npuProcessingTime}
             .vpuProcessingTime=${this.vpuProcessingTime}
-            .messageStatuses=${this.messageStatuses}
-            .messageRetryCount=${this.messageRetryCount}
-            .phase=${this.turnState.phase}
-            .hardDeadlineMs=${this.vpuHardDeadline}
-            .turnId=${this.turnState.id || ''}
+            .messageStatuses=${this.sessionManager?.messageStatuses ?? {}}
+            .messageRetryCount=${this.sessionManager?.messageRetryCount ?? {}}
+            .phase=${this.turnManager.turnState.phase}
+            .hardDeadlineMs=${this.turnManager.vpuHardDeadline}
+            .turnId=${this.turnManager.turnState.id || ''}
             @send-message=${this._handleSendMessage}
             @reset-text=${this._resetTextContext}
             @scroll-state-changed=${this._handleChatScrollStateChanged}
@@ -2481,7 +2106,7 @@ this.updateTextTranscript(this.ttsCaption);
         </div>
 
         <call-transcript
-          .transcript=${this.callTranscript}
+          .transcript=${this.sessionManager?.callTranscript ?? []}
           .visible=${this.activeMode === "calling"}
           .activePersonaName=${this.personaManager.getActivePersona().name}
           .callState=${this.callState}

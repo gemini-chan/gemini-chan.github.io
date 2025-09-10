@@ -17,15 +17,23 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
-    "memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
-    },
     "devtools": {
-      "url": "http://127.0.0.1:1337/sse"
+      "url": "http://127.0.0.1:1337/sse",
+      "alwaysAllow": [
+        "git_stage_and_commit",
+        "ai_edit",
+        "execute_command",
+        "git_show",
+        "git_branch",
+        "git_log",
+        "git_diff"
+      ],
+      "timeout": 300,
+      "disabledTools": [
+        "aider_status",
+        "read_file",
+        "git_apply_diff"
+      ]
     }
   }
 }
