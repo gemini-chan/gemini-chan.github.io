@@ -1,1 +1,1 @@
-../docs/README.md
+../.windsurf/rules/senior-agent-v3.md
