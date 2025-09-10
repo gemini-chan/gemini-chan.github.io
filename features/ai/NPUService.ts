@@ -67,7 +67,7 @@ export class NPUService {
 
     // Build combined prompt for Flash Lite model
     await this._sendProgress(progressCb, { type: "npu:prompt:build", ts: Date.now(), data: { turnId } });
-    const recentContext = this.buildRecentTurnsContext(transcript, 5);
+    const recentContext = this.buildRecentTurnsContext(transcript, 10);
     const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext || recentContext);
     await this._sendProgress(progressCb, { type: "npu:prompt:built", ts: Date.now(), data: { promptPreview: combinedPromptText.slice(0, 500), fullPrompt: combinedPromptText, turnId } });
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length, memoryLines: memories.length });
@@ -79,7 +79,10 @@ export class NPUService {
     const storedModel = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-model') : null) || 'gemini-2.5-flash';
     const tempStr = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-temperature') : null);
     const thinking = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-thinking-level') : null) || 'standard';
-    const temperature = Number.isFinite(Number(tempStr)) ? Math.min(1, Math.max(0, Number(tempStr))) : 0.3;
+    let temperature = 0.3;
+    if (tempStr !== null && tempStr !== '' && !Number.isNaN(parseFloat(tempStr))) {
+      temperature = Math.min(1, Math.max(0, parseFloat(tempStr)));
+    }
     const maxTokens = thinking === 'deep' ? 1024 : thinking === 'lite' ? 256 : 640;
     const model = storedModel;
 
@@ -187,26 +190,10 @@ export class NPUService {
   /**
    * Builds a string containing recent user and model messages from the transcript.
    */
-  private buildRecentTurnsContext(transcript: Turn[], lastN = 5): string {
-    if (!transcript || transcript.length === 0) {
-      return "";
-    }
-
-    const userTurns = transcript.filter((turn) => turn.speaker === "user").slice(-lastN);
-    const modelTurns = transcript.filter((turn) => turn.speaker === "model").slice(-lastN);
-
-    const sections: string[] = [];
-
-    if (userTurns.length > 0) {
-      const userMessages = userTurns.map((turn) => `- ${turn.text}`).join("\n");
-      sections.push(`RECENT USER MESSAGES:\n${userMessages}`);
-    }
-
-    if (modelTurns.length > 0) {
-      const modelMessages = modelTurns.map((turn) => `- ${turn.text}`).join("\n");
-      sections.push(`RECENT MODEL MESSAGES:\n${modelMessages}`);
-    }
-
-    return sections.join("\n\n");
+  private buildRecentTurnsContext(transcript: Turn[], lastN = 10): string {
+    if (!transcript || transcript.length === 0) return "";
+    const recent = transcript.slice(-lastN);
+    const messages = recent.map((t) => `- ${t.speaker.toUpperCase()}: ${t.text}`).join("\n");
+    return `RECENT CONVERSATION TURNS:\n${messages}`;
   }
 }

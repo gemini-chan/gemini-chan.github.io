@@ -843,6 +843,8 @@ export class SettingsMenu extends LitElement {
       }
     }
 
+    .npu-setting-label { flex: 0 0 100px; }
+
     /* Theme Options Styling */
     .theme-options-section {
       margin-top: 1rem;
@@ -1480,7 +1482,7 @@ export class SettingsMenu extends LitElement {
               <label class="section-title">Advisor (NPU) Settings</label>
             </div>
             <div class="input-group">
-              <label for="npuModel" style="flex: 0 0 100px;">Model</label>
+              <label for="npuModel" class="npu-setting-label">Model</label>
               <select id="npuModel" .value=${this._npuModel} @change=${this._onNpuModelChange}>
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
@@ -1488,7 +1490,7 @@ export class SettingsMenu extends LitElement {
               </select>
             </div>
             <div class="range-group">
-              <label for="npuTemperature" style="flex: 0 0 100px;">Temperature</label>
+              <label for="npuTemperature" class="npu-setting-label">Temperature</label>
               <input
                 id="npuTemperature"
                 type="range"
@@ -1501,7 +1503,7 @@ export class SettingsMenu extends LitElement {
               <span class="range-value">${this._npuTemperature.toFixed(2)}</span>
             </div>
             <div class="input-group">
-              <label for="npuThinking" style="flex: 0 0 100px;">Thinking Level</label>
+              <label for="npuThinking" class="npu-setting-label">Thinking Level</label>
               <select id="npuThinking" .value=${this._npuThinking} @change=${this._onNpuThinkingChange}>
                 <option value="lite">Lite</option>
                 <option value="standard">Standard</option>
@@ -1912,14 +1914,12 @@ export class SettingsMenu extends LitElement {
     this._npuModel = select.value;
     localStorage.setItem("npu-model", this._npuModel);
     this._showToast("Advisor model updated", 1500);
-    this.requestUpdate();
   };
 
   private _onNpuTempChange = (e: Event) => {
     const range = e.target as HTMLInputElement;
     this._npuTemperature = parseFloat(range.value);
     localStorage.setItem("npu-temperature", this._npuTemperature.toString());
-    this.requestUpdate();
   };
 
   private _onNpuThinkingChange = (e: Event) => {
@@ -1927,6 +1927,5 @@ export class SettingsMenu extends LitElement {
     this._npuThinking = select.value;
     localStorage.setItem("npu-thinking-level", this._npuThinking);
     this._showToast("Advisor thinking level updated", 1500);
-    this.requestUpdate();
   };
 }
