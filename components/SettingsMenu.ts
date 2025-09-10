@@ -1,5 +1,5 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
-import { NPU_DEFAULTS, NPU_STORAGE_KEYS } from "@shared/constants";
+import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_LIMITS } from "@shared/constants";
 import { Live2DMappingService } from "@services/Live2DMappingService";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -172,6 +172,30 @@ export class SettingsMenu extends LitElement {
   private _npuThinking: string =
     localStorage.getItem(NPU_STORAGE_KEYS.thinkingLevel) ||
     NPU_DEFAULTS.thinkingLevel;
+
+  @state()
+  private _npuTopP: number = (() => {
+    const topPStr = localStorage.getItem(NPU_STORAGE_KEYS.topP);
+    let topP = parseFloat(topPStr || String(NPU_DEFAULTS.topP));
+    if (Number.isNaN(topP)) topP = NPU_DEFAULTS.topP;
+    return Math.max(NPU_LIMITS.topP.min, Math.min(NPU_LIMITS.topP.max, topP));
+  })();
+
+  @state()
+  private _npuTopK: number = (() => {
+    const topKStr = localStorage.getItem(NPU_STORAGE_KEYS.topK);
+    let topK = Number.parseInt(topKStr || String(NPU_DEFAULTS.topK));
+    if (Number.isNaN(topK)) topK = NPU_DEFAULTS.topK;
+    return Math.max(NPU_LIMITS.topK.min, Math.min(NPU_LIMITS.topK.max, topK));
+  })();
+
+  @state()
+  private _npuRecentTurns: number = (() => {
+    const rtStr = localStorage.getItem(NPU_STORAGE_KEYS.recentTurns);
+    let recentTurns = Number.parseInt(rtStr || String(NPU_DEFAULTS.recentTurns));
+    if (Number.isNaN(recentTurns)) recentTurns = NPU_DEFAULTS.recentTurns;
+    return Math.max(NPU_LIMITS.recentTurns.min, Math.min(NPU_LIMITS.recentTurns.max, recentTurns));
+  })();
 
   private personaManager: PersonaManager;
   // Timer for debouncing API key input validation.
@@ -1506,6 +1530,32 @@ export class SettingsMenu extends LitElement {
               />
               <span class="range-value">${this._npuTemperature.toFixed(2)}</span>
             </div>
+            <div class="range-group">
+              <label for="npuTopP" class="npu-setting-label">Top P</label>
+              <input
+                id="npuTopP"
+                type="range"
+                min=${NPU_LIMITS.topP.min}
+                max=${NPU_LIMITS.topP.max}
+                step="0.01"
+                .value=${this._npuTopP.toString()}
+                @input=${this._onNpuTopPChange}
+              />
+              <span class="range-value">${this._npuTopP.toFixed(2)}</span>
+            </div>
+            <div class="range-group">
+              <label for="npuTopK" class="npu-setting-label">Top K</label>
+              <input
+                id="npuTopK"
+                type="range"
+                min=${NPU_LIMITS.topK.min}
+                max=${NPU_LIMITS.topK.max}
+                step="1"
+                .value=${this._npuTopK.toString()}
+                @input=${this._onNpuTopKChange}
+              />
+              <span class="range-value">${this._npuTopK}</span>
+            </div>
             <div class="input-group">
               <label for="npuThinking" class="npu-setting-label">Thinking Level</label>
               <select id="npuThinking" .value=${this._npuThinking} @change=${this._onNpuThinkingChange}>
@@ -1513,6 +1563,19 @@ export class SettingsMenu extends LitElement {
                 <option value="standard">Standard</option>
                 <option value="deep">Deep</option>
               </select>
+            </div>
+             <div class="range-group">
+              <label for="npuRecentTurns" class="npu-setting-label">Recent Turns</label>
+              <input
+                id="npuRecentTurns"
+                type="range"
+                min=${NPU_LIMITS.recentTurns.min}
+                max=${NPU_LIMITS.recentTurns.max}
+                step="1"
+                .value=${this._npuRecentTurns.toString()}
+                @input=${this._onNpuRecentTurnsChange}
+              />
+              <span class="range-value">${this._npuRecentTurns}</span>
             </div>
             <p style="font-size: 0.8em; color: var(--cp-muted); margin: 0.5em 0 0 0; text-align: center;">
               NPU uses non-live text models; VPU uses Live API.
@@ -1931,5 +1994,26 @@ export class SettingsMenu extends LitElement {
     this._npuThinking = select.value;
     localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, this._npuThinking);
     this._showToast("Advisor thinking level updated", 1500);
+  };
+
+  private _onNpuTopPChange = (e: Event) => {
+    const range = e.target as HTMLInputElement;
+    const value = parseFloat(range.value);
+    this._npuTopP = Math.max(NPU_LIMITS.topP.min, Math.min(NPU_LIMITS.topP.max, value));
+    localStorage.setItem(NPU_STORAGE_KEYS.topP, this._npuTopP.toString());
+  };
+
+  private _onNpuTopKChange = (e: Event) => {
+    const range = e.target as HTMLInputElement;
+    const value = parseInt(range.value, 10);
+    this._npuTopK = Math.max(NPU_LIMITS.topK.min, Math.min(NPU_LIMITS.topK.max, value));
+    localStorage.setItem(NPU_STORAGE_KEYS.topK, this._npuTopK.toString());
+  };
+
+  private _onNpuRecentTurnsChange = (e: Event) => {
+    const range = e.target as HTMLInputElement;
+    const value = parseInt(range.value, 10);
+    this._npuRecentTurns = Math.max(NPU_LIMITS.recentTurns.min, Math.min(NPU_LIMITS.recentTurns.max, value));
+    localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, this._npuRecentTurns.toString());
   };
 }

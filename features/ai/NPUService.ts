@@ -2,7 +2,7 @@ import type { Memory } from "@features/memory/Memory";
 import type { MemoryService } from "@features/memory/MemoryService";
 import { createComponentLogger } from "@services/DebugLogger";
 import { healthMetricsService } from "@services/HealthMetricsService";
-import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_THINKING_TOKENS, type NpuThinkingLevel } from "@shared/constants";
+import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_THINKING_TOKENS, NPU_LIMITS, type NpuThinkingLevel } from "@shared/constants";
 import type { Turn, IntentionBridgePayload } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
 
@@ -68,7 +68,11 @@ export class NPUService {
 
     // Build combined prompt for Flash Lite model
     await this._sendProgress(progressCb, { type: "npu:prompt:build", ts: Date.now(), data: { turnId } });
-    const recentContext = this.buildRecentTurnsContext(transcript, 10);
+    const rtStr = typeof localStorage !== 'undefined' ? localStorage.getItem(NPU_STORAGE_KEYS.recentTurns) : null;
+    let recentTurns = Number.parseInt(rtStr || String(NPU_DEFAULTS.recentTurns));
+    if (Number.isNaN(recentTurns)) recentTurns = NPU_DEFAULTS.recentTurns;
+    recentTurns = Math.max(NPU_LIMITS.recentTurns.min, Math.min(NPU_LIMITS.recentTurns.max, recentTurns));
+    const recentContext = this.buildRecentTurnsContext(transcript, recentTurns);
     const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext || recentContext);
     await this._sendProgress(progressCb, { type: "npu:prompt:built", ts: Date.now(), data: { promptPreview: combinedPromptText.slice(0, 500), fullPrompt: combinedPromptText, turnId } });
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length, memoryLines: memories.length });
@@ -85,6 +89,16 @@ export class NPUService {
       temperature = Math.min(1, Math.max(0, parseFloat(tempStr)));
     }
 
+    const topPStr = typeof localStorage !== 'undefined' ? localStorage.getItem(NPU_STORAGE_KEYS.topP) : null;
+    let topP = parseFloat(topPStr || String(NPU_DEFAULTS.topP));
+    if (Number.isNaN(topP)) topP = NPU_DEFAULTS.topP;
+    topP = Math.max(NPU_LIMITS.topP.min, Math.min(NPU_LIMITS.topP.max, topP));
+
+    const topKStr = typeof localStorage !== 'undefined' ? localStorage.getItem(NPU_STORAGE_KEYS.topK) : null;
+    let topK = Number.parseInt(topKStr || String(NPU_DEFAULTS.topK));
+    if (Number.isNaN(topK)) topK = NPU_DEFAULTS.topK;
+    topK = Math.max(NPU_LIMITS.topK.min, Math.min(NPU_LIMITS.topK.max, topK));
+
     const thinkingLevel = (Object.keys(NPU_THINKING_TOKENS).includes(storedThinking) ? storedThinking : NPU_DEFAULTS.thinkingLevel) as NpuThinkingLevel;
     const maxTokens = NPU_THINKING_TOKENS[thinkingLevel];
 
@@ -97,7 +111,7 @@ export class NPUService {
         const result = await this.aiClient.models.generateContent({
           contents: [{ role: "user", parts: [{ text: combinedPromptText }] }],
           model,
-          generationConfig: { temperature, maxOutputTokens: maxTokens },
+          generationConfig: { temperature, topP, topK, maxOutputTokens: maxTokens },
         });
         responseText = (result.text || "").trim();
         await this._sendProgress(progressCb, { type: "npu:model:response", ts: Date.now(), data: { length: responseText.length, turnId } });
