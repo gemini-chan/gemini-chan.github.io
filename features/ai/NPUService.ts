@@ -67,7 +67,8 @@ export class NPUService {
 
     // Build combined prompt for Flash Lite model
     await this._sendProgress(progressCb, { type: "npu:prompt:build", ts: Date.now(), data: { turnId } });
-    const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext);
+    const recentContext = this.buildRecentTurnsContext(transcript, 5);
+    const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext || recentContext);
     await this._sendProgress(progressCb, { type: "npu:prompt:built", ts: Date.now(), data: { promptPreview: combinedPromptText.slice(0, 500), fullPrompt: combinedPromptText, turnId } });
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length, memoryLines: memories.length });
 
@@ -175,5 +176,30 @@ export class NPUService {
       .replace("{context}", contextSection)
       .replace("{userMessage}", userMessage);
   }
- 
- }
+
+  /**
+   * Builds a string containing recent user and model messages from the transcript.
+   */
+  private buildRecentTurnsContext(transcript: Turn[], lastN = 5): string {
+    if (!transcript || transcript.length === 0) {
+      return "";
+    }
+
+    const userTurns = transcript.filter((turn) => turn.speaker === "user").slice(-lastN);
+    const modelTurns = transcript.filter((turn) => turn.speaker === "model").slice(-lastN);
+
+    const sections: string[] = [];
+
+    if (userTurns.length > 0) {
+      const userMessages = userTurns.map((turn) => `- ${turn.text}`).join("\n");
+      sections.push(`RECENT USER MESSAGES:\n${userMessages}`);
+    }
+
+    if (modelTurns.length > 0) {
+      const modelMessages = modelTurns.map((turn) => `- ${turn.text}`).join("\n");
+      sections.push(`RECENT MODEL MESSAGES:\n${modelMessages}`);
+    }
+
+    return sections.join("\n\n");
+  }
+}
