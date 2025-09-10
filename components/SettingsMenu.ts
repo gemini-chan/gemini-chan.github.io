@@ -1402,6 +1402,7 @@ export class SettingsMenu extends LitElement {
                 max="30"
                 step="1"
                 .value=${this._circuitrySpeed.toString()}
+                style=${this._rangeStyle(this._circuitrySpeed, 5, 30)}
                 @input=${this._onCircuitrySpeedChange}
                 ?disabled=${!this._circuitryEnabled}
               />
@@ -1466,6 +1467,12 @@ export class SettingsMenu extends LitElement {
     this._themeOptionsOpen = (e.target as HTMLDetailsElement).open;
   };
 
+  private _rangeStyle(current: number, min: number, max: number): string {
+    const clamped = Math.max(min, Math.min(max, current));
+    const percent = ((clamped - min) * 100) / (max - min);
+    return `background: linear-gradient(90deg, var(--cp-cyan) 0%, var(--cp-cyan) ${percent}%, var(--cp-surface) ${percent}%, var(--cp-surface) 100%)`;
+  }
+
   render() {
     return html`
       <div class="backdrop" @click=${this._handleBackdropClick}>
@@ -1529,6 +1536,7 @@ export class SettingsMenu extends LitElement {
                 max="1"
                 step="0.05"
                 .value=${this._npuTemperature.toString()}
+                style=${this._rangeStyle(this._npuTemperature, 0, 1)}
                 @input=${this._onNpuTempChange}
               />
               <span class="range-value">${this._npuTemperature.toFixed(2)}</span>
@@ -1543,6 +1551,7 @@ export class SettingsMenu extends LitElement {
                 max=${NPU_LIMITS.topP.max}
                 step="0.01"
                 .value=${this._npuTopP.toString()}
+                style=${this._rangeStyle(this._npuTopP, NPU_LIMITS.topP.min, NPU_LIMITS.topP.max)}
                 @input=${this._onNpuTopPChange}
               />
               <span class="range-value">${this._npuTopP.toFixed(2)}</span>
@@ -1557,6 +1566,7 @@ export class SettingsMenu extends LitElement {
                 max=${NPU_LIMITS.topK.max}
                 step="1"
                 .value=${this._npuTopK.toString()}
+                style=${this._rangeStyle(this._npuTopK, NPU_LIMITS.topK.min, NPU_LIMITS.topK.max)}
                 @input=${this._onNpuTopKChange}
               />
               <span class="range-value">${this._npuTopK}</span>
@@ -1580,6 +1590,7 @@ export class SettingsMenu extends LitElement {
                 max=${NPU_LIMITS.recentTurns.max}
                 step="1"
                 .value=${this._npuRecentTurns.toString()}
+                style=${this._rangeStyle(this._npuRecentTurns, NPU_LIMITS.recentTurns.min, NPU_LIMITS.recentTurns.max)}
                 @input=${this._onNpuRecentTurnsChange}
               />
               <span class="range-value">${this._npuRecentTurns}</span>
