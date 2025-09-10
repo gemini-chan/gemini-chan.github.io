@@ -2065,39 +2065,68 @@ export class SettingsMenu extends LitElement {
     localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, this._npuRecentTurns.toString());
   };
 
-  private _onResetNpuModel = () => {
-    this._npuModel = NPU_DEFAULTS.model;
-    localStorage.setItem(NPU_STORAGE_KEYS.model, this._npuModel);
-    this._showToast("Advisor model reset", 1500);
+  private _resetAndPersist<T extends string | number>(
+    key: string,
+    value: T,
+    assign: (v: T) => void,
+    toastMessage: string,
+  ) {
+    assign(value);
+    localStorage.setItem(key, String(value));
+    this._showToast(toastMessage, 1500);
   }
+
+  private _onResetNpuModel = () => {
+    this._resetAndPersist(
+      NPU_STORAGE_KEYS.model,
+      NPU_DEFAULTS.model,
+      (v) => (this._npuModel = v),
+      "Advisor model reset",
+    );
+  };
 
   private _onResetNpuTemp = () => {
-    this._npuTemperature = NPU_DEFAULTS.temperature;
-    localStorage.setItem(NPU_STORAGE_KEYS.temperature, this._npuTemperature.toString());
-    this._showToast("Temperature reset", 1500);
-  }
+    this._resetAndPersist(
+      NPU_STORAGE_KEYS.temperature,
+      NPU_DEFAULTS.temperature,
+      (v) => (this._npuTemperature = v),
+      "Temperature reset",
+    );
+  };
 
   private _onResetNpuTopP = () => {
-    this._npuTopP = NPU_DEFAULTS.topP;
-    localStorage.setItem(NPU_STORAGE_KEYS.topP, this._npuTopP.toString());
-    this._showToast("Top P reset", 1500);
-  }
+    this._resetAndPersist(
+      NPU_STORAGE_KEYS.topP,
+      NPU_DEFAULTS.topP,
+      (v) => (this._npuTopP = v),
+      "Top P reset",
+    );
+  };
 
   private _onResetNpuTopK = () => {
-    this._npuTopK = NPU_DEFAULTS.topK;
-    localStorage.setItem(NPU_STORAGE_KEYS.topK, this._npuTopK.toString());
-    this._showToast("Top K reset", 1500);
-  }
+    this._resetAndPersist(
+      NPU_STORAGE_KEYS.topK,
+      NPU_DEFAULTS.topK,
+      (v) => (this._npuTopK = v),
+      "Top K reset",
+    );
+  };
 
   private _onResetNpuThinking = () => {
-    this._npuThinking = NPU_DEFAULTS.thinkingLevel;
-    localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, this._npuThinking);
-    this._showToast("Thinking level reset", 1500);
-  }
+    this._resetAndPersist(
+      NPU_STORAGE_KEYS.thinkingLevel,
+      NPU_DEFAULTS.thinkingLevel,
+      (v) => (this._npuThinking = v),
+      "Thinking level reset",
+    );
+  };
 
   private _onResetNpuRecentTurns = () => {
-    this._npuRecentTurns = NPU_DEFAULTS.recentTurns;
-    localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, this._npuRecentTurns.toString());
-    this._showToast("Recent turns reset", 1500);
-  }
+    this._resetAndPersist(
+      NPU_STORAGE_KEYS.recentTurns,
+      NPU_DEFAULTS.recentTurns,
+      (v) => (this._npuRecentTurns = v),
+      "Recent turns reset",
+    );
+  };
 }

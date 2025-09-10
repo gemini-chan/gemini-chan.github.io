@@ -3,7 +3,6 @@ import { customElement, property } from 'lit/decorators.js';
 
 @customElement('reset-button')
 export class ResetButton extends LitElement {
-  @property({ type: String }) label = 'Reset';
   @property({ type: String }) title = 'Reset to defaults';
 
   static styles = css`
