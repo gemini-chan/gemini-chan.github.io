@@ -19,7 +19,12 @@ export interface RAGPrompt {
 
 
 export class NPUService {
+  private static readonly MODEL_CALL_TIMEOUT_MS = 8000;
+  private static readonly MAX_CONTEXT_CHARS = 4000;
+  private static readonly MAX_MEMORY_LINES = 12;
+  private static readonly PERMANENCE_RANK: Record<string, number> = { permanent: 2, contextual: 1, temporary: 0 };
   private lastCombinedPrompt: string | null = null;
+  private activeTurnId?: string;
   /**
    * Analyze user input and return IntentionBridgePayload for VPU.
    * Passes original user message, retrieved RAG memories, and perceived emotional state based on last 5 messages.
@@ -34,6 +39,11 @@ export class NPUService {
     progressCb?: (event: { type: string; ts: number; data?: Record<string, unknown> }) => void,
   ): Promise<IntentionBridgePayload> {
     const stopTimer = healthMetricsService.timeNPUProcessing();
+    
+    // Set active turn ID if provided
+    if (turnId) {
+      this.activeTurnId = turnId;
+    }
     
     // No delay on first event
     progressCb?.({ type: "npu:start", ts: Date.now(), data: { personaId, userInput, transcriptLength: transcript?.length ?? 0, turnId } });
@@ -57,8 +67,11 @@ export class NPUService {
     logger.debug("analyzeAndAdvise: memories retrieved", { count: memories.length });
     await this._sendProgress(progressCb, { type: "npu:memories:done", ts: Date.now(), data: { count: memories.length, memories, turnId } });
     
+    // Rank and limit memories before building context
+    const rankedMemories = this._rankAndLimitMemories(memories, NPUService.MAX_MEMORY_LINES);
+    
     // Build memory context string from retrieved memories with partial progress
-    const memoryLines = memories
+    const memoryLines = rankedMemories
       .map(m => `- ${m.fact_key}: ${m.fact_value} (conf=${(m.confidence_score ?? 0).toFixed(2)}, perm=${m.permanence_score})`);
     for (const line of memoryLines) {
       // No delay for partials
@@ -73,7 +86,10 @@ export class NPUService {
     if (Number.isNaN(recentTurns)) recentTurns = NPU_DEFAULTS.recentTurns;
     recentTurns = Math.max(NPU_LIMITS.recentTurns.min, Math.min(NPU_LIMITS.recentTurns.max, recentTurns));
     const recentContext = this.buildRecentTurnsContext(transcript, recentTurns);
-    const combinedPromptText = this.buildCombinedPrompt(userInput, memoryContext, conversationContext || recentContext);
+    const chosenConversation = conversationContext || recentContext;
+    const limitedConversation = this._truncate(chosenConversation);
+    const limitedMemory = this._truncate(memoryContext);
+    const combinedPromptText = this.buildCombinedPrompt(userInput, limitedMemory, limitedConversation);
     await this._sendProgress(progressCb, { type: "npu:prompt:built", ts: Date.now(), data: { promptPreview: combinedPromptText.slice(0, 500), fullPrompt: combinedPromptText, turnId } });
     logger.debug("analyzeAndAdvise: combined prompt built", { length: combinedPromptText.length, memoryLines: memories.length });
 
@@ -106,13 +122,23 @@ export class NPUService {
     let responseText = "";
     const maxAttempts = 3;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Check for stale turn before model call
+      if (turnId && this.activeTurnId && this.activeTurnId !== turnId) {
+        await this._sendProgress(progressCb, { type: 'npu:stale', ts: Date.now(), data: { turnId, active: this.activeTurnId } }, 0);
+        responseText = '';
+        break;
+      }
       try {
         await this._sendProgress(progressCb, { type: "npu:model:attempt", ts: Date.now(), data: { attempt, turnId } });
-        const result = await this.aiClient.models.generateContent({
-          contents: [{ role: "user", parts: [{ text: combinedPromptText }] }],
-          model,
-          generationConfig: { temperature, topP, topK, maxOutputTokens: maxTokens },
-        });
+        const result = await this._withTimeout(
+          this.aiClient.models.generateContent({
+            contents: [{ role: "user", parts: [{ text: combinedPromptText }] }],
+            model,
+            generationConfig: { temperature, topP, topK, maxOutputTokens: maxTokens },
+          }),
+          NPUService.MODEL_CALL_TIMEOUT_MS,
+          "npu-model-call"
+        );
         responseText = (result.text || "").trim();
         await this._sendProgress(progressCb, { type: "npu:model:response", ts: Date.now(), data: { length: responseText.length, turnId } });
         logger.debug("analyzeAndAdvise: model responded", { length: responseText.length, attempt });
@@ -154,6 +180,30 @@ export class NPUService {
   ) {}
 
   /**
+   * Wrap a promise with a timeout.
+   */
+  private async _withTimeout<T>(p: Promise<T>, ms: number, label?: string): Promise<T> {
+    let timer: NodeJS.Timeout | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`timeout: ${label || "op"}`)), ms);
+    });
+    try {
+      return await Promise.race([p, timeoutPromise]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Truncate a string to a maximum length.
+   */
+  private _truncate(s: string | undefined, max = NPUService.MAX_CONTEXT_CHARS): string {
+    if (!s) return "";
+    if (s.length <= max) return s;
+    return s.slice(0, max) + "…";
+  }
+
+  /**
    * Send a progress event and introduce a small delay to allow the UI to update.
    */
   private async _sendProgress(
@@ -161,7 +211,11 @@ export class NPUService {
     event: { type: string; ts: number; data?: Record<string, unknown> },
     delayMs = 300
   ) {
-    progressCb?.(event);
+    try {
+      progressCb?.(event);
+    } catch (err) {
+      logger.warn("_sendProgress callback threw", err);
+    }
     if (progressCb && delayMs > 0) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
@@ -201,6 +255,34 @@ export class NPUService {
     return combinedPrompt
       .replace("{context}", contextSection)
       .replace("{userMessage}", userMessage);
+  }
+
+  /**
+   * Rank and limit memories by permanence, confidence, and timestamp.
+   */
+  private _rankAndLimitMemories(memories: Memory[], limit: number): Memory[] {
+    return memories
+      .sort((a, b) => {
+        // First sort by permanence rank
+        const permRankA = NPUService.PERMANENCE_RANK[a.permanence_score] ?? 0;
+        const permRankB = NPUService.PERMANENCE_RANK[b.permanence_score] ?? 0;
+        if (permRankA !== permRankB) {
+          return permRankB - permRankA;
+        }
+        
+        // Then by confidence score
+        const confA = a.confidence_score ?? 0;
+        const confB = b.confidence_score ?? 0;
+        if (confA !== confB) {
+          return confB - confA;
+        }
+        
+        // Finally by timestamp if available
+        const tsA = a.created_at?.getTime() ?? 0;
+        const tsB = b.created_at?.getTime() ?? 0;
+        return tsB - tsA;
+      })
+      .slice(0, limit);
   }
 
   /**

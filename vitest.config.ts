@@ -24,6 +24,12 @@ export default defineConfig({
         'eslint.config.js',
         // Add any other files/directories you want to exclude from coverage
       ],
+      thresholds: {
+        statements: 10,
+        branches: 5,
+        functions: 10,
+        lines: 10,
+      },
     },
   },
   resolve: {
