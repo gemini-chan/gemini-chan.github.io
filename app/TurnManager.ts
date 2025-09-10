@@ -131,7 +131,7 @@ export class TurnManager {
 				break;
 			case "vpu":
 				this.thinkingActive = true;
-				this.npuStatus = "Speaking…";
+				this.npuStatus = "Typing…";
 				break;
 			case "complete":
 				this.thinkingActive = false;

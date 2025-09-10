@@ -1,4 +1,5 @@
 import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
+import { NPU_DEFAULTS, NPU_STORAGE_KEYS } from "@shared/constants";
 import { Live2DMappingService } from "@services/Live2DMappingService";
 import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -157,17 +158,20 @@ export class SettingsMenu extends LitElement {
 
   @state()
   private _npuModel: string =
-    localStorage.getItem("npu-model") || "gemini-2.5-flash";
+    localStorage.getItem(NPU_STORAGE_KEYS.model) || NPU_DEFAULTS.model;
 
   @state()
   private _npuTemperature: number = (() => {
-    const temp = parseFloat(localStorage.getItem("npu-temperature") || "0.3");
+    const tempStr = localStorage.getItem(NPU_STORAGE_KEYS.temperature);
+    let temp = parseFloat(tempStr || String(NPU_DEFAULTS.temperature));
+    if (Number.isNaN(temp)) temp = NPU_DEFAULTS.temperature;
     return Math.max(0, Math.min(1, temp));
   })();
 
   @state()
   private _npuThinking: string =
-    localStorage.getItem("npu-thinking-level") || "standard";
+    localStorage.getItem(NPU_STORAGE_KEYS.thinkingLevel) ||
+    NPU_DEFAULTS.thinkingLevel;
 
   private personaManager: PersonaManager;
   // Timer for debouncing API key input validation.
@@ -1912,20 +1916,20 @@ export class SettingsMenu extends LitElement {
   private _onNpuModelChange = (e: Event) => {
     const select = e.target as HTMLSelectElement;
     this._npuModel = select.value;
-    localStorage.setItem("npu-model", this._npuModel);
+    localStorage.setItem(NPU_STORAGE_KEYS.model, this._npuModel);
     this._showToast("Advisor model updated", 1500);
   };
 
   private _onNpuTempChange = (e: Event) => {
     const range = e.target as HTMLInputElement;
     this._npuTemperature = parseFloat(range.value);
-    localStorage.setItem("npu-temperature", this._npuTemperature.toString());
+    localStorage.setItem(NPU_STORAGE_KEYS.temperature, this._npuTemperature.toString());
   };
 
   private _onNpuThinkingChange = (e: Event) => {
     const select = e.target as HTMLSelectElement;
     this._npuThinking = select.value;
-    localStorage.setItem("npu-thinking-level", this._npuThinking);
+    localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, this._npuThinking);
     this._showToast("Advisor thinking level updated", 1500);
   };
 }

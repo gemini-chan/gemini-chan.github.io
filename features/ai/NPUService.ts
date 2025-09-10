@@ -2,6 +2,7 @@ import type { Memory } from "@features/memory/Memory";
 import type { MemoryService } from "@features/memory/MemoryService";
 import { createComponentLogger } from "@services/DebugLogger";
 import { healthMetricsService } from "@services/HealthMetricsService";
+import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_THINKING_TOKENS, type NpuThinkingLevel } from "@shared/constants";
 import type { Turn, IntentionBridgePayload } from "@shared/types";
 import type { AIClient } from "./BaseAIService";
 
@@ -76,15 +77,16 @@ export class NPUService {
 
 
     // Call model with retry - single call to Flash Lite model
-    const storedModel = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-model') : null) || 'gemini-2.5-flash';
-    const tempStr = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-temperature') : null);
-    const thinking = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-thinking-level') : null) || 'standard';
-    let temperature = 0.3;
+    const model = (typeof localStorage !== 'undefined' ? localStorage.getItem(NPU_STORAGE_KEYS.model) : null) || NPU_DEFAULTS.model;
+    const tempStr = (typeof localStorage !== 'undefined' ? localStorage.getItem(NPU_STORAGE_KEYS.temperature) : null);
+    const storedThinking = (typeof localStorage !== 'undefined' ? localStorage.getItem(NPU_STORAGE_KEYS.thinkingLevel) : null) || NPU_DEFAULTS.thinkingLevel;
+    let temperature: number = NPU_DEFAULTS.temperature;
     if (tempStr !== null && tempStr !== '' && !Number.isNaN(parseFloat(tempStr))) {
       temperature = Math.min(1, Math.max(0, parseFloat(tempStr)));
     }
-    const maxTokens = thinking === 'deep' ? 1024 : thinking === 'lite' ? 256 : 640;
-    const model = storedModel;
+
+    const thinkingLevel = (Object.keys(NPU_THINKING_TOKENS).includes(storedThinking) ? storedThinking : NPU_DEFAULTS.thinkingLevel) as NpuThinkingLevel;
+    const maxTokens = NPU_THINKING_TOKENS[thinkingLevel];
 
     await this._sendProgress(progressCb, { type: "npu:model:start", ts: Date.now(), data: { model, turnId } });
     let responseText = "";
