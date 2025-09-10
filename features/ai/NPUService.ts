@@ -200,7 +200,7 @@ export class NPUService {
   private _truncate(s: string | undefined, max = NPUService.MAX_CONTEXT_CHARS): string {
     if (!s) return "";
     if (s.length <= max) return s;
-    return s.slice(0, max) + "…";
+    return s.slice(0, max - 1) + "…";
   }
 
   /**
