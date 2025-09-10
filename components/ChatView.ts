@@ -99,6 +99,7 @@ export class ChatView extends LitElement {
     }
 
     :host([hidden]) {
+      display: none;
       opacity: 0;
       visibility: hidden;
     }
