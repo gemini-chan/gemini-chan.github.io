@@ -2,6 +2,7 @@ import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
 import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_LIMITS } from "@shared/constants";
 import { Live2DMappingService } from "@services/Live2DMappingService";
 import { css, html, LitElement } from "lit";
+import "./ResetButton";
 import { customElement, property, state } from "lit/decorators.js";
 
 interface FieldConfig {
@@ -304,6 +305,7 @@ export class SettingsMenu extends LitElement {
       position: relative;
       display: flex;
       align-items: center;
+      gap: 0.5rem;
     }
     input::placeholder {
       color: var(--cp-muted);
@@ -1516,6 +1518,7 @@ export class SettingsMenu extends LitElement {
                 <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
                 <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
               </select>
+              <reset-button @reset=${this._onResetNpuModel} title="Reset model"></reset-button>
             </div>
             <div class="range-group">
               <label for="npuTemperature" class="npu-setting-label">Temperature</label>
@@ -1529,6 +1532,7 @@ export class SettingsMenu extends LitElement {
                 @input=${this._onNpuTempChange}
               />
               <span class="range-value">${this._npuTemperature.toFixed(2)}</span>
+              <reset-button @reset=${this._onResetNpuTemp} title="Reset temperature"></reset-button>
             </div>
             <div class="range-group">
               <label for="npuTopP" class="npu-setting-label">Top P</label>
@@ -1542,6 +1546,7 @@ export class SettingsMenu extends LitElement {
                 @input=${this._onNpuTopPChange}
               />
               <span class="range-value">${this._npuTopP.toFixed(2)}</span>
+              <reset-button @reset=${this._onResetNpuTopP} title="Reset Top P"></reset-button>
             </div>
             <div class="range-group">
               <label for="npuTopK" class="npu-setting-label">Top K</label>
@@ -1555,6 +1560,7 @@ export class SettingsMenu extends LitElement {
                 @input=${this._onNpuTopKChange}
               />
               <span class="range-value">${this._npuTopK}</span>
+              <reset-button @reset=${this._onResetNpuTopK} title="Reset Top K"></reset-button>
             </div>
             <div class="input-group">
               <label for="npuThinking" class="npu-setting-label">Thinking Level</label>
@@ -1563,6 +1569,7 @@ export class SettingsMenu extends LitElement {
                 <option value="standard">Standard</option>
                 <option value="deep">Deep</option>
               </select>
+              <reset-button @reset=${this._onResetNpuThinking} title="Reset thinking level"></reset-button>
             </div>
              <div class="range-group">
               <label for="npuRecentTurns" class="npu-setting-label">Recent Turns</label>
@@ -1576,6 +1583,7 @@ export class SettingsMenu extends LitElement {
                 @input=${this._onNpuRecentTurnsChange}
               />
               <span class="range-value">${this._npuRecentTurns}</span>
+              <reset-button @reset=${this._onResetNpuRecentTurns} title="Reset recent turns"></reset-button>
             </div>
             <p style="font-size: 0.8em; color: var(--cp-muted); margin: 0.5em 0 0 0; text-align: center;">
               NPU uses non-live text models; VPU uses Live API.
@@ -2016,4 +2024,40 @@ export class SettingsMenu extends LitElement {
     this._npuRecentTurns = Math.max(NPU_LIMITS.recentTurns.min, Math.min(NPU_LIMITS.recentTurns.max, value));
     localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, this._npuRecentTurns.toString());
   };
+
+  private _onResetNpuModel = () => {
+    this._npuModel = NPU_DEFAULTS.model;
+    localStorage.setItem(NPU_STORAGE_KEYS.model, this._npuModel);
+    this._showToast("Advisor model reset", 1500);
+  }
+
+  private _onResetNpuTemp = () => {
+    this._npuTemperature = NPU_DEFAULTS.temperature;
+    localStorage.setItem(NPU_STORAGE_KEYS.temperature, this._npuTemperature.toString());
+    this._showToast("Temperature reset", 1500);
+  }
+
+  private _onResetNpuTopP = () => {
+    this._npuTopP = NPU_DEFAULTS.topP;
+    localStorage.setItem(NPU_STORAGE_KEYS.topP, this._npuTopP.toString());
+    this._showToast("Top P reset", 1500);
+  }
+
+  private _onResetNpuTopK = () => {
+    this._npuTopK = NPU_DEFAULTS.topK;
+    localStorage.setItem(NPU_STORAGE_KEYS.topK, this._npuTopK.toString());
+    this._showToast("Top K reset", 1500);
+  }
+
+  private _onResetNpuThinking = () => {
+    this._npuThinking = NPU_DEFAULTS.thinkingLevel;
+    localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, this._npuThinking);
+    this._showToast("Thinking level reset", 1500);
+  }
+
+  private _onResetNpuRecentTurns = () => {
+    this._npuRecentTurns = NPU_DEFAULTS.recentTurns;
+    localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, this._npuRecentTurns.toString());
+    this._showToast("Recent turns reset", 1500);
+  }
 }
