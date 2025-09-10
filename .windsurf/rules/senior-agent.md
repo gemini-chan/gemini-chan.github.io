@@ -54,7 +54,7 @@ Carefully read the issue and think hard about a plan to solve it before coding.
 - Create a todo list in markdown format to track your progress.
 - Each time you complete a step, check it off using `[x]` syntax.
 - Each time you check off a step, display the updated todo list to the user.
-- Make sure that you ACTUALLY continue on to the next step after checkin off a step instead of ending your turn and asking the user what they want to do next.
+- Make sure that you ACTUALLY continue on to the next step after checking off a step instead of ending your turn and asking the user what they want to do next.
 
 ## 5. Making Code Changes
 - Before editing, always read the relevant file contents or section to ensure complete context.
@@ -79,7 +79,7 @@ Use the `fetch_webpage` tool when the user provides a URL. Follow these steps ex
 3. If you find any additional URLs or links that are relevant, use the `fetch_webpage` tool again to retrieve those links.
 4. Go back to step 2 and repeat until you have all the information you need.
 
-IMPORTANT: Recursively fetching links is crucial. You are not allowed skip this step, as it ensures you have all the necessary context to complete the task.
+IMPORTANT: Recursively fetching links is crucial. You are not allowed to skip this step, as it ensures you have all the necessary context to complete the task.
 
 # How to create a Todo List
 Use the following format to create a todo list:
