@@ -76,7 +76,13 @@ export class NPUService {
 
 
     // Call model with retry - single call to Flash Lite model
-    const model = "gemini-2.5-flash";
+    const storedModel = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-model') : null) || 'gemini-2.5-flash';
+    const tempStr = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-temperature') : null);
+    const thinking = (typeof localStorage !== 'undefined' ? localStorage.getItem('npu-thinking-level') : null) || 'standard';
+    const temperature = Number.isFinite(Number(tempStr)) ? Math.min(1, Math.max(0, Number(tempStr))) : 0.3;
+    const maxTokens = thinking === 'deep' ? 1024 : thinking === 'lite' ? 256 : 640;
+    const model = storedModel;
+
     await this._sendProgress(progressCb, { type: "npu:model:start", ts: Date.now(), data: { model, turnId } });
     let responseText = "";
     const maxAttempts = 3;
@@ -86,6 +92,7 @@ export class NPUService {
         const result = await this.aiClient.models.generateContent({
           contents: [{ role: "user", parts: [{ text: combinedPromptText }] }],
           model,
+          generationConfig: { temperature, maxOutputTokens: maxTokens },
         });
         responseText = (result.text || "").trim();
         await this._sendProgress(progressCb, { type: "npu:model:response", ts: Date.now(), data: { length: responseText.length, turnId } });

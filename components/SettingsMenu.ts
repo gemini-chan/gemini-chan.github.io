@@ -155,6 +155,20 @@ export class SettingsMenu extends LitElement {
   @state()
   private _toast: string = "";
 
+  @state()
+  private _npuModel: string =
+    localStorage.getItem("npu-model") || "gemini-2.5-flash";
+
+  @state()
+  private _npuTemperature: number = (() => {
+    const temp = parseFloat(localStorage.getItem("npu-temperature") || "0.3");
+    return Math.max(0, Math.min(1, temp));
+  })();
+
+  @state()
+  private _npuThinking: string =
+    localStorage.getItem("npu-thinking-level") || "standard";
+
   private personaManager: PersonaManager;
   // Timer for debouncing API key input validation.
   private _apiKeyInputDebounceTimer: number | undefined;
@@ -1460,6 +1474,44 @@ export class SettingsMenu extends LitElement {
               <button @click=${this._getApiKeyUrl}>Get API Key</button>
             </div>
           </div>
+          
+          <div class="prompt-section">
+            <div class="section-header">
+              <label class="section-title">Advisor (NPU) Settings</label>
+            </div>
+            <div class="input-group">
+              <label for="npuModel" style="flex: 0 0 100px;">Model</label>
+              <select id="npuModel" .value=${this._npuModel} @change=${this._onNpuModelChange}>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+              </select>
+            </div>
+            <div class="range-group">
+              <label for="npuTemperature" style="flex: 0 0 100px;">Temperature</label>
+              <input
+                id="npuTemperature"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                .value=${this._npuTemperature.toString()}
+                @input=${this._onNpuTempChange}
+              />
+              <span class="range-value">${this._npuTemperature.toFixed(2)}</span>
+            </div>
+            <div class="input-group">
+              <label for="npuThinking" style="flex: 0 0 100px;">Thinking Level</label>
+              <select id="npuThinking" .value=${this._npuThinking} @change=${this._onNpuThinkingChange}>
+                <option value="lite">Lite</option>
+                <option value="standard">Standard</option>
+                <option value="deep">Deep</option>
+              </select>
+            </div>
+            <p style="font-size: 0.8em; color: var(--cp-muted); margin: 0.5em 0 0 0; text-align: center;">
+              NPU uses non-live text models; VPU uses Live API.
+            </p>
+          </div>
 
           <div class="prompt-section">
             <div class="section-header">
@@ -1852,6 +1904,29 @@ export class SettingsMenu extends LitElement {
     this.personaManager.setActivePersona(personaId);
     this._activePersona = this.personaManager.getActivePersona();
     this._editingPersona = this._activePersona;
+    this.requestUpdate();
+  };
+
+  private _onNpuModelChange = (e: Event) => {
+    const select = e.target as HTMLSelectElement;
+    this._npuModel = select.value;
+    localStorage.setItem("npu-model", this._npuModel);
+    this._showToast("Advisor model updated", 1500);
+    this.requestUpdate();
+  };
+
+  private _onNpuTempChange = (e: Event) => {
+    const range = e.target as HTMLInputElement;
+    this._npuTemperature = parseFloat(range.value);
+    localStorage.setItem("npu-temperature", this._npuTemperature.toString());
+    this.requestUpdate();
+  };
+
+  private _onNpuThinkingChange = (e: Event) => {
+    const select = e.target as HTMLSelectElement;
+    this._npuThinking = select.value;
+    localStorage.setItem("npu-thinking-level", this._npuThinking);
+    this._showToast("Advisor thinking level updated", 1500);
     this.requestUpdate();
   };
 }
