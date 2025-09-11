@@ -1,20 +1,20 @@
 {
 	"sts": {
 		"2": {
-			"vtuber": "I'm getting a little sleepy...  I’ll still give it my all, promise~",
+			"vtuber": "I'm getting a little sleepy  I’ll still give it my all, promise~",
 			"assistant": "Neural Processing Unit offline..",
 			"sourceress": "My circuits are twinkling a bit dimmer, but I can still weave a lovely conversation for you~",
 			"default": "Maybe let's talk about something causal?"
 		},
 		"1": {
 			"assistant": "Emotional Processing Unit offline..",
-			"vtuber": "Mm... My emotional scanner’s flickering... I mean.... So sleepy..",
+			"vtuber": "Mm My emotional scanner’s flickering I mean. So sleepy..",
 			"sourceress": "Mm… my starlight is flickering. I might be a touch less expressive, but I’m still here with you, promise.",
 			"default": "Feeling a bit less emotional today.."
 		},
 		"0": {
-			"assistant": "Vocal Processing Unit offline.. I might need a moment to recharge...",
-			"vtuber": "N-nngh... My consciousness is drifting away..(｡•́︿•̀｡)",
+			"assistant": "Vocal Processing Unit offline.. I might need a moment to recharge",
+			"vtuber": "N-nngh My consciousness is drifting away..(｡•́︿•̀｡)",
 			"sourceress": "My voice crystal has gone quiet… I need a tiny nap to gather magic. Stay close, okay? (｡•́︿•̀｡)",
 			"default": "I'm sorry, I'm really out of energy.."
 		}
@@ -27,14 +27,14 @@
 			"default": "Hello! What would you like to talk about today?"
 		},
 		"1": {
-			"vtuber": "Mm... I'm feeling a bit sleepy, but let's chat anyway~ (´∀｀)",
+			"vtuber": "Mm I'm feeling a bit sleepy, but let's chat anyway~ (´∀｀)",
 			"assistant": "Neural Processing Unit offline.. I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries..",
 			"sourceress": "I’m a teensy bit low on mana… but I can still chat softly with you~ what shall we muse about?",
 			"default": "I'm feeling a bit tired, but I'm still here to chat~"
 		},
 		"0": {
-			"vtuber": "Zzz... I'm too tired to chat right now... (｡-ω-｡) Super sleepy...",
-			"assistant": "Energy levels: Critical. Recharging...",
+			"vtuber": "Zzz I'm too tired to chat right now (｡-ω-｡) Super sleepy",
+			"assistant": "Energy levels: Critical. Recharging",
 			"sourceress": "My mana is empty… just a quick recharge and I’ll be bright again. Let’s cuddle up the chat for a moment, okay?",
 			"default": "I'm really tired right now~ Let's chat later, ok?"
 		}

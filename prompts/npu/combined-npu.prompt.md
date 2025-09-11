@@ -38,7 +38,7 @@ ADVISOR_CONTEXT:
 • user likes tabby cats
 • user previously struggled with cat hair
 • user is a cat lover
-• user's cat birthday is...
-• user's cat name is...
-• user's cat gender is...
+• user's cat birthday is
+• user's cat name is
+• user's cat gender is
 • user's cat breed is tabby
