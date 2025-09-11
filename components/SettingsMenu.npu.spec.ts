@@ -11,19 +11,19 @@ describe('SettingsMenu NPU temperature initialization', () => {
   it('falls back to default when temperature is invalid', () => {
     localStorage.setItem(NPU_STORAGE_KEYS.temperature, 'abc');
     const menu = new SettingsMenu();
-    const temp = (menu as any)._npuTemperature as number;
+    const temp = (menu as unknown as { [key: string]: unknown })._npuTemperature as number;
     expect(temp).toBeCloseTo(NPU_DEFAULTS.temperature, 6);
   });
 
   it('clamps temperature into [0, 1]', () => {
     localStorage.setItem(NPU_STORAGE_KEYS.temperature, '1.5');
     const menu = new SettingsMenu();
-    const tempHigh = (menu as any)._npuTemperature as number;
+    const tempHigh = (menu as unknown as { [key: string]: unknown })._npuTemperature as number;
     expect(tempHigh).toBeCloseTo(1.0, 6);
 
     localStorage.setItem(NPU_STORAGE_KEYS.temperature, '-0.2');
     const menu2 = new SettingsMenu();
-    const tempLow = (menu2 as any)._npuTemperature as number;
+    const tempLow = (menu2 as unknown as { [key: string]: unknown })._npuTemperature as number;
     expect(tempLow).toBeCloseTo(0.0, 6);
   });
 });

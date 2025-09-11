@@ -18,6 +18,20 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
+      // HACK: There is a bug in vite where a hard-coded array causes a
+      // lookup error. Defining the include/exclude here works around it.
+      //
+      // include/exclude is relative to the root path (process.cwd())
+      include: [
+        'app/**/*.{ts,tsx}',
+        'components/**/*.ts',
+        'features/**/*.ts',
+        'services/**/*.ts',
+        'shared/**/*.ts',
+        'store/**/*.ts',
+        'visuals/**/*.ts',
+        'live2d/**/*.ts',
+      ],
       exclude: [
         '**/*.d.ts',
         '**/*.test.*',
@@ -25,7 +39,15 @@ export default defineConfig({
         'vitest.config.ts',
         'vite.config.ts',
         'eslint.config.js',
-        // Add any other files/directories you want to exclude from coverage
+        '**/*.md',
+        '**/*.css',
+        '**/*.html',
+        'public/**',
+        'assets/**',
+        'docs/**',
+        'prompts/**',
+        'live2d/models/**',
+        '.cache/**',
       ],
       thresholds: {
         statements: 10,

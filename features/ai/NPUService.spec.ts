@@ -9,16 +9,16 @@ const mockAIClient = {
 };
 
 // Minimal memory service mock
-const mockMemoryService: any = {};
+const mockMemoryService = {};
 
 function makeService() {
-  return new NPUService(mockAIClient as any, mockMemoryService as any);
+  return new NPUService(mockAIClient, mockMemoryService);
 }
 
 describe('NPUService.buildRecentTurnsContext', () => {
   it('returns empty string for empty transcript', () => {
     const svc = makeService();
-    const res = (svc as any).buildRecentTurnsContext([], 10);
+    const res = (svc as unknown as { [key: string]: (arg1: unknown[], arg2: number) => string }).buildRecentTurnsContext([], 10);
     expect(res).toEqual('');
   });
 
@@ -30,7 +30,7 @@ describe('NPUService.buildRecentTurnsContext', () => {
       { speaker: 'user', text: 'u2' },
       { speaker: 'model', text: 'm2' },
     ];
-    const res = (svc as any).buildRecentTurnsContext(transcript, 3);
+    const res = (svc as unknown as { [key: string]: (arg1: unknown[], arg2: number) => string }).buildRecentTurnsContext(transcript, 3);
     expect(res).toEqual(
       'RECENT CONVERSATION TURNS:\n- MODEL: m1\n- USER: u2\n- MODEL: m2'
     );
@@ -44,7 +44,7 @@ describe('NPUService.buildRecentTurnsContext', () => {
       { speaker: 'user', text: 'u2' },
       { speaker: 'model', text: 'm2' },
     ];
-    const res = (svc as any).buildRecentTurnsContext(transcript, 10);
+    const res = (svc as unknown as { [key: string]: (arg1: unknown[], arg2: number) => string }).buildRecentTurnsContext(transcript, 10);
     expect(res).toEqual(
       'RECENT CONVERSATION TURNS:\n- USER: u1\n- MODEL: m1\n- USER: u2\n- MODEL: m2'
     );

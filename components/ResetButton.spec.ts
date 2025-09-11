@@ -14,7 +14,7 @@ describe('reset-button', () => {
     const btn = await mkButton();
     const handler = vi.fn();
     btn.addEventListener('reset', handler);
-    const shadow = (btn as any).shadowRoot as ShadowRoot;
+    const shadow = (btn as unknown as { shadowRoot: ShadowRoot }).shadowRoot;
     const button = shadow.querySelector('button')!;
     button.click();
     expect(handler).toHaveBeenCalledTimes(1);

@@ -1550,9 +1550,12 @@ export class SettingsMenu extends LitElement {
             <div class="input-group">
               <label for="npuModel" class="npu-setting-label">Model</label>
               <select id="npuModel" .value=${this._npuModel} @change=${this._onNpuModelChange}>
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
-                <option value="gemini-2.0-pro">Gemini 2.0 Pro</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                <option value="learnlm-2.0-flash-experimental">LearnLM 2.0 Flash Experimental</option>
               </select>
               <reset-button @reset=${this._onResetNpuModel} title="Reset model"></reset-button>
             </div>

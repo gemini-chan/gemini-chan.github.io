@@ -5,15 +5,15 @@ import type { AIClient } from '@features/ai/BaseAIService';
 import type { MemoryService } from '@features/memory/MemoryService';
 import type { Turn } from '@shared/types';
 
-function mkAIClient(handler?: (req: any) => Promise<{ text: string }>): AIClient {
+function mkAIClient(handler?: (req: unknown) => Promise<{ text: string }>): AIClient {
   return {
     models: {
       generateContent: vi.fn(handler || (async () => ({ text: 'ok' }))),
     },
-  } as any;
+  } as unknown as AIClient;
 }
 
-function mkMemoryService(opts?: { throw?: boolean; memories?: any[] }): MemoryService {
+function mkMemoryService(opts?: { throw?: boolean; memories?: unknown[] }): MemoryService {
   return {
     retrieveRelevantMemories: vi.fn(async () => {
       if (opts?.throw) throw new Error('boom');
@@ -24,7 +24,7 @@ function mkMemoryService(opts?: { throw?: boolean; memories?: any[] }): MemorySe
         ]
       );
     }),
-  } as any;
+  } as unknown as MemoryService;
 }
 
 const transcript: Turn[] = [
@@ -48,14 +48,14 @@ describe('NPUService hardening', () => {
     localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, '-10'); // clamp to min 2
     localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'lite');
 
-    const ai = mkAIClient(async (req) => ({ text: 'advice' }));
+    const ai = mkAIClient(async () => ({ text: 'advice' }));
     const mem = mkMemoryService();
     const svc = new NPUService(ai, mem);
 
     const payload = await svc.analyzeAndAdvise('Hi', 'p1', transcript);
     expect(payload.advisor_context).toBe('advice');
 
-    const call = (ai.models.generateContent as any).mock.calls[0][0];
+    const call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[0][0];
     expect(call.generationConfig.temperature).toBeCloseTo(1, 6);
     expect(call.generationConfig.topP).toBeCloseTo(0, 6);
     expect(call.generationConfig.topK).toBe(NPU_LIMITS.topK.max);
@@ -67,14 +67,14 @@ describe('NPUService hardening', () => {
     localStorage.setItem(NPU_STORAGE_KEYS.topK, 'str');
     localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'invalid'); // should default to standard
 
-    const ai = mkAIClient(async (req) => ({ text: 'advice' }));
+    const ai = mkAIClient(async () => ({ text: 'advice' }));
     const mem = mkMemoryService();
     const svc = new NPUService(ai, mem);
 
     const payload = await svc.analyzeAndAdvise('Hi', 'p1', transcript);
     expect(payload.advisor_context).toBe('advice');
 
-    const call = (ai.models.generateContent as any).mock.calls[0][0];
+    const call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[0][0];
     expect(call.generationConfig.temperature).toBeCloseTo(NPU_DEFAULTS.temperature, 6);
     expect(call.generationConfig.topP).toBeCloseTo(NPU_DEFAULTS.topP, 6);
     expect(call.generationConfig.topK).toBe(NPU_DEFAULTS.topK);
@@ -92,7 +92,7 @@ describe('NPUService hardening', () => {
     const payload = await svc.analyzeAndAdvise('X', 'p1', transcript);
     expect(payload.advisor_context).toContain('- color: blue');
     // generateContent called up to maxAttempts (3)
-    expect((ai.models.generateContent as any).mock.calls.length).toBe(3);
+    expect((ai.models.generateContent as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(3);
   });
 
   it('continues gracefully when memory retrieval throws', async () => {
@@ -131,7 +131,7 @@ describe('NPUService hardening', () => {
     const payload = await promise;
     expect(payload.advisor_context).toContain('- color: blue');
     // generateContent called up to maxAttempts (3)
-    expect((ai.models.generateContent as any).mock.calls.length).toBe(3);
+    expect((ai.models.generateContent as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(3);
   });
 
   it('progress callback exceptions are caught and do not break flow', async () => {
@@ -173,7 +173,7 @@ describe('NPUService hardening', () => {
 
     expect(payloadA.advisor_context).toContain('- color: blue');
     // call 1: A (empty), call 2: B (ok). A's retry should not call model.
-    expect((ai.models.generateContent as any).mock.calls.length).toBe(2);
+    expect((ai.models.generateContent as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(2);
   });
 
   it('ranks and limits memories: permanent > contextual > temporary; confidence desc', async () => {
@@ -205,22 +205,22 @@ describe('NPUService hardening', () => {
     const svc = new NPUService(ai, mem);
 
     await svc.analyzeAndAdvise('X', 'p1', transcript);
-    expect((ai.models.generateContent as any).mock.calls.length).toBe(1);
+    expect((ai.models.generateContent as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(1);
   });
 
   it('uses correct max tokens for thinking levels lite and deep', async () => {
-    const ai = mkAIClient(async (req) => ({ text: 'ok' }));
+    const ai = mkAIClient(async () => ({ text: 'ok' }));
     const mem = mkMemoryService();
     const svc = new NPUService(ai, mem);
 
     localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'lite');
     await svc.analyzeAndAdvise('X', 'p1', transcript);
-    let call = (ai.models.generateContent as any).mock.calls[0][0];
+    let call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[0][0];
     expect(call.generationConfig.maxOutputTokens).toBe(NPU_THINKING_TOKENS['lite']);
 
     localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'deep');
     await svc.analyzeAndAdvise('Y', 'p1', transcript);
-    call = (ai.models.generateContent as any).mock.calls[1][0];
+    call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[1][0];
     expect(call.generationConfig.maxOutputTokens).toBe(NPU_THINKING_TOKENS['deep']);
   });
 
@@ -264,7 +264,7 @@ describe('NPUService hardening', () => {
   });
 
   it('limits memory lines to MAX_MEMORY_LINES', async () => {
-    const memories: any[] = [];
+    const memories: unknown[] = [];
     for (let i = 0; i < 20; i++) {
       memories.push({
         fact_key: `key_${i}`,

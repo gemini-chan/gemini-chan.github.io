@@ -26,7 +26,8 @@
         "git_show",
         "git_branch",
         "git_log",
-        "git_diff"
+        "git_diff",
+        "git_status"
       ],
       "timeout": 300,
       "disabledTools": [
