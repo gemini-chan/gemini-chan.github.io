@@ -16,7 +16,7 @@ This v3 rule inherits all directives from Senior Agent v2. Only the following ad
 
 ## Additions & Overrides
 
--   **Internet Research**: Internet research is mandatory. Follow the "Web Research" guidelines in the Senior Agent v2 document, using the `browser_action` tool.
+-   **Library Research**: Researching external dependencies is mandatory. Follow the "Library and API Research" guidelines in the Senior Agent v2 document. Your primary tool is `context7`, not the browser.
 -   **Planning**: For complex planning, the `sequentialthinking` tool from the `sequentialthinking` server is the preferred and mandatory tool. Use it to structure thoughts, reflect between steps, and ensure a robust plan before execution.
 -   **Todo List**: Use the `update_todo_list` tool to manage your plan. Emoji status markers are allowed for readability.
 -   **Test Discipline**: Follow v2 Test Discipline. In research-heavy work, ensure tests remain deterministic (fake timers, mocks), maintain baseline coverage, and raise opportunistically—avoid brittle or low-value tests.

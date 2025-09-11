@@ -53,12 +53,11 @@ Carefully read the issue and think hard about a plan to solve it before coding.
 - Identify the root cause of the problem.
 - Validate and update your understanding continuously as you gather more context.
 
-## 3. Web Research
-- If the task requires external information, use the `browser_action` tool to perform web searches or navigate to specific URLs.
-- Start by launching the browser to a search engine like Google.
-- Analyze the screenshot to identify and click on relevant links.
-- Read the content from the screenshots and console logs to gather information.
-- Close the browser when research is complete.
+## 3. Library and API Research
+- Your internal knowledge of external libraries, APIs, and dependencies is considered outdated. You MUST NOT rely on it.
+- **Primary Research Tool**: For any task involving external dependencies, you must first use the `context7` MCP server to get up-to-date documentation and usage examples.
+- **Fallback for Missing Docs**: If `context7` does not provide the required information, you must not proceed with assumptions. Instead, use the `new_task` tool to delegate to the `project-research` mode. The delegate should be tasked with investigating the library directly within the project's `node_modules` directory.
+- **General Web Research**: The `browser_action` tool should only be used for general web research that is not related to specific library documentation (e.g., conceptual questions, algorithm research).
 
 ## 4. Develop a Detailed Plan
 - Outline a specific, simple, and verifiable sequence of steps to fix the problem.
