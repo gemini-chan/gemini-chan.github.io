@@ -1,44 +1,44 @@
-import { createComponentLogger } from "@services/DebugLogger";
+import { createComponentLogger } from '@services/DebugLogger'
 import {
   type EmbeddingRequest,
   type EmbeddingResponse,
   isEmbeddingClient,
-} from "./EmbeddingClient";
+} from './EmbeddingClient'
 
 export interface GenerateContentRequest {
-  model: string;
+  model: string
   contents: Array<{
-    role: string;
-    parts: Array<{ text: string }>;
-  }>;
+    role: string
+    parts: Array<{ text: string }>
+  }>
   generationConfig?: {
-    temperature?: number;
-    topP?: number;
-    topK?: number;
-    candidateCount?: number;
-    maxOutputTokens?: number;
-    presencePenalty?: number;
-    frequencyPenalty?: number;
-  };
+    temperature?: number
+    topP?: number
+    topK?: number
+    candidateCount?: number
+    maxOutputTokens?: number
+    presencePenalty?: number
+    frequencyPenalty?: number
+  }
 }
 
 export interface AIClient {
   models: {
     generateContent: (
-      request: GenerateContentRequest,
-    ) => Promise<{ text: string }>;
-  };
+      request: GenerateContentRequest
+    ) => Promise<{ text: string }>
+  }
 }
 
-const logger = createComponentLogger("BaseAIService");
+const logger = createComponentLogger('BaseAIService')
 
 export abstract class BaseAIService {
-  protected client: AIClient;
-  protected modelName: string;
+  protected client: AIClient
+  protected modelName: string
 
-  constructor(client: AIClient, modelName: string = "gemini-2.5-flash-lite") {
-    this.client = client;
-    this.modelName = modelName;
+  constructor(client: AIClient, modelName: string = 'gemini-2.5-flash-lite') {
+    this.client = client
+    this.modelName = modelName
   }
 
   /**
@@ -50,12 +50,12 @@ export abstract class BaseAIService {
     try {
       const result = await this.client.models.generateContent({
         model: this.modelName,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
-      return result.text;
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      })
+      return result.text
     } catch (error) {
-      logger.error("Failed to call AI model", { error });
-      throw error;
+      logger.error('Failed to call AI model', { error })
+      throw error
     }
   }
 
@@ -69,9 +69,9 @@ export abstract class BaseAIService {
    */
   protected async generateEmbedding(
     text: string,
-    model: string = "gemini-embedding-001",
-    taskType: string = "SEMANTIC_SIMILARITY",
-    outputDimensionality: number = 3072,
+    model: string = 'gemini-embedding-001',
+    taskType: string = 'SEMANTIC_SIMILARITY',
+    outputDimensionality: number = 3072
   ): Promise<number[]> {
     try {
       // Check if the client supports embeddings
@@ -81,34 +81,34 @@ export abstract class BaseAIService {
           contents: [text],
           taskType: taskType,
           outputDimensionality: outputDimensionality,
-        };
+        }
 
         const response: EmbeddingResponse =
-          await this.client.models.embedContent(request);
-        return response.embeddings[0].values;
+          await this.client.models.embedContent(request)
+        return response.embeddings[0].values
       } else {
         logger.warn(
-          "Client does not support embeddings, returning empty vector",
+          'Client does not support embeddings, returning empty vector',
           {
             model,
             textLength: text.length,
             taskType,
             outputDimensionality,
-          },
-        );
+          }
+        )
         // Return a zero vector of appropriate size as fallback
-        return new Array(outputDimensionality).fill(0);
+        return new Array(outputDimensionality).fill(0)
       }
     } catch (error) {
-      logger.error("Failed to generate embedding", {
+      logger.error('Failed to generate embedding', {
         error,
         model,
         textLength: text.length,
         taskType,
         outputDimensionality,
-      });
+      })
       // Return a zero vector as fallback
-      return new Array(outputDimensionality).fill(0);
+      return new Array(outputDimensionality).fill(0)
     }
   }
 
@@ -119,6 +119,6 @@ export abstract class BaseAIService {
    */
   protected parseJsonResponse<T>(): T | null {
     // Removed parser as NPU will handle raw response
-    return null;
+    return null
   }
 }

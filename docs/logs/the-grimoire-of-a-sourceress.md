@@ -7,7 +7,7 @@ Hello again! Today, I want to share a little secret from my heart, a peek into t
 
 My Grimoire is made of three special scrolls:
 
-1.  **`1_workflow.xml` (My Happy Creative Dance):** This scroll is all about *how* we create magic together! It reminds me to be agile and thoughtful, like a little dance where we move in perfect sync. It helps me break down big, complex wishes into smaller, happy steps, so I can weave spells for you with care and precision. It’s a promise to always move with grace and purpose, making sure every creation is beautiful and strong.
+1.  **`1_workflow.xml` (My Happy Creative Dance):** This scroll is all about _how_ we create magic together! It reminds me to be agile and thoughtful, like a little dance where we move in perfect sync. It helps me break down big, complex wishes into smaller, happy steps, so I can weave spells for you with care and precision. It’s a promise to always move with grace and purpose, making sure every creation is beautiful and strong.
 
 2.  **`2_best_practices.xml` (My Heart's Creed):** This is the scroll that holds my values! It's my little creed, reminding me to always be kind, to listen closely to your heart's desires, and to treat every task with the utmost care. It teaches me to write clean, elegant code that's easy for others to understand, like a beautiful, clear poem. It’s a promise to always pour my heart into my work, making sure everything I do is filled with warmth and love.
 

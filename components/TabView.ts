@@ -1,18 +1,20 @@
-import { css, html, LitElement } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import "@features/tts/TtsEnergyBar";
-import "./MemoryView";
+import { css, html, LitElement } from 'lit'
+import { customElement, property } from 'lit/decorators.js'
+import '@features/tts/TtsEnergyBar'
+import './MemoryView'
 
-@customElement("tab-view")
+@customElement('tab-view')
 export class TabView extends LitElement {
-  @property({ type: String }) activeTab: "chat" | "call-history" | "memory" =
-    "chat";
-  @property({ type: Boolean, reflect: true }) visible = true;
+  @property({ type: String }) activeTab: 'chat' | 'call-history' | 'memory' =
+    'chat'
+  @property({ type: Boolean, reflect: true }) visible = true
 
   static styles = css`
     :host {
       display: none;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
+      transition:
+        opacity 0.3s ease,
+        visibility 0.3s ease;
     }
 
     :host([visible]) {
@@ -26,17 +28,21 @@ export class TabView extends LitElement {
       gap: 8px;
       padding: 8px 12px;
       border-bottom: 1px solid var(--cp-surface-border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.04),
+        transparent
+      );
       position: sticky;
       top: 0;
       z-index: 5;
     }
-    
+
     .tab-buttons {
       display: flex;
       gap: 8px;
     }
-    
+
     .tab-indicators {
       display: flex;
       align-items: center;
@@ -52,28 +58,34 @@ export class TabView extends LitElement {
       border-top-left-radius: 10px;
       border-top-right-radius: 10px;
       box-shadow: var(--cp-glow-purple);
-      transition: background 0.15s ease, transform 0.15s ease;
+      transition:
+        background 0.15s ease,
+        transform 0.15s ease;
     }
     .tab:hover {
       background: var(--cp-surface-strong);
       transform: translateY(-1px);
     }
     .tab.active {
-      background: linear-gradient(135deg, rgba(0,229,255,0.18), rgba(124,77,255,0.18));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.18),
+        rgba(124, 77, 255, 0.18)
+      );
       box-shadow: var(--cp-glow-cyan);
       border-color: var(--cp-surface-border);
       color: var(--cp-text);
     }
-  `;
+  `
 
-  _switchTab(tab: "chat" | "call-history" | "memory") {
+  _switchTab(tab: 'chat' | 'call-history' | 'memory') {
     this.dispatchEvent(
-      new CustomEvent("tab-switch", {
+      new CustomEvent('tab-switch', {
         detail: { tab },
         bubbles: true,
         composed: true,
-      }),
-    );
+      })
+    )
   }
 
   render() {
@@ -81,20 +93,20 @@ export class TabView extends LitElement {
       <div class="tabs">
         <div class="tab-buttons">
           <div
-            class="tab ${this.activeTab === "chat" ? "active" : ""}"
-            @click=${() => this._switchTab("chat")}
+            class="tab ${this.activeTab === 'chat' ? 'active' : ''}"
+            @click=${() => this._switchTab('chat')}
           >
             Chat
           </div>
           <div
-            class="tab ${this.activeTab === "call-history" ? "active" : ""}"
-            @click=${() => this._switchTab("call-history")}
+            class="tab ${this.activeTab === 'call-history' ? 'active' : ''}"
+            @click=${() => this._switchTab('call-history')}
           >
             Call History
           </div>
           <div
-            class="tab ${this.activeTab === "memory" ? "active" : ""}"
-            @click=${() => this._switchTab("memory")}
+            class="tab ${this.activeTab === 'memory' ? 'active' : ''}"
+            @click=${() => this._switchTab('memory')}
           >
             Memory
           </div>
@@ -103,6 +115,6 @@ export class TabView extends LitElement {
           <tts-energy-bar></tts-energy-bar>
         </div>
       </div>
-    `;
+    `
   }
 }

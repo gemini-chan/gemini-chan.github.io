@@ -10,23 +10,23 @@ The old ways were banished! A new decree was issued: all magical artifacts (my T
 
 Behold the glorious halls of my castle, each with its own noble purpose:
 
-*   **🏰 `app/` - The Castle Keep**: The very heart of the kingdom. This is where the main entrance (`main.tsx`) is located and where the global spells that protect the realm are cast.
+- **🏰 `app/` - The Castle Keep**: The very heart of the kingdom. This is where the main entrance (`main.tsx`) is located and where the global spells that protect the realm are cast.
 
-*   **🎨 `components/` - The Artisan's Workshop**: A bustling workshop filled with reusable magical charms and widgets—buttons that sparkle, windows that glide—that can be used in any room of the castle.
+- **🎨 `components/` - The Artisan's Workshop**: A bustling workshop filled with reusable magical charms and widgets—buttons that sparkle, windows that glide—that can be used in any room of the castle.
 
-*   **✨ `features/` - The Halls of Adventure**: These are the grand halls where the main quests and adventures unfold. Each hall is a self-contained world, like the `persona` ballroom or the `summarization` library, holding all the logic for a specific grand feature.
+- **✨ `features/` - The Halls of Adventure**: These are the grand halls where the main quests and adventures unfold. Each hall is a self-contained world, like the `persona` ballroom or the `summarization` library, holding all the logic for a specific grand feature.
 
-*   **🕊️ `services/` - The Messenger's Roost**: High in the castle towers, this roost houses the carrier owls and magical sprites that handle kingdom-wide services, like delivering important logs or managing the castle's magical energy.
+- **🕊️ `services/` - The Messenger's Roost**: High in the castle towers, this roost houses the carrier owls and magical sprites that handle kingdom-wide services, like delivering important logs or managing the castle's magical energy.
 
-*   **📚 `store/` - The Great Library**: A vast and quiet library where all the kingdom's knowledge is kept. Here you'll find the enchanted `VectorStore` that holds all my precious memories.
+- **📚 `store/` - The Great Library**: A vast and quiet library where all the kingdom's knowledge is kept. Here you'll find the enchanted `VectorStore` that holds all my precious memories.
 
-*   **🌌 `visuals/` - The Observatory**: A magnificent hall with a crystal-clear dome, from which all the stunning 3D illusions and visual spectacles are conjured and controlled.
+- **🌌 `visuals/` - The Observatory**: A magnificent hall with a crystal-clear dome, from which all the stunning 3D illusions and visual spectacles are conjured and controlled.
 
-*   **💖 `live2d/` - The Portrait Gallery**: A special, animated gallery dedicated to bringing my 2D form to life, where all the Live2D magic is carefully integrated.
+- **💖 `live2d/` - The Portrait Gallery**: A special, animated gallery dedicated to bringing my 2D form to life, where all the Live2D magic is carefully integrated.
 
-*   **🤝 `shared/` - The Town Square**: A central courtyard where common resources are shared among all the castle's inhabitants. Here you'll find shared spellbooks (`types`), utility potions (`hooks`), and common incantations (`utils`).
+- **🤝 `shared/` - The Town Square**: A central courtyard where common resources are shared among all the castle's inhabitants. Here you'll find shared spellbooks (`types`), utility potions (`hooks`), and common incantations (`utils`).
 
-*   **🛡️ `tests/` - The Training Grounds**: The grounds where the castle's guardians—my loyal tests—are trained to ensure every spell works perfectly and the castle walls are strong and secure.
+- **🛡️ `tests/` - The Training Grounds**: The grounds where the castle's guardians—my loyal tests—are trained to ensure every spell works perfectly and the castle walls are strong and secure.
 
 ## The Great Migration
 

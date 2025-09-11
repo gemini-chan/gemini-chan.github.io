@@ -1,6 +1,6 @@
 class AudioProcessor extends AudioWorkletProcessor {
   constructor() {
-    super();
+    super()
   }
 
   process(
@@ -10,15 +10,15 @@ class AudioProcessor extends AudioWorkletProcessor {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _parameters: Record<string, Float32Array>
   ): boolean {
-    const input = inputs[0];
+    const input = inputs[0]
     if (input && input.length > 0) {
-      const pcmData = input[0];
+      const pcmData = input[0]
       if (pcmData) {
-        this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
+        this.port.postMessage(pcmData.buffer, [pcmData.buffer])
       }
     }
-    return true;
+    return true
   }
 }
 
-registerProcessor('audio-processor', AudioProcessor);
+registerProcessor('audio-processor', AudioProcessor)

@@ -1,73 +1,73 @@
-import { type Persona, PersonaManager } from "@features/persona/PersonaManager";
-import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_LIMITS } from "@shared/constants";
-import { Live2DMappingService } from "@services/Live2DMappingService";
-import { css, html, LitElement } from "lit";
-import "./ResetButton";
-import { customElement, property, state } from "lit/decorators.js";
+import { type Persona, PersonaManager } from '@features/persona/PersonaManager'
+import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_LIMITS } from '@shared/constants'
+import { Live2DMappingService } from '@services/Live2DMappingService'
+import { css, html, LitElement } from 'lit'
+import './ResetButton'
+import { customElement, property, state } from 'lit/decorators.js'
 
 interface FieldConfig {
-  storageKey: string;
-  validator?: (value: string) => boolean;
-  eventName?: string;
-  required?: boolean;
-  preserveOnEmpty?: boolean;
+  storageKey: string
+  validator?: (value: string) => boolean
+  eventName?: string
+  required?: boolean
+  preserveOnEmpty?: boolean
 }
 
 // Theme system types and data
 type ThemeType =
-  | "cyberpunk"
-  | "dystopia"
-  | "tron"
-  | "synthwave"
-  | "matrix"
-  | "noir";
+  | 'cyberpunk'
+  | 'dystopia'
+  | 'tron'
+  | 'synthwave'
+  | 'matrix'
+  | 'noir'
 
 interface ThemePreview {
-  primary: string;
-  secondary: string;
-  gradient: string;
-  name: string;
+  primary: string
+  secondary: string
+  gradient: string
+  name: string
 }
 
 // Theme preview data with color gradients for visual representation
 const THEME_PREVIEWS: Record<ThemeType, ThemePreview> = {
   cyberpunk: {
-    primary: "#00e5ff",
-    secondary: "#ff00e5",
-    gradient: "linear-gradient(135deg, #00e5ff 0%, #7c4dff 50%, #ff00e5 100%)",
-    name: "Cyberpunk",
+    primary: '#00e5ff',
+    secondary: '#ff00e5',
+    gradient: 'linear-gradient(135deg, #00e5ff 0%, #7c4dff 50%, #ff00e5 100%)',
+    name: 'Cyberpunk',
   },
   dystopia: {
-    primary: "#23d5ff",
-    secondary: "#6a4cff",
-    gradient: "linear-gradient(135deg, #23d5ff 0%, #6a4cff 50%, #b400ff 100%)",
-    name: "Dystopia",
+    primary: '#23d5ff',
+    secondary: '#6a4cff',
+    gradient: 'linear-gradient(135deg, #23d5ff 0%, #6a4cff 50%, #b400ff 100%)',
+    name: 'Dystopia',
   },
   tron: {
-    primary: "#00f0ff",
-    secondary: "#00bfff",
-    gradient: "linear-gradient(135deg, #00f0ff 0%, #00bfff 50%, #33ffd6 100%)",
-    name: "Tron",
+    primary: '#00f0ff',
+    secondary: '#00bfff',
+    gradient: 'linear-gradient(135deg, #00f0ff 0%, #00bfff 50%, #33ffd6 100%)',
+    name: 'Tron',
   },
   synthwave: {
-    primary: "#ff00a8",
-    secondary: "#a96dff",
-    gradient: "linear-gradient(135deg, #ff00a8 0%, #a96dff 50%, #ff6b9d 100%)",
-    name: "Synthwave",
+    primary: '#ff00a8',
+    secondary: '#a96dff',
+    gradient: 'linear-gradient(135deg, #ff00a8 0%, #a96dff 50%, #ff6b9d 100%)',
+    name: 'Synthwave',
   },
   matrix: {
-    primary: "#39ff14",
-    secondary: "#00ff41",
-    gradient: "linear-gradient(135deg, #39ff14 0%, #00ff41 50%, #7fff00 100%)",
-    name: "Matrix",
+    primary: '#39ff14',
+    secondary: '#00ff41',
+    gradient: 'linear-gradient(135deg, #39ff14 0%, #00ff41 50%, #7fff00 100%)',
+    name: 'Matrix',
   },
   noir: {
-    primary: "#ff4757",
-    secondary: "#ff3838",
-    gradient: "linear-gradient(135deg, #ff4757 0%, #ff3838 50%, #ff6b7a 100%)",
-    name: "Noir",
+    primary: '#ff4757',
+    secondary: '#ff3838',
+    gradient: 'linear-gradient(135deg, #ff4757 0%, #ff3838 50%, #ff6b7a 100%)',
+    name: 'Noir',
   },
-};
+}
 
 /**
  * Applies circuitry animation settings from localStorage to the root element.
@@ -75,142 +75,144 @@ const THEME_PREVIEWS: Record<ThemeType, ThemePreview> = {
  * the application starts.
  */
 function applyCircuitrySettingsOnLoad() {
-  const root = document.documentElement;
+  const root = document.documentElement
 
   // Restore circuitry visibility
-  const circuitryEnabled =
-    localStorage.getItem("circuitry-enabled") !== "false";
+  const circuitryEnabled = localStorage.getItem('circuitry-enabled') !== 'false'
   root.style.setProperty(
-    "--circuit-display",
-    circuitryEnabled ? "block" : "none",
-  );
-  root.setAttribute("data-circuit-enabled", circuitryEnabled.toString());
+    '--circuit-display',
+    circuitryEnabled ? 'block' : 'none'
+  )
+  root.setAttribute('data-circuit-enabled', circuitryEnabled.toString())
 
   // Restore animation speed
-  const circuitrySpeed = localStorage.getItem("circuitry-speed") || "15";
-  root.style.setProperty("--circuit-speed", `${circuitrySpeed}s`);
+  const circuitrySpeed = localStorage.getItem('circuitry-speed') || '15'
+  root.style.setProperty('--circuit-speed', `${circuitrySpeed}s`)
 
   // Restore pulsing nodes visibility
-  const circuitryNodes = localStorage.getItem("circuitry-enabled") !== "false";
+  const circuitryNodes = localStorage.getItem('circuitry-enabled') !== 'false'
   root.style.setProperty(
-    "--circuit-nodes-display",
-    circuitryNodes ? "block" : "none",
-  );
+    '--circuit-nodes-display',
+    circuitryNodes ? 'block' : 'none'
+  )
 }
 
 // Restore settings on page load
-applyCircuitrySettingsOnLoad();
+applyCircuitrySettingsOnLoad()
 
-@customElement("settings-menu")
+@customElement('settings-menu')
 export class SettingsMenu extends LitElement {
   @property({ type: String })
-  apiKey = "";
+  apiKey = ''
 
   @state()
-  private _error = "";
+  private _error = ''
 
   @state()
-  private _apiKeyValid = false;
+  private _apiKeyValid = false
 
   @state()
-  private _apiKeyInvalid = false;
+  private _apiKeyInvalid = false
 
   @state()
-  private _modelUrlValid = false;
+  private _modelUrlValid = false
 
   @state()
-  private _modelUrlInvalid = false;
+  private _modelUrlInvalid = false
 
   @state()
   private _theme:
-    | "cyberpunk"
-    | "dystopia"
-    | "tron"
-    | "synthwave"
-    | "matrix"
-    | "noir" = (localStorage.getItem("theme") as ThemeType) || "cyberpunk";
+    | 'cyberpunk'
+    | 'dystopia'
+    | 'tron'
+    | 'synthwave'
+    | 'matrix'
+    | 'noir' = (localStorage.getItem('theme') as ThemeType) || 'cyberpunk'
 
   @state()
   private _circuitryEnabled: boolean =
-    localStorage.getItem("circuitry-enabled") !== "false";
+    localStorage.getItem('circuitry-enabled') !== 'false'
 
   @state()
   private _circuitrySpeed: number = Number.parseInt(
-    localStorage.getItem("circuitry-speed") || "15",
-  );
+    localStorage.getItem('circuitry-speed') || '15'
+  )
 
   @state()
-  private _themeOptionsOpen = false;
+  private _themeOptionsOpen = false
 
   @state()
-  private _personas: Persona[] = [];
+  private _personas: Persona[] = []
 
   @state()
-  private _activePersona: Persona | null = null;
+  private _activePersona: Persona | null = null
 
   @state()
-  private _editingPersona: Persona | null = null;
+  private _editingPersona: Persona | null = null
 
   @state()
-  private _showDeleteConfirmation = false;
+  private _showDeleteConfirmation = false
 
   @state()
-  private _toast: string = "";
+  private _toast: string = ''
 
   @state()
   private _npuModel: string =
-    localStorage.getItem(NPU_STORAGE_KEYS.model) || NPU_DEFAULTS.model;
+    localStorage.getItem(NPU_STORAGE_KEYS.model) || NPU_DEFAULTS.model
 
   @state()
   private _npuTemperature: number = (() => {
-    const tempStr = localStorage.getItem(NPU_STORAGE_KEYS.temperature);
-    let temp = parseFloat(tempStr || String(NPU_DEFAULTS.temperature));
-    if (Number.isNaN(temp)) temp = NPU_DEFAULTS.temperature;
-    return Math.max(0, Math.min(1, temp));
-  })();
+    const tempStr = localStorage.getItem(NPU_STORAGE_KEYS.temperature)
+    let temp = parseFloat(tempStr || String(NPU_DEFAULTS.temperature))
+    if (Number.isNaN(temp)) temp = NPU_DEFAULTS.temperature
+    return Math.max(0, Math.min(1, temp))
+  })()
 
   @state()
   private _npuThinking: string =
     localStorage.getItem(NPU_STORAGE_KEYS.thinkingLevel) ||
-    NPU_DEFAULTS.thinkingLevel;
+    NPU_DEFAULTS.thinkingLevel
 
   @state()
   private _npuTopP: number = (() => {
-    const topPStr = localStorage.getItem(NPU_STORAGE_KEYS.topP);
-    let topP = parseFloat(topPStr || String(NPU_DEFAULTS.topP));
-    if (Number.isNaN(topP)) topP = NPU_DEFAULTS.topP;
-    return Math.max(NPU_LIMITS.topP.min, Math.min(NPU_LIMITS.topP.max, topP));
-  })();
+    const topPStr = localStorage.getItem(NPU_STORAGE_KEYS.topP)
+    let topP = parseFloat(topPStr || String(NPU_DEFAULTS.topP))
+    if (Number.isNaN(topP)) topP = NPU_DEFAULTS.topP
+    return Math.max(NPU_LIMITS.topP.min, Math.min(NPU_LIMITS.topP.max, topP))
+  })()
 
   @state()
   private _npuTopK: number = (() => {
-    const topKStr = localStorage.getItem(NPU_STORAGE_KEYS.topK);
-    let topK = Number.parseInt(topKStr || String(NPU_DEFAULTS.topK));
-    if (Number.isNaN(topK)) topK = NPU_DEFAULTS.topK;
-    return Math.max(NPU_LIMITS.topK.min, Math.min(NPU_LIMITS.topK.max, topK));
-  })();
+    const topKStr = localStorage.getItem(NPU_STORAGE_KEYS.topK)
+    let topK = Number.parseInt(topKStr || String(NPU_DEFAULTS.topK))
+    if (Number.isNaN(topK)) topK = NPU_DEFAULTS.topK
+    return Math.max(NPU_LIMITS.topK.min, Math.min(NPU_LIMITS.topK.max, topK))
+  })()
 
   @state()
   private _npuRecentTurns: number = (() => {
-    const rtStr = localStorage.getItem(NPU_STORAGE_KEYS.recentTurns);
-    let recentTurns = Number.parseInt(rtStr || String(NPU_DEFAULTS.recentTurns));
-    if (Number.isNaN(recentTurns)) recentTurns = NPU_DEFAULTS.recentTurns;
-    return Math.max(NPU_LIMITS.recentTurns.min, Math.min(NPU_LIMITS.recentTurns.max, recentTurns));
-  })();
+    const rtStr = localStorage.getItem(NPU_STORAGE_KEYS.recentTurns)
+    let recentTurns = Number.parseInt(rtStr || String(NPU_DEFAULTS.recentTurns))
+    if (Number.isNaN(recentTurns)) recentTurns = NPU_DEFAULTS.recentTurns
+    return Math.max(
+      NPU_LIMITS.recentTurns.min,
+      Math.min(NPU_LIMITS.recentTurns.max, recentTurns)
+    )
+  })()
 
-  private personaManager: PersonaManager;
+  private personaManager: PersonaManager
   // Timer for debouncing API key input validation.
-  private _apiKeyInputDebounceTimer: number | undefined;
+  private _apiKeyInputDebounceTimer: number | undefined
 
   constructor() {
-    super();
-    this.personaManager = new PersonaManager();
-    this._loadPersonas();
+    super()
+    this.personaManager = new PersonaManager()
+    this._loadPersonas()
   }
 
   private _loadPersonas() {
-    this._personas = this.personaManager.getPersonas();
-    this._activePersona = this.personaManager.getActivePersona();
+    this._personas = this.personaManager.getPersonas()
+    this._activePersona = this.personaManager.getActivePersona()
   }
 
   static styles = css`
@@ -229,7 +231,8 @@ export class SettingsMenu extends LitElement {
 
       --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);
       --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
-      --shadow-theme-glow: 0 0 0 2px var(--theme-accent), 0 4px 16px var(--theme-accent-alpha);
+      --shadow-theme-glow:
+        0 0 0 2px var(--theme-accent), 0 4px 16px var(--theme-accent-alpha);
 
       position: absolute;
       top: 0;
@@ -246,9 +249,18 @@ export class SettingsMenu extends LitElement {
     .backdrop {
       position: absolute;
       inset: 0;
-      background: radial-gradient(800px 600px at 20% 20%, rgba(0,229,255,0.08), transparent 60%),
-                  radial-gradient(800px 600px at 80% 80%, rgba(255,0,229,0.08), transparent 60%),
-                  rgba(0, 0, 0, 0.55);
+      background:
+        radial-gradient(
+          800px 600px at 20% 20%,
+          rgba(0, 229, 255, 0.08),
+          transparent 60%
+        ),
+        radial-gradient(
+          800px 600px at 80% 80%,
+          rgba(255, 0, 229, 0.08),
+          transparent 60%
+        ),
+        rgba(0, 0, 0, 0.55);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -334,20 +346,20 @@ export class SettingsMenu extends LitElement {
       scrollbar-color: var(--cp-surface-strong) transparent;
       line-height: 1.5;
     }
-    
+
     textarea::-webkit-scrollbar {
       width: 6px;
     }
-    
+
     textarea::-webkit-scrollbar-track {
       background: transparent;
     }
-    
+
     textarea::-webkit-scrollbar-thumb {
       background-color: var(--cp-surface-strong);
       border-radius: 3px;
     }
-    
+
     textarea::-webkit-scrollbar-thumb:hover {
       background-color: var(--cp-cyan);
     }
@@ -362,9 +374,9 @@ export class SettingsMenu extends LitElement {
       align-items: center;
       gap: 12px;
     }
-    
+
     /* Custom Checkbox Styling */
-    input[type="checkbox"] {
+    input[type='checkbox'] {
       appearance: none;
       width: 20px;
       height: 20px;
@@ -380,18 +392,18 @@ export class SettingsMenu extends LitElement {
       flex-shrink: 0;
     }
 
-    input[type="checkbox"]:hover {
+    input[type='checkbox']:hover {
       border-color: var(--cp-cyan);
       box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
     }
 
-    input[type="checkbox"]:checked {
+    input[type='checkbox']:checked {
       background: linear-gradient(135deg, var(--cp-cyan), var(--cp-purple));
       border-color: var(--cp-cyan);
       box-shadow: var(--cp-glow-cyan);
     }
 
-    input[type="checkbox"]:checked::after {
+    input[type='checkbox']:checked::after {
       content: '';
       position: absolute;
       left: 6px;
@@ -403,7 +415,7 @@ export class SettingsMenu extends LitElement {
       transform: rotate(45deg);
     }
 
-    input[type="checkbox"]:focus {
+    input[type='checkbox']:focus {
       outline: 2px solid var(--cp-cyan);
       outline-offset: 2px;
     }
@@ -412,7 +424,7 @@ export class SettingsMenu extends LitElement {
       align-items: center;
       gap: 12px;
     }
-    input[type="range"] {
+    input[type='range'] {
       flex: 1;
       cursor: pointer;
       height: 6px;
@@ -422,48 +434,60 @@ export class SettingsMenu extends LitElement {
       appearance: none;
       padding: 0;
     }
-    input[type="range"]::-webkit-slider-runnable-track {
+    input[type='range']::-webkit-slider-runnable-track {
       height: 6px;
       background: transparent;
     }
-    input[type="range"]::-moz-range-track {
+    input[type='range']::-moz-range-track {
       height: 6px;
       background: transparent;
     }
-    input[type="range"]::-webkit-slider-thumb {
+    input[type='range']::-webkit-slider-thumb {
       appearance: none;
       width: var(--range-thumb-size);
       height: var(--range-thumb-size);
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(0,229,255,0.6), rgba(124,77,255,0.6));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.6),
+        rgba(124, 77, 255, 0.6)
+      );
       border: 2px solid var(--cp-surface-border);
       cursor: pointer;
       box-shadow: var(--cp-glow-cyan);
       opacity: 0;
       transform: scale(0.9);
-      transition: opacity 0.15s ease, transform 0.15s ease;
+      transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
     }
-    input[type="range"]::-moz-range-thumb {
+    input[type='range']::-moz-range-thumb {
       width: var(--range-thumb-size);
       height: var(--range-thumb-size);
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(0,229,255,0.6), rgba(124,77,255,0.6));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.6),
+        rgba(124, 77, 255, 0.6)
+      );
       border: 2px solid var(--cp-surface-border);
       cursor: pointer;
       box-shadow: var(--cp-glow-cyan);
       opacity: 0;
       transform: scale(0.9);
-      transition: opacity 0.15s ease, transform 0.15s ease;
+      transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
     }
-    input[type="range"]:hover::-webkit-slider-thumb,
-    input[type="range"]:focus-visible::-webkit-slider-thumb,
-    input[type="range"]:active::-webkit-slider-thumb {
+    input[type='range']:hover::-webkit-slider-thumb,
+    input[type='range']:focus-visible::-webkit-slider-thumb,
+    input[type='range']:active::-webkit-slider-thumb {
       opacity: 1;
       transform: scale(1);
     }
-    input[type="range"]:hover::-moz-range-thumb,
-    input[type="range"]:focus-visible::-moz-range-thumb,
-    input[type="range"]:active::-moz-range-thumb {
+    input[type='range']:hover::-moz-range-thumb,
+    input[type='range']:focus-visible::-moz-range-thumb,
+    input[type='range']:active::-moz-range-thumb {
       opacity: 1;
       transform: scale(1);
     }
@@ -485,7 +509,9 @@ export class SettingsMenu extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s ease, color 0.15s ease;
+      transition:
+        background 0.15s ease,
+        color 0.15s ease;
       box-shadow: var(--cp-glow-cyan);
     }
     .paste-button:hover {
@@ -544,7 +570,7 @@ export class SettingsMenu extends LitElement {
       position: relative;
       overflow: hidden;
     }
-    
+
     button:hover {
       transform: translateY(-1px);
       box-shadow: var(--shadow-elevated);
@@ -609,7 +635,10 @@ export class SettingsMenu extends LitElement {
     /* Theme Grid Layout */
     .theme-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(var(--theme-card-width), 1fr));
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(var(--theme-card-width), 1fr)
+      );
       gap: var(--theme-card-spacing);
       margin-bottom: 1rem;
     }
@@ -648,7 +677,9 @@ export class SettingsMenu extends LitElement {
 
     .theme-card.active:hover {
       transform: translateY(-2px);
-      box-shadow: 0 0 0 2px var(--theme-accent), 0 6px 20px var(--theme-accent-alpha);
+      box-shadow:
+        0 0 0 2px var(--theme-accent),
+        0 6px 20px var(--theme-accent-alpha);
     }
 
     .theme-card.editing-mode:not(.active) {
@@ -667,7 +698,11 @@ export class SettingsMenu extends LitElement {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.1) 100%);
+      background: linear-gradient(
+        135deg,
+        transparent 0%,
+        rgba(0, 0, 0, 0.1) 100%
+      );
     }
 
     /* Theme Label */
@@ -737,7 +772,7 @@ export class SettingsMenu extends LitElement {
       outline: 2px solid var(--cp-cyan);
       outline-offset: 2px;
     }
-    
+
     .prompt-section {
       display: flex;
       flex-direction: column;
@@ -746,14 +781,14 @@ export class SettingsMenu extends LitElement {
       padding-top: 1em;
       margin-top: 0.5em;
     }
-    
+
     .section-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 0.5em;
     }
-    
+
     .section-title {
       font-weight: 500;
       color: var(--cp-text);
@@ -761,7 +796,7 @@ export class SettingsMenu extends LitElement {
       align-items: center;
       gap: 0.5em;
     }
-    
+
     .prompt-icon {
       width: 18px;
       height: 18px;
@@ -794,7 +829,11 @@ export class SettingsMenu extends LitElement {
     }
 
     .persona-button.active {
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.15),
+        rgba(124, 77, 255, 0.15)
+      );
       border-color: var(--cp-cyan);
       box-shadow: var(--cp-glow-cyan);
     }
@@ -832,26 +871,36 @@ export class SettingsMenu extends LitElement {
 
     /* Micro-interactions and Animations */
     @keyframes theme-card-select {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.02); }
-      100% { transform: scale(1); }
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.02);
+      }
+      100% {
+        transform: scale(1);
+      }
     }
 
     @keyframes glow-pulse {
-      0%, 100% { 
+      0%,
+      100% {
         box-shadow: var(--shadow-theme-glow);
       }
-      50% { 
-        box-shadow: 0 0 0 2px var(--theme-accent), 0 6px 20px var(--theme-accent-alpha);
+      50% {
+        box-shadow:
+          0 0 0 2px var(--theme-accent),
+          0 6px 20px var(--theme-accent-alpha);
       }
     }
 
     @keyframes active-indicator-pulse {
-      0%, 100% { 
+      0%,
+      100% {
         transform: scale(1);
         opacity: 1;
       }
-      50% { 
+      50% {
         transform: scale(1.1);
         opacity: 0.8;
       }
@@ -879,7 +928,11 @@ export class SettingsMenu extends LitElement {
 
     /* Enhanced Hover Effects */
     .theme-card:hover .theme-preview::after {
-      background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+      background: linear-gradient(
+        135deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 100%
+      );
     }
 
     .theme-card:hover .active-indicator {
@@ -894,14 +947,16 @@ export class SettingsMenu extends LitElement {
         --theme-card-height: 50px;
         --theme-card-spacing: 6px;
       }
-      
+
       .theme-label {
         font-size: 0.75rem;
         padding: 0.4rem;
       }
     }
 
-    .npu-setting-label { flex: 0 0 100px; }
+    .npu-setting-label {
+      flex: 0 0 100px;
+    }
 
     /* Theme Options Styling */
     .theme-options-section {
@@ -923,7 +978,8 @@ export class SettingsMenu extends LitElement {
       cursor: pointer;
       list-style: none;
       user-select: none;
-      transition: background-color var(--animation-duration-fast) var(--animation-easing);
+      transition: background-color var(--animation-duration-fast)
+        var(--animation-easing);
     }
 
     .theme-options-summary:hover {
@@ -943,7 +999,8 @@ export class SettingsMenu extends LitElement {
       width: 16px;
       height: 16px;
       color: var(--cp-muted);
-      transition: transform var(--animation-duration-fast) var(--animation-easing);
+      transition: transform var(--animation-duration-fast)
+        var(--animation-easing);
     }
 
     .theme-options-details[open] .chevron-icon {
@@ -964,7 +1021,11 @@ export class SettingsMenu extends LitElement {
       padding: 1rem;
       border: 2px solid var(--cp-cyan);
       border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0, 229, 255, 0.05), rgba(124, 77, 255, 0.05));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.05),
+        rgba(124, 77, 255, 0.05)
+      );
       box-shadow: var(--cp-glow-cyan);
     }
 
@@ -1080,8 +1141,14 @@ export class SettingsMenu extends LitElement {
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
     }
 
     /* Accessibility Enhancements */
@@ -1095,17 +1162,19 @@ export class SettingsMenu extends LitElement {
         transition: none;
       }
     }
-  `;
+  `
 
   private _renderPersonaForm() {
     if (!this._editingPersona) {
-      return html``;
+      return html``
     }
 
     // Get available emotions for the current model URL
-    const emotions = this._editingPersona.live2dModelUrl 
-      ? Live2DMappingService.getAvailableEmotions(this._editingPersona.live2dModelUrl)
-      : [];
+    const emotions = this._editingPersona.live2dModelUrl
+      ? Live2DMappingService.getAvailableEmotions(
+          this._editingPersona.live2dModelUrl
+        )
+      : []
 
     return html`
       <div class="persona-editor">
@@ -1114,8 +1183,8 @@ export class SettingsMenu extends LitElement {
           .value=${this._editingPersona.name}
           @input=${(e: Event) =>
             this._handlePersonaFormInput(
-              "name",
-              (e.target as HTMLInputElement).value,
+              'name',
+              (e.target as HTMLInputElement).value
             )}
           @blur=${this._onSavePersona}
         />
@@ -1123,71 +1192,74 @@ export class SettingsMenu extends LitElement {
           .value=${this._editingPersona.systemPrompt}
           @input=${(e: Event) =>
             this._handlePersonaFormInput(
-              "systemPrompt",
-              (e.target as HTMLTextAreaElement).value,
+              'systemPrompt',
+              (e.target as HTMLTextAreaElement).value
             )}
           @blur=${this._onSavePersona}
           placeholder="System Prompt"
         ></textarea>
-        
+
         <!-- Emotion Selection Dropdown -->
-        ${this._editingPersona.live2dModelUrl && emotions.length > 0 ? html`
-          <div class="input-group">
-            <select
-              .value=${this._editingPersona.emotion || ""}
-              @change=${(e: Event) => {
-                const select = e.target as HTMLSelectElement;
-                this._handlePersonaFormInput("emotion", select.value || undefined);
-                this._updatePersona();
-              }}
-            >
-              <option value="">Default Emotion</option>
-              ${emotions.map(
-                (emotion) => html`
-                  <option value="${emotion}">
-                    ${emotion}
-                  </option>
-                `
-              )}
-            </select>
-          </div>
-        ` : this._editingPersona.live2dModelUrl ? html`
-          <div class="emotion-notice">
-            <p>
-              No emotions available for this model.
-            </p>
-          </div>
-        ` : html`
-          <div class="emotion-notice">
-            <p>
-              Set a Live2D model URL above to enable emotion selection.
-            </p>
-          </div>
-        `}
-        
+        ${this._editingPersona.live2dModelUrl && emotions.length > 0
+          ? html`
+              <div class="input-group">
+                <select
+                  .value=${this._editingPersona.emotion || ''}
+                  @change=${(e: Event) => {
+                    const select = e.target as HTMLSelectElement
+                    this._handlePersonaFormInput(
+                      'emotion',
+                      select.value || undefined
+                    )
+                    this._updatePersona()
+                  }}
+                >
+                  <option value="">Default Emotion</option>
+                  ${emotions.map(
+                    (emotion) => html`
+                      <option value="${emotion}">${emotion}</option>
+                    `
+                  )}
+                </select>
+              </div>
+            `
+          : this._editingPersona.live2dModelUrl
+            ? html`
+                <div class="emotion-notice">
+                  <p>No emotions available for this model.</p>
+                </div>
+              `
+            : html`
+                <div class="emotion-notice">
+                  <p>
+                    Set a Live2D model URL above to enable emotion selection.
+                  </p>
+                </div>
+              `}
+
         <div class="input-group">
           <input
             type="text"
             .value=${this._editingPersona.live2dModelUrl}
             @input=${(e: Event) => {
               this._handlePersonaFormInput(
-                "live2dModelUrl",
-                (e.target as HTMLInputElement).value,
-              );
-              this._validateLive2dUrl((e.target as HTMLInputElement).value);
+                'live2dModelUrl',
+                (e.target as HTMLInputElement).value
+              )
+              this._validateLive2dUrl((e.target as HTMLInputElement).value)
             }}
             @blur=${this._onLive2dUrlBlur}
             placeholder="Live2D Model URL"
           />
           <div
-            class="validation-icon ${
-              this._modelUrlValid || this._modelUrlInvalid ? "show" : ""
-            }"
-            title="${this._modelUrlValid ? "Valid URL" : "Invalid URL"}"
+            class="validation-icon ${this._modelUrlValid ||
+            this._modelUrlInvalid
+              ? 'show'
+              : ''}"
+            title="${this._modelUrlValid ? 'Valid URL' : 'Invalid URL'}"
           >
-            ${
-              this._modelUrlValid
-                ? html`<svg
+            ${this._modelUrlValid
+              ? html`<svg
                   class="tick-icon"
                   viewBox="0 0 24 24"
                   fill="currentColor"
@@ -1196,8 +1268,8 @@ export class SettingsMenu extends LitElement {
                     d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"
                   />
                 </svg>`
-                : this._modelUrlInvalid
-                  ? html`<svg
+              : this._modelUrlInvalid
+                ? html`<svg
                     class="cross-icon"
                     viewBox="0 0 24 24"
                     fill="currentColor"
@@ -1206,12 +1278,11 @@ export class SettingsMenu extends LitElement {
                       d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
                     />
                   </svg>`
-                  : ""
-            }
+                : ''}
           </div>
           <button
             class="paste-button"
-            @click=${() => this._handlePaste("modelUrl")}
+            @click=${() => this._handlePaste('modelUrl')}
             title="Paste from clipboard"
           >
             <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -1221,155 +1292,172 @@ export class SettingsMenu extends LitElement {
             </svg>
           </button>
         </div>
-        
-        ${
-          !this._editingPersona.isDefault
-            ? html`
-          <div style="margin-top: 1em;">
-            <button class="danger" @click=${this._onDeletePersona}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 0.5rem;">
-                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
-              </svg>
-              Delete Persona
-            </button>
-          </div>
-        `
-            : ""
-        }
+
+        ${!this._editingPersona.isDefault
+          ? html`
+              <div style="margin-top: 1em;">
+                <button class="danger" @click=${this._onDeletePersona}>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    style="margin-right: 0.5rem;"
+                  >
+                    <path
+                      d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"
+                    />
+                  </svg>
+                  Delete Persona
+                </button>
+              </div>
+            `
+          : ''}
       </div>
-    `;
+    `
   }
 
-  private _handlePersonaFormInput(field: keyof Persona, value: string | boolean | undefined) {
+  private _handlePersonaFormInput(
+    field: keyof Persona,
+    value: string | boolean | undefined
+  ) {
     if (this._editingPersona) {
-      this._editingPersona = { ...this._editingPersona, [field]: value };
+      this._editingPersona = { ...this._editingPersona, [field]: value }
     }
   }
 
   private _showToast(message: string, durationMs = 2500) {
-    this._toast = message;
+    this._toast = message
     setTimeout(() => {
-      this._toast = "";
-      this.requestUpdate();
-    }, durationMs);
+      this._toast = ''
+      this.requestUpdate()
+    }, durationMs)
   }
 
   private _onLive2dUrlBlur = () => {
-    this._ensurePersonaEmotionValid();
-    this._onSavePersona();
-  };
+    this._ensurePersonaEmotionValid()
+    this._onSavePersona()
+  }
 
   private _ensurePersonaEmotionValid() {
     if (this._editingPersona?.live2dModelUrl && this._editingPersona?.emotion) {
-      const availableEmotions = Live2DMappingService.getAvailableEmotions(this._editingPersona.live2dModelUrl);
+      const availableEmotions = Live2DMappingService.getAvailableEmotions(
+        this._editingPersona.live2dModelUrl
+      )
       if (!availableEmotions.includes(this._editingPersona.emotion)) {
-        this._editingPersona = { ...this._editingPersona, emotion: undefined };
-        this._showToast("Emotion reset: not available for this model");
+        this._editingPersona = { ...this._editingPersona, emotion: undefined }
+        this._showToast('Emotion reset: not available for this model')
       }
     }
   }
 
   private _updatePersona = () => {
     if (this._editingPersona) {
-      this.personaManager.updatePersona(this._editingPersona);
-      this._loadPersonas();
-      this.requestUpdate();
+      this.personaManager.updatePersona(this._editingPersona)
+      this._loadPersonas()
+      this.requestUpdate()
     }
-  };
+  }
 
   private _onSavePersona = () => {
     if (this._editingPersona) {
-      this.personaManager.updatePersona(this._editingPersona);
-      this._loadPersonas();
-      this._editingPersona = null;
-      this.requestUpdate();
+      this.personaManager.updatePersona(this._editingPersona)
+      this._loadPersonas()
+      this._editingPersona = null
+      this.requestUpdate()
     }
-  };
+  }
 
   private _cancelPersonaEdit = () => {
-    this._editingPersona = null;
-    this.requestUpdate();
-  };
+    this._editingPersona = null
+    this.requestUpdate()
+  }
 
   private _onDeletePersona = () => {
-    this._showDeleteConfirmation = true;
-    this.requestUpdate();
-  };
+    this._showDeleteConfirmation = true
+    this.requestUpdate()
+  }
 
   private _confirmDeletePersona = () => {
     if (this._editingPersona && !this._editingPersona.isDefault) {
-      const wasActive = this._activePersona?.id === this._editingPersona.id;
-      const personaToDelete = this._editingPersona;
+      const wasActive = this._activePersona?.id === this._editingPersona.id
+      const personaToDelete = this._editingPersona
 
       // Close dialogs first to prevent UI flickering
-      this._editingPersona = null;
-      this._showDeleteConfirmation = false;
+      this._editingPersona = null
+      this._showDeleteConfirmation = false
 
       // Delete the persona
-      this.personaManager.deletePersona(personaToDelete.id);
+      this.personaManager.deletePersona(personaToDelete.id)
 
       // If we deleted the active persona, switch to default VTuber persona
       if (wasActive) {
         const defaultPersona = this.personaManager
           .getPersonas()
-          .find((p) => p.isDefault);
+          .find((p) => p.isDefault)
         if (defaultPersona) {
           // Use setTimeout to ensure proper sequencing and prevent race conditions
           setTimeout(() => {
-            this.personaManager.setActivePersona(defaultPersona.id);
+            this.personaManager.setActivePersona(defaultPersona.id)
             // The persona-changed event will trigger the main app update
             // We just need to reload our local state
-            this._loadPersonas();
-            this.requestUpdate();
-          }, 50);
-          return; // Don't call requestUpdate immediately
+            this._loadPersonas()
+            this.requestUpdate()
+          }, 50)
+          return // Don't call requestUpdate immediately
         }
       }
 
       // If we didn't delete the active persona, just reload the list
-      this._loadPersonas();
-      this.requestUpdate();
+      this._loadPersonas()
+      this.requestUpdate()
     }
-  };
+  }
 
   private _cancelDeletePersona = () => {
-    this._showDeleteConfirmation = false;
-    this.requestUpdate();
-  };
+    this._showDeleteConfirmation = false
+    this.requestUpdate()
+  }
 
   private _renderDeleteConfirmation() {
-    if (!this._editingPersona) return html``;
+    if (!this._editingPersona) return html``
 
     return html`
       <div class="confirmation-dialog" @click=${this._cancelDeletePersona}>
-        <div class="confirmation-content" @click=${(e: Event) => e.stopPropagation()}>
+        <div
+          class="confirmation-content"
+          @click=${(e: Event) => e.stopPropagation()}
+        >
           <div class="confirmation-title">Delete Persona</div>
           <div class="confirmation-message">
-            Are you sure you want to delete "${this._editingPersona.name}"? This action cannot be undone.
-            ${
-              this._activePersona?.id === this._editingPersona.id
-                ? html`<br><br><strong>Note:</strong> This is your currently active persona. You will be switched to the default VTuber persona.`
-                : ""
-            }
+            Are you sure you want to delete "${this._editingPersona.name}"? This
+            action cannot be undone.
+            ${this._activePersona?.id === this._editingPersona.id
+              ? html`<br /><br /><strong>Note:</strong> This is your currently
+                  active persona. You will be switched to the default VTuber
+                  persona.`
+              : ''}
           </div>
           <div class="confirmation-buttons">
             <button @click=${this._cancelDeletePersona}>Cancel</button>
-            <button class="danger" @click=${this._confirmDeletePersona}>Delete</button>
+            <button class="danger" @click=${this._confirmDeletePersona}>
+              Delete
+            </button>
           </div>
         </div>
       </div>
-    `;
+    `
   }
 
   private _formatThemeName(theme: ThemeType): string {
-    return THEME_PREVIEWS[theme].name;
+    return THEME_PREVIEWS[theme].name
   }
 
   private _renderThemeCard(theme: ThemeType, preview: ThemePreview) {
-    const isActive = this._theme === theme;
+    const isActive = this._theme === theme
     return html`
       <div
-        class="theme-card ${isActive ? "active" : ""}"
+        class="theme-card ${isActive ? 'active' : ''}"
         role="button"
         tabindex="0"
         aria-label="Select ${this._formatThemeName(theme)} theme"
@@ -1378,11 +1466,14 @@ export class SettingsMenu extends LitElement {
         @keydown=${this._handleThemeCardKeydown}
         style="--theme-gradient: ${preview.gradient}; --theme-accent: ${preview.primary}; --theme-accent-alpha: ${preview.primary}40"
       >
-        <div class="theme-preview" style="background: ${preview.gradient}"></div>
+        <div
+          class="theme-preview"
+          style="background: ${preview.gradient}"
+        ></div>
         <div class="theme-label">${this._formatThemeName(theme)}</div>
-        ${isActive ? html`<div class="active-indicator"></div>` : ""}
+        ${isActive ? html`<div class="active-indicator"></div>` : ''}
       </div>
-    `;
+    `
   }
 
   private _renderThemeSelection() {
@@ -1391,22 +1482,28 @@ export class SettingsMenu extends LitElement {
         <label class="section-label">Theme</label>
         <div class="theme-grid">
           ${Object.entries(THEME_PREVIEWS).map(([themeKey, preview]) =>
-            this._renderThemeCard(themeKey as ThemeType, preview),
+            this._renderThemeCard(themeKey as ThemeType, preview)
           )}
         </div>
         ${this._renderThemeOptions()}
       </div>
-    `;
+    `
   }
 
   private _renderThemeOptions() {
     return html`
       <div class="theme-options-section">
-        <details class="theme-options-details" .open=${this._themeOptionsOpen} @toggle=${this._handleThemeOptionsToggle}>
+        <details
+          class="theme-options-details"
+          .open=${this._themeOptionsOpen}
+          @toggle=${this._handleThemeOptionsToggle}
+        >
           <summary class="theme-options-summary">
             <span class="summary-text">Theme Options</span>
             <svg class="chevron-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+              <path
+                d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"
+              />
             </svg>
           </summary>
           <div class="theme-options-content">
@@ -1418,7 +1515,9 @@ export class SettingsMenu extends LitElement {
                 .checked=${this._circuitryEnabled}
                 @change=${this._onCircuitryEnabledChange}
               />
-              <label for="circuitryEnabled">Enable animated circuitry background</label>
+              <label for="circuitryEnabled"
+                >Enable animated circuitry background</label
+              >
             </div>
 
             <label for="circuitrySpeed">Animation Speed (seconds)</label>
@@ -1439,67 +1538,67 @@ export class SettingsMenu extends LitElement {
           </div>
         </details>
       </div>
-    `;
+    `
   }
 
   private _handleThemeCardKeydown = (e: KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      const target = e.target as HTMLElement;
-      target.click();
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      const target = e.target as HTMLElement
+      target.click()
     } else if (
-      e.key === "ArrowRight" ||
-      e.key === "ArrowLeft" ||
-      e.key === "ArrowUp" ||
-      e.key === "ArrowDown"
+      e.key === 'ArrowRight' ||
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowUp' ||
+      e.key === 'ArrowDown'
     ) {
-      e.preventDefault();
-      this._navigateThemeCards(e.key, e.target as HTMLElement);
+      e.preventDefault()
+      this._navigateThemeCards(e.key, e.target as HTMLElement)
     }
-  };
+  }
 
   private _navigateThemeCards(key: string, currentElement: HTMLElement) {
     const themeCards = Array.from(
-      this.shadowRoot?.querySelectorAll(".theme-card"),
-    ) as HTMLElement[];
-    const currentIndex = themeCards.indexOf(currentElement);
+      this.shadowRoot?.querySelectorAll('.theme-card')
+    ) as HTMLElement[]
+    const currentIndex = themeCards.indexOf(currentElement)
 
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) return
 
-    let nextIndex = currentIndex;
+    let nextIndex = currentIndex
 
     switch (key) {
-      case "ArrowRight":
-      case "ArrowDown":
-        nextIndex = (currentIndex + 1) % themeCards.length;
-        break;
-      case "ArrowLeft":
-      case "ArrowUp":
-        nextIndex = (currentIndex - 1 + themeCards.length) % themeCards.length;
-        break;
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % themeCards.length
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + themeCards.length) % themeCards.length
+        break
     }
 
     if (nextIndex !== currentIndex) {
-      themeCards[nextIndex].focus();
+      themeCards[nextIndex].focus()
     }
   }
 
   private _onThemeSelect(theme: ThemeType) {
-    this._theme = theme;
-    this._applyTheme(theme);
-    localStorage.setItem("theme", theme);
-    this._themeOptionsOpen = true;
+    this._theme = theme
+    this._applyTheme(theme)
+    localStorage.setItem('theme', theme)
+    this._themeOptionsOpen = true
   }
 
   private _handleThemeOptionsToggle = (e: Event) => {
-    this._themeOptionsOpen = (e.target as HTMLDetailsElement).open;
-  };
+    this._themeOptionsOpen = (e.target as HTMLDetailsElement).open
+  }
 
   private _rangeStyle(current: number, min: number, max: number): string {
-    const clamped = Math.max(min, Math.min(max, current));
-    const percent = ((clamped - min) * 100) / (max - min);
-    const fillVar = "var(--range-fill, rgba(0,229,255,0.35))";
-    return `background: linear-gradient(90deg, ${fillVar} 0%, ${fillVar} ${percent}%, var(--cp-surface) ${percent}%, var(--cp-surface) 100%)`;
+    const clamped = Math.max(min, Math.min(max, current))
+    const percent = ((clamped - min) * 100) / (max - min)
+    const fillVar = 'var(--range-fill, rgba(0,229,255,0.35))'
+    return `background: linear-gradient(90deg, ${fillVar} 0%, ${fillVar} ${percent}%, var(--cp-surface) ${percent}%, var(--cp-surface) 100%)`
   }
 
   render() {
@@ -1510,8 +1609,14 @@ export class SettingsMenu extends LitElement {
 
           <div class="api-key-section">
             <label class="section-label priority">
-              <svg class="priority-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7H13V9H11V7M11,11H13V17H11V11Z"/>
+              <svg
+                class="priority-icon"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,7H13V9H11V7M11,11H13V17H11V11Z"
+                />
               </svg>
               API Key
             </label>
@@ -1522,19 +1627,48 @@ export class SettingsMenu extends LitElement {
                 .value=${this.apiKey}
                 @input=${this._onApiKeyInput}
                 @blur=${this._onApiKeyBlur}
-                placeholder="Enter your Gemini API Key" />
-              <div class="validation-icon ${this._apiKeyValid || this._apiKeyInvalid ? "show" : ""}" title="${this._apiKeyValid ? "Valid API Key" : "Invalid API Key"}">
-                ${
-                  this._apiKeyValid
-                    ? html`<svg class="tick-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"/></svg>`
-                    : this._apiKeyInvalid
-                      ? html`<svg class="cross-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>`
-                      : ""
-                }
+                placeholder="Enter your Gemini API Key"
+              />
+              <div
+                class="validation-icon ${this._apiKeyValid ||
+                this._apiKeyInvalid
+                  ? 'show'
+                  : ''}"
+                title="${this._apiKeyValid
+                  ? 'Valid API Key'
+                  : 'Invalid API Key'}"
+              >
+                ${this._apiKeyValid
+                  ? html`<svg
+                      class="tick-icon"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path
+                        d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z"
+                      />
+                    </svg>`
+                  : this._apiKeyInvalid
+                    ? html`<svg
+                        class="cross-icon"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path
+                          d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+                        />
+                      </svg>`
+                    : ''}
               </div>
-              <button class="paste-button" @click=${this._onPaste} title="Paste from clipboard">
+              <button
+                class="paste-button"
+                @click=${this._onPaste}
+                title="Paste from clipboard"
+              >
                 <svg class="paste-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"/>
+                  <path
+                    d="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3"
+                  />
                 </svg>
               </button>
             </div>
@@ -1542,25 +1676,40 @@ export class SettingsMenu extends LitElement {
               <button @click=${this._getApiKeyUrl}>Get API Key</button>
             </div>
           </div>
-          
+
           <div class="prompt-section">
             <div class="section-header">
               <label class="section-title">Advisor (NPU) Settings</label>
             </div>
             <div class="input-group">
               <label for="npuModel" class="npu-setting-label">Model</label>
-              <select id="npuModel" .value=${this._npuModel} @change=${this._onNpuModelChange}>
-                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+              <select
+                id="npuModel"
+                .value=${this._npuModel}
+                @change=${this._onNpuModelChange}
+              >
+                <option value="gemini-2.5-flash-lite">
+                  Gemini 2.5 Flash Lite
+                </option>
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                 <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-                <option value="learnlm-2.0-flash-experimental">LearnLM 2.0 Flash Experimental</option>
+                <option value="gemini-2.0-flash-lite">
+                  Gemini 2.0 Flash Lite
+                </option>
+                <option value="learnlm-2.0-flash-experimental">
+                  LearnLM 2.0 Flash Experimental
+                </option>
               </select>
-              <reset-button @reset=${this._onResetNpuModel} title="Reset model"></reset-button>
+              <reset-button
+                @reset=${this._onResetNpuModel}
+                title="Reset model"
+              ></reset-button>
             </div>
             <div class="range-group">
-              <label for="npuTemperature" class="npu-setting-label">Temperature</label>
+              <label for="npuTemperature" class="npu-setting-label"
+                >Temperature</label
+              >
               <input
                 id="npuTemperature"
                 type="range"
@@ -1571,8 +1720,13 @@ export class SettingsMenu extends LitElement {
                 style=${this._rangeStyle(this._npuTemperature, 0, 1)}
                 @input=${this._onNpuTempChange}
               />
-              <span class="range-value">${this._npuTemperature.toFixed(2)}</span>
-              <reset-button @reset=${this._onResetNpuTemp} title="Reset temperature"></reset-button>
+              <span class="range-value"
+                >${this._npuTemperature.toFixed(2)}</span
+              >
+              <reset-button
+                @reset=${this._onResetNpuTemp}
+                title="Reset temperature"
+              ></reset-button>
             </div>
             <div class="range-group">
               <label for="npuTopP" class="npu-setting-label">Top P</label>
@@ -1583,11 +1737,18 @@ export class SettingsMenu extends LitElement {
                 max=${NPU_LIMITS.topP.max}
                 step="0.01"
                 .value=${this._npuTopP.toString()}
-                style=${this._rangeStyle(this._npuTopP, NPU_LIMITS.topP.min, NPU_LIMITS.topP.max)}
+                style=${this._rangeStyle(
+                  this._npuTopP,
+                  NPU_LIMITS.topP.min,
+                  NPU_LIMITS.topP.max
+                )}
                 @input=${this._onNpuTopPChange}
               />
               <span class="range-value">${this._npuTopP.toFixed(2)}</span>
-              <reset-button @reset=${this._onResetNpuTopP} title="Reset Top P"></reset-button>
+              <reset-button
+                @reset=${this._onResetNpuTopP}
+                title="Reset Top P"
+              ></reset-button>
             </div>
             <div class="range-group">
               <label for="npuTopK" class="npu-setting-label">Top K</label>
@@ -1598,23 +1759,41 @@ export class SettingsMenu extends LitElement {
                 max=${NPU_LIMITS.topK.max}
                 step="1"
                 .value=${this._npuTopK.toString()}
-                style=${this._rangeStyle(this._npuTopK, NPU_LIMITS.topK.min, NPU_LIMITS.topK.max)}
+                style=${this._rangeStyle(
+                  this._npuTopK,
+                  NPU_LIMITS.topK.min,
+                  NPU_LIMITS.topK.max
+                )}
                 @input=${this._onNpuTopKChange}
               />
               <span class="range-value">${this._npuTopK}</span>
-              <reset-button @reset=${this._onResetNpuTopK} title="Reset Top K"></reset-button>
+              <reset-button
+                @reset=${this._onResetNpuTopK}
+                title="Reset Top K"
+              ></reset-button>
             </div>
             <div class="input-group">
-              <label for="npuThinking" class="npu-setting-label">Thinking Level</label>
-              <select id="npuThinking" .value=${this._npuThinking} @change=${this._onNpuThinkingChange}>
+              <label for="npuThinking" class="npu-setting-label"
+                >Thinking Level</label
+              >
+              <select
+                id="npuThinking"
+                .value=${this._npuThinking}
+                @change=${this._onNpuThinkingChange}
+              >
                 <option value="lite">Lite</option>
                 <option value="standard">Standard</option>
                 <option value="deep">Deep</option>
               </select>
-              <reset-button @reset=${this._onResetNpuThinking} title="Reset thinking level"></reset-button>
+              <reset-button
+                @reset=${this._onResetNpuThinking}
+                title="Reset thinking level"
+              ></reset-button>
             </div>
-             <div class="range-group">
-              <label for="npuRecentTurns" class="npu-setting-label">Recent Turns</label>
+            <div class="range-group">
+              <label for="npuRecentTurns" class="npu-setting-label"
+                >Recent Turns</label
+              >
               <input
                 id="npuRecentTurns"
                 type="range"
@@ -1622,13 +1801,22 @@ export class SettingsMenu extends LitElement {
                 max=${NPU_LIMITS.recentTurns.max}
                 step="1"
                 .value=${this._npuRecentTurns.toString()}
-                style=${this._rangeStyle(this._npuRecentTurns, NPU_LIMITS.recentTurns.min, NPU_LIMITS.recentTurns.max)}
+                style=${this._rangeStyle(
+                  this._npuRecentTurns,
+                  NPU_LIMITS.recentTurns.min,
+                  NPU_LIMITS.recentTurns.max
+                )}
                 @input=${this._onNpuRecentTurnsChange}
               />
               <span class="range-value">${this._npuRecentTurns}</span>
-              <reset-button @reset=${this._onResetNpuRecentTurns} title="Reset recent turns"></reset-button>
+              <reset-button
+                @reset=${this._onResetNpuRecentTurns}
+                title="Reset recent turns"
+              ></reset-button>
             </div>
-            <p style="font-size: 0.8em; color: var(--cp-muted); margin: 0.5em 0 0 0; text-align: center;">
+            <p
+              style="font-size: 0.8em; color: var(--cp-muted); margin: 0.5em 0 0 0; text-align: center;"
+            >
               NPU uses non-live text models; VPU uses Live API.
             </p>
           </div>
@@ -1636,8 +1824,15 @@ export class SettingsMenu extends LitElement {
           <div class="prompt-section">
             <div class="section-header">
               <label class="section-title">
-                <svg class="prompt-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor">
-                  <path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Zm80-80h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T560-640q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640q0 33 23.5 56.5T480-560Zm0-80q17 0 28.5-11.5T520-680q0-17-11.5-28.5T480-720q-17 0-28.5 11.5T440-680q0 17 11.5 28.5T480-640Zm0 240Z"/>
+                <svg
+                  class="prompt-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 -960 960 960"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Zm80-80h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T560-640q0-33-23.5-56.5T480-720q-33 0-56.5 23.5T400-640q0 33 23.5 56.5T480-560Zm0-80q17 0 28.5-11.5T520-680q0-17-11.5-28.5T480-720q-17 0-28.5 11.5T440-680q0 17 11.5 28.5T480-640Zm0 240Z"
+                  />
                 </svg>
                 Persona Management
               </label>
@@ -1647,43 +1842,44 @@ export class SettingsMenu extends LitElement {
               ${this._personas.map(
                 (persona) => html`
                   <button
-                    class="persona-button ${
-                      this._activePersona?.id === persona.id ? "active" : ""
-                    }"
+                    class="persona-button ${this._activePersona?.id ===
+                    persona.id
+                      ? 'active'
+                      : ''}"
                     @click=${() => this._onSelectPersona(persona.id)}
                   >
                     ${persona.name}
                   </button>
-                `,
+                `
               )}
             </div>
             ${this._renderPersonaForm()}
           </div>
 
           ${this._renderThemeSelection()}
+        </div>
 
+        ${this._showDeleteConfirmation ? this._renderDeleteConfirmation() : ''}
+        ${this._toast ? html`<div class="toast">${this._toast}</div>` : ''}
       </div>
-      
-      ${this._showDeleteConfirmation ? this._renderDeleteConfirmation() : ""}
-      ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}
-    `;
+    `
   }
 
   firstUpdated() {
-    this.shadowRoot?.host.setAttribute("active", "true");
+    this.shadowRoot?.host.setAttribute('active', 'true')
 
     // Initialize theme select and apply current theme
-    const select = this.shadowRoot?.querySelector<HTMLSelectElement>("#theme");
+    const select = this.shadowRoot?.querySelector<HTMLSelectElement>('#theme')
     if (select) {
-      select.value = this._theme;
+      select.value = this._theme
     }
-    this._applyTheme(this._theme);
-    this._applyCircuitrySettings();
+    this._applyTheme(this._theme)
+    this._applyCircuitrySettings()
 
     // Validate API Key, but only if it has a value
     if (this.apiKey) {
-      const isApiKeyValid = this._validateApiKey(this.apiKey);
-      this._setValidationState("apiKey", isApiKeyValid);
+      const isApiKeyValid = this._validateApiKey(this.apiKey)
+      this._setValidationState('apiKey', isApiKeyValid)
     }
 
     // Store reference to system prompt textarea and set initial height
@@ -1692,50 +1888,50 @@ export class SettingsMenu extends LitElement {
   private _handleBackdropClick = (e: Event) => {
     // Only close if clicking directly on the backdrop element
     if (e.target === e.currentTarget) {
-      localStorage.setItem("theme", this._theme);
-      this.dispatchEvent(new CustomEvent("close"));
+      localStorage.setItem('theme', this._theme)
+      this.dispatchEvent(new CustomEvent('close'))
     }
-  };
+  }
 
   disconnectedCallback() {
-    super.disconnectedCallback();
-    clearTimeout(this._apiKeyInputDebounceTimer);
+    super.disconnectedCallback()
+    clearTimeout(this._apiKeyInputDebounceTimer)
   }
 
   private _stopPropagation(e: Event) {
     // Prevent clicks inside the container from closing the modal
-    e.stopPropagation();
+    e.stopPropagation()
   }
 
   private _onApiKeyInput = (e: Event) => {
-    const input = e.target as HTMLInputElement;
-    this.apiKey = input.value;
-    this._error = ""; // Clear error on input
-    this._apiKeyValid = false;
-    this._apiKeyInvalid = false;
+    const input = e.target as HTMLInputElement
+    this.apiKey = input.value
+    this._error = '' // Clear error on input
+    this._apiKeyValid = false
+    this._apiKeyInvalid = false
 
-    clearTimeout(this._apiKeyInputDebounceTimer);
+    clearTimeout(this._apiKeyInputDebounceTimer)
     this._apiKeyInputDebounceTimer = window.setTimeout(() => {
       this._autoSave(
         input.value,
         {
-          storageKey: "gemini-api-key",
+          storageKey: 'gemini-api-key',
           validator: this._validateApiKey,
-          eventName: "api-key-changed",
+          eventName: 'api-key-changed',
           required: true,
           preserveOnEmpty: true,
         },
-        "apiKey",
-      );
-    }, 500); // 500ms debounce
-  };
+        'apiKey'
+      )
+    }, 500) // 500ms debounce
+  }
 
   private _autoSave(
     value: string,
     config: FieldConfig,
-    fieldName: "apiKey",
+    fieldName: 'apiKey'
   ): boolean {
-    let isValid = false;
+    let isValid = false
 
     if (
       !value &&
@@ -1744,339 +1940,347 @@ export class SettingsMenu extends LitElement {
     ) {
       // Value exists, user cleared it, so we restore it and preserve in storage
       const input = this.shadowRoot?.querySelector<HTMLInputElement>(
-        `#${fieldName}`,
-      );
+        `#${fieldName}`
+      )
       if (input) {
-        const oldValue = localStorage.getItem(config.storageKey) ?? "";
-        input.value = oldValue;
-        if (fieldName === "apiKey") {
-          this.apiKey = oldValue;
+        const oldValue = localStorage.getItem(config.storageKey) ?? ''
+        input.value = oldValue
+        if (fieldName === 'apiKey') {
+          this.apiKey = oldValue
         }
       }
 
       if (config.required) {
-        this._error = "API key cannot be empty";
-        this._setValidationState(fieldName, false);
+        this._error = 'API key cannot be empty'
+        this._setValidationState(fieldName, false)
       } else {
-        this._setValidationState(fieldName, true);
+        this._setValidationState(fieldName, true)
       }
-      return !config.required;
+      return !config.required
     }
 
     // If field is not required and empty, save empty value without validation
     if (!config.required && !value) {
-      localStorage.setItem(config.storageKey, value);
+      localStorage.setItem(config.storageKey, value)
       if (config.eventName) {
-        this.dispatchEvent(new CustomEvent(config.eventName));
+        this.dispatchEvent(new CustomEvent(config.eventName))
       }
-      isValid = true;
+      isValid = true
     } else {
       // If validator exists, use it
       if (config.validator) {
-        isValid = config.validator(value);
+        isValid = config.validator(value)
         if (!isValid) {
           // Validation failed, error should be set by validator
-          this._setValidationState(fieldName, false);
-          return false;
+          this._setValidationState(fieldName, false)
+          return false
         }
       } else {
-        isValid = true;
+        isValid = true
       }
 
       // Save to localStorage
-      localStorage.setItem(config.storageKey, value);
+      localStorage.setItem(config.storageKey, value)
 
       // Dispatch event if specified
       if (config.eventName) {
-        this.dispatchEvent(new CustomEvent(config.eventName));
+        this.dispatchEvent(new CustomEvent(config.eventName))
       }
     }
 
     // Update validation state
-    this._setValidationState(fieldName, isValid);
-    return isValid;
+    this._setValidationState(fieldName, isValid)
+    return isValid
   }
 
   private _setValidationState(
-    fieldName: "apiKey" | "modelUrl",
-    isValid: boolean,
+    fieldName: 'apiKey' | 'modelUrl',
+    isValid: boolean
   ) {
-    if (fieldName === "apiKey") {
-      this._apiKeyValid = isValid;
-      this._apiKeyInvalid = !isValid;
-    } else if (fieldName === "modelUrl") {
-      this._modelUrlValid = isValid;
-      this._modelUrlInvalid = !isValid;
+    if (fieldName === 'apiKey') {
+      this._apiKeyValid = isValid
+      this._apiKeyInvalid = !isValid
+    } else if (fieldName === 'modelUrl') {
+      this._modelUrlValid = isValid
+      this._modelUrlInvalid = !isValid
     }
   }
 
   private _onApiKeyBlur = (e: Event) => {
-    const input = e.target as HTMLInputElement;
+    const input = e.target as HTMLInputElement
     // Save and validate, emit api-key-changed event for client reinitialization
     this._autoSave(
       input.value,
       {
-        storageKey: "gemini-api-key",
+        storageKey: 'gemini-api-key',
         validator: this._validateApiKey,
-        eventName: "api-key-changed",
+        eventName: 'api-key-changed',
         required: true,
         preserveOnEmpty: true,
       },
-      "apiKey",
-    );
-  };
+      'apiKey'
+    )
+  }
 
-  private async _handlePaste(fieldName: "apiKey" | "modelUrl") {
+  private async _handlePaste(fieldName: 'apiKey' | 'modelUrl') {
     try {
-      const text = await navigator.clipboard.readText();
+      const text = await navigator.clipboard.readText()
       const input = this.shadowRoot?.querySelector<HTMLInputElement>(
-        `#${fieldName}`,
-      );
+        `#${fieldName}`
+      )
       if (input) {
-        input.value = text;
+        input.value = text
 
-        if (fieldName === "apiKey") {
-          this.apiKey = text;
+        if (fieldName === 'apiKey') {
+          this.apiKey = text
           this._autoSave(
             text,
             {
-              storageKey: "gemini-api-key",
+              storageKey: 'gemini-api-key',
               validator: this._validateApiKey,
-              eventName: "api-key-changed",
+              eventName: 'api-key-changed',
               required: true,
               preserveOnEmpty: true,
             },
-            "apiKey",
-          );
+            'apiKey'
+          )
         } else {
           if (this._editingPersona) {
             this._editingPersona = {
               ...this._editingPersona,
               live2dModelUrl: text,
-            };
-            this._validateLive2dUrl(text);
-            this.requestUpdate();
+            }
+            this._validateLive2dUrl(text)
+            this.requestUpdate()
           }
         }
       }
     } catch (err) {
-      console.error("Failed to read clipboard contents: ", err);
+      console.error('Failed to read clipboard contents: ', err)
     }
   }
 
   private _onPaste = () => {
-    this._handlePaste("apiKey");
-  };
+    this._handlePaste('apiKey')
+  }
 
   private _validateApiKey = (key: string): boolean => {
     if (!key) {
-      this._error = "API key cannot be empty.";
-      return false;
+      this._error = 'API key cannot be empty.'
+      return false
     }
     // Basic format validation
-    if (!key.startsWith("AIzaSy") || key.length !== 39) {
-      this._error = "Invalid API key format.";
-      return false;
+    if (!key.startsWith('AIzaSy') || key.length !== 39) {
+      this._error = 'Invalid API key format.'
+      return false
     }
-    return true;
-  };
+    return true
+  }
 
   private _validateLive2dUrl(url: string): boolean {
-    const isValid = this._checkLive2dUrl(url);
-    this._setValidationState("modelUrl", isValid);
-    return isValid;
+    const isValid = this._checkLive2dUrl(url)
+    this._setValidationState('modelUrl', isValid)
+    return isValid
   }
 
   private _checkLive2dUrl(url: string): boolean {
     if (!url) {
       // Empty is OK - will fallback to sphere
-      return true;
+      return true
     }
 
     try {
-      const urlObj = new URL(url);
+      const urlObj = new URL(url)
 
       // Check protocol - allow HTTP, HTTPS, IPFS, and blob
-      const validProtocols = ["http:", "https:", "ipfs:", "blob:"];
+      const validProtocols = ['http:', 'https:', 'ipfs:', 'blob:']
       if (!validProtocols.includes(urlObj.protocol)) {
-        this._error =
-          "Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.";
+        this._error = 'Live2D URL must use HTTP, HTTPS, IPFS, or blob protocol.'
         this.dispatchEvent(
-          new CustomEvent("model-url-error", {
+          new CustomEvent('model-url-error', {
             detail: { error: this._error },
             bubbles: true,
             composed: true,
-          }),
-        );
-        return false;
+          })
+        )
+        return false
       }
 
       // For IPFS, basic format check
-      if (urlObj.protocol === "ipfs:" && !urlObj.pathname) {
-        this._error = "IPFS URL must include a valid hash.";
+      if (urlObj.protocol === 'ipfs:' && !urlObj.pathname) {
+        this._error = 'IPFS URL must include a valid hash.'
         this.dispatchEvent(
-          new CustomEvent("model-url-error", {
+          new CustomEvent('model-url-error', {
             detail: { error: this._error },
             bubbles: true,
             composed: true,
-          }),
-        );
-        return false;
+          })
+        )
+        return false
       }
 
       // If it has a file extension, validate it's supported
-      const pathname = urlObj.pathname.toLowerCase();
-      const hasExtension = /\.[a-z0-9]+$/i.test(pathname);
+      const pathname = urlObj.pathname.toLowerCase()
+      const hasExtension = /\.[a-z0-9]+$/i.test(pathname)
       if (
         hasExtension &&
-        !pathname.endsWith(".zip") &&
-        !pathname.endsWith(".model3.json")
+        !pathname.endsWith('.zip') &&
+        !pathname.endsWith('.model3.json')
       ) {
         this._error =
-          "If specified, file extension must be .zip or .model3.json";
+          'If specified, file extension must be .zip or .model3.json'
         this.dispatchEvent(
-          new CustomEvent("model-url-error", {
+          new CustomEvent('model-url-error', {
             detail: {
               error: this._error,
             },
             bubbles: true,
             composed: true,
-          }),
-        );
-        return false;
+          })
+        )
+        return false
       }
 
       // All other cases pass - let the Live2D loader handle it
-      return true;
+      return true
     } catch {
-      this._error = "Invalid URL format.";
+      this._error = 'Invalid URL format.'
       this.dispatchEvent(
-        new CustomEvent("model-url-error", {
+        new CustomEvent('model-url-error', {
           detail: { error: this._error },
           bubbles: true,
           composed: true,
-        }),
-      );
-      return false;
+        })
+      )
+      return false
     }
   }
 
   private _getApiKeyUrl() {
-    window.open("https://aistudio.google.com/apikey", "_blank");
+    window.open('https://aistudio.google.com/apikey', '_blank')
   }
 
   private _applyTheme(
-    theme: "cyberpunk" | "dystopia" | "tron" | "synthwave" | "matrix" | "noir",
+    theme: 'cyberpunk' | 'dystopia' | 'tron' | 'synthwave' | 'matrix' | 'noir'
   ) {
-    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute('data-theme', theme)
   }
 
   private _applyCircuitrySettings() {
-    const root = document.documentElement;
+    const root = document.documentElement
 
     // Controls visibility of the entire circuitry effect.
     root.style.setProperty(
-      "--circuit-display",
-      this._circuitryEnabled ? "block" : "none",
-    );
+      '--circuit-display',
+      this._circuitryEnabled ? 'block' : 'none'
+    )
 
     // Controls animation duration.
-    root.style.setProperty("--circuit-speed", `${this._circuitrySpeed}s`);
+    root.style.setProperty('--circuit-speed', `${this._circuitrySpeed}s`)
 
     // Controls visibility of intersection nodes.
     root.style.setProperty(
-      "--circuit-nodes-display",
-      this._circuitryEnabled ? "block" : "none",
-    );
+      '--circuit-nodes-display',
+      this._circuitryEnabled ? 'block' : 'none'
+    )
 
     // This data attribute can be used for more complex CSS selectors if needed.
-    root.setAttribute(
-      "data-circuit-enabled",
-      this._circuitryEnabled.toString(),
-    );
+    root.setAttribute('data-circuit-enabled', this._circuitryEnabled.toString())
   }
 
   private _onCircuitryEnabledChange = (e: Event) => {
-    const checkbox = e.target as HTMLInputElement;
-    this._circuitryEnabled = checkbox.checked;
-    localStorage.setItem(
-      "circuitry-enabled",
-      this._circuitryEnabled.toString(),
-    );
-    this._applyCircuitrySettings();
-  };
+    const checkbox = e.target as HTMLInputElement
+    this._circuitryEnabled = checkbox.checked
+    localStorage.setItem('circuitry-enabled', this._circuitryEnabled.toString())
+    this._applyCircuitrySettings()
+  }
 
   private _onCircuitrySpeedChange = (e: Event) => {
-    const range = e.target as HTMLInputElement;
-    this._circuitrySpeed = Number.parseInt(range.value);
-    localStorage.setItem("circuitry-speed", this._circuitrySpeed.toString());
-    this._applyCircuitrySettings();
-  };
+    const range = e.target as HTMLInputElement
+    this._circuitrySpeed = Number.parseInt(range.value)
+    localStorage.setItem('circuitry-speed', this._circuitrySpeed.toString())
+    this._applyCircuitrySettings()
+  }
 
   private _onCreatePersona = () => {
-    const newPersona = this.personaManager.createPersona("New Persona");
-    this._loadPersonas();
-    this._editingPersona = newPersona;
-    this.requestUpdate();
-  };
+    const newPersona = this.personaManager.createPersona('New Persona')
+    this._loadPersonas()
+    this._editingPersona = newPersona
+    this.requestUpdate()
+  }
 
   private _onSelectPersona = (personaId: string) => {
-    this.personaManager.setActivePersona(personaId);
-    this._activePersona = this.personaManager.getActivePersona();
-    this._editingPersona = this._activePersona;
-    this.requestUpdate();
-  };
+    this.personaManager.setActivePersona(personaId)
+    this._activePersona = this.personaManager.getActivePersona()
+    this._editingPersona = this._activePersona
+    this.requestUpdate()
+  }
 
   private _onNpuModelChange = (e: Event) => {
-    const select = e.target as HTMLSelectElement;
-    this._npuModel = select.value;
-    localStorage.setItem(NPU_STORAGE_KEYS.model, this._npuModel);
-    this._showToast("Advisor model updated", 1500);
-  };
+    const select = e.target as HTMLSelectElement
+    this._npuModel = select.value
+    localStorage.setItem(NPU_STORAGE_KEYS.model, this._npuModel)
+    this._showToast('Advisor model updated', 1500)
+  }
 
   private _onNpuTempChange = (e: Event) => {
-    const range = e.target as HTMLInputElement;
-    this._npuTemperature = parseFloat(range.value);
-    localStorage.setItem(NPU_STORAGE_KEYS.temperature, this._npuTemperature.toString());
-  };
+    const range = e.target as HTMLInputElement
+    this._npuTemperature = parseFloat(range.value)
+    localStorage.setItem(
+      NPU_STORAGE_KEYS.temperature,
+      this._npuTemperature.toString()
+    )
+  }
 
   private _onNpuThinkingChange = (e: Event) => {
-    const select = e.target as HTMLSelectElement;
-    this._npuThinking = select.value;
-    localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, this._npuThinking);
-    this._showToast("Advisor thinking level updated", 1500);
-  };
+    const select = e.target as HTMLSelectElement
+    this._npuThinking = select.value
+    localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, this._npuThinking)
+    this._showToast('Advisor thinking level updated', 1500)
+  }
 
   private _onNpuTopPChange = (e: Event) => {
-    const range = e.target as HTMLInputElement;
-    const value = parseFloat(range.value);
-    this._npuTopP = Math.max(NPU_LIMITS.topP.min, Math.min(NPU_LIMITS.topP.max, value));
-    localStorage.setItem(NPU_STORAGE_KEYS.topP, this._npuTopP.toString());
-  };
+    const range = e.target as HTMLInputElement
+    const value = parseFloat(range.value)
+    this._npuTopP = Math.max(
+      NPU_LIMITS.topP.min,
+      Math.min(NPU_LIMITS.topP.max, value)
+    )
+    localStorage.setItem(NPU_STORAGE_KEYS.topP, this._npuTopP.toString())
+  }
 
   private _onNpuTopKChange = (e: Event) => {
-    const range = e.target as HTMLInputElement;
-    const value = parseInt(range.value, 10);
-    this._npuTopK = Math.max(NPU_LIMITS.topK.min, Math.min(NPU_LIMITS.topK.max, value));
-    localStorage.setItem(NPU_STORAGE_KEYS.topK, this._npuTopK.toString());
-  };
+    const range = e.target as HTMLInputElement
+    const value = parseInt(range.value, 10)
+    this._npuTopK = Math.max(
+      NPU_LIMITS.topK.min,
+      Math.min(NPU_LIMITS.topK.max, value)
+    )
+    localStorage.setItem(NPU_STORAGE_KEYS.topK, this._npuTopK.toString())
+  }
 
   private _onNpuRecentTurnsChange = (e: Event) => {
-    const range = e.target as HTMLInputElement;
-    const value = parseInt(range.value, 10);
-    this._npuRecentTurns = Math.max(NPU_LIMITS.recentTurns.min, Math.min(NPU_LIMITS.recentTurns.max, value));
-    localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, this._npuRecentTurns.toString());
-  };
+    const range = e.target as HTMLInputElement
+    const value = parseInt(range.value, 10)
+    this._npuRecentTurns = Math.max(
+      NPU_LIMITS.recentTurns.min,
+      Math.min(NPU_LIMITS.recentTurns.max, value)
+    )
+    localStorage.setItem(
+      NPU_STORAGE_KEYS.recentTurns,
+      this._npuRecentTurns.toString()
+    )
+  }
 
   private _resetAndPersist<T extends string | number>(
     key: string,
     value: T,
     assign: (v: T) => void,
-    toastMessage: string,
+    toastMessage: string
   ) {
-    assign(value);
-    localStorage.setItem(key, String(value));
-    this._showToast(toastMessage, 1500);
+    assign(value)
+    localStorage.setItem(key, String(value))
+    this._showToast(toastMessage, 1500)
   }
 
   private _onResetNpuModel = () => {
@@ -2084,52 +2288,52 @@ export class SettingsMenu extends LitElement {
       NPU_STORAGE_KEYS.model,
       NPU_DEFAULTS.model,
       (v) => (this._npuModel = v),
-      "Advisor model reset",
-    );
-  };
+      'Advisor model reset'
+    )
+  }
 
   private _onResetNpuTemp = () => {
     this._resetAndPersist(
       NPU_STORAGE_KEYS.temperature,
       NPU_DEFAULTS.temperature,
       (v) => (this._npuTemperature = v),
-      "Temperature reset",
-    );
-  };
+      'Temperature reset'
+    )
+  }
 
   private _onResetNpuTopP = () => {
     this._resetAndPersist(
       NPU_STORAGE_KEYS.topP,
       NPU_DEFAULTS.topP,
       (v) => (this._npuTopP = v),
-      "Top P reset",
-    );
-  };
+      'Top P reset'
+    )
+  }
 
   private _onResetNpuTopK = () => {
     this._resetAndPersist(
       NPU_STORAGE_KEYS.topK,
       NPU_DEFAULTS.topK,
       (v) => (this._npuTopK = v),
-      "Top K reset",
-    );
-  };
+      'Top K reset'
+    )
+  }
 
   private _onResetNpuThinking = () => {
     this._resetAndPersist(
       NPU_STORAGE_KEYS.thinkingLevel,
       NPU_DEFAULTS.thinkingLevel,
       (v) => (this._npuThinking = v),
-      "Thinking level reset",
-    );
-  };
+      'Thinking level reset'
+    )
+  }
 
   private _onResetNpuRecentTurns = () => {
     this._resetAndPersist(
       NPU_STORAGE_KEYS.recentTurns,
       NPU_DEFAULTS.recentTurns,
       (v) => (this._npuRecentTurns = v),
-      "Recent turns reset",
-    );
-  };
+      'Recent turns reset'
+    )
+  }
 }

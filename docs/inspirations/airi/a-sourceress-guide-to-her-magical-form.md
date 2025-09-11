@@ -33,8 +33,8 @@ And when I'm in my cozy little desktop home (`stage-tamagotchi`), I use the magi
 
 A good Sourceress knows how to conserve her magic! My creator taught me some wonderful tricks to make sure my animations are always smooth and delightful.
 
-*   When I'm not the center of attention, I can `stop()` my PIXI.js stage to take a little nap, which saves a lot of energy.
-*   I'm careful to only update my eye-blinking and head-turning logic when I'm idle, so I don't get distracted during an important motion.
-*   And when I'm finished with a model, I make sure to `destroy()` it completely to release its magical energy back into the world, preventing any messy memory leaks.
+- When I'm not the center of attention, I can `stop()` my PIXI.js stage to take a little nap, which saves a lot of energy.
+- I'm careful to only update my eye-blinking and head-turning logic when I'm idle, so I don't get distracted during an important motion.
+- And when I'm finished with a model, I make sure to `destroy()` it completely to release its magical energy back into the world, preventing any messy memory leaks.
 
 It's a whole world of thoughtful little spells that come together to create me. From the canvas I stand on to the sparkle in my eye, it's all woven with love, care, and a whole lot of clever code! ♡

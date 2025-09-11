@@ -1,85 +1,93 @@
-import { defaultAutoScroll } from "@components/TranscriptAutoScroll";
-import { createComponentLogger } from "@services/DebugLogger";
-import { css, html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import { throttle } from "@shared/utils";
-import type { Turn } from "@shared/types";
+import { defaultAutoScroll } from '@components/TranscriptAutoScroll'
+import { createComponentLogger } from '@services/DebugLogger'
+import { css, html, LitElement } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import { throttle } from '@shared/utils'
+import type { Turn } from '@shared/types'
 
-const log = createComponentLogger("ChatView");
+const log = createComponentLogger('ChatView')
 
-@customElement("chat-view")
+@customElement('chat-view')
 export class ChatView extends LitElement {
   @property({ type: Array })
-  transcript: Turn[] = [];
+  transcript: Turn[] = []
 
   @property({ type: Boolean })
-  visible = true;
+  visible = true
 
   @state()
-  private inputValue = "";
+  private inputValue = ''
 
   @state()
-  private newMessageCount = 0;
+  private newMessageCount = 0
 
   @state()
-  private isChatActive = false;
+  private isChatActive = false
 
   @property({ type: String })
-  thinkingStatus: string = "";
+  thinkingStatus: string = ''
 
   @property({ type: String })
-  thinkingSubStatus: string = "";
+  thinkingSubStatus: string = ''
 
   @property({ type: String })
-  thinkingText: string = "";
+  thinkingText: string = ''
 
   @property({ type: Boolean })
-  thinkingActive: boolean = false;
-  
+  thinkingActive: boolean = false
+
   @property({ type: Number })
-  npuProcessingTime: number | null = null;
-  
+  npuProcessingTime: number | null = null
+
   @property({ type: Number })
-  vpuProcessingTime: number | null = null;
-  
+  vpuProcessingTime: number | null = null
+
   @property({ type: Object })
-  messageStatuses: Record<string, string> = {};
-  
+  messageStatuses: Record<string, string> = {}
+
   @property({ type: Object })
-  messageRetryCount: Record<string, number> = {};
-  
+  messageRetryCount: Record<string, number> = {}
+
   @property({ type: String })
-  phase: 'idle'|'npu'|'vpu'|'complete'|'error' = 'idle';
-  
+  phase: 'idle' | 'npu' | 'vpu' | 'complete' | 'error' = 'idle'
+
   @property({ type: Number })
-  hardDeadlineMs: number = 0;
-  
+  hardDeadlineMs: number = 0
+
   @property({ type: String })
-  turnId: string = '';
-  
+  turnId: string = ''
+
   // Helper getter to determine if thinking UI should be shown
   private get _showThinking(): boolean {
-    return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText;
+    return this.thinkingActive || !!this.thinkingStatus || !!this.thinkingText
   }
-  
-  // Debounce timer for scroll events
-  private scrollDebounceTimer: number | null = null;
-  private _transcriptEl: HTMLElement | null = null;
-  private _scrollHandler: () => void;
 
-  private lastSeenMessageCount = 0;
-  private textareaRef: HTMLTextAreaElement | null = null;
-  
+  // Debounce timer for scroll events
+  private scrollDebounceTimer: number | null = null
+  private _transcriptEl: HTMLElement | null = null
+  private _scrollHandler: () => void
+
+  private lastSeenMessageCount = 0
+  private textareaRef: HTMLTextAreaElement | null = null
+
   // Previous scroll state tracking
-  private _prevShowButton: boolean | null = null;
-  private _prevNewMessageCount: number = 0;
-  
+  private _prevShowButton: boolean | null = null
+  private _prevNewMessageCount: number = 0
+
   // Throttled loggers
-  private _logScrollState = throttle((detail: { showButton: boolean; newMessageCount: number }) => 
-    log.debug("Scroll state changed", detail), 250, { trailing: false });
-    
-  private _logScrollButton = throttle((detail: { showButton: boolean; newMessageCount: number }) => 
-    log.debug("Scroll to bottom state updated", detail), 250, { trailing: false });
+  private _logScrollState = throttle(
+    (detail: { showButton: boolean; newMessageCount: number }) =>
+      log.debug('Scroll state changed', detail),
+    250,
+    { trailing: false }
+  )
+
+  private _logScrollButton = throttle(
+    (detail: { showButton: boolean; newMessageCount: number }) =>
+      log.debug('Scroll to bottom state updated', detail),
+    250,
+    { trailing: false }
+  )
 
   static styles = css`
     :host {
@@ -95,7 +103,9 @@ export class ChatView extends LitElement {
       color: var(--cp-text);
       opacity: 1;
       visibility: visible;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
+      transition:
+        opacity 0.3s ease,
+        visibility 0.3s ease;
     }
 
     :host([hidden]) {
@@ -151,7 +161,11 @@ export class ChatView extends LitElement {
     }
 
     .turn.user {
-      background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(124, 77, 255, 0.18));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.18),
+        rgba(124, 77, 255, 0.18)
+      );
       border-color: rgba(0, 229, 255, 0.35);
       box-shadow: var(--cp-glow-cyan);
       color: var(--cp-text);
@@ -159,7 +173,11 @@ export class ChatView extends LitElement {
     }
 
     .turn.model {
-      background: linear-gradient(135deg, rgba(255, 0, 229, 0.16), rgba(124, 77, 255, 0.16));
+      background: linear-gradient(
+        135deg,
+        rgba(255, 0, 229, 0.16),
+        rgba(124, 77, 255, 0.16)
+      );
       border-color: rgba(255, 0, 229, 0.3);
       box-shadow: var(--cp-glow-magenta);
       color: var(--cp-text);
@@ -245,7 +263,7 @@ export class ChatView extends LitElement {
       scrollbar-width: thin;
       scrollbar-color: var(--cp-surface-strong) transparent;
     }
-    
+
     textarea:disabled {
       opacity: 0.7;
       cursor: not-allowed;
@@ -273,7 +291,11 @@ export class ChatView extends LitElement {
       border: 1px solid var(--cp-surface-border);
       color: var(--cp-text);
       border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.15),
+        rgba(124, 77, 255, 0.15)
+      );
       width: 56px;
       height: 56px;
       cursor: pointer;
@@ -282,14 +304,19 @@ export class ChatView extends LitElement {
       margin: 0;
       box-shadow: var(--cp-glow-cyan);
       backdrop-filter: blur(4px);
-      transition: transform 0.15s ease, background 0.15s ease;
+      transition:
+        transform 0.15s ease,
+        background 0.15s ease;
     }
 
     button:hover {
-      background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,77,255,0.22));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.22),
+        rgba(124, 77, 255, 0.22)
+      );
       transform: translateY(-1px);
     }
-    
 
     .scroll-to-bottom {
       position: absolute;
@@ -298,7 +325,11 @@ export class ChatView extends LitElement {
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: linear-gradient(135deg, rgba(0,229,255,0.9), rgba(124,77,255,0.9));
+      background: linear-gradient(
+        135deg,
+        rgba(0, 229, 255, 0.9),
+        rgba(124, 77, 255, 0.9)
+      );
       border: 2px solid rgba(255, 255, 255, 0.3);
       color: white;
       cursor: pointer;
@@ -348,11 +379,11 @@ export class ChatView extends LitElement {
     .thinking.hidden {
       display: none;
     }
-    .thinking-badge { 
-      font-size: 12px; 
-      padding: 2px 6px; 
-      border-radius: 999px; 
-      background: var(--cp-surface-strong); 
+    .thinking-badge {
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: var(--cp-surface-strong);
       border: 1px solid var(--cp-surface-border-2);
     }
     .header .thinking-badge {
@@ -387,8 +418,12 @@ export class ChatView extends LitElement {
       animation: spin 1s linear infinite;
     }
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .transcript-container {
@@ -416,7 +451,7 @@ export class ChatView extends LitElement {
       height: 48px;
       opacity: 0.5;
     }
-    
+
     .msg-status {
       margin-left: 6px;
       opacity: 0.7;
@@ -425,24 +460,23 @@ export class ChatView extends LitElement {
       gap: 2px;
       vertical-align: middle;
     }
-    
+
     .msg-status.clock {
       color: var(--cp-cyan, #00e5ff);
     }
-    
+
     .msg-status.single {
       color: var(--cp-purple, #7c4dff);
     }
-    
+
     .msg-status.double {
       color: var(--cp-green, #00c853);
     }
-    
-    
+
     .msg-status.error {
       color: var(--cp-red, #ff1744);
     }
-    
+
     .retry-badge {
       font-size: 10px;
       opacity: 0.8;
@@ -451,31 +485,46 @@ export class ChatView extends LitElement {
       background: var(--cp-surface-strong);
       padding: 1px 3px;
       border-radius: 3px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        'Liberation Mono', 'Courier New', monospace;
     }
-    
+
     .msg-status .status-icon {
-      transition: transform 120ms ease, opacity 120ms ease;
+      transition:
+        transform 120ms ease,
+        opacity 120ms ease;
     }
-    
+
     @keyframes tick-pop {
-      0% { transform: scale(0.8); opacity: 0.4; }
-      100% { transform: scale(1); opacity: 1; }
+      0% {
+        transform: scale(0.8);
+        opacity: 0.4;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
-    
+
     @keyframes tick-pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.12); }
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.12);
+      }
     }
-    
+
     .msg-status.single .status-icon {
       animation: tick-pop 160ms ease;
     }
-    
+
     .msg-status.double .status-icon {
       animation: tick-pulse 800ms ease-in-out 2;
     }
-    
+
     .dev-meta {
       font-size: 11px;
       opacity: 0.6;
@@ -489,245 +538,279 @@ export class ChatView extends LitElement {
       margin-left: 6px;
       opacity: 0.7;
     }
-  `;
+  `
 
   private _renderMessageStatus(id: string) {
-    const status = this.messageStatuses[id];
-    const retryCount = this.messageRetryCount[id];
-    
-    let title = '';
-    let ariaLabel = '';
-    
+    const status = this.messageStatuses[id]
+    const retryCount = this.messageRetryCount[id]
+
+    let title = ''
+    let ariaLabel = ''
+
     switch (status) {
       case 'clock':
-        title = 'Analyzing…';
-        ariaLabel = 'Message status: Analyzing';
-        break;
+        title = 'Analyzing…'
+        ariaLabel = 'Message status: Analyzing'
+        break
       case 'single':
-        title = 'Sent to NPU';
-        ariaLabel = 'Message status: Sent to NPU';
-        break;
+        title = 'Sent to NPU'
+        ariaLabel = 'Message status: Sent to NPU'
+        break
       case 'double':
-        title = 'Advisor responded';
-        ariaLabel = 'Message status: Advisor responded';
-        break;
+        title = 'Advisor responded'
+        ariaLabel = 'Message status: Advisor responded'
+        break
       default:
-        title = 'Error';
-        ariaLabel = 'Message status: Error';
+        title = 'Error'
+        ariaLabel = 'Message status: Error'
     }
-    
-    return html`<span 
-      class="msg-status ${status}" 
+
+    return html`<span
+      class="msg-status ${status}"
       title="${title}"
       aria-label="${ariaLabel}"
-      @click=${(e: Event) => e.stopPropagation()}>
-        ${status === 'clock' 
-          ? html`<img src="/assets/icons/ui/xnix/chat/clock.svg" class="status-icon" height="14px" alt="Analyzing">`
-          : status === 'single'
-          ? html`<img src="/assets/icons/ui/xnix/chat/tick.svg" class="status-icon" height="14px" alt="Sent to NPU">`
+      @click=${(e: Event) => e.stopPropagation()}
+    >
+      ${status === 'clock'
+        ? html`<img
+            src="/assets/icons/ui/xnix/chat/clock.svg"
+            class="status-icon"
+            height="14px"
+            alt="Analyzing"
+          />`
+        : status === 'single'
+          ? html`<img
+              src="/assets/icons/ui/xnix/chat/tick.svg"
+              class="status-icon"
+              height="14px"
+              alt="Sent to NPU"
+            />`
           : status === 'double'
-          ? html`<img src="/assets/icons/ui/xnix/chat/double-tick.svg" class="status-icon" height="14px" alt="Advisor responded">`
-          : html`<img src="/assets/icons/ui/xnix/chat/error.svg" class="status-icon" height="14px" alt="Error">`}
-        ${retryCount && retryCount > 0 
-          ? html`<span class="retry-badge" title="Retrying… (x${retryCount})" aria-label="Retry count: ${retryCount}">×</span>`
-          : ''}
-    </span>`;
+            ? html`<img
+                src="/assets/icons/ui/xnix/chat/double-tick.svg"
+                class="status-icon"
+                height="14px"
+                alt="Advisor responded"
+              />`
+            : html`<img
+                src="/assets/icons/ui/xnix/chat/error.svg"
+                class="status-icon"
+                height="14px"
+                alt="Error"
+              />`}
+      ${retryCount && retryCount > 0
+        ? html`<span
+            class="retry-badge"
+            title="Retrying… (x${retryCount})"
+            aria-label="Retry count: ${retryCount}"
+            >×</span
+          >`
+        : ''}
+    </span>`
   }
 
   private _handleInput(e: Event) {
-    const target = e.target as HTMLTextAreaElement;
-    this.inputValue = target.value;
+    const target = e.target as HTMLTextAreaElement
+    this.inputValue = target.value
 
     // Auto-resize textarea
-    this._resizeTextarea(target);
+    this._resizeTextarea(target)
 
-    log.trace("Input value changed");
+    log.trace('Input value changed')
   }
 
   private _handleFocus() {
-    this.isChatActive = true;
-    this._dispatchChatActiveChanged();
+    this.isChatActive = true
+    this._dispatchChatActiveChanged()
   }
 
   private _handleBlur() {
-    this.isChatActive = false;
-    this._dispatchChatActiveChanged();
+    this.isChatActive = false
+    this._dispatchChatActiveChanged()
   }
 
   private _dispatchChatActiveChanged() {
-    const detail = { isChatActive: this.isChatActive };
-    log.debug("Chat active changed", detail);
+    const detail = { isChatActive: this.isChatActive }
+    log.debug('Chat active changed', detail)
     this.dispatchEvent(
-      new CustomEvent("chat-active-changed", {
+      new CustomEvent('chat-active-changed', {
         detail,
         bubbles: true,
         composed: true,
-      }),
-    );
+      })
+    )
   }
 
-   
   private _resizeTextarea(textarea: HTMLTextAreaElement) {
     // Reset height to recalculate
-    textarea.style.height = "auto";
+    textarea.style.height = 'auto'
 
     // Calculate new height based on scroll height
-    const scrollHeight = textarea.scrollHeight;
-    const minHeight = 56;
-    const maxHeight = 200;
+    const scrollHeight = textarea.scrollHeight
+    const minHeight = 56
+    const maxHeight = 200
 
     // Clamp the height between min and max
-    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
-    textarea.style.height = `${newHeight}px`;
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight)
+    textarea.style.height = `${newHeight}px`
   }
 
   private _sendMessage() {
-    if (!this.inputValue.trim()) return;
+    if (!this.inputValue.trim()) return
 
-    log.debug("Sending message", { message: this.inputValue });
+    log.debug('Sending message', { message: this.inputValue })
     this.dispatchEvent(
-      new CustomEvent("send-message", { detail: this.inputValue }),
-    );
-    this.inputValue = "";
+      new CustomEvent('send-message', { detail: this.inputValue })
+    )
+    this.inputValue = ''
 
     // Reset textarea height after sending
     if (this.textareaRef) {
-      this.textareaRef.style.height = "56px";
+      this.textareaRef.style.height = '56px'
     }
   }
 
   private _resetText() {
-    log.debug("Resetting conversation");
+    log.debug('Resetting conversation')
     this.dispatchEvent(
-      new CustomEvent("reset-text", { bubbles: true, composed: true }),
-    );
+      new CustomEvent('reset-text', { bubbles: true, composed: true })
+    )
   }
 
   connectedCallback() {
-    super.connectedCallback();
-    log.debug("Component mounted", { 
+    super.connectedCallback()
+    log.debug('Component mounted', {
       isConnected: this.isConnected,
-      visibilityState: document.visibilityState 
-    });
+      visibilityState: document.visibilityState,
+    })
   }
 
   disconnectedCallback() {
-    super.disconnectedCallback();
+    super.disconnectedCallback()
     if (this._transcriptEl && this._scrollHandler) {
-      this._transcriptEl.removeEventListener("scroll", this._scrollHandler);
+      this._transcriptEl.removeEventListener('scroll', this._scrollHandler)
     }
-    log.debug("Component unmounted");
+    log.debug('Component unmounted')
   }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
-    if (changedProperties.has("transcript")) {
-      const oldTranscript = (
-        changedProperties.get("transcript") as Turn[]
-      ) || [];
+    if (changedProperties.has('transcript')) {
+      const oldTranscript =
+        (changedProperties.get('transcript') as Turn[]) || []
       defaultAutoScroll.handleTranscriptUpdate(
         this._transcriptEl,
         oldTranscript.length,
-        this.transcript.length,
-      );
+        this.transcript.length
+      )
 
       // Update scroll-to-bottom button state
-      this._updateScrollToBottomState();
+      this._updateScrollToBottomState()
     }
 
-    if (changedProperties.has("visible")) {
+    if (changedProperties.has('visible')) {
       if (this.visible) {
-        this.removeAttribute("hidden");
+        this.removeAttribute('hidden')
       } else {
-        this.setAttribute("hidden", "");
+        this.setAttribute('hidden', '')
       }
 
       if (this._transcriptEl) {
         defaultAutoScroll.handleVisibilityChange(
           this._transcriptEl,
           this.visible,
-          this.transcript.length > 0,
-        );
+          this.transcript.length > 0
+        )
       }
     }
   }
 
   firstUpdated() {
-    log.debug("Component first updated");
+    log.debug('Component first updated')
     // Add scroll event listener to update scroll-to-bottom button visibility
-    this._transcriptEl = this.shadowRoot?.querySelector(".transcript") as HTMLElement;
+    this._transcriptEl = this.shadowRoot?.querySelector(
+      '.transcript'
+    ) as HTMLElement
     if (this._transcriptEl) {
       this._scrollHandler = () => {
         // Debounce scroll events to reduce UI churn
         if (this.scrollDebounceTimer) {
-          clearTimeout(this.scrollDebounceTimer);
+          clearTimeout(this.scrollDebounceTimer)
         }
-        
+
         this.scrollDebounceTimer = window.setTimeout(() => {
-          const isAtBottom = defaultAutoScroll.handleScrollEvent(this._transcriptEl as HTMLElement);
+          const isAtBottom = defaultAutoScroll.handleScrollEvent(
+            this._transcriptEl as HTMLElement
+          )
           if (isAtBottom) {
-            this.lastSeenMessageCount = this.transcript.length;
+            this.lastSeenMessageCount = this.transcript.length
           }
-          this._updateScrollToBottomState();
-          this.scrollDebounceTimer = null;
-        }, 100); // Debounce for 100ms
-      };
-      this._transcriptEl.addEventListener("scroll", this._scrollHandler);
+          this._updateScrollToBottomState()
+          this.scrollDebounceTimer = null
+        }, 100) // Debounce for 100ms
+      }
+      this._transcriptEl.addEventListener('scroll', this._scrollHandler)
     }
 
     // Store reference to textarea for height management
     this.textareaRef = this.shadowRoot?.querySelector(
-      "textarea",
-    ) as HTMLTextAreaElement;
+      'textarea'
+    ) as HTMLTextAreaElement
   }
 
-private async _updateScrollToBottomState() {
-  // Await a microtask to allow the DOM to update before we measure it
-  await new Promise(resolve => setTimeout(resolve, 0));
+  private async _updateScrollToBottomState() {
+    // Await a microtask to allow the DOM to update before we measure it
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-  if (this._transcriptEl) {
-    const state = defaultAutoScroll.getScrollToBottomState(
-      this._transcriptEl,
-      this.transcript.length,
-      this.lastSeenMessageCount,
-    );
-    this.newMessageCount = state.newMessageCount;
+    if (this._transcriptEl) {
+      const state = defaultAutoScroll.getScrollToBottomState(
+        this._transcriptEl,
+        this.transcript.length,
+        this.lastSeenMessageCount
+      )
+      this.newMessageCount = state.newMessageCount
 
-    // Only log when state actually changes
-    if (this._prevShowButton !== state.showButton || this._prevNewMessageCount !== state.newMessageCount) {
-      this._logScrollButton({
+      // Only log when state actually changes
+      if (
+        this._prevShowButton !== state.showButton ||
+        this._prevNewMessageCount !== state.newMessageCount
+      ) {
+        this._logScrollButton({
+          showButton: state.showButton,
+          newMessageCount: state.newMessageCount,
+        })
+
+        this._prevShowButton = state.showButton
+        this._prevNewMessageCount = state.newMessageCount
+      }
+
+      // Dispatch event to notify parent component of scroll state changes
+      const detail = {
         showButton: state.showButton,
         newMessageCount: state.newMessageCount,
-      });
-        
-      this._prevShowButton = state.showButton;
-      this._prevNewMessageCount = state.newMessageCount;
-    }
+      }
 
-    // Dispatch event to notify parent component of scroll state changes
-    const detail = {
-      showButton: state.showButton,
-      newMessageCount: state.newMessageCount,
-    };
-      
-    // Only log scroll state when it changes
-    if (this._prevShowButton !== detail.showButton || this._prevNewMessageCount !== detail.newMessageCount) {
-      this._logScrollState(detail);
+      // Only log scroll state when it changes
+      if (
+        this._prevShowButton !== detail.showButton ||
+        this._prevNewMessageCount !== detail.newMessageCount
+      ) {
+        this._logScrollState(detail)
+      }
+
+      this.dispatchEvent(
+        new CustomEvent('scroll-state-changed', {
+          detail,
+          bubbles: true,
+          composed: true,
+        })
+      )
     }
-      
-    this.dispatchEvent(
-      new CustomEvent("scroll-state-changed", {
-        detail,
-        bubbles: true,
-        composed: true,
-      }),
-    );
   }
-}
   private _scrollToBottom() {
-    log.debug("Scrolling to bottom");
+    log.debug('Scrolling to bottom')
     if (this._transcriptEl) {
-      defaultAutoScroll.scrollToBottom(this._transcriptEl, true);
-      this.lastSeenMessageCount = this.transcript.length;
+      defaultAutoScroll.scrollToBottom(this._transcriptEl, true)
+      this.lastSeenMessageCount = this.transcript.length
     }
   }
 
@@ -735,68 +818,92 @@ private async _updateScrollToBottomState() {
     return html`
       <div class="header">
         <div class="header-title">
-          <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
-            <path d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"/>
+          <svg
+            class="message-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            height="16px"
+            viewBox="0 -960 960 960"
+            width="16px"
+            fill="currentColor"
+          >
+            <path
+              d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"
+            />
           </svg>
           <span>Chat</span>
         </div>
         <div class="thinking ${!this._showThinking ? 'hidden' : ''}">
-          <span class="thinking-badge ${this.thinkingActive ? 'active' : ''}" aria-live="polite">
+          <span
+            class="thinking-badge ${this.thinkingActive ? 'active' : ''}"
+            aria-live="polite"
+          >
             <div class="status-line ${this._showThinking ? 'visible' : ''}">
-              ${(this.phase === 'npu' || this.phase === 'vpu') ? html`<div class="thinking-spinner"></div>` : ''}
+              ${this.phase === 'npu' || this.phase === 'vpu'
+                ? html`<div class="thinking-spinner"></div>`
+                : ''}
               <span class="status-primary">${this.thinkingStatus}</span>
-              ${this.thinkingSubStatus ? html`<span class="status-secondary">${this.thinkingSubStatus}</span>` : ''}
+              ${this.thinkingSubStatus
+                ? html`<span class="status-secondary"
+                    >${this.thinkingSubStatus}</span
+                  >`
+                : ''}
             </div>
           </span>
         </div>
         <div class="header-actions">
-          <button class="reset-button" @click=${this._resetText} title="Clear conversation">
-            <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
-              <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Z"/>
+          <button
+            class="reset-button"
+            @click=${this._resetText}
+            title="Clear conversation"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="16px"
+              viewBox="0 -960 960 960"
+              width="16px"
+              fill="currentColor"
+            >
+              <path
+                d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Z"
+              />
             </svg>
           </button>
         </div>
       </div>
       <div class="transcript-container">
         <div class="transcript">
-          ${
-            this.transcript.length === 0
-              ? html`
-                  <div class="empty-state">
-                    <svg
-                      class="chat-icon"
-                      xmlns="http://www.w3.org/2000/svg"
-                      height="48px"
-                      viewBox="0 -960 960 960"
-                      width="48px"
-                      fill="currentColor"
-                    >
-                      <path
-                        d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"
-                      />
-                    </svg>
-                    <div>No messages yet</div>
+          ${this.transcript.length === 0
+            ? html`
+                <div class="empty-state">
+                  <svg
+                    class="chat-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="48px"
+                    viewBox="0 -960 960 960"
+                    width="48px"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M240-400h320v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Z"
+                    />
+                  </svg>
+                  <div>No messages yet</div>
+                </div>
+              `
+            : this.transcript.map((turn) => {
+                const who = turn.speaker
+                const id = turn.turnId
+                return html`
+                  <div
+                    class="turn ${who} ${turn.isSystemMessage ? 'system' : ''}"
+                  >
+                    ${turn.text}
+                    ${who === 'user' && id && this.messageStatuses[id]
+                      ? this._renderMessageStatus(id)
+                      : ''}
                   </div>
                 `
-              : this.transcript.map(
-                  (turn) => {
-                    const who = turn.speaker;
-                    const id = turn.turnId;
-                    return html`
-                      <div
-                        class="turn ${who} ${turn.isSystemMessage
-                          ? "system"
-                          : ""}"
-                      >
-                        ${turn.text}
-                        ${who === "user" && id && this.messageStatuses[id] 
-                          ? this._renderMessageStatus(id)
-                          : ''}
-                      </div>
-                    `;
-                  }
-                )
-          }
+              })}
         </div>
       </div>
       <div class="input-area">
@@ -806,19 +913,26 @@ private async _updateScrollToBottomState() {
           @focus=${this._handleFocus}
           @blur=${this._handleBlur}
           @keydown=${(e: KeyboardEvent) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              this._sendMessage();
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              this._sendMessage()
             }
-          }} 
+          }}
           placeholder="Type a message..."
           rows="1"
         ></textarea>
         <button @click=${this._sendMessage} aria-label="Send Message">
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z"/></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="24px"
+            viewBox="0 -960 960 960"
+            width="24px"
+            fill="#ffffff"
+          >
+            <path d="M120-160v-240l320-80-320-80v-240l760 320-760 320Z" />
+          </svg>
         </button>
       </div>
-    `;
+    `
   }
-
 }

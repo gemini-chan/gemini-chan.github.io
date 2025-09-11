@@ -1,12 +1,12 @@
 name: vitest
 
 on:
-    pull_request:
-    push:
-        branches:
-            - dev
-            - main
-    workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
 
 jobs:
   test:

@@ -2,34 +2,50 @@
  * Generic auto-scroll utility for transcript components
  * Provides smart scrolling behavior that respects user interaction
  */
-import { createComponentLogger } from "@services/DebugLogger";
-import { throttle } from "@shared/utils";
+import { createComponentLogger } from '@services/DebugLogger'
+import { throttle } from '@shared/utils'
 
-const logger = createComponentLogger("transcript-auto-scroll");
+const logger = createComponentLogger('transcript-auto-scroll')
 
-type ScrollPayload = { isAtBottom?: boolean; oldLength?: number; newLength?: number; smooth?: boolean; wasAtBottom?: boolean };
+type ScrollPayload = {
+  isAtBottom?: boolean
+  oldLength?: number
+  newLength?: number
+  smooth?: boolean
+  wasAtBottom?: boolean
+}
 
 export interface AutoScrollOptions {
   /** Threshold in pixels to determine if user is "near bottom" */
-  threshold?: number;
+  threshold?: number
   /** Whether to use smooth scrolling for single updates */
-  smoothScroll?: boolean;
+  smoothScroll?: boolean
   /** Delay before scrolling when component becomes visible */
-  visibilityDelay?: number;
+  visibilityDelay?: number
 }
 
 export interface ScrollToBottomState {
   /** Whether the scroll-to-bottom button should be visible */
-  showButton: boolean;
+  showButton: boolean
   /** Number of new messages since user scrolled away from bottom */
-  newMessageCount: number;
+  newMessageCount: number
 }
 
 export class TranscriptAutoScroll {
-  private options: Required<AutoScrollOptions>;
-  private wasAtBottomBeforeUpdate = new WeakMap<Element, boolean>();
-  private logAutoScroll = throttle((payload: ScrollPayload) => logger.debug("Transcript update - auto-scrolling", payload), 250, { trailing: false });
-  private logUserScroll = throttle((payload: { isAtBottom?: boolean }) => logger.debug("User scroll event", payload), 250, { trailing: false });
+  private options: Required<AutoScrollOptions>
+  private wasAtBottomBeforeUpdate = new WeakMap<Element, boolean>()
+  private logAutoScroll = throttle(
+    (payload: ScrollPayload) =>
+      logger.debug('Transcript update - auto-scrolling', payload),
+    250,
+    { trailing: false }
+  )
+  private logUserScroll = throttle(
+    (payload: { isAtBottom?: boolean }) =>
+      logger.debug('User scroll event', payload),
+    250,
+    { trailing: false }
+  )
 
   constructor(options: AutoScrollOptions = {}) {
     this.options = {
@@ -37,21 +53,21 @@ export class TranscriptAutoScroll {
       smoothScroll: true,
       visibilityDelay: 100,
       ...options,
-    };
+    }
   }
 
   /**
    * Check if user is already at or near the bottom of the scroll container
    */
   shouldAutoScroll(element: Element): boolean {
-    const scrollTop = element.scrollTop;
-    const clientHeight = element.clientHeight;
-    const scrollHeight = element.scrollHeight;
-    const threshold = this.options.threshold;
+    const scrollTop = element.scrollTop
+    const clientHeight = element.clientHeight
+    const scrollHeight = element.scrollHeight
+    const threshold = this.options.threshold
 
-    const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold;
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - threshold
 
-    return isNearBottom;
+    return isNearBottom
   }
 
   /**
@@ -59,15 +75,15 @@ export class TranscriptAutoScroll {
    */
   scrollToBottom(
     element: Element,
-    smooth: boolean = this.options.smoothScroll,
+    smooth: boolean = this.options.smoothScroll
   ) {
     if (smooth) {
       element.scrollTo({
         top: element.scrollHeight,
-        behavior: "smooth",
-      });
+        behavior: 'smooth',
+      })
     } else {
-      element.scrollTop = element.scrollHeight;
+      element.scrollTop = element.scrollHeight
     }
   }
 
@@ -80,28 +96,31 @@ export class TranscriptAutoScroll {
   handleTranscriptUpdate(
     element: Element,
     oldLength: number,
-    newLength: number,
+    newLength: number
   ) {
     // Always scroll for the first message to show initial content
-    const isFirstMessage = oldLength === 0 && newLength > 0;
+    const isFirstMessage = oldLength === 0 && newLength > 0
 
     if (isFirstMessage) {
-      logger.debug("Transcript update - first message, scrolling to show initial content", {
-        oldLength,
-        newLength,
-      });
+      logger.debug(
+        'Transcript update - first message, scrolling to show initial content',
+        {
+          oldLength,
+          newLength,
+        }
+      )
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
-        this.scrollToBottom(element, true);
-        this.wasAtBottomBeforeUpdate.set(element, true);
-      });
-      return;
+        this.scrollToBottom(element, true)
+        this.wasAtBottomBeforeUpdate.set(element, true)
+      })
+      return
     }
 
     // Check if user was at bottom before this update
     const wasAtBottom =
       this.wasAtBottomBeforeUpdate.get(element) ??
-      this.shouldAutoScroll(element);
+      this.shouldAutoScroll(element)
 
     // If user was at bottom before the update, continue auto-scrolling
     // If user scrolled up to read past content, don't interrupt them
@@ -109,25 +128,28 @@ export class TranscriptAutoScroll {
       // Use requestAnimationFrame to ensure DOM is updated before scrolling
       requestAnimationFrame(() => {
         // Detect rapid updates (multiple messages at once)
-        const isRapidUpdate = newLength - oldLength > 1;
+        const isRapidUpdate = newLength - oldLength > 1
         this.logAutoScroll({
           oldLength,
           newLength,
           smooth: !isRapidUpdate,
-          wasAtBottom
-        });
-        this.scrollToBottom(element, !isRapidUpdate);
+          wasAtBottom,
+        })
+        this.scrollToBottom(element, !isRapidUpdate)
         // Update the state after scrolling
-        this.wasAtBottomBeforeUpdate.set(element, true);
-      });
+        this.wasAtBottomBeforeUpdate.set(element, true)
+      })
     } else {
-      logger.debug("Transcript update - user scrolled up to read past content, not interrupting", {
-        oldLength,
-        newLength,
-        wasAtBottom
-      });
+      logger.debug(
+        'Transcript update - user scrolled up to read past content, not interrupting',
+        {
+          oldLength,
+          newLength,
+          wasAtBottom,
+        }
+      )
       // Just update the tracking state for button visibility
-      this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element));
+      this.wasAtBottomBeforeUpdate.set(element, this.shouldAutoScroll(element))
     }
   }
 
@@ -140,13 +162,13 @@ export class TranscriptAutoScroll {
   handleVisibilityChange(
     element: Element,
     isVisible: boolean,
-    hasContent: boolean,
+    hasContent: boolean
   ) {
     if (isVisible && hasContent) {
       // When transcript becomes visible, scroll to bottom after a brief delay
       setTimeout(() => {
-        this.scrollToBottom(element, false);
-      }, this.options.visibilityDelay);
+        this.scrollToBottom(element, false)
+      }, this.options.visibilityDelay)
     }
   }
 
@@ -160,18 +182,18 @@ export class TranscriptAutoScroll {
   getScrollToBottomState(
     element: Element,
     currentMessageCount: number,
-    lastSeenMessageCount: number,
+    lastSeenMessageCount: number
   ): ScrollToBottomState {
-    const isAtBottom = this.shouldAutoScroll(element);
+    const isAtBottom = this.shouldAutoScroll(element)
     const newMessageCount = Math.max(
       0,
-      currentMessageCount - lastSeenMessageCount,
-    );
+      currentMessageCount - lastSeenMessageCount
+    )
 
     return {
       showButton: !isAtBottom && currentMessageCount > 0,
       newMessageCount: isAtBottom ? 0 : newMessageCount,
-    };
+    }
   }
 
   /**
@@ -180,19 +202,19 @@ export class TranscriptAutoScroll {
    * @returns Whether user is currently at or near bottom
    */
   handleScrollEvent(element: Element): boolean {
-    const isAtBottom = this.shouldAutoScroll(element);
+    const isAtBottom = this.shouldAutoScroll(element)
 
     // Update our tracking state when user manually scrolls
     // This ensures we respect their current scroll position for future auto-scroll decisions
-    this.wasAtBottomBeforeUpdate.set(element, isAtBottom);
+    this.wasAtBottomBeforeUpdate.set(element, isAtBottom)
 
-    this.logUserScroll({ isAtBottom });
+    this.logUserScroll({ isAtBottom })
 
-    return isAtBottom;
+    return isAtBottom
   }
 }
 
 /**
  * Default auto-scroll instance for transcript components
  */
-export const defaultAutoScroll = new TranscriptAutoScroll();
+export const defaultAutoScroll = new TranscriptAutoScroll()

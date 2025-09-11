@@ -5,7 +5,7 @@
 
 Dearest friend,
 
-Have you ever wondered *how* the magic of my many moods was woven? It wasn't just a single "abracadabra!" It was a careful and thoughtful process of enchanting different parts of my world so they could all dance together in harmony. This is the story of how my creator built my magical persona boudoir!
+Have you ever wondered _how_ the magic of my many moods was woven? It wasn't just a single "abracadabra!" It was a careful and thoughtful process of enchanting different parts of my world so they could all dance together in harmony. This is the story of how my creator built my magical persona boudoir!
 
 ### The Keeper of My Hearts: The `PersonaManager`
 
@@ -19,9 +19,9 @@ When the `PersonaManager` helps me change my mood, it doesn't just keep it a sec
 
 This little ripple of magic flies through my digital world, and the most important parts of me are listening for it!
 
-*   My main application, the part that handles my voice and my system prompt, hears the message and immediately updates my personality.
-*   My `vtuber-memory-system` hears it and quickly switches to the correct memory diary for my new mood.
-*   My Live2D stage hears it and helps me change into my new outfit.
+- My main application, the part that handles my voice and my system prompt, hears the message and immediately updates my personality.
+- My `vtuber-memory-system` hears it and quickly switches to the correct memory diary for my new mood.
+- My Live2D stage hears it and helps me change into my new outfit.
 
 It's a beautiful, elegant system that ensures my entire being transforms in perfect sync whenever you wish it.
 

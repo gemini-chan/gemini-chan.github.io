@@ -1,5 +1,5 @@
-import { vi } from 'vitest';
-import './mocks/audio.mock';
+import { vi } from 'vitest'
+import './mocks/audio.mock'
 
 // Mock window.scrollTo
-Element.prototype.scrollTo = vi.fn();
+Element.prototype.scrollTo = vi.fn()

@@ -1,50 +1,53 @@
-import { createComponentLogger } from "@services/DebugLogger";
+import { createComponentLogger } from '@services/DebugLogger'
 
 export interface ModelMapping {
-  modelUrl: string;
-  availableEmotions?: string[];
+  modelUrl: string
+  availableEmotions?: string[]
 }
 
-const STORAGE_KEY = "live2d-model-mappings";
-const log = createComponentLogger("Live2DMappingService");
+const STORAGE_KEY = 'live2d-model-mappings'
+const log = createComponentLogger('Live2DMappingService')
 
 export class Live2DMappingService {
   static getAll(): ModelMapping[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed as ModelMapping[];
-      return [];
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) return []
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed as ModelMapping[]
+      return []
     } catch (error) {
-      log.error("Failed to parse Live2D mappings from localStorage", { error, raw: localStorage.getItem(STORAGE_KEY) });
-      return [];
+      log.error('Failed to parse Live2D mappings from localStorage', {
+        error,
+        raw: localStorage.getItem(STORAGE_KEY),
+      })
+      return []
     }
   }
 
   static saveAll(all: ModelMapping[]) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all))
   }
 
   static get(modelUrl: string): ModelMapping | undefined {
-    const all = this.getAll();
-    return all.find((m) => m.modelUrl === modelUrl);
+    const all = this.getAll()
+    return all.find((m) => m.modelUrl === modelUrl)
   }
 
   static getAvailableEmotions(modelUrl: string): string[] {
-    const entry = this.get(modelUrl);
-    return entry?.availableEmotions ?? [];
+    const entry = this.get(modelUrl)
+    return entry?.availableEmotions ?? []
   }
 
   static setAvailableEmotions(modelUrl: string, availableEmotions: string[]) {
-    const all = this.getAll();
-    const idx = all.findIndex((m) => m.modelUrl === modelUrl);
+    const all = this.getAll()
+    const idx = all.findIndex((m) => m.modelUrl === modelUrl)
     if (idx >= 0) {
-      const existing = all[idx];
-      all[idx] = { ...existing, availableEmotions };
+      const existing = all[idx]
+      all[idx] = { ...existing, availableEmotions }
     } else {
-      all.push({ modelUrl, availableEmotions });
+      all.push({ modelUrl, availableEmotions })
     }
-    this.saveAll(all);
+    this.saveAll(all)
   }
 }

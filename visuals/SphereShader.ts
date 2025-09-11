@@ -86,6 +86,6 @@ void main() {
   #ifdef USE_TRANSMISSION
     vWorldPosition = worldPosition.xyz;
   #endif
-}`;
+}`
 
-export { vs };
+export { vs }

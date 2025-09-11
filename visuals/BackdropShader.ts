@@ -11,7 +11,7 @@ uniform mat4 projectionMatrix;
 
 void main() {
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
-}`;
+}`
 
 const fs = `precision highp float;
 
@@ -35,6 +35,6 @@ void main() {
 
   fragmentColor = vec4(mix(from, to, d) + .005 * noise, 1.);
 }
-`;
+`
 
-export { fs, vs };
+export { fs, vs }

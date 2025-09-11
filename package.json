@@ -7,6 +7,7 @@
     "dev": "vite",
     "type": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "lint": "eslint . --ext .ts --fix",
+    "format": "prettier --write .",
     "prepare": "husky install",
     "build": "vite build",
     "test": "vitest run --coverage"
@@ -35,6 +36,7 @@
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.40.0",
     "vite": "^7.1.1",

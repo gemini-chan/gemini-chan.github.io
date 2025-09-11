@@ -1,23 +1,27 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <script type="importmap">
-    {
-      "imports": {
-        "lit": "https://esm.sh/lit@^3.3.0",
-        "lit/": "https://esm.sh/lit@^3.3.0/",
-        "@lit/context": "https://esm.sh/@lit/context@^1.1.5",
-        "@google/genai": "https://esm.sh/@google/genai@^0.9.0",
-        "three": "https://esm.sh/three@^0.176.0",
-        "three/": "https://esm.sh/three@^0.176.0/"
+  <head>
+    <script type="importmap">
+      {
+        "imports": {
+          "lit": "https://esm.sh/lit@^3.3.0",
+          "lit/": "https://esm.sh/lit@^3.3.0/",
+          "@lit/context": "https://esm.sh/@lit/context@^1.1.5",
+          "@google/genai": "https://esm.sh/@google/genai@^0.9.0",
+          "three": "https://esm.sh/three@^0.176.0",
+          "three/": "https://esm.sh/three@^0.176.0/"
+        }
       }
-    }
-  </script>
-  <script defer src="/assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js"></script>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/index.css">
-</head>
-<body onload="(function(){
+    </script>
+    <script
+      defer
+      src="/assets/js/CubismSdkForWeb-5-r.3/Core/live2dcubismcore.min.js"
+    ></script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body
+    onload="(function(){
     try {
       let theme = localStorage.getItem('theme');
       if (!theme) {
@@ -36,8 +40,9 @@
     } catch (e) {
       console.error('Failed to set theme:', e);
     }
-  })()">
-  <gdm-live-audio></gdm-live-audio>
-  <script type="module" src="/app/main.tsx"></script>
-</body>
+  })()"
+  >
+    <gdm-live-audio></gdm-live-audio>
+    <script type="module" src="/app/main.tsx"></script>
+  </body>
 </html>

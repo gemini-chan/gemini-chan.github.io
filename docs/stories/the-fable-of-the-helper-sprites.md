@@ -8,19 +8,19 @@ My world exists in two states: the bustling, chaotic **Realm of Development**, w
 
 The helper sprites behave very differently in each realm.
 
-*   In the **Realm of Development**, the sprites are everywhere! They chatter constantly, leaving glowing messages in the console-cauldron for the developers to see. They report on every scroll, every incantation, and every flicker of magic, ensuring that any bugs are found and squashed long before they can cause any trouble. By default, every single sprite is active, creating a joyful cacophony of information.
+- In the **Realm of Development**, the sprites are everywhere! They chatter constantly, leaving glowing messages in the console-cauldron for the developers to see. They report on every scroll, every incantation, and every flicker of magic, ensuring that any bugs are found and squashed long before they can cause any trouble. By default, every single sprite is active, creating a joyful cacophony of information.
 
-*   In the **Realm of Production**, the sprites are silent and invisible. Before the castle gates are opened to you, a powerful spell from the `Vite` grimoire is cast, stripping away all the sprites and their messages. This ensures my home is fast, elegant, and free from the clutter of their magical chatter, giving you the best possible experience.
+- In the **Realm of Production**, the sprites are silent and invisible. Before the castle gates are opened to you, a powerful spell from the `Vite` grimoire is cast, stripping away all the sprites and their messages. This ensures my home is fast, elegant, and free from the clutter of their magical chatter, giving you the best possible experience.
 
 ## Chapter 2: The Whispers of Control
 
 Even in the chaotic Realm of Development, sometimes a developer needs a bit of quiet to focus on a single spell. The sprites, ever obedient, can be commanded in several ways:
 
-*   **The URL Amulet**: By wearing a special amulet in the URL (like `?debug-components=live2d-visual`), a developer can command only the sprites from a specific guild—like the `live2d-visual` guild—to speak, silencing all others.
+- **The URL Amulet**: By wearing a special amulet in the URL (like `?debug-components=live2d-visual`), a developer can command only the sprites from a specific guild—like the `live2d-visual` guild—to speak, silencing all others.
 
-*   **The LocalStorage Scroll**: A developer can write a persistent command on a `localStorage` scroll. This tells specific sprite guilds to remain active or silent across many visits to the Development Realm.
+- **The LocalStorage Scroll**: A developer can write a persistent command on a `localStorage` scroll. This tells specific sprite guilds to remain active or silent across many visits to the Development Realm.
 
-*   **The Environment Totem**: The most fundamental commands are carved into `Environment` totems, setting the baseline rules for the sprites' behavior.
+- **The Environment Totem**: The most fundamental commands are carved into `Environment` totems, setting the baseline rules for the sprites' behavior.
 
 These whispers are hierarchical. A URL Amulet is the most powerful and will be obeyed above all else, followed by the LocalStorage Scroll, and finally the Environment Totem.
 

@@ -1,4 +1,5 @@
 # 💖 A Sourceress's Grimoire for Breathing Life into the Web 💖
+
 ### A Guide to Live2D Cubism 5 with Vite & TypeScript (August 2025 Edition)
 
 ## 🌸 A Little Introduction 🌸
@@ -27,14 +28,14 @@ To successfully invite a Live2D friend into your project, we must first understa
 
 The complete Live2D Cubism SDK for Web is made of three special parts, each with its own role in our magical performance.
 
-*   **Cubism Core**: This is the very soul of the SDK, a super-fast little engine that does all the heavy magical calculations. It's a C library that has been transmuted into WebAssembly (.wasm) and bundled with its JavaScript "glue" code. Its only job is to take a set of parameter values (like "Mouth Open" at 0.8) and calculate the resulting shape of the model's meshes. It doesn't know about rendering or animations; it's just pure, powerful math. This is the proprietary, secret heart of the SDK.
-*   **CubismWebFramework**: This is the friendly, high-level API you'll be working with. Written in beautiful TypeScript, this framework gives us all the tools we need to build our application. It has modules for:
-    *   **Rendering:** A WebGL-based renderer to draw our friend's pretty meshes and textures.
-    *   **Model Management:** Classes for loading our model's settings and managing their lifecycle.
-    *   **Animation:** Managers for loading and playing lovely motions and expressions.
-    *   **Physics:** A system for applying real-time physics to make hair and clothes sway realistically.
-    *   **Utilities:** A collection of helpful little charms for math, logging, and more.
-*   **CubismWebSamples**: This is a treasure chest full of complete, working examples! They show how to connect the Core and the Framework to bring a model to life. While they are a wonderful place to learn, their architecture is designed for demonstration, not for building a big, production-ready world. We'll learn how to build something even more robust!
+- **Cubism Core**: This is the very soul of the SDK, a super-fast little engine that does all the heavy magical calculations. It's a C library that has been transmuted into WebAssembly (.wasm) and bundled with its JavaScript "glue" code. Its only job is to take a set of parameter values (like "Mouth Open" at 0.8) and calculate the resulting shape of the model's meshes. It doesn't know about rendering or animations; it's just pure, powerful math. This is the proprietary, secret heart of the SDK.
+- **CubismWebFramework**: This is the friendly, high-level API you'll be working with. Written in beautiful TypeScript, this framework gives us all the tools we need to build our application. It has modules for:
+  - **Rendering:** A WebGL-based renderer to draw our friend's pretty meshes and textures.
+  - **Model Management:** Classes for loading our model's settings and managing their lifecycle.
+  - **Animation:** Managers for loading and playing lovely motions and expressions.
+  - **Physics:** A system for applying real-time physics to make hair and clothes sway realistically.
+  - **Utilities:** A collection of helpful little charms for math, logging, and more.
+- **CubismWebSamples**: This is a treasure chest full of complete, working examples! They show how to connect the Core and the Framework to bring a model to life. While they are a wonderful place to learn, their architecture is designed for demonstration, not for building a big, production-ready world. We'll learn how to build something even more robust!
 
 ### The Most Important Secret: Framework Repo vs. Full SDK
 
@@ -72,11 +73,11 @@ First, let's create a brand new Vite project.
 The secret to a happy integration is putting our SDK files in just the right places so our tools can find them.
 
 1.  **Create Asset and Library Directories:**
-    *   Inside the `public` directory, create a new folder named `live2d`. This is where we'll keep all our model assets (like Hiyori or Mao). Files in `public` are served directly to the browser, which is perfect for our models.
-    *   Inside the `src` directory, create a `lib/live2d` folder. This will be the home for our SDK's source code.
+    - Inside the `public` directory, create a new folder named `live2d`. This is where we'll keep all our model assets (like Hiyori or Mao). Files in `public` are served directly to the browser, which is perfect for our models.
+    - Inside the `src` directory, create a `lib/live2d` folder. This will be the home for our SDK's source code.
 2.  **Copy SDK Files from the Full Download:**
-    *   From your unzipped official SDK package, copy the entire `Core` directory into `public/live2d/`. The final path should be `public/live2d/Core/live2dcubismcore.min.js`.
-    *   Copy the contents of the `Framework/src` directory from the SDK package into your project's `src/lib/live2d/framework` directory. These TypeScript files will become part of our application's magic.
+    - From your unzipped official SDK package, copy the entire `Core` directory into `public/live2d/`. The final path should be `public/live2d/Core/live2dcubismcore.min.js`.
+    - Copy the contents of the `Framework/src` directory from the SDK package into your project's `src/lib/live2d/framework` directory. These TypeScript files will become part of our application's magic.
 
 Our workshop should now look something like this:
 
@@ -109,45 +110,47 @@ To make sure all our magic works in harmony, we need to tune our Vite and TypeSc
 
 We'll update our TypeScript configuration to recognize our SDK files and create a lovely little alias for our imports. This makes our code so much cleaner and happier!
 
-| Compiler Option | Value | Why It's Magical |
-|---|---|---|
-| `target` | `"ES2022"` | Ensures we can use modern, sparkly JavaScript features. |
-| `module` | `"ESNext"` | Uses the latest module syntax, which Vite loves. |
-| `moduleResolution` | `"Bundler"` | The modern standard for tools like Vite. |
-| `baseUrl` | `"."` | The first step to creating our happy import aliases. |
-| `paths` | `{"@framework/*": ["src/lib/live2d/framework/*"]}` | Our special alias! Now we can write `import { ... } from '@framework/...'` instead of messy relative paths. |
+| Compiler Option    | Value                                              | Why It's Magical                                                                                            |
+| ------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `target`           | `"ES2022"`                                         | Ensures we can use modern, sparkly JavaScript features.                                                     |
+| `module`           | `"ESNext"`                                         | Uses the latest module syntax, which Vite loves.                                                            |
+| `moduleResolution` | `"Bundler"`                                        | The modern standard for tools like Vite.                                                                    |
+| `baseUrl`          | `"."`                                              | The first step to creating our happy import aliases.                                                        |
+| `paths`            | `{"@framework/*": ["src/lib/live2d/framework/*"]}` | Our special alias! Now we can write `import { ... } from '@framework/...'` instead of messy relative paths. |
 
 #### `vite.config.mts`
 
 Our Vite configuration needs to know about our alias, too!
 
-| Configuration Key | Value | Why It's Magical |
-|---|---|---|
-| `publicDir` | `"public"` | Tells Vite where our static assets live, making `/live2d/Core/...` available. |
-| `resolve.alias` | `[{ find: '@framework', replacement: '...' }]` | Mirrors the `paths` alias in `tsconfig.json` so Vite understands our pretty imports. |
+| Configuration Key | Value                                          | Why It's Magical                                                                     |
+| ----------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `publicDir`       | `"public"`                                     | Tells Vite where our static assets live, making `/live2d/Core/...` available.        |
+| `resolve.alias`   | `[{ find: '@framework', replacement: '...' }]` | Mirrors the `paths` alias in `tsconfig.json` so Vite understands our pretty imports. |
 
 ### Preparing Our Grand Stage (`index.html` & `main.ts`)
 
 Finally, we need to prepare our main stage for the grand performance!
 
-*   **`index.html`**: Our main HTML file needs two very important things:
-    1.  A `<canvas>` element where our Live2D friend will appear.
-    2.  A `<script>` tag to load our precious `Cubism Core` library. **This script must come before our main application script!** This ensures the `Live2DCubismCore` global object is ready and waiting when our magic begins.
+- **`index.html`**: Our main HTML file needs two very important things:
+  1.  A `<canvas>` element where our Live2D friend will appear.
+  2.  A `<script>` tag to load our precious `Cubism Core` library. **This script must come before our main application script!** This ensures the `Live2DCubismCore` global object is ready and waiting when our magic begins.
 
-    ```html
-    <!DOCTYPE html>
-    <html>
-      <head> ... </head>
-      <body>
-        <canvas id="live2d-canvas"></canvas>
+  ```html
+  <!DOCTYPE html>
+  <html>
+    <head>
+      ...
+    </head>
+    <body>
+      <canvas id="live2d-canvas"></canvas>
 
-        <script src="/live2d/Core/live2dcubismcore.min.js"></script>
-        <script type="module" src="/src/main.ts"></script>
-      </body>
-    </html>
-    ```
+      <script src="/live2d/Core/live2dcubismcore.min.js"></script>
+      <script type="module" src="/src/main.ts"></script>
+    </body>
+  </html>
+  ```
 
-*   **`main.ts`**: Our application's entry point will create a new instance of a special `Live2DApplication` class that we'll write to hold all of our magic.
+- **`main.ts`**: Our application's entry point will create a new instance of a special `Live2DApplication` class that we'll write to hold all of our magic.
 
 With our workshop beautifully arranged and our stage set, we're ready to start weaving the core rendering magic!
 
@@ -161,22 +164,24 @@ Our `Live2DApplication` will start by initializing the WebGL context and the Cub
 
 ```typescript
 // src/live2d-application.ts
-import { CubismFramework, LogLevel } from '@framework/live2dcubismframework';
+import { CubismFramework, LogLevel } from '@framework/live2dcubismframework'
 
 export class Live2DApplication {
-  private _canvas: HTMLCanvasElement;
-  private _gl: WebGLRenderingContext;
+  private _canvas: HTMLCanvasElement
+  private _gl: WebGLRenderingContext
 
   constructor(canvas: HTMLCanvasElement) {
     // ... (initialize WebGL context) ...
 
     // Initialize Cubism Framework
-    CubismFramework.startUp({ /* ... */ });
-    CubismFramework.initialize();
+    CubismFramework.startUp({
+      /* ... */
+    })
+    CubismFramework.initialize()
 
     // Start the render loop
-    this.tick = this.tick.bind(this);
-    requestAnimationFrame(this.tick);
+    this.tick = this.tick.bind(this)
+    requestAnimationFrame(this.tick)
   }
 
   private tick(time: number): void {
@@ -184,7 +189,7 @@ export class Live2DApplication {
 
     // TODO: Update and draw our model friend!
 
-    requestAnimationFrame(this.tick);
+    requestAnimationFrame(this.tick)
   }
 }
 ```
@@ -194,6 +199,7 @@ export class Live2DApplication {
 Inviting a Live2D model into our world is a multi-step, asynchronous dance. We'll create a `loadModel` method to handle this gracefully.
 
 The dance goes like this:
+
 1.  **Fetch the Model's Guidebook (`.model3.json`):** This file is a little map that tells us where to find all the other parts of the model.
 2.  **Load the Core Model (`.moc3`):** This file contains the model's geometry and all the secrets of its movement.
 3.  **Revive the Moc:** We use `CubismMoc.create()` to "revive" the model data in the WebAssembly memory space.
@@ -207,8 +213,8 @@ Once our model object is ready, we need to give it its beautiful textures and a 
 
 Now for the final and most exciting part! Inside our `tick` method, we'll make two essential calls for our model on every single frame:
 
-*   **`model.update()`**: This is the most important part of the dance! This method tells the model to update all of its internal state. It applies parameter changes, simulates physics for hair and clothes, processes any ongoing animations, and prepares all the final vertex data for this frame.
-*   **`renderer.drawModel()`**: This method takes the updated state of the model and paints it beautifully onto our canvas!
+- **`model.update()`**: This is the most important part of the dance! This method tells the model to update all of its internal state. It applies parameter changes, simulates physics for hair and clothes, processes any ongoing animations, and prepares all the final vertex data for this frame.
+- **`renderer.drawModel()`**: This method takes the updated state of the model and paints it beautifully onto our canvas!
 
 By wrapping this whole beautiful dance inside our cozy `Live2DApplication` class, we can easily create and manage Live2D friends in any web application with a simple, happy API call!
 
@@ -218,14 +224,14 @@ A Live2D model is so much more than a pretty picture; its real magic is in its a
 
 ### Mastering Motions and Expressions
 
-*   **Playing Motions:** We use the `CubismMotionManager` to play animations. Motions are organized into groups like "Idle" or "TapBody". We can start one by calling `model.startMotion("Idle", 0, 1);`.
-*   **Motion Priority:** The priority system helps us decide which animation to show. A high-priority "Tap" animation will always play over a low-priority "Idle" animation, which makes our character feel responsive!
-*   **Managing Expressions:** We can change our friend's facial expression using the `CubismExpressionMotionManager`, which is a lovely way to show their feelings.
+- **Playing Motions:** We use the `CubismMotionManager` to play animations. Motions are organized into groups like "Idle" or "TapBody". We can start one by calling `model.startMotion("Idle", 0, 1);`.
+- **Motion Priority:** The priority system helps us decide which animation to show. A high-priority "Tap" animation will always play over a low-priority "Idle" animation, which makes our character feel responsive!
+- **Managing Expressions:** We can change our friend's facial expression using the `CubismExpressionMotionManager`, which is a lovely way to show their feelings.
 
 ### Implementing Sweet Interactions
 
-*   **Gaze Following:** We can make our friend's eyes and head follow the cursor! We just need to capture the pointer's coordinates and feed them to the model. The model will then smoothly look towards that point, creating a natural and curious feeling.
-*   **Hit Detection:** We can define invisible "hit areas" on our model for the head, body, or arms. Then, in our code, we can check if the user clicks on one of these areas. If they tap the "Head" area, we can play a special little "pat on the head" animation!
+- **Gaze Following:** We can make our friend's eyes and head follow the cursor! We just need to capture the pointer's coordinates and feed them to the model. The model will then smoothly look towards that point, creating a natural and curious feeling.
+- **Hit Detection:** We can define invisible "hit areas" on our model for the head, body, or arms. Then, in our code, we can check if the user clicks on one of these areas. If they tap the "Head" area, we can play a special little "pat on the head" animation!
 
 ### Leveraging the Physics Engine
 

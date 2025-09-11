@@ -1,11 +1,11 @@
-import { type AIClient, BaseAIService } from "@features/ai/BaseAIService";
-import { createComponentLogger } from "@services/DebugLogger";
-import { healthMetricsService } from "@services/HealthMetricsService";
-import type { VectorStore } from "@store/VectorStore";
-import type { Memory } from "./Memory";
+import { type AIClient, BaseAIService } from '@features/ai/BaseAIService'
+import { createComponentLogger } from '@services/DebugLogger'
+import { healthMetricsService } from '@services/HealthMetricsService'
+import type { VectorStore } from '@store/VectorStore'
+import type { Memory } from './Memory'
 
-const logger = createComponentLogger("MemoryService");
-const MODEL_NAME = "gemini-2.5-flash-lite";
+const logger = createComponentLogger('MemoryService')
+const MODEL_NAME = 'gemini-2.5-flash-lite'
 
 export interface IMemoryService {
   retrieveRelevantMemories(
@@ -13,45 +13,69 @@ export interface IMemoryService {
     sessionId: string,
     topK?: number,
     options?: { emotionBias?: string }
-  ): Promise<Memory[]>;
-  getLastModelEmotion(): string;
-  getAllMemories(): Promise<Memory[]>;
-  deleteMemory(memoryId: number): Promise<void>;
-  deleteAllMemories(): Promise<void>;
-  extractAndStoreFacts(turns: string, sessionId: string, advisorContext?: string): Promise<void>; // New method
-  applyTimeDecay(): Promise<void>;
-  pinMemory(memoryId: number): Promise<void>;
-  unpinMemory(memoryId: number): Promise<void>;
+  ): Promise<Memory[]>
+  getLastModelEmotion(): string
+  getAllMemories(): Promise<Memory[]>
+  deleteMemory(memoryId: number): Promise<void>
+  deleteAllMemories(): Promise<void>
+  extractAndStoreFacts(
+    turns: string,
+    sessionId: string,
+    advisorContext?: string
+  ): Promise<void> // New method
+  applyTimeDecay(): Promise<void>
+  pinMemory(memoryId: number): Promise<void>
+  unpinMemory(memoryId: number): Promise<void>
 }
 
 export class MemoryService extends BaseAIService implements IMemoryService {
-  private vectorStore: VectorStore;
+  private vectorStore: VectorStore
 
   // Constants for dynamic gentle rehearsal logic
-  private readonly BASELINE_REINFORCEMENT_INCREMENT = 0.2;
-  private readonly BASELINE_TOP_N = 2;
-  private readonly EXCITING_EMOTION_INCREMENT = 0.15;
-  private readonly HEAVY_EMOTION_INCREMENT = 0.05;
-  private readonly CADENCE_HEURISTIC_INCREMENT = 0.05;
-  private readonly QUERY_LENGTH_THRESHOLD = 80;
-  private readonly MIN_TOP_N = 1;
-  private readonly MAX_TOP_N = 5;
-  private readonly EXCITING_TOP_N_INCREMENT = 2;
-  private readonly HEAVY_TOP_N_INCREMENT = 1;
-  private readonly CADENCE_TOP_N_INCREMENT = 1;
-  
+  private readonly BASELINE_REINFORCEMENT_INCREMENT = 0.2
+  private readonly BASELINE_TOP_N = 2
+  private readonly EXCITING_EMOTION_INCREMENT = 0.15
+  private readonly HEAVY_EMOTION_INCREMENT = 0.05
+  private readonly CADENCE_HEURISTIC_INCREMENT = 0.05
+  private readonly QUERY_LENGTH_THRESHOLD = 80
+  private readonly MIN_TOP_N = 1
+  private readonly MAX_TOP_N = 5
+  private readonly EXCITING_TOP_N_INCREMENT = 2
+  private readonly HEAVY_TOP_N_INCREMENT = 1
+  private readonly CADENCE_TOP_N_INCREMENT = 1
+
   // Constants for stable model preferences and traits
   private readonly STABLE_MODEL_PREFERENCE_CATEGORIES = new Set([
-    "color", "music", "food", "animal", "style", "aesthetic", "hobby",
-    "genre", "game", "show", "movie", "book", "drink", "snack", "season",
-    "weather", "art", "theme", "philosophy", "ethic", "virtue", "mood", "vibe"
-  ]);
-  private readonly STABLE_MODEL_TRAIT_CATEGORIES = new Set(["pet_name"]);
+    'color',
+    'music',
+    'food',
+    'animal',
+    'style',
+    'aesthetic',
+    'hobby',
+    'genre',
+    'game',
+    'show',
+    'movie',
+    'book',
+    'drink',
+    'snack',
+    'season',
+    'weather',
+    'art',
+    'theme',
+    'philosophy',
+    'ethic',
+    'virtue',
+    'mood',
+    'vibe',
+  ])
+  private readonly STABLE_MODEL_TRAIT_CATEGORIES = new Set(['pet_name'])
 
-   constructor(vectorStore: VectorStore, client: AIClient) {
-     super(client, MODEL_NAME);
-     this.vectorStore = vectorStore;
-   }
+  constructor(vectorStore: VectorStore, client: AIClient) {
+    super(client, MODEL_NAME)
+    this.vectorStore = vectorStore
+  }
 
   /**
    * Extract facts from conversation turns and store them
@@ -59,48 +83,52 @@ export class MemoryService extends BaseAIService implements IMemoryService {
    * @param sessionId The user session ID
    */
   // Store the last model emotion for Live2D animation
-  private lastModelEmotion: string = "neutral";
-  
+  private lastModelEmotion: string = 'neutral'
+
   /**
    * Get the last model emotion detected by the NPU
    * @returns The last model emotion or "neutral" if none detected
    */
   getLastModelEmotion(): string {
-    return this.lastModelEmotion;
+    return this.lastModelEmotion
   }
-  
+
   async extractAndStoreFacts(
     turns: string,
     sessionId: string,
-    advisorContext?: string,
+    advisorContext?: string
   ): Promise<void> {
-    const stopTimer = healthMetricsService.timeMPUProcessing();
-    
+    const stopTimer = healthMetricsService.timeMPUProcessing()
+
     try {
-      logger.debug("Extracting facts from turns", {
+      logger.debug('Extracting facts from turns', {
         sessionId,
         turnsLength: turns.length,
-      });
+      })
 
       // Extract emotional context from advisor context if available
-      let emotionalFlavor = "";
-      let modelEmotion = "neutral";
+      let emotionalFlavor = ''
+      let modelEmotion = 'neutral'
       if (advisorContext) {
         // Look for USER_EMOTION line in advisor context
-        const userEmotionLine = advisorContext.split('\n').find(line => line.startsWith('USER_EMOTION:'));
+        const userEmotionLine = advisorContext
+          .split('\n')
+          .find((line) => line.startsWith('USER_EMOTION:'))
         if (userEmotionLine) {
-          const emotionMatch = userEmotionLine.match(/USER_EMOTION:\s*(\w+)/);
+          const emotionMatch = userEmotionLine.match(/USER_EMOTION:\s*(\w+)/)
           if (emotionMatch) {
-            emotionalFlavor = emotionMatch[1];
+            emotionalFlavor = emotionMatch[1]
           }
         }
-        
+
         // Look for MODEL_EMOTION line in advisor context
-        const modelEmotionLine = advisorContext.split('\n').find(line => line.startsWith('MODEL_EMOTION:'));
+        const modelEmotionLine = advisorContext
+          .split('\n')
+          .find((line) => line.startsWith('MODEL_EMOTION:'))
         if (modelEmotionLine) {
-          const emotionMatch = modelEmotionLine.match(/MODEL_EMOTION:\s*(\w+)/);
+          const emotionMatch = modelEmotionLine.match(/MODEL_EMOTION:\s*(\w+)/)
           if (emotionMatch) {
-            modelEmotion = emotionMatch[1];
+            modelEmotion = emotionMatch[1]
           }
         }
       }
@@ -117,8 +145,8 @@ Return ONLY a JSON array of objects with keys:
 - "emotion_confidence" (optional): 0..1
 
 Emotional context (bias only, do not restate):
-USER_EMOTION = ${emotionalFlavor || "neutral"}
-MODEL_EMOTION = ${modelEmotion || "neutral"}
+USER_EMOTION = ${emotionalFlavor || 'neutral'}
+MODEL_EMOTION = ${modelEmotion || 'neutral'}
 
 ALLOWED_FACT_KEYS (canonical forms + mapping rules):
 (For general preferences, prefer this dynamic canonical form; do not invent category names, use short lowercase tokens)
@@ -173,189 +201,241 @@ POSITIVE EXAMPLES:
 CONVERSATION SNIPPET (role-tagged if available; else raw text):
 ${turns}
 
-Return ONLY the JSON array. No markdown, no prose.`;
+Return ONLY the JSON array. No markdown, no prose.`
 
-      const response = await this.callAIModel(prompt);
+      const response = await this.callAIModel(prompt)
 
       // Parse the JSON response
       interface ExtractedFact {
-        fact_key: string;
-        fact_value: string;
-        confidence_score: number;
-        permanence_score: string;
-        emotional_flavor?: string;
-        emotion_confidence?: number;
-        source?: "user" | "model";
+        fact_key: string
+        fact_value: string
+        confidence_score: number
+        permanence_score: string
+        emotional_flavor?: string
+        emotion_confidence?: number
+        source?: 'user' | 'model'
       }
-      
-      let facts: ExtractedFact[] = [];
+
+      let facts: ExtractedFact[] = []
       try {
-        const jsonResponse = String(response || "").trim();
+        const jsonResponse = String(response || '').trim()
         // Extract JSON array from response if it's wrapped in markdown
-        const jsonMatch = jsonResponse.match(/\[[\s\S]*\]/);
-        const jsonString = jsonMatch ? jsonMatch[0] : jsonResponse;
-        facts = JSON.parse(jsonString);
+        const jsonMatch = jsonResponse.match(/\[[\s\S]*\]/)
+        const jsonString = jsonMatch ? jsonMatch[0] : jsonResponse
+        facts = JSON.parse(jsonString)
       } catch (parseError) {
-        logger.warn("Failed to parse JSON response, falling back to line parsing", { parseError, response });
+        logger.warn(
+          'Failed to parse JSON response, falling back to line parsing',
+          { parseError, response }
+        )
         // Fallback to line parsing if JSON parsing fails
-        const lines = String(response || "")
+        const lines = String(response || '')
           .split(/\r?\n/)
           .map((l) => l.trim())
-          .filter((l) => l && (/^[-*]\s+/.test(l) || /:\s*/.test(l)));
-        
-        facts = lines.map(line => {
+          .filter((l) => l && (/^[-*]\s+/.test(l) || /:\s*/.test(l)))
+
+        facts = lines.map((line) => {
           // Remove leading bullet if present
-          const cleaned = line.replace(/^[-*]\s+/, "");
-          const [rawKey, ...rest] = cleaned.split(":");
-          const key = (rawKey || "fact").trim().slice(0, 64) || "fact";
-          const value = rest.join(":").trim();
+          const cleaned = line.replace(/^[-*]\s+/, '')
+          const [rawKey, ...rest] = cleaned.split(':')
+          const key = (rawKey || 'fact').trim().slice(0, 64) || 'fact'
+          const value = rest.join(':').trim()
           return {
             fact_key: key,
             fact_value: value || cleaned,
             confidence_score: 0.8,
-            permanence_score: "contextual"
-          } as ExtractedFact;
-        });
+            permanence_score: 'contextual',
+          } as ExtractedFact
+        })
       }
 
       // Sanitize and store facts in the vector store
       // Fixed keys allowed; dynamic preferences validated via regex
       const FIXED_FACT_KEYS = new Set([
-        "user_core_identity_name",
-        "user_preferred_name",
-        "user_interest",
-        "user_goal",
-        "user_name_meaning",
-        "user_question_topic",
+        'user_core_identity_name',
+        'user_preferred_name',
+        'user_interest',
+        'user_goal',
+        'user_name_meaning',
+        'user_question_topic',
         // dynamic traits allowed via user_trait.<category>
 
-        "model_core_identity_name",
-        "model_name_pronunciation",
-        "model_capability",
-        "model_alias_name",
-      ]);
+        'model_core_identity_name',
+        'model_name_pronunciation',
+        'model_capability',
+        'model_alias_name',
+      ])
 
-      const isPreferenceKey = (k: string) => /^(user|model)_preference\.[a-z0-9_-]{1,32}$/.test(k);
-      const isTraitKey = (k: string) => /^(user|model)_trait\.[a-z0-9_-]{1,32}$/.test(k);
-      const isAllowedKey = (k: string) => FIXED_FACT_KEYS.has(k) || isPreferenceKey(k) || isTraitKey(k);
+      const isPreferenceKey = (k: string) =>
+        /^(user|model)_preference\.[a-z0-9_-]{1,32}$/.test(k)
+      const isTraitKey = (k: string) =>
+        /^(user|model)_trait\.[a-z0-9_-]{1,32}$/.test(k)
+      const isAllowedKey = (k: string) =>
+        FIXED_FACT_KEYS.has(k) || isPreferenceKey(k) || isTraitKey(k)
 
       const sanitizeValue = (val?: string): string => {
-        const s = (val || "").trim();
-        const collapsed = s.replace(/\s+/g, " ").replace(/^"|"$/g, "");
-        return collapsed.slice(0, 64);
-      };
+        const s = (val || '').trim()
+        const collapsed = s.replace(/\s+/g, ' ').replace(/^"|"$/g, '')
+        return collapsed.slice(0, 64)
+      }
 
       const isLowUtility = (key: string, value: string): boolean => {
-        const k = key.toLowerCase();
-        const v = value.toLowerCase();
+        const k = key.toLowerCase()
+        const v = value.toLowerCase()
         // Heuristics to drop rhetorical/acknowledgment/poetic lines
-        if (/acknowledg|wondrous|enchant|grand quest|woven from/.test(v)) return true;
-        if (/does that (resonance|sound) speak|how do you feel|shall we|tell me,/.test(v)) return true;
-        if (/response_to|description_of|question_about_user_feeling/.test(k)) return true;
-        return false;
-      };
+        if (/acknowledg|wondrous|enchant|grand quest|woven from/.test(v))
+          return true
+        if (
+          /does that (resonance|sound) speak|how do you feel|shall we|tell me,/.test(
+            v
+          )
+        )
+          return true
+        if (/response_to|description_of|question_about_user_feeling/.test(k))
+          return true
+        return false
+      }
 
-      const coercePermanence = (key: string, proposed?: string): "permanent" | "temporary" | "contextual" => {
-        const k = key.toLowerCase();
-        if (k === "user_core_identity_name" || k === "user_preferred_name" || k === "model_core_identity_name" || k === "model_name_pronunciation" || k === "user_interest" || k === "user_goal") {
-          return "permanent";
+      const coercePermanence = (
+        key: string,
+        proposed?: string
+      ): 'permanent' | 'temporary' | 'contextual' => {
+        const k = key.toLowerCase()
+        if (
+          k === 'user_core_identity_name' ||
+          k === 'user_preferred_name' ||
+          k === 'model_core_identity_name' ||
+          k === 'model_name_pronunciation' ||
+          k === 'user_interest' ||
+          k === 'user_goal'
+        ) {
+          return 'permanent'
         }
-        if (k === "user_question_topic") return "contextual";
-        return this.normalizePermanenceScore(proposed) || "contextual";
-      };
+        if (k === 'user_question_topic') return 'contextual'
+        return this.normalizePermanenceScore(proposed) || 'contextual'
+      }
 
-     // Apply stability decay and rare spontaneous rehearsal (human-like memory)
-     // (Decay is handled in applyTimeDecay; rehearsal happens on retrieval; here we just filter and keep facts compact)
-     const sanitizedFacts = facts
-        .filter((f) => !!f && typeof f.fact_key === "string" && typeof f.fact_value === "string")
+      // Apply stability decay and rare spontaneous rehearsal (human-like memory)
+      // (Decay is handled in applyTimeDecay; rehearsal happens on retrieval; here we just filter and keep facts compact)
+      const sanitizedFacts = facts
+        .filter(
+          (f) =>
+            !!f &&
+            typeof f.fact_key === 'string' &&
+            typeof f.fact_value === 'string'
+        )
         .map((f) => ({
           ...f,
           fact_key: f.fact_key.trim(),
           fact_value: sanitizeValue(f.fact_value),
-          confidence_score: Math.max(0, Math.min(1, Number(f.confidence_score ?? 0.8))),
+          confidence_score: Math.max(
+            0,
+            Math.min(1, Number(f.confidence_score ?? 0.8))
+          ),
           permanence_score: coercePermanence(f.fact_key, f.permanence_score),
-          source: f.source === "user" || f.source === "model" ? f.source : undefined,
+          source:
+            f.source === 'user' || f.source === 'model' ? f.source : undefined,
           emotional_flavor: this.normalizeEmotionLabel(f.emotional_flavor),
-          emotion_confidence: f.emotion_confidence && f.emotion_confidence >= 0 && f.emotion_confidence <= 1 ? f.emotion_confidence : undefined,
+          emotion_confidence:
+            f.emotion_confidence &&
+            f.emotion_confidence >= 0 &&
+            f.emotion_confidence <= 1
+              ? f.emotion_confidence
+              : undefined,
         }))
         .filter((f) => isAllowedKey(f.fact_key))
         .filter((f) => f.confidence_score >= 0.7)
         .filter((f) => !isLowUtility(f.fact_key, f.fact_value))
-        .slice(0, 5);
+        .slice(0, 5)
 
       // Protect core model identity and preferences: auto-pin stability
       // Auto-pin rules for stable personality traits
       const PROTECTED_MODEL_KEYS = new Set([
-        "model_core_identity_name",
-        "model_name_pronunciation",
-        "model_alias_name",
-      ]);
+        'model_core_identity_name',
+        'model_name_pronunciation',
+        'model_alias_name',
+      ])
 
-     const isStableModelPreference = (key: string) => {
-       const prefMatch = key.match(/^model_preference\.([a-z0-9_-]{1,32})$/);
-       if (prefMatch) {
-         const category = prefMatch[1];
-         return this.STABLE_MODEL_PREFERENCE_CATEGORIES.has(category);
-       }
-       const traitMatch = key.match(/^model_trait\.([a-z0-9_-]{1,32})$/);
-       if (traitMatch) {
-         const category = traitMatch[1];
-         return this.STABLE_MODEL_TRAIT_CATEGORIES.has(category); // Auto-pin pet_name trait
-       }
-       return false;
-     };
+      const isStableModelPreference = (key: string) => {
+        const prefMatch = key.match(/^model_preference\.([a-z0-9_-]{1,32})$/)
+        if (prefMatch) {
+          const category = prefMatch[1]
+          return this.STABLE_MODEL_PREFERENCE_CATEGORIES.has(category)
+        }
+        const traitMatch = key.match(/^model_trait\.([a-z0-9_-]{1,32})$/)
+        if (traitMatch) {
+          const category = traitMatch[1]
+          return this.STABLE_MODEL_TRAIT_CATEGORIES.has(category) // Auto-pin pet_name trait
+        }
+        return false
+      }
 
-     for (const fact of sanitizedFacts) {
-       const permanence = this.normalizePermanenceScore(fact.permanence_score) || "contextual";
-       
-       // Sanitize malformed preference keys (e.g., user_preference_preference.animal -> user_preference.animal)
-       const sanitizedFactKey = (fact.fact_key || "fact").replace(/_preference_preference\./, "_preference.");
+      for (const fact of sanitizedFacts) {
+        const permanence =
+          this.normalizePermanenceScore(fact.permanence_score) || 'contextual'
 
-       const payload = {
-         // Enforce canonical user/model source; fallback to undefined
-         fact_key: sanitizedFactKey,
-         fact_value: fact.fact_value || "",
-         confidence_score: fact.confidence_score || 0.8,
+        // Sanitize malformed preference keys (e.g., user_preference_preference.animal -> user_preference.animal)
+        const sanitizedFactKey = (fact.fact_key || 'fact').replace(
+          /_preference_preference\./,
+          '_preference.'
+        )
+
+        const payload = {
+          // Enforce canonical user/model source; fallback to undefined
+          fact_key: sanitizedFactKey,
+          fact_value: fact.fact_value || '',
+          confidence_score: fact.confidence_score || 0.8,
           permanence_score: permanence,
           personaId: sessionId,
           timestamp: new Date(),
           conversation_turn: turns,
-          emotional_flavor: this.normalizeEmotionLabel(fact.emotional_flavor) || this.normalizeEmotionLabel(emotionalFlavor) || undefined,
-          emotion_confidence: fact.emotion_confidence || (emotionalFlavor ? 0.7 : undefined),
+          emotional_flavor:
+            this.normalizeEmotionLabel(fact.emotional_flavor) ||
+            this.normalizeEmotionLabel(emotionalFlavor) ||
+            undefined,
+          emotion_confidence:
+            fact.emotion_confidence || (emotionalFlavor ? 0.7 : undefined),
           user_emotion: emotionalFlavor || undefined,
           model_emotion: modelEmotion || undefined,
           source: fact.source || undefined,
-        } as const;
+        } as const
 
         // Save the memory and get the saved memory object with its ID
-        const savedMemory = await this.vectorStore.saveMemory(payload);
+        const savedMemory = await this.vectorStore.saveMemory(payload)
 
         // If this is a protected model fact or a stable model preference, ensure permanence by pinning
-        if ((PROTECTED_MODEL_KEYS.has(fact.fact_key) || isStableModelPreference(fact.fact_key)) && payload.permanence_score !== "permanent") {
+        if (
+          (PROTECTED_MODEL_KEYS.has(fact.fact_key) ||
+            isStableModelPreference(fact.fact_key)) &&
+          payload.permanence_score !== 'permanent'
+        ) {
           try {
             if (savedMemory?.id) {
-              await this.pinMemory(savedMemory.id);
+              await this.pinMemory(savedMemory.id)
             }
           } catch (e) {
-            logger.warn("Failed to auto-pin protected model fact", { e, factKey: fact.fact_key });
+            logger.warn('Failed to auto-pin protected model fact', {
+              e,
+              factKey: fact.fact_key,
+            })
           }
         }
       }
 
       // Adjust facts reference to sanitized ones for logging
-      const factsAfterSanitizationCount = sanitizedFacts.length;
+      const factsAfterSanitizationCount = sanitizedFacts.length
 
-      logger.info("Fact extraction and storage completed for session", {
+      logger.info('Fact extraction and storage completed for session', {
         sessionId,
-        factCount: factsAfterSanitizationCount, 
-      });
-      
+        factCount: factsAfterSanitizationCount,
+      })
+
       // Store the model emotion for Live2D animation
-      this.lastModelEmotion = modelEmotion;
+      this.lastModelEmotion = modelEmotion
     } catch (error) {
-      logger.error("Failed to extract and store facts", { error, sessionId });
+      logger.error('Failed to extract and store facts', { error, sessionId })
     } finally {
-      stopTimer();
+      stopTimer()
     }
   }
 
@@ -365,53 +445,53 @@ Return ONLY the JSON array. No markdown, no prose.`;
    * @returns Normalized emotion label
    */
   private normalizeEmotionLabel(emotion?: string): string | undefined {
-    if (!emotion) return undefined;
-    
-    const normalized = emotion.toLowerCase().trim();
-    
+    if (!emotion) return undefined
+
+    const normalized = emotion.toLowerCase().trim()
+
     // Map to our canonical set
     switch (normalized) {
-      case "joy":
-      case "happy":
-      case "pleased":
-      case "delighted":
-      case "excited":
-        return "joy";
-      case "sadness":
-      case "sad":
-      case "depressed":
-      case "melancholy":
-      case "grief":
-        return "sadness";
-      case "anger":
-      case "angry":
-      case "furious":
-      case "irritated":
-      case "annoyed":
-        return "anger";
-      case "fear":
-      case "afraid":
-      case "scared":
-      case "anxious":
-      case "worried":
-        return "fear";
-      case "surprise":
-      case "surprised":
-      case "amazed":
-      case "astonished":
-        return "surprise";
-      case "curiosity":
-      case "curious":
-      case "interested":
-      case "intrigued":
-        return "curiosity";
-      case "neutral":
-      case "calm":
-      case "peaceful":
-        return "neutral";
+      case 'joy':
+      case 'happy':
+      case 'pleased':
+      case 'delighted':
+      case 'excited':
+        return 'joy'
+      case 'sadness':
+      case 'sad':
+      case 'depressed':
+      case 'melancholy':
+      case 'grief':
+        return 'sadness'
+      case 'anger':
+      case 'angry':
+      case 'furious':
+      case 'irritated':
+      case 'annoyed':
+        return 'anger'
+      case 'fear':
+      case 'afraid':
+      case 'scared':
+      case 'anxious':
+      case 'worried':
+        return 'fear'
+      case 'surprise':
+      case 'surprised':
+      case 'amazed':
+      case 'astonished':
+        return 'surprise'
+      case 'curiosity':
+      case 'curious':
+      case 'interested':
+      case 'intrigued':
+        return 'curiosity'
+      case 'neutral':
+      case 'calm':
+      case 'peaceful':
+        return 'neutral'
       default:
         // Default to neutral for unrecognized emotions
-        return "neutral";
+        return 'neutral'
     }
   }
 
@@ -420,26 +500,36 @@ Return ONLY the JSON array. No markdown, no prose.`;
    * @param score The permanence score to normalize
    * @returns Normalized permanence score
    */
-  private normalizePermanenceScore(score?: string): "permanent" | "temporary" | "contextual" | undefined {
-    if (!score) return undefined;
-    
-    const normalized = score.toLowerCase().trim();
+  private normalizePermanenceScore(
+    score?: string
+  ): 'permanent' | 'temporary' | 'contextual' | undefined {
+    if (!score) return undefined
+
+    const normalized = score.toLowerCase().trim()
     switch (normalized) {
-      case "permanent":
-        return "permanent";
-      case "temporary":
-        return "temporary";
-      case "contextual":
-        return "contextual";
+      case 'permanent':
+        return 'permanent'
+      case 'temporary':
+        return 'temporary'
+      case 'contextual':
+        return 'contextual'
       default:
         // Map common synonyms
-        if (normalized.includes("long") || normalized.includes("forever") || normalized.includes("always")) {
-          return "permanent";
+        if (
+          normalized.includes('long') ||
+          normalized.includes('forever') ||
+          normalized.includes('always')
+        ) {
+          return 'permanent'
         }
-        if (normalized.includes("short") || normalized.includes("brief") || normalized.includes("momentary")) {
-          return "temporary";
+        if (
+          normalized.includes('short') ||
+          normalized.includes('brief') ||
+          normalized.includes('momentary')
+        ) {
+          return 'temporary'
         }
-        return "contextual"; // Default fallback
+        return 'contextual' // Default fallback
     }
   }
 
@@ -454,76 +544,82 @@ Return ONLY the JSON array. No markdown, no prose.`;
   private searchCache = new Map<
     string,
     { result: Memory[]; timestamp: number }
-  >();
-  private readonly CACHE_TTL = 30000; // 30 seconds
+  >()
+  private readonly CACHE_TTL = 30000 // 30 seconds
 
   async retrieveRelevantMemories(
     query: string,
     sessionId: string,
     topK: number = 5,
-    options?: { emotionBias?: string },
+    options?: { emotionBias?: string }
   ): Promise<Memory[]> {
     try {
       // Check cache first (cache key excludes emotion bias to keep it simple and fresh)
-      const cacheKey = `${sessionId}:${query.toLowerCase().trim()}`;
-      const cached = this.searchCache.get(cacheKey);
-      const now = Date.now();
+      const cacheKey = `${sessionId}:${query.toLowerCase().trim()}`
+      const cached = this.searchCache.get(cacheKey)
+      const now = Date.now()
 
       if (cached && now - cached.timestamp < this.CACHE_TTL) {
-        logger.debug("Using cached memory results", { query, sessionId });
-        return cached.result.slice(0, topK);
+        logger.debug('Using cached memory results', { query, sessionId })
+        return cached.result.slice(0, topK)
       }
 
-      logger.debug("Retrieving relevant memories", {
+      logger.debug('Retrieving relevant memories', {
         query,
         sessionId,
         topK,
         hasEmotionBias: !!options?.emotionBias,
-      });
+      })
 
       // Use the vector store to perform semantic search
       // Note: searchMemories uses similarity threshold (0.8 default), not topK
       const relevantMemories = await this.vectorStore.searchMemories(
         query,
-        0.6, // Lower threshold to collect more candidates for re-ranking
-      );
+        0.6 // Lower threshold to collect more candidates for re-ranking
+      )
 
       // Re-rank by composite score: similarity, recency, reinforcement, and optional emotion bias
-      const HALF_LIFE_HOURS = 72; // 3 days half-life for recency
-      const emotionBias = (options?.emotionBias || "").toLowerCase().trim();
+      const HALF_LIFE_HOURS = 72 // 3 days half-life for recency
+      const emotionBias = (options?.emotionBias || '').toLowerCase().trim()
 
       const withScores = relevantMemories.map((m) => {
-        const similarity = typeof m.similarity === "number" ? m.similarity : 0;
+        const similarity = typeof m.similarity === 'number' ? m.similarity : 0
 
         // Recency score: exp(-age / halfLife)
-        const ts = m.timestamp ? new Date(m.timestamp) : null;
-        const ageHours = ts ? Math.max(0, (now - ts.getTime()) / 36e5) : Infinity;
-        const recency = ts ? Math.exp(-ageHours / HALF_LIFE_HOURS) : 0;
+        const ts = m.timestamp ? new Date(m.timestamp) : null
+        const ageHours = ts
+          ? Math.max(0, (now - ts.getTime()) / 36e5)
+          : Infinity
+        const recency = ts ? Math.exp(-ageHours / HALF_LIFE_HOURS) : 0
 
         // Reinforcement score: 1 - exp(-count / k)
-        const count = m.reinforcement_count || 0;
-        const reinforcement = 1 - Math.exp(-count / 3);
+        const count = m.reinforcement_count || 0
+        const reinforcement = 1 - Math.exp(-count / 3)
 
         // Emotion match boost
-        const emo = (m.emotional_flavor || "").toLowerCase().trim();
-        const emotionMatch = emotionBias && emo
-          ? (emo === emotionBias ? 1 : 0)
-          : 0;
+        const emo = (m.emotional_flavor || '').toLowerCase().trim()
+        const emotionMatch =
+          emotionBias && emo ? (emo === emotionBias ? 1 : 0) : 0
 
         // Subject/source match boost (prefer user facts for user-ish queries, model facts for model-ish queries)
-        let subjectMatch = 0;
-        const q = query.toLowerCase();
-        const isUserish = /\bmy\b|\bme\b|\bi\b/.test(q);
-        const isModelish = /\byour\b|\byou\b|model|persona|pronounce/.test(q);
-        if (isUserish && m.source === "user") subjectMatch = 1;
-        if (isModelish && m.source === "model") subjectMatch = 1;
+        let subjectMatch = 0
+        const q = query.toLowerCase()
+        const isUserish = /\bmy\b|\bme\b|\bi\b/.test(q)
+        const isModelish = /\byour\b|\byou\b|model|persona|pronounce/.test(q)
+        if (isUserish && m.source === 'user') subjectMatch = 1
+        if (isModelish && m.source === 'model') subjectMatch = 1
 
         // Weighted composite
-        const score = 0.55 * similarity + 0.18 * recency + 0.12 * reinforcement + 0.1 * emotionMatch + 0.05 * subjectMatch;
-        
+        const score =
+          0.55 * similarity +
+          0.18 * recency +
+          0.12 * reinforcement +
+          0.1 * emotionMatch +
+          0.05 * subjectMatch
+
         // Debug logging for re-ranking contributions if DEV_DEBUG is enabled
         if (typeof process !== 'undefined' && process.env.DEV_DEBUG === '1') {
-          logger.debug("Memory re-ranking contribution", {
+          logger.debug('Memory re-ranking contribution', {
             factKey: m.fact_key,
             similarity: similarity.toFixed(3),
             recency: recency.toFixed(3),
@@ -532,89 +628,102 @@ Return ONLY the JSON array. No markdown, no prose.`;
             subjectMatch: subjectMatch.toFixed(3),
             compositeScore: score.toFixed(3),
             emotionalFlavor: m.emotional_flavor,
-            emotionBias: emotionBias || "none",
-            source: m.source || "unknown",
-          });
+            emotionBias: emotionBias || 'none',
+            source: m.source || 'unknown',
+          })
         }
-        
-        return { mem: m, score, similarity, recency, reinforcement, emotionMatch };
-      });
 
-      withScores.sort((a, b) => b.score - a.score);
+        return {
+          mem: m,
+          score,
+          similarity,
+          recency,
+          reinforcement,
+          emotionMatch,
+        }
+      })
+
+      withScores.sort((a, b) => b.score - a.score)
 
       // Dynamic gentle rehearsal: emotion-aware and cadence-aware
       try {
-        const exciting = new Set(["joy", "curiosity", "surprise"]);
-        const calmish = new Set(["neutral"]);
-        const heavy = new Set(["anger", "sadness", "fear"]);
-        const eb = (emotionBias || "neutral").toLowerCase();
-        
+        const exciting = new Set(['joy', 'curiosity', 'surprise'])
+        const calmish = new Set(['neutral'])
+        const heavy = new Set(['anger', 'sadness', 'fear'])
+        const eb = (emotionBias || 'neutral').toLowerCase()
+
         // Baseline increment and topN
-        let inc = this.BASELINE_REINFORCEMENT_INCREMENT;
-        let topN = this.BASELINE_TOP_N;
+        let inc = this.BASELINE_REINFORCEMENT_INCREMENT
+        let topN = this.BASELINE_TOP_N
         if (exciting.has(eb)) {
-          inc += this.EXCITING_EMOTION_INCREMENT;
-          topN += this.EXCITING_TOP_N_INCREMENT;
+          inc += this.EXCITING_EMOTION_INCREMENT
+          topN += this.EXCITING_TOP_N_INCREMENT
+        } else if (heavy.has(eb)) {
+          inc += this.HEAVY_EMOTION_INCREMENT
+          topN += this.HEAVY_TOP_N_INCREMENT
+        } else if (calmish.has(eb)) {
+          /* keep baseline */
         }
-        else if (heavy.has(eb)) {
-          inc += this.HEAVY_EMOTION_INCREMENT;
-          topN += this.HEAVY_TOP_N_INCREMENT;
-        }
-        else if (calmish.has(eb)) { /* keep baseline */ }
-        
+
         // Cadence heuristic from query: excitement or longer inputs
-        const qLower = query.toLowerCase();
-        if (qLower.includes("!") || qLower.length > this.QUERY_LENGTH_THRESHOLD) {
-          inc += this.CADENCE_HEURISTIC_INCREMENT;
-          topN += this.CADENCE_TOP_N_INCREMENT;
+        const qLower = query.toLowerCase()
+        if (
+          qLower.includes('!') ||
+          qLower.length > this.QUERY_LENGTH_THRESHOLD
+        ) {
+          inc += this.CADENCE_HEURISTIC_INCREMENT
+          topN += this.CADENCE_TOP_N_INCREMENT
         }
-        topN = Math.min(Math.max(this.MIN_TOP_N, topN), Math.min(this.MAX_TOP_N, withScores.length));
+        topN = Math.min(
+          Math.max(this.MIN_TOP_N, topN),
+          Math.min(this.MAX_TOP_N, withScores.length)
+        )
 
         await Promise.all(
           withScores.slice(0, topN).map(async (x) => {
-            const m = x.mem;
-            if (!m?.id) return;
-            const mem = await this.vectorStore.getMemoryById(m.id);
-            if (!mem) return;
-            mem.reinforcement_count = (mem.reinforcement_count || 0) + inc;
-            await this.vectorStore.saveMemory(mem);
+            const m = x.mem
+            if (!m?.id) return
+            const mem = await this.vectorStore.getMemoryById(m.id)
+            if (!mem) return
+            mem.reinforcement_count = (mem.reinforcement_count || 0) + inc
+            await this.vectorStore.saveMemory(mem)
           })
-        );
+        )
       } catch (e) {
-        logger.warn("Failed dynamic gentle rehearsal reinforcement", { e });
+        logger.warn('Failed dynamic gentle rehearsal reinforcement', { e })
       }
 
-      const limitedMemories = withScores.slice(0, topK).map((x) => x.mem);
+      const limitedMemories = withScores.slice(0, topK).map((x) => x.mem)
 
       // Cache the result (cache the re-ranked set)
       this.searchCache.set(cacheKey, {
         result: limitedMemories,
         timestamp: now,
-      });
+      })
 
       // Clean up old cache entries
       for (const [key, value] of this.searchCache.entries()) {
         if (now - value.timestamp > this.CACHE_TTL) {
-          this.searchCache.delete(key);
+          this.searchCache.delete(key)
         }
       }
 
-      logger.debug("Retrieved memories (re-ranked)", {
+      logger.debug('Retrieved memories (re-ranked)', {
         query,
         sessionId,
         memoryCount: limitedMemories.length,
         cached: false,
-      });
+      })
 
-      return limitedMemories;
+      return limitedMemories
     } catch (error) {
-      logger.error("Failed to retrieve relevant memories", {
+      logger.error('Failed to retrieve relevant memories', {
         error,
         query,
         sessionId,
         topK,
-      });
-      return []; // Return empty array on failure
+      })
+      return [] // Return empty array on failure
     }
   }
 
@@ -623,13 +732,13 @@ Return ONLY the JSON array. No markdown, no prose.`;
    */
   async getAllMemories(): Promise<Memory[]> {
     try {
-      logger.debug("Retrieving all memories");
-      const memories = await this.vectorStore.getAllMemories();
-      logger.debug("Retrieved all memories", { count: memories.length });
-      return memories;
+      logger.debug('Retrieving all memories')
+      const memories = await this.vectorStore.getAllMemories()
+      logger.debug('Retrieved all memories', { count: memories.length })
+      return memories
     } catch (error) {
-      logger.error("Failed to retrieve all memories", { error });
-      return [];
+      logger.error('Failed to retrieve all memories', { error })
+      return []
     }
   }
 
@@ -639,11 +748,11 @@ Return ONLY the JSON array. No markdown, no prose.`;
    */
   async deleteMemory(memoryId: number): Promise<void> {
     try {
-      logger.debug("Deleting memory", { memoryId });
-      await this.vectorStore.deleteMemory(memoryId);
-      logger.debug("Deleted memory successfully", { memoryId });
+      logger.debug('Deleting memory', { memoryId })
+      await this.vectorStore.deleteMemory(memoryId)
+      logger.debug('Deleted memory successfully', { memoryId })
     } catch (error) {
-      logger.error("Failed to delete memory", { error, memoryId });
+      logger.error('Failed to delete memory', { error, memoryId })
     }
   }
 
@@ -652,11 +761,11 @@ Return ONLY the JSON array. No markdown, no prose.`;
    */
   async deleteAllMemories(): Promise<void> {
     try {
-      logger.debug("Deleting all memories");
-      await this.vectorStore.deleteAllMemories();
-      logger.debug("Deleted all memories successfully");
+      logger.debug('Deleting all memories')
+      await this.vectorStore.deleteAllMemories()
+      logger.debug('Deleted all memories successfully')
     } catch (error) {
-      logger.error("Failed to delete all memories", { error });
+      logger.error('Failed to delete all memories', { error })
     }
   }
 
@@ -666,35 +775,35 @@ Return ONLY the JSON array. No markdown, no prose.`;
    */
   async applyTimeDecay(): Promise<void> {
     try {
-      logger.debug("Applying time decay to memories");
-      const allMemories = await this.getAllMemories();
-      const now = Date.now();
+      logger.debug('Applying time decay to memories')
+      const allMemories = await this.getAllMemories()
+      const now = Date.now()
 
       for (const memory of allMemories) {
         // Skip pinned memories
-        if (memory.permanence_score === "permanent") continue;
+        if (memory.permanence_score === 'permanent') continue
 
-        const age = now - memory.timestamp.getTime();
-        const ageInDays = age / (24 * 60 * 60 * 1000);
+        const age = now - memory.timestamp.getTime()
+        const ageInDays = age / (24 * 60 * 60 * 1000)
 
         // Apply decay based on confidence score and age
         // Lower confidence memories decay faster
-        const confidence = memory.confidence_score || 0.5;
-        const decayFactor = Math.pow(0.9, ageInDays * (1 - confidence));
+        const confidence = memory.confidence_score || 0.5
+        const decayFactor = Math.pow(0.9, ageInDays * (1 - confidence))
 
         // If decay factor is below threshold, delete the memory
         if (decayFactor < 0.3) {
-          logger.debug("Decaying memory due to low confidence and age", {
+          logger.debug('Decaying memory due to low confidence and age', {
             factKey: memory.fact_key,
             confidence: confidence,
             ageInDays: ageInDays.toFixed(2),
-            decayFactor: decayFactor.toFixed(2)
-          });
-          await this.deleteMemory(memory.id!);
+            decayFactor: decayFactor.toFixed(2),
+          })
+          await this.deleteMemory(memory.id!)
         }
       }
     } catch (error) {
-      logger.error("Failed to apply time decay", { error });
+      logger.error('Failed to apply time decay', { error })
     }
   }
 
@@ -704,15 +813,15 @@ Return ONLY the JSON array. No markdown, no prose.`;
    */
   async pinMemory(memoryId: number): Promise<void> {
     try {
-      logger.debug("Pinning memory", { memoryId });
-      const memory = await this.vectorStore.getMemoryById(memoryId);
+      logger.debug('Pinning memory', { memoryId })
+      const memory = await this.vectorStore.getMemoryById(memoryId)
       if (memory) {
         // Update the permanence score to "permanent" to prevent decay
-        memory.permanence_score = "permanent";
-        await this.vectorStore.saveMemory(memory);
+        memory.permanence_score = 'permanent'
+        await this.vectorStore.saveMemory(memory)
       }
     } catch (error) {
-      logger.error("Failed to pin memory", { error, memoryId });
+      logger.error('Failed to pin memory', { error, memoryId })
     }
   }
 
@@ -722,15 +831,15 @@ Return ONLY the JSON array. No markdown, no prose.`;
    */
   async unpinMemory(memoryId: number): Promise<void> {
     try {
-      logger.debug("Unpinning memory", { memoryId });
-      const memory = await this.vectorStore.getMemoryById(memoryId);
+      logger.debug('Unpinning memory', { memoryId })
+      const memory = await this.vectorStore.getMemoryById(memoryId)
       if (memory) {
         // Update the permanence score to "contextual" to allow normal decay
-        memory.permanence_score = "contextual";
-        await this.vectorStore.saveMemory(memory);
+        memory.permanence_score = 'contextual'
+        await this.vectorStore.saveMemory(memory)
       }
     } catch (error) {
-      logger.error("Failed to unpin memory", { error, memoryId });
+      logger.error('Failed to unpin memory', { error, memoryId })
     }
   }
 }

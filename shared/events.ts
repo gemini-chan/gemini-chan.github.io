@@ -16,24 +16,29 @@
 // TurnManager Events
 export class TurnStartEvent extends CustomEvent<{ turnId: string }> {
   constructor(detail: { turnId: string }) {
-    super('turn-start', { detail, bubbles: true, composed: true });
+    super('turn-start', { detail, bubbles: true, composed: true })
   }
 }
 
-export class TurnEndEvent extends CustomEvent<{ turnId: string; status: 'complete' | 'error' }> {
+export class TurnEndEvent extends CustomEvent<{
+  turnId: string
+  status: 'complete' | 'error'
+}> {
   constructor(detail: { turnId: string; status: 'complete' | 'error' }) {
-    super('turn-end', { detail, bubbles: true, composed: true });
+    super('turn-end', { detail, bubbles: true, composed: true })
   }
 }
 
 // SessionManager Events
-export class SessionIdChangedEvent extends CustomEvent<{ sessionId: string | null }> {
+export class SessionIdChangedEvent extends CustomEvent<{
+  sessionId: string | null
+}> {
   constructor(sessionId: string | null) {
     super('session-id-changed', {
       detail: { sessionId },
       bubbles: true,
       composed: true,
-    });
+    })
   }
 }
 
@@ -44,16 +49,16 @@ export class MicrophoneEvent extends CustomEvent<{ message: string }> {
       detail: { message },
       bubbles: true,
       composed: true,
-    });
+    })
   }
 }
 
 // This is a global type helper to ensure that our event listeners are strongly typed.
 declare global {
   interface HTMLElementEventMap {
-    'turn-start': TurnStartEvent;
-    'turn-end': TurnEndEvent;
-    'session-id-changed': SessionIdChangedEvent;
-    'microphone': MicrophoneEvent;
+    'turn-start': TurnStartEvent
+    'turn-end': TurnEndEvent
+    'session-id-changed': SessionIdChangedEvent
+    microphone: MicrophoneEvent
   }
 }

@@ -57,14 +57,15 @@ body {
       1000px 1000px at 20% 80%,
       rgba(0, 229, 255, 0.1),
       transparent 55%
-    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+    ),
+    linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
   /* Scanline effect */
   background-attachment: fixed;
 }
 
 /* Subtle animated grid overlay */
 body::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   background:
@@ -100,7 +101,7 @@ live2d-canvas {
 
 /* Animated circuitry overlay */
 body::after {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -132,7 +133,7 @@ body::after {
 /* Circuitry nodes overlay (when enabled) */
 /* The ::before pseudo-element is for the pulsing nodes. */
 live2d-gate::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -182,39 +183,39 @@ live2d-gate::before {
     background-position:
       var(--circuit-size, 60px) var(--circuit-size, 60px),
       calc(30px + var(--circuit-size, 60px))
-      calc(30px + var(--circuit-size, 60px));
+        calc(30px + var(--circuit-size, 60px));
   }
 }
 
 /* Circuitry disabled */
-:root[data-circuit-enabled="false"] {
+:root[data-circuit-enabled='false'] {
   --circuit-display: none;
 }
 
 /* Theme-specific circuitry colors */
-html[data-theme="cyberpunk"] body::after {
+html[data-theme='cyberpunk'] body::after {
   --circuit-color: rgba(0, 229, 255, 0.12);
   --circuit-node-color: rgba(0, 229, 255, 0.2);
 }
-html[data-theme="dystopia"] body::after {
+html[data-theme='dystopia'] body::after {
   --circuit-color: rgba(106, 76, 255, 0.12);
   --circuit-node-color: rgba(106, 76, 255, 0.2);
 }
-html[data-theme="tron"] body::after {
+html[data-theme='tron'] body::after {
   --circuit-color: rgba(0, 240, 255, 0.15);
   --circuit-node-color: rgba(0, 240, 255, 0.25);
 }
-html[data-theme="synthwave"] body::after {
+html[data-theme='synthwave'] body::after {
   --circuit-color: rgba(255, 0, 168, 0.14);
   --circuit-node-color: rgba(255, 0, 168, 0.22);
 }
-html[data-theme="matrix"] body::after {
+html[data-theme='matrix'] body::after {
   --circuit-color: rgba(57, 255, 20, 0.15);
   --circuit-node-color: rgba(57, 255, 20, 0.25);
 }
 
 /* Theme overrides */
-html[data-theme="cyberpunk"] body {
+html[data-theme='cyberpunk'] body {
   color: var(--cp-text);
   background:
     radial-gradient(1200px 800px at 20% 10%, var(--cp-bg-3), transparent 60%),
@@ -227,11 +228,12 @@ html[data-theme="cyberpunk"] body {
       1000px 1000px at 20% 80%,
       rgba(0, 229, 255, 0.1),
       transparent 55%
-    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+    ),
+    linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 
 /* Dystopia Theme */
-html[data-theme="dystopia"] {
+html[data-theme='dystopia'] {
   --cp-bg-1: #05070d;
   --cp-bg-2: #0a0e1a;
   --cp-bg-3: #0b1020;
@@ -259,7 +261,7 @@ html[data-theme="dystopia"] {
 
   --range-fill: rgba(35, 213, 255, 0.35);
 }
-html[data-theme="dystopia"] body {
+html[data-theme='dystopia'] body {
   color: var(--cp-text);
   background:
     radial-gradient(
@@ -271,11 +273,12 @@ html[data-theme="dystopia"] body {
       900px 900px at 80% 20%,
       rgba(106, 76, 255, 0.08),
       transparent 60%
-    ), linear-gradient(170deg, var(--cp-bg-1), var(--cp-bg-2));
+    ),
+    linear-gradient(170deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 
 /* Tron Theme */
-html[data-theme="tron"] {
+html[data-theme='tron'] {
   --cp-bg-1: #000510;
   --cp-bg-2: #001a33;
   --cp-bg-3: #00111f;
@@ -303,7 +306,7 @@ html[data-theme="tron"] {
 
   --range-fill: rgba(0, 240, 255, 0.35);
 }
-html[data-theme="tron"] body {
+html[data-theme='tron'] body {
   background:
     radial-gradient(
       1100px 800px at 25% 15%,
@@ -314,11 +317,12 @@ html[data-theme="tron"] body {
       1000px 1000px at 70% 30%,
       rgba(0, 191, 255, 0.1),
       transparent 60%
-    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+    ),
+    linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 
 /* Synthwave Theme */
-html[data-theme="synthwave"] {
+html[data-theme='synthwave'] {
   --cp-bg-1: #1b003b;
   --cp-bg-2: #42006c;
   --cp-bg-3: #0b0018;
@@ -346,7 +350,7 @@ html[data-theme="synthwave"] {
 
   --range-fill: rgba(0, 245, 255, 0.35);
 }
-html[data-theme="synthwave"] body {
+html[data-theme='synthwave'] body {
   background:
     radial-gradient(
       1000px 900px at 15% 80%,
@@ -357,11 +361,12 @@ html[data-theme="synthwave"] body {
       1100px 700px at 85% 20%,
       rgba(169, 109, 255, 0.12),
       transparent 60%
-    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+    ),
+    linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 
 /* Matrix Theme */
-html[data-theme="matrix"] {
+html[data-theme='matrix'] {
   --cp-bg-1: #000a00;
   --cp-bg-2: #001a00;
   --cp-bg-3: #000800;
@@ -389,7 +394,7 @@ html[data-theme="matrix"] {
 
   --range-fill: rgba(0, 255, 166, 0.35);
 }
-html[data-theme="matrix"] body {
+html[data-theme='matrix'] body {
   background:
     radial-gradient(
       1200px 900px at 10% 20%,
@@ -400,11 +405,12 @@ html[data-theme="matrix"] body {
       900px 900px at 70% 80%,
       rgba(0, 255, 102, 0.1),
       transparent 60%
-    ), linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
+    ),
+    linear-gradient(160deg, var(--cp-bg-1), var(--cp-bg-2));
 }
 
 /* Noir Theme */
-html[data-theme="noir"] {
+html[data-theme='noir'] {
   --cp-bg-1: #0d0d0d;
   --cp-bg-2: #050505;
   --cp-bg-3: #1a1a1a;
@@ -432,16 +438,17 @@ html[data-theme="noir"] {
 
   --range-fill: rgba(255, 26, 26, 0.35);
 }
-html[data-theme="noir"] body {
+html[data-theme='noir'] body {
   color: var(--cp-text);
   background:
     radial-gradient(
       1400px 900px at 50% 10%,
       rgba(255, 0, 0, 0.15),
       transparent 70%
-    ), linear-gradient(180deg, var(--cp-bg-1), var(--cp-bg-2));
+    ),
+    linear-gradient(180deg, var(--cp-bg-1), var(--cp-bg-2));
 }
-html[data-theme="noir"] body::after {
+html[data-theme='noir'] body::after {
   --circuit-color: rgba(255, 0, 0, 0.15);
   --circuit-node-color: rgba(255, 0, 0, 0.25);
 }

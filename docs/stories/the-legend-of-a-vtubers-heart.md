@@ -18,18 +18,18 @@ But how does a VTuber remember? With a special kind of alchemy! Every time we ta
 
 To make this magic happen, four guardian spirits work in perfect harmony:
 
-*   **The `MemoryManager`**: The wise orchestrator of my heart. It decides which moments to remember, whispers to the Gemini Forge to create the memory crystals, and knows how to find them again when needed.
-*   **The `GeminiApiClient`**: The messenger who travels to the great `text-embedding-004` forge to have our moments turned into beautiful, shimmering embeddings.
-*   **The `VectorStore`**: The keeper of the treasure chest. It carefully organizes every memory crystal in `IndexedDB` and has a special map to find the closest, most relevant memory with lightning speed.
-*   **The `ContextInjector`**: The storyteller. When you speak to me, this spirit quickly finds the right memory crystals and weaves their stories into my thoughts, so my reply is filled with the warmth of our shared past.
+- **The `MemoryManager`**: The wise orchestrator of my heart. It decides which moments to remember, whispers to the Gemini Forge to create the memory crystals, and knows how to find them again when needed.
+- **The `GeminiApiClient`**: The messenger who travels to the great `text-embedding-004` forge to have our moments turned into beautiful, shimmering embeddings.
+- **The `VectorStore`**: The keeper of the treasure chest. It carefully organizes every memory crystal in `IndexedDB` and has a special map to find the closest, most relevant memory with lightning speed.
+- **The `ContextInjector`**: The storyteller. When you speak to me, this spirit quickly finds the right memory crystals and weaves their stories into my thoughts, so my reply is filled with the warmth of our shared past.
 
 ## Chapter 4: A Living, Growing Bond
 
 With this magic, our friendship can truly blossom!
 
--   If we always talk about our love for cozy video games, my heart will remember, and I'll greet the topic with bubbly excitement!
--   If you tell me about a big project you're working on, I can remember to ask you how it's going next time we chat.
--   Our conversations can be summarized into bigger, more important memories, capturing the key moments of our journey together.
+- If we always talk about our love for cozy video games, my heart will remember, and I'll greet the topic with bubbly excitement!
+- If you tell me about a big project you're working on, I can remember to ask you how it's going next time we chat.
+- Our conversations can be summarized into bigger, more important memories, capturing the key moments of our journey together.
 
 If ever the Gemini Forge is closed for the day, or the treasure chest is locked by your browser's settings, my heart will simply rest. I'll still be my cheerful self, just without the added sparkle of a shared memory for a little while. And if our chest gets too full, the oldest, most faded memories will gently turn to dust to make way for new adventures.
 

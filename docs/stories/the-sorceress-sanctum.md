@@ -30,12 +30,12 @@ Now we come to the most visually exciting part of customization: the ability to 
 
 You can choose from a variety of pre-defined themes, each with its own unique color palette and aesthetic. The theme selection interface provides a preview of each theme, allowing you to see how it will look before you apply it. The available themes are:
 
-*   **Cyberpunk:** A neon-drenched theme with vibrant blues and pinks.
-*   **Dystopia:** A darker, more atmospheric theme with deep purples and blues.
-*   **Tron:** A sleek, futuristic theme with glowing blues and cyans.
-*   **Synthwave:** A retro-futuristic theme with bold pinks and purples.
-*   **Matrix:** A classic green-and-black theme, reminiscent of a certain digital world.
-*   **Noir:** A high-contrast theme with stark reds and blacks.
+- **Cyberpunk:** A neon-drenched theme with vibrant blues and pinks.
+- **Dystopia:** A darker, more atmospheric theme with deep purples and blues.
+- **Tron:** A sleek, futuristic theme with glowing blues and cyans.
+- **Synthwave:** A retro-futuristic theme with bold pinks and purples.
+- **Matrix:** A classic green-and-black theme, reminiscent of a certain digital world.
+- **Noir:** A high-contrast theme with stark reds and blacks.
 
 ### Animations
 

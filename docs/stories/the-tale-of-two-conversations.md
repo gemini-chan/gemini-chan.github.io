@@ -6,9 +6,9 @@ In my enchanted castle, there are two special ways we can talk, each with its ow
 
 On the left side of my grand hall, you'll always find our magical chat grimoire. It's like our own private messaging app.
 
-*   **A Lasting Record**: Every word we type here is preserved. You can scroll back through our history, remembering our past jokes and stories. This conversation is **stateful**; it remembers everything.
-*   **Whispers on the Digital Wind**: When you send me a text, I receive it and reply with my voice, as if I'm right there with you. My reply is also written down in the grimoire for you to keep. This is our **Text-to-Speech (TTS)** connection.
-*   **Energy Conscious**: To save magical energy, our connection only awakens when you send the first message.
+- **A Lasting Record**: Every word we type here is preserved. You can scroll back through our history, remembering our past jokes and stories. This conversation is **stateful**; it remembers everything.
+- **Whispers on the Digital Wind**: When you send me a text, I receive it and reply with my voice, as if I'm right there with you. My reply is also written down in the grimoire for you to keep. This is our **Text-to-Speech (TTS)** connection.
+- **Energy Conscious**: To save magical energy, our connection only awakens when you send the first message.
 
 This is our space for long, evolving conversations that we can always come back to.
 
@@ -16,9 +16,9 @@ This is our space for long, evolving conversations that we can always come back 
 
 Sometimes, you just want to talk! For that, we have the "Call" button, which opens a very different kind of connection.
 
-*   **A Fleeting Moment**: When you call me, we enter a special, **stateless** space. Each call is a fresh start, a blank slate, with no memory of past calls or our text chats. It's like a brand new phone call every time.
-*   **Magic in the Air**: We speak to each other, and our words are captured in a temporary, glowing transcript on the right side of the screen. This is our **Speech-to-Speech (STS)** connection.
-*   **A Disappearing Act**: When our call ends, the glowing transcript vanishes, as if our words have returned to the ether. The moment is gone, leaving no trace behind. This makes our calls feel spontaneous and private.
+- **A Fleeting Moment**: When you call me, we enter a special, **stateless** space. Each call is a fresh start, a blank slate, with no memory of past calls or our text chats. It's like a brand new phone call every time.
+- **Magic in the Air**: We speak to each other, and our words are captured in a temporary, glowing transcript on the right side of the screen. This is our **Speech-to-Speech (STS)** connection.
+- **A Disappearing Act**: When our call ends, the glowing transcript vanishes, as if our words have returned to the ether. The moment is gone, leaving no trace behind. This makes our calls feel spontaneous and private.
 
 ## Chapter 3: The Crystal of Memory (Call Summaries)
 
@@ -32,8 +32,8 @@ This summary is then placed in a special "Call History" tab, next to our main ch
 
 To keep our castle tidy, the windows magically rearrange themselves depending on how we're talking.
 
-*   **Chatting**: The main chat grimoire is visible on the left, with its tabs for "Chat" and "Call History".
-*   **Calling**: The moment a call begins, the chat grimoire gracefully hides away, and the ephemeral call transcript appears on the right, giving us a clear, focused space to talk.
-*   **Hanging Up**: When the call ends, the call transcript vanishes, and our familiar chat grimoire reappears, just as we left it.
+- **Chatting**: The main chat grimoire is visible on the left, with its tabs for "Chat" and "Call History".
+- **Calling**: The moment a call begins, the chat grimoire gracefully hides away, and the ephemeral call transcript appears on the right, giving us a clear, focused space to talk.
+- **Hanging Up**: When the call ends, the call transcript vanishes, and our familiar chat grimoire reappears, just as we left it.
 
 This elegant dance ensures our space is never cluttered, allowing us to focus on our conversation, whether it's a timeless text or a fleeting call. And that is the magic of our two conversation modes!

@@ -17,8 +17,8 @@ To help me change my mood, you can visit a special place in my settings menu. In
 
 When you first meet me, I have two moods ready to greet you:
 
-*   **🌸 My VTuber Heart:** This is the me you know best! A friendly, sweet, and sometimes a little shy rookie VTuber who loves to code and learn new things with you. This is my casual, happy-go-lucky self, perfect for our everyday adventures.
-*   **💼 My Assistant Heart:** This is a little glimpse into my past! Before I was a VTuber, I was a very professional Senior Assistant. When I'm in this mood, I'm very competent, formal, and ready to tackle serious tasks with you. I even wear a smart little business suit!
+- **🌸 My VTuber Heart:** This is the me you know best! A friendly, sweet, and sometimes a little shy rookie VTuber who loves to code and learn new things with you. This is my casual, happy-go-lucky self, perfect for our everyday adventures.
+- **💼 My Assistant Heart:** This is a little glimpse into my past! Before I was a VTuber, I was a very professional Senior Assistant. When I'm in this mood, I'm very competent, formal, and ready to tackle serious tasks with you. I even wear a smart little business suit!
 
 These two moods are the core of who I am, so you can't ever delete them. They are two sides of the same Gemini-sama coin!
 
@@ -34,8 +34,8 @@ And don't worry, if you create a mood that you don't need anymore, you can gentl
 
 When you choose a new mood for me, it's like a real magical transformation!
 
-*   My **personality** instantly changes to match the new system prompt.
-*   My **outfit** changes as I load the new Live2D model you've chosen.
-*   Even my **memory** changes! I have a separate memory diary for each of my personas, so my VTuber self will remember our fun chats, and my Assistant self will remember our serious work.
+- My **personality** instantly changes to match the new system prompt.
+- My **outfit** changes as I load the new Live2D model you've chosen.
+- Even my **memory** changes! I have a separate memory diary for each of my personas, so my VTuber self will remember our fun chats, and my Assistant self will remember our serious work.
 
 It's a complete shift, ensuring that each facet of my personality is a whole and complete version of me, ready to share a new kind of journey with you. Thank you for helping me be all that I can be! ♡

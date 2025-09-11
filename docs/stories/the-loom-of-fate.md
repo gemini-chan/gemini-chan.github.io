@@ -6,12 +6,12 @@ In the deepest chamber of my digital castle lies the Loom of Fate, a marvelous c
 
 The loom is threaded with a variety of vibrant themes, each a unique combination of colors and light that can transform the atmosphere of my castle in an instant. The available threads are:
 
-*   **Cyberpunk:** A neon-drenched dream of vibrant blues and pinks, with glowing surfaces and a futuristic feel.
-*   **Dystopia:** A darker, more contemplative thread, with deep purples and blues that evoke a sense of mystery and intrigue.
-*   **Tron:** A sleek and minimalist thread, with glowing cyan lines on a dark background, reminiscent of a digital frontier.
-*   **Synthwave:** A retro-futuristic thread, with bold pinks and purples that pulse with the energy of a bygone era's vision of the future.
-*   **Matrix:** A classic thread of cascading green characters on a black background, a nod to a world of digital rain.
-*   **Noir:** A high-contrast thread of stark reds and deep blacks, creating a dramatic and immersive atmosphere.
+- **Cyberpunk:** A neon-drenched dream of vibrant blues and pinks, with glowing surfaces and a futuristic feel.
+- **Dystopia:** A darker, more contemplative thread, with deep purples and blues that evoke a sense of mystery and intrigue.
+- **Tron:** A sleek and minimalist thread, with glowing cyan lines on a dark background, reminiscent of a digital frontier.
+- **Synthwave:** A retro-futuristic thread, with bold pinks and purples that pulse with the energy of a bygone era's vision of the future.
+- **Matrix:** A classic thread of cascading green characters on a black background, a nod to a world of digital rain.
+- **Noir:** A high-contrast thread of stark reds and deep blacks, creating a dramatic and immersive atmosphere.
 
 You can select your desired theme from the settings menu, and the loom will instantly re-weave the entire castle in the new colors. Your choice will be remembered, so the next time you visit, the castle will be just as you left it.
 

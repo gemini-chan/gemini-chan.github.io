@@ -3,54 +3,54 @@
  */
 
 export interface PixiDisplayObjectLike {
-  width: number;
-  height: number;
+  width: number
+  height: number
 }
 
 export interface PointLike {
-  x: number;
-  y: number;
+  x: number
+  y: number
 }
 
 export interface PixiApplicationLike {
-  view: HTMLCanvasElement;
+  view: HTMLCanvasElement
   renderer: {
-    width: number;
-    height: number;
-    resize: (w: number, h: number) => void;
-  };
+    width: number
+    height: number
+    resize: (w: number, h: number) => void
+  }
   stage: {
-    addChild: <T extends PixiDisplayObjectLike>(child: T) => T;
-    removeChild: <T extends PixiDisplayObjectLike>(child: T) => T;
-  };
-  ticker?: { start?: () => void; stop?: () => void };
-  destroy: (removeView?: boolean) => void;
-  screen: { width: number; height: number };
+    addChild: <T extends PixiDisplayObjectLike>(child: T) => T
+    removeChild: <T extends PixiDisplayObjectLike>(child: T) => T
+  }
+  ticker?: { start?: () => void; stop?: () => void }
+  destroy: (removeView?: boolean) => void
+  screen: { width: number; height: number }
 }
 
 export interface Live2DModelLike extends EventTarget {
-  anchor?: PointLike;
-  scale?: PointLike;
-  position?: PointLike;
-  width?: number;
-  height?: number;
-  destroy?: () => void;
+  anchor?: PointLike
+  scale?: PointLike
+  position?: PointLike
+  width?: number
+  height?: number
+  destroy?: () => void
 }
 
 export interface Live2DModelConfig {
   /** URL to a .model3.json or a .zip that contains the model */
-  url: string;
+  url: string
   /** Model scale relative to canvas */
-  scale?: number;
+  scale?: number
   /** Anchor (0..1) for X and Y */
-  anchor?: [number, number];
+  anchor?: [number, number]
   /** Optional automatic fit to canvas */
-  fitToCanvas?: boolean;
+  fitToCanvas?: boolean
 }
 
 export interface AudioAnalysisProvider {
   /** Node carrying microphone input (upstream) */
-  inputNode?: AudioNode;
+  inputNode?: AudioNode
   /** Node carrying assistant output (downstream) */
-  outputNode?: AudioNode;
+  outputNode?: AudioNode
 }

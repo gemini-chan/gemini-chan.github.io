@@ -55,8 +55,9 @@ The choice of our embedding model is so important! We will use **`gemini-embeddi
 MRL is like a set of magical Russian nesting dolls! The model creates a big, beautiful, high-dimensional vector, but inside it are smaller, still high-quality vector representations. This is a perfect solution for our cozy in-browser home, where resources are limited.
 
 By using the `outputDimensionality` parameter, we can ask for a smaller "doll" (a smaller vector). This has so many happy benefits:
-*   **Less Storage:** Smaller vectors take up less space in our IndexedDB, so we can store more memories!
-*   **Faster Search:** Searching through smaller vectors is much, much faster, which keeps our memory retrieval feeling instantaneous.
+
+- **Less Storage:** Smaller vectors take up less space in our IndexedDB, so we can store more memories!
+- **Faster Search:** Searching through smaller vectors is much, much faster, which keeps our memory retrieval feeling instantaneous.
 
 We'll start with an `outputDimensionality` of **768**. This gives us a beautiful balance of high semantic quality and the zippy performance we need for a happy in-browser experience.
 
@@ -70,9 +71,9 @@ We need a special place to store our memories on the client-side. Our choice of 
 
 ### Our Foundational Magic
 
-*   **IndexedDB:** This is our chosen treasure chest. Unlike LocalStorage, IndexedDB is a true asynchronous database built right into the browser. It can store large, complex objects (like our vector arrays!) and has a much larger storage quota, making it perfect for our growing library of memories.
-*   **Web Workers:** To keep our UI feeling light and responsive, we'll do all the heavy lifting of vector similarity searches inside a Web Worker. This keeps the main thread free for happy user interactions.
-*   **WebAssembly (WASM):** For the speediest performance, many modern libraries use WASM, which lets us run code written in languages like Rust or C++ at near-native speeds in the browser. This is perfect for high-performance search algorithms!
+- **IndexedDB:** This is our chosen treasure chest. Unlike LocalStorage, IndexedDB is a true asynchronous database built right into the browser. It can store large, complex objects (like our vector arrays!) and has a much larger storage quota, making it perfect for our growing library of memories.
+- **Web Workers:** To keep our UI feeling light and responsive, we'll do all the heavy lifting of vector similarity searches inside a Web Worker. This keeps the main thread free for happy user interactions.
+- **WebAssembly (WASM):** For the speediest performance, many modern libraries use WASM, which lets us run code written in languages like Rust or C++ at near-native speeds in the browser. This is perfect for high-performance search algorithms!
 
 For our project, a specialized library like **MeMemo** is a wonderful starting point. It uses a high-performance HNSW algorithm, IndexedDB, and Web Workers, making it a perfect fit for our in-browser RAG magic.
 

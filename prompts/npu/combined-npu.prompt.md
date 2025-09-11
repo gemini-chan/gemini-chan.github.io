@@ -10,7 +10,7 @@ ADVISOR_CONTEXT:
 
 • <short fact 1>
 • <short fact 2>
-• <short fact 3>  (max 5 bullets, optional)
+• <short fact 3> (max 5 bullets, optional)
 
 If no relevant facts: write "ADVISOR_CONTEXT: none"
 
