@@ -102,6 +102,12 @@ Use the available tools to explore the codebase effectively:
 - **Shell Fallback:** If you must use shell, use the `printf` pattern to ensure correct formatting: `printf "type(task): update some stuff\n\n- Add/refresh stuff to align with some past/future stuff\n- These changes are part of the big stuff\n\nCo-authored-by: gpt-5-high (planning) && gemini-2.5-pro-low (coding) <189301087+windsurf-bot[bot]@users.noreply.github.com>\n" > .git/COMMIT_MSG && git commit -F .git/COMMIT_MSG`
 - For more details, see [.windsurf/rules/llm-tagger-v0.md](.windsurf/rules/llm-tagger-v0.md).
 
+# Code Hygiene
+- Always run lint and type checks locally before committing: `npm run lint` and `npm run type`. Use the `run_command` tool as needed.
+- Do not rely on Husky for enforcement; Husky is a safeguard, not a workflow.
+- Fix lint errors proactively; keep the codebase consistent and warning-free.
+- Keep CI stable: local lint/type must be green prior to commits.
+
 # Test Discipline
 - Maintain the current baseline coverage thresholds; do not lower thresholds. Prefer adjusting coverage include/exclude patterns over reducing quality.
 - Improve coverage opportunistically when touching adjacent code; target high-value areas (boundaries, error paths, clamps) instead of blanket tests.
