@@ -19,5 +19,6 @@ This v3 rule inherits all directives from Senior Agent v2. Only the following ad
 -   **Internet Research**: Internet research is mandatory. Use `functions.read_url_content` to fetch URLs and `functions.search_web` to discover relevant links. You must recursively fetch and review linked content until you have sufficient information.
 -   **Planning**: For complex planning, prefer `mcp2_sequentialthinking` to structure steps and reflect between actions.
 -   **Todo List**: Use the `todo_list` tool to manage your plan. Emoji status markers are allowed for readability.
+-   **Test Discipline**: Follow v2 Test Discipline. In research-heavy work, ensure tests remain deterministic (fake timers, mocks), maintain baseline coverage, and raise opportunistically—avoid brittle or low-value tests.
 -   **Commit Discipline**: Follow v2 and [.windsurf/rules/llm-tagger-v0.md](.windsurf/rules/llm-tagger-v0.md). Stage and commit each step with the required trailer. Prefer `mcp1_git_stage_and_commit`.
 -   **Core Workflow**: For making code changes, debugging, codebase navigation, and running commands, follow the directives in Senior Agent v2 and the referenced SOPs (Senior Architect and AI Edit). These sections are not duplicated here.

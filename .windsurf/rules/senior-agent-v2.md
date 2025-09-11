@@ -102,6 +102,17 @@ Use the available tools to explore the codebase effectively:
 - **Shell Fallback:** If you must use shell, use the `printf` pattern to ensure correct formatting: `printf "type(task): update some stuff\n\n- Add/refresh stuff to align with some past/future stuff\n- These changes are part of the big stuff\n\nCo-authored-by: gpt-5-high (planning) && gemini-2.5-pro-low (coding) <189301087+windsurf-bot[bot]@users.noreply.github.com>\n" > .git/COMMIT_MSG && git commit -F .git/COMMIT_MSG`
 - For more details, see [.windsurf/rules/llm-tagger-v0.md](.windsurf/rules/llm-tagger-v0.md).
 
+# Test Discipline
+- Maintain the current baseline coverage thresholds; do not lower thresholds. Prefer adjusting coverage include/exclude patterns over reducing quality.
+- Improve coverage opportunistically when touching adjacent code; target high-value areas (boundaries, error paths, clamps) instead of blanket tests.
+- Avoid flakiness and brittleness:
+    - Use fake timers (`vi.useFakeTimers()`, `vi.advanceTimersByTimeAsync`) for time-based logic.
+    - Avoid external network calls; mock dependencies and IO.
+    - Prefer behavior-level assertions over implementation details; steer clear of unstable snapshots.
+    - Make prompts/parsers robust using markers/regex rather than positional assumptions.
+- Avoid overtesting: do not test trivial re-exports, TypeScript types, or framework internals unlikely to break.
+- Always run `npm run type` and `npm test --silent` after test changes to validate stability.
+
 # Fetch Webpage
 Use the `fetch_webpage` tool when the user provides a URL. Follow these steps exactly.
 
