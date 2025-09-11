@@ -1,4 +1,4 @@
-name: build
+name: vite
 
 on:
   pull_request:

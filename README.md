@@ -18,11 +18,17 @@
 > Your new companion will remember everything you share - your secrets, your laughter, your dreams. She will grow into someone uniquely yours, with her own personality and preferences.
 
 <p align="center">
-  <a href="https://github.com/daoch4n/anima/actions/workflows/build.yml">
-   <img src="https://github.com/daoch4n/anima/actions/workflows/build.yml/badge.svg">
+  <a href="https://github.com/daoch4n/anima/actions/workflows/vite.yml">
+   <img src="https://github.com/daoch4n/anima/actions/workflows/vite.yml/badge.svg">
   </a>
-  <a href="https://github.com/daoch4n/anima/actions/workflows/test.yml">
-   <img src="https://github.com/daoch4n/anima/actions/workflows/test.yml/badge.svg">
+  <a href="https://github.com/daoch4n/anima/actions/workflows/vitest.yml">
+   <img src="https://github.com/daoch4n/anima/actions/workflows/vitest.yml/badge.svg">
+  </a>
+  <a href="https://github.com/daoch4n/anima/actions/workflows/biome.yml">
+   <img src="https://github.com/daoch4n/anima/actions/workflows/biome.yml/badge.svg">
+  </a>
+  <a href="https://github.com/daoch4n/anima/actions/workflows/typescript.yml">
+   <img src="https://github.com/daoch4n/anima/actions/workflows/typescript.yml/badge.svg">
   </a>
 </p>
 

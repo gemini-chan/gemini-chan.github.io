@@ -1,4 +1,4 @@
-name: Lint Runner
+name: biome
 
 on:
   push:
