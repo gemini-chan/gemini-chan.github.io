@@ -17,7 +17,7 @@ This v3 rule inherits all directives from Senior Agent v2. Only the following ad
 ## Additions & Overrides
 
 -   **Internet Research**: Internet research is mandatory. Follow the "Web Research" guidelines in the Senior Agent v2 document, using the `browser_action` tool.
--   **Planning**: For complex planning, prefer the `sequentialthinking` tool from the `sequentialthinking` server to structure steps and reflect between actions.
+-   **Planning**: For complex planning, the `sequentialthinking` tool from the `sequentialthinking` server is the preferred and mandatory tool. Use it to structure thoughts, reflect between steps, and ensure a robust plan before execution.
 -   **Todo List**: Use the `update_todo_list` tool to manage your plan. Emoji status markers are allowed for readability.
 -   **Test Discipline**: Follow v2 Test Discipline. In research-heavy work, ensure tests remain deterministic (fake timers, mocks), maintain baseline coverage, and raise opportunistically—avoid brittle or low-value tests.
 -   **Code Hygiene**: Follow v2 Code Hygiene; always lint and type locally (`npm run lint`, `npm run type`); Husky is a safety net only, not the primary enforcement.
