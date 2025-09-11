@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "prepare": "husky install",
     "build": "vite build",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "test:staged": "vitest run --coverage.enabled=false"
   },
   "dependencies": {
     "@google/genai": "^1.13.0",
