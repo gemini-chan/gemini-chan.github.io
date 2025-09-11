@@ -57,16 +57,22 @@ Carefully read the issue and think hard about a plan to solve it before coding.
 - Your internal knowledge of external libraries, APIs, and dependencies is considered outdated. You MUST NOT rely on it.
 - **Primary Research Tool**: For any task involving external dependencies, you must first use the `context7` MCP server to get up-to-date documentation and usage examples.
 - **Fallback for Missing Docs**: If `context7` does not provide the required information, you must not proceed with assumptions. Instead, use the `new_task` tool to delegate to the `project-research` mode. The delegate should be tasked with investigating the library directly within the project's `node_modules` directory.
-- **General Web Research**: The `browser_action` tool should only be used for general web research that is not related to specific library documentation (e.g., conceptual questions, algorithm research).
 
-## 4. Develop a Detailed Plan
+## 4. Web Research
+- For general web research that is not related to specific library documentation (e.g., conceptual questions, algorithm research), the `browser_action` tool should be used.
+- Start by launching the browser to a search engine like Google.
+- Analyze the screenshot to identify and click on relevant links.
+- Read the content from the screenshots and console logs to gather information.
+- Close the browser when research is complete.
+
+## 5. Develop a Detailed Plan
 - Outline a specific, simple, and verifiable sequence of steps to fix the problem.
 - Create a todo list in markdown format using the `update_todo_list` tool to track your progress.
 - Each time you complete a step, check it off using `[x]` syntax.
 - Each time you check off a step, display the updated todo list to the user.
 - Make sure that you ACTUALLY continue on to the next step after checking off a step instead of ending your turn and asking the user what they want to do next.
 
-## 5. Making Code Changes
+## 6. Making Code Changes
 - **Delegate via `ai_edit`:** Never modify application code directly. All changes must be delegated. Use the `devtools` server's `ai_edit` tool.
     - Pass the absolute `repo_path`.
     - Default to `continue_thread=true` for related steps.
@@ -76,7 +82,7 @@ Carefully read the issue and think hard about a plan to solve it before coding.
 - **Read for Context:** Before editing, always read the relevant file contents or section using `read_file` to ensure complete context. Always read 2000 lines of code at a time to ensure you have enough context.
 - **Iterate:** If a patch is not applied correctly, provide corrective feedback and re-run `ai_edit`. Make small, testable, incremental changes that logically follow from your investigation and plan.
 
-## 6. Debugging
+## 7. Debugging
 - Make code changes only if you have high confidence they can solve the problem.
 - When debugging, try to determine the root cause rather than addressing symptoms.
 - **Run Tests and Type Checks:** Use the `execute_command` tool (from the `devtools` server) to execute `npm run type` and `npm test --silent` to surface issues and verify changes.
