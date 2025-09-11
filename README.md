@@ -24,8 +24,8 @@
   <a href="https://github.com/daoch4n/anima/actions/workflows/vitest.yml">
    <img src="https://github.com/daoch4n/anima/actions/workflows/vitest.yml/badge.svg">
   </a>
-  <a href="https://github.com/daoch4n/anima/actions/workflows/biome.yml">
-   <img src="https://github.com/daoch4n/anima/actions/workflows/biome.yml/badge.svg">
+  <a href="https://github.com/daoch4n/anima/actions/workflows/eslint.yml">
+   <img src="https://github.com/daoch4n/anima/actions/workflows/eslint.yml/badge.svg">
   </a>
   <a href="https://github.com/daoch4n/anima/actions/workflows/typescript.yml">
    <img src="https://github.com/daoch4n/anima/actions/workflows/typescript.yml/badge.svg">
