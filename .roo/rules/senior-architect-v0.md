@@ -1,1 +1,1 @@
-../../.windsurf/rules/senior-architect-v0.md
+../../.agent/rules/senior-architect-v0.md

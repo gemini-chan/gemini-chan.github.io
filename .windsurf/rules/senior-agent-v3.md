@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: Apply this when you infer that the task might require extensive RnD
 ---
 
 # Scope

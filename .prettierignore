@@ -6,3 +6,8 @@ node_modules
 
 # Ignore files:
 package-lock.json
+
+# Ignore rule directories that may contain symlinks
+.agent/
+.roo/
+.windsurf/

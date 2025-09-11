@@ -1,9 +1,9 @@
 {
   "*.{ts,tsx,js,jsx}": [
     "eslint --fix",
-    "prettier --write"
+    "node scripts/filter-symlinks.mjs | xargs prettier --write"
   ],
   "*.{json,md,html,css}": [
-    "prettier --write"
+    "node scripts/filter-symlinks.mjs | xargs prettier --write"
   ]
 }
