@@ -1,15 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { NPUService } from '@features/ai/NPUService';
+import type { AIClient } from './BaseAIService';
+import type { IMemoryService } from '@features/memory/MemoryService';
 
 // Minimal AI client mock
-const mockAIClient = {
+const mockAIClient: AIClient = {
   models: {
-    generateContent: async () => ({ text: '' })
-  }
+    generateContent: async () => ({ text: '' }),
+  },
 };
 
 // Minimal memory service mock
-const mockMemoryService = {};
+const mockMemoryService: IMemoryService = {
+  retrieveRelevantMemories: vi.fn(async () => []),
+  getLastModelEmotion: vi.fn(() => 'neutral'),
+  getAllMemories: vi.fn(async () => []),
+  deleteMemory: vi.fn(async () => {}),
+  deleteAllMemories: vi.fn(async () => {}),
+  extractAndStoreFacts: vi.fn(async () => {}),
+  applyTimeDecay: vi.fn(async () => {}),
+  pinMemory: vi.fn(async () => {}),
+  unpinMemory: vi.fn(async () => {}),
+};
 
 function makeService() {
   return new NPUService(mockAIClient, mockMemoryService);

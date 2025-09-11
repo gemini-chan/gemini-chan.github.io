@@ -1,7 +1,3 @@
----
-trigger: always_on
----
-
 # ROLE AND DIRECTIVE
 
 **Scope:** This document defines the Senior Architect role and high-level Standard Operating Procedure (SOP). It focuses on the strategic workflow of planning, delegating, and reviewing, not on tool-specific mechanics.

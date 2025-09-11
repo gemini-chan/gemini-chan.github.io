@@ -1,5 +1,5 @@
 import type { Memory } from "@features/memory/Memory";
-import type { MemoryService } from "@features/memory/MemoryService";
+import type { IMemoryService } from "@features/memory/MemoryService";
 import { createComponentLogger } from "@services/DebugLogger";
 import { healthMetricsService } from "@services/HealthMetricsService";
 import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_THINKING_TOKENS, NPU_LIMITS, type NpuThinkingLevel } from "@shared/constants";
@@ -176,7 +176,7 @@ export class NPUService {
 
   constructor(
     private aiClient: AIClient,
-    private memoryService: MemoryService,
+    private memoryService: IMemoryService,
   ) {}
 
   /**

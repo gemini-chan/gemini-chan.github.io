@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { NPUService } from '@features/ai/NPUService';
 import { NPU_DEFAULTS, NPU_STORAGE_KEYS, NPU_THINKING_TOKENS, NPU_LIMITS } from '@shared/constants';
-import type { AIClient } from '@features/ai/BaseAIService';
-import type { MemoryService } from '@features/memory/MemoryService';
+import type { AIClient, GenerateContentRequest } from '@features/ai/BaseAIService';
+import type { IMemoryService } from '@features/memory/MemoryService';
 import type { Turn } from '@shared/types';
 
-function mkAIClient(handler?: (req: unknown) => Promise<{ text: string }>): AIClient {
+function mkAIClient(handler?: (req: GenerateContentRequest) => Promise<{ text: string }>): AIClient {
   return {
     models: {
       generateContent: vi.fn(handler || (async () => ({ text: 'ok' }))),
@@ -13,7 +13,7 @@ function mkAIClient(handler?: (req: unknown) => Promise<{ text: string }>): AICl
   } as unknown as AIClient;
 }
 
-function mkMemoryService(opts?: { throw?: boolean; memories?: unknown[] }): MemoryService {
+function mkMemoryService(opts?: { throw?: boolean; memories?: unknown[] }): IMemoryService {
   return {
     retrieveRelevantMemories: vi.fn(async () => {
       if (opts?.throw) throw new Error('boom');
@@ -24,7 +24,7 @@ function mkMemoryService(opts?: { throw?: boolean; memories?: unknown[] }): Memo
         ]
       );
     }),
-  } as unknown as MemoryService;
+  } as unknown as IMemoryService;
 }
 
 const transcript: Turn[] = [
@@ -55,7 +55,8 @@ describe('NPUService hardening', () => {
     const payload = await svc.analyzeAndAdvise('Hi', 'p1', transcript);
     expect(payload.advisor_context).toBe('advice');
 
-    const call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[0][0];
+    const calls = (ai.models.generateContent as unknown as { mock: { calls: GenerateContentRequest[][] } }).mock.calls;
+    const call = calls[0]![0]!;
     expect(call.generationConfig.temperature).toBeCloseTo(1, 6);
     expect(call.generationConfig.topP).toBeCloseTo(0, 6);
     expect(call.generationConfig.topK).toBe(NPU_LIMITS.topK.max);
@@ -74,7 +75,8 @@ describe('NPUService hardening', () => {
     const payload = await svc.analyzeAndAdvise('Hi', 'p1', transcript);
     expect(payload.advisor_context).toBe('advice');
 
-    const call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[0][0];
+    const calls = (ai.models.generateContent as unknown as { mock: { calls: GenerateContentRequest[][] } }).mock.calls;
+    const call = calls[0]![0]!;
     expect(call.generationConfig.temperature).toBeCloseTo(NPU_DEFAULTS.temperature, 6);
     expect(call.generationConfig.topP).toBeCloseTo(NPU_DEFAULTS.topP, 6);
     expect(call.generationConfig.topK).toBe(NPU_DEFAULTS.topK);
@@ -106,8 +108,8 @@ describe('NPUService hardening', () => {
 
   it('uses provided conversationContext instead of recent transcript when present', async () => {
     const cap: { prompt?: string } = {};
-    const ai = mkAIClient(async (req) => {
-      cap.prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+    const ai = mkAIClient(async (req: GenerateContentRequest) => {
+      cap.prompt = req.contents[0]?.parts[0]?.text || '';
       return { text: 'ok' };
     });
     const mem = mkMemoryService();
@@ -185,8 +187,8 @@ describe('NPUService hardening', () => {
       { fact_key: 'perm_low', fact_value: 'perm', confidence_score: 0.3, permanence_score: 'permanent', timestamp: new Date(), conversation_turn: 't5', personaId: 'p1' },
       { fact_key: 'perm_high', fact_value: 'perm', confidence_score: 0.7, permanence_score: 'permanent', timestamp: new Date(), conversation_turn: 't6', personaId: 'p1' },
     ];
-    const ai = mkAIClient(async (req) => {
-      const prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+    const ai = mkAIClient(async (req: GenerateContentRequest) => {
+      const prompt = req.contents[0]?.parts[0]?.text || '';
       const start = prompt.indexOf('RELEVANT CONTEXT FROM PREVIOUS CONVERSATIONS:');
       const memorySection = prompt.slice(start);
       const lines = memorySection.split('\n').filter((l: string) => l.startsWith('- '));
@@ -215,12 +217,13 @@ describe('NPUService hardening', () => {
 
     localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'lite');
     await svc.analyzeAndAdvise('X', 'p1', transcript);
-    let call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[0][0];
+    const calls = (ai.models.generateContent as unknown as { mock: { calls: GenerateContentRequest[][] } }).mock.calls;
+    let call = calls[0]![0]!;
     expect(call.generationConfig.maxOutputTokens).toBe(NPU_THINKING_TOKENS['lite']);
 
     localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'deep');
     await svc.analyzeAndAdvise('Y', 'p1', transcript);
-    call = (ai.models.generateContent as unknown as { mock: { calls: [unknown[]] } }).mock.calls[1][0];
+    call = calls[1]![0]!;
     expect(call.generationConfig.maxOutputTokens).toBe(NPU_THINKING_TOKENS['deep']);
   });
 
@@ -233,8 +236,8 @@ describe('NPUService hardening', () => {
     }
 
     const cap: { prompt?: string } = {};
-    const ai = mkAIClient(async (req) => {
-      cap.prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+    const ai = mkAIClient(async (req: GenerateContentRequest) => {
+      cap.prompt = req.contents[0]?.parts[0]?.text || '';
       return { text: 'ok' };
     });
     const mem = mkMemoryService({ memories: [] });
@@ -251,8 +254,8 @@ describe('NPUService hardening', () => {
   it('truncates very long conversationContext with ellipsis', async () => {
     const longContext = 'X'.repeat(5000);
     const cap: { prompt?: string } = {};
-    const ai = mkAIClient(async (req) => {
-      cap.prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+    const ai = mkAIClient(async (req: GenerateContentRequest) => {
+      cap.prompt = req.contents[0]?.parts[0]?.text || '';
       return { text: 'ok' };
     });
     const mem = mkMemoryService({ memories: [] });
@@ -278,8 +281,8 @@ describe('NPUService hardening', () => {
     }
 
     const cap: { prompt?: string } = {};
-    const ai = mkAIClient(async (req) => {
-      cap.prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+    const ai = mkAIClient(async (req: GenerateContentRequest) => {
+      cap.prompt = req.contents[0]?.parts[0]?.text || '';
       return { text: 'ok' };
     });
     const mem = mkMemoryService({ memories });

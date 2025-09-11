@@ -1,7 +1,3 @@
----
-trigger: always_on
----
-
 # AI Edit SOP and Templates (v1)
 
 **Scope:** This document augments the Senior Architect SOP with `ai_edit`-specific mechanics, protocols, and templates. It does not redefine the Senior Architect's core role or high-level workflow.

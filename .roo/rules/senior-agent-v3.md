@@ -1,7 +1,3 @@
----
-trigger: always_on
----
-
 # Scope
 
 This document defines the Senior Agent's v3 behavior within the Windsurf framework. It extends [Senior Agent v2](.windsurf/rules/senior-agent-v2.md) and complements the [Senior Architect SOP](.windsurf/rules/senior-architect-v0.md) and the [AI Edit SOP](.windsurf/rules/ai-edit-sop-v1.md) by providing agent-level operational guidelines.
