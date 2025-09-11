@@ -207,4 +207,86 @@ describe('NPUService hardening', () => {
     await svc.analyzeAndAdvise('X', 'p1', transcript);
     expect((ai.models.generateContent as any).mock.calls.length).toBe(1);
   });
+
+  it('uses correct max tokens for thinking levels lite and deep', async () => {
+    const ai = mkAIClient(async (req) => ({ text: 'ok' }));
+    const mem = mkMemoryService();
+    const svc = new NPUService(ai, mem);
+
+    localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'lite');
+    await svc.analyzeAndAdvise('X', 'p1', transcript);
+    let call = (ai.models.generateContent as any).mock.calls[0][0];
+    expect(call.generationConfig.maxOutputTokens).toBe(NPU_THINKING_TOKENS['lite']);
+
+    localStorage.setItem(NPU_STORAGE_KEYS.thinkingLevel, 'deep');
+    await svc.analyzeAndAdvise('Y', 'p1', transcript);
+    call = (ai.models.generateContent as any).mock.calls[1][0];
+    expect(call.generationConfig.maxOutputTokens).toBe(NPU_THINKING_TOKENS['deep']);
+  });
+
+  it('limits recent transcript lines to NPU_LIMITS.recentTurns.max', async () => {
+    localStorage.setItem(NPU_STORAGE_KEYS.recentTurns, '100'); // set above max
+    const longTranscript: Turn[] = [];
+    for (let i = 0; i < 30; i++) {
+      longTranscript.push({ speaker: 'user', text: `u${i}` });
+      longTranscript.push({ speaker: 'model', text: `m${i}` });
+    }
+
+    const cap: { prompt?: string } = {};
+    const ai = mkAIClient(async (req) => {
+      cap.prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+      return { text: 'ok' };
+    });
+    const mem = mkMemoryService({ memories: [] });
+    const svc = new NPUService(ai, mem);
+    await svc.analyzeAndAdvise('X', 'p1', longTranscript);
+
+    const startIdx = cap.prompt!.indexOf('RECENT CONVERSATION TURNS:');
+    expect(startIdx).toBeGreaterThan(-1);
+    const recents = cap.prompt!.slice(startIdx);
+    const turnLines = recents.match(/- (USER|MODEL):/g) || [];
+    expect(turnLines.length).toBe(NPU_LIMITS.recentTurns.max);
+  });
+
+  it('truncates very long conversationContext with ellipsis', async () => {
+    const longContext = 'X'.repeat(5000);
+    const cap: { prompt?: string } = {};
+    const ai = mkAIClient(async (req) => {
+      cap.prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+      return { text: 'ok' };
+    });
+    const mem = mkMemoryService({ memories: [] });
+    const svc = new NPUService(ai, mem);
+
+    await svc.analyzeAndAdvise('X', 'p1', transcript, longContext);
+    expect(cap.prompt).toContain('CURRENT CONVERSATION CONTEXT:');
+    expect(cap.prompt).toContain('…');
+  });
+
+  it('limits memory lines to MAX_MEMORY_LINES', async () => {
+    const memories: any[] = [];
+    for (let i = 0; i < 20; i++) {
+      memories.push({
+        fact_key: `key_${i}`,
+        fact_value: `val_${i}`,
+        confidence_score: 0.9 - i * 0.01,
+        permanence_score: 'permanent',
+        timestamp: new Date(),
+        conversation_turn: `t${i}`,
+        personaId: 'p1',
+      });
+    }
+
+    const cap: { prompt?: string } = {};
+    const ai = mkAIClient(async (req) => {
+      cap.prompt = req.contents?.[0]?.parts?.[0]?.text || '';
+      return { text: 'ok' };
+    });
+    const mem = mkMemoryService({ memories });
+    const svc = new NPUService(ai, mem);
+    await svc.analyzeAndAdvise('X', 'p1', transcript);
+
+    const memLineMatches = cap.prompt?.match(/- .*?\(conf=.*?, perm=/g) || [];
+    expect(memLineMatches.length).toBe(12); // MAX_MEMORY_LINES
+  });
 });
