@@ -53,7 +53,7 @@ export class SessionManager {
     return user_input;
   } else {
     // Include the advisor context followed by the user's original message
-    return `${advisor_context}\n\n${user_input}`;
+    return `${advisor_context.trim()}\n\n---\nUSER_MESSAGE (VERBATIM):\n${user_input}`;
   }
  }
 

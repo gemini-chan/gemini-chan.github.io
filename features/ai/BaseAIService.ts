@@ -11,6 +11,15 @@ export interface GenerateContentRequest {
     role: string;
     parts: Array<{ text: string }>;
   }>;
+  generationConfig?: {
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    candidateCount?: number;
+    maxOutputTokens?: number;
+    presencePenalty?: number;
+    frequencyPenalty?: number;
+  };
 }
 
 export interface AIClient {

@@ -34,7 +34,7 @@ describe('SessionManager', () => {
       const payload = sessionManager.constructVpuMessagePayload(advisorContext, userInput);
       
       // When advisor_context has content, payload should be formatted as: advisor_context + \n\n + user_input
-      expect(payload).toEqual(`${advisorContext}\n\n${userInput}`);
+      expect(payload).toEqual(`${advisorContext}\n\n---\nUSER_MESSAGE (VERBATIM):\n${userInput}`);
     });
   });
 });

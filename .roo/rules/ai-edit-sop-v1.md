@@ -1,0 +1,1 @@
+../../.windsurf/rules/ai-edit-sop-v1.md

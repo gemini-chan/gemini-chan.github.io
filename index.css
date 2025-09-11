@@ -24,6 +24,8 @@
     0 0 0 1px rgba(255, 0, 229, 0.15), 0 0 12px rgba(255, 0, 229, 0.25);
   --cp-glow-purple:
     0 0 0 1px rgba(124, 77, 255, 0.15), 0 0 12px rgba(124, 77, 255, 0.25);
+
+  --range-fill: rgba(0, 229, 255, 0.35);
   /* Default circuitry settings */
   --circuit-enabled: 1;
   --circuit-speed: 15s;
@@ -254,6 +256,8 @@ html[data-theme="dystopia"] {
     0 0 0 1px rgba(180, 0, 255, 0.16), 0 0 14px rgba(180, 0, 255, 0.26);
   --cp-glow-purple:
     0 0 0 1px rgba(106, 76, 255, 0.16), 0 0 14px rgba(106, 76, 255, 0.26);
+
+  --range-fill: rgba(35, 213, 255, 0.35);
 }
 html[data-theme="dystopia"] body {
   color: var(--cp-text);
@@ -296,6 +300,8 @@ html[data-theme="tron"] {
     0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
   --cp-glow-purple:
     0 0 0 1px rgba(0, 240, 255, 0.2), 0 0 14px rgba(0, 240, 255, 0.35);
+
+  --range-fill: rgba(0, 240, 255, 0.35);
 }
 html[data-theme="tron"] body {
   background:
@@ -337,6 +343,8 @@ html[data-theme="synthwave"] {
     0 0 0 1px rgba(255, 0, 168, 0.15), 0 0 14px rgba(255, 0, 168, 0.28);
   --cp-glow-purple:
     0 0 0 1px rgba(169, 109, 255, 0.15), 0 0 14px rgba(169, 109, 255, 0.28);
+
+  --range-fill: rgba(0, 245, 255, 0.35);
 }
 html[data-theme="synthwave"] body {
   background:
@@ -378,6 +386,8 @@ html[data-theme="matrix"] {
     0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
   --cp-glow-purple:
     0 0 0 1px rgba(57, 255, 20, 0.2), 0 0 14px rgba(57, 255, 20, 0.35);
+
+  --range-fill: rgba(0, 255, 166, 0.35);
 }
 html[data-theme="matrix"] body {
   background:
@@ -419,6 +429,8 @@ html[data-theme="noir"] {
     0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
   --cp-glow-purple:
     0 0 0 1px rgba(255, 0, 0, 0.2), 0 0 16px rgba(255, 0, 0, 0.35);
+
+  --range-fill: rgba(255, 26, 26, 0.35);
 }
 html[data-theme="noir"] body {
   color: var(--cp-text);
