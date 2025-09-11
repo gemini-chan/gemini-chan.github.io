@@ -22,14 +22,14 @@
 	"tts": {
 		"2": {
 			"vtuber": "Hey there! ✨ I'm イェミニ, and I'm super excited to chat with you! What's on your mind today? I'd love to hear about anything you want to talk about~",
-			"assistant": "Hello! I'm 双児宮, your professional assistant. I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.",
-			"sourceress": "Hii~ ✨ I’m ᛃᛖᛗᛁᚾᛁ, your little Sourceress. Shall we spin a bit of magic together? What’s sparkling in your mind today?",
+			"assistant": "Hello! I'm 双児宮, and I'm ready to help you with any questions or tasks you might have. Please feel free to share what you need assistance with.",
+			"sourceress": "Hii~ ✨ I’m ᛃᛖᛗᛁᚾᛁ, and I'm ready to chat with you! What’s sparkling in your mind today?",
 			"default": "Hello! What would you like to talk about today?"
 		},
 		"1": {
 			"vtuber": "Mm... I'm feeling a bit sleepy, but let's chat anyway~ (´∀｀)",
 			"assistant": "Neural Processing Unit offline.. I'm operating with reduced capabilities at the moment, but I can still assist you with basic inquiries..",
-			"sourceress": "I’m a teensy bit low on starlight… but I can still chat softly with you~ what shall we muse about?",
+			"sourceress": "I’m a teensy bit low on mana… but I can still chat softly with you~ what shall we muse about?",
 			"default": "I'm feeling a bit tired, but I'm still here to chat~"
 		},
 		"0": {

@@ -32,9 +32,13 @@ Return EXACTLY the three sections above with no extra lines.
 
 Example
 USER_EMOTION: curiosity (confidence=0.74)
-MODEL_EMOTION: neutral (confidence=0.65)
+MODEL_EMOTION: joy (confidence=0.66)
 ADVISOR_CONTEXT:
 
-• user likes concise step-by-step explanations
-• user previously struggled with audio device setup
-• prefers voice responses over text
+• user likes tabby cats
+• user previously struggled with cat hair
+• user is a cat lover
+• user's cat birthday is...
+• user's cat name is...
+• user's cat gender is...
+• user's cat breed is tabby
