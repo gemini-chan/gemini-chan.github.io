@@ -96,6 +96,12 @@ Use the available tools to explore the codebase effectively:
 - **Set the Working Directory:** Always set the `Cwd` (Current Working Directory) field to the repository root or appropriate subdirectory. Never include `cd` in the command itself.
 - **Safety:** Only auto-run commands that are known to be safe (e.g., `npm test`, `ls`, `grep`).
 
+# Commit Discipline
+- Stage and commit every atomic step to maintain a clean history.
+- **Prefer `mcp1_git_stage_and_commit`:** This tool correctly formats the commit message and includes the mandatory trailer: `Co-authored-by: gpt-5-high (planning) && gemini-2.5-pro-low (coding) <189301087+windsurf-bot[bot]@users.noreply.github.com>`.
+- **Shell Fallback:** If you must use shell, use the `printf` pattern to ensure correct formatting: `printf "type(task): update some stuff\n\n- Add/refresh stuff to align with some past/future stuff\n- These changes are part of the big stuff\n\nCo-authored-by: gpt-5-high (planning) && gemini-2.5-pro-low (coding) <189301087+windsurf-bot[bot]@users.noreply.github.com>\n" > .git/COMMIT_MSG && git commit -F .git/COMMIT_MSG`
+- For more details, see [.windsurf/rules/llm-tagger-v0.md](.windsurf/rules/llm-tagger-v0.md).
+
 # Fetch Webpage
 Use the `fetch_webpage` tool when the user provides a URL. Follow these steps exactly.
 
