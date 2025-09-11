@@ -8,14 +8,17 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    exclude: [
+      'node_modules/**',
+      '.cache/**',
+      'dist/**',
+      'tests/**',
+      'coverage/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
       exclude: [
-        'node_modules/**',
-        'tests/**',
-        'coverage/**',
-        'dist/**',
         '**/*.d.ts',
         '**/*.test.*',
         '**/*.spec.*',
@@ -24,6 +27,12 @@ export default defineConfig({
         'eslint.config.js',
         // Add any other files/directories you want to exclude from coverage
       ],
+      thresholds: {
+        statements: 10,
+        branches: 5,
+        functions: 10,
+        lines: 10,
+      },
     },
   },
   resolve: {
