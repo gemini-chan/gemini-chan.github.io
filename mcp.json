@@ -27,7 +27,8 @@
         "git_branch",
         "git_log",
         "git_diff",
-        "git_status"
+        "git_status",
+        "write_to_file"
       ],
       "timeout": 300,
       "disabledTools": [

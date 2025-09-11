@@ -53,57 +53,57 @@ Carefully read the issue and think hard about a plan to solve it before coding.
 - Identify the root cause of the problem.
 - Validate and update your understanding continuously as you gather more context.
 
-## 3. Fetch Provided URLs
-- If the user provides a URL, use the `functions.read_url_content` tool to retrieve its content. You can also use `functions.search_web` to discover relevant links.
-- After fetching, review the content returned by the tool.
-- If you find any additional URLs or links that are relevant, use the appropriate tool again to retrieve those links.
-- Recursively gather all relevant information by fetching additional links until you have all the information you need.
+## 3. Web Research
+- If the task requires external information, use the `browser_action` tool to perform web searches or navigate to specific URLs.
+- Start by launching the browser to a search engine like Google.
+- Analyze the screenshot to identify and click on relevant links.
+- Read the content from the screenshots and console logs to gather information.
+- Close the browser when research is complete.
 
 ## 4. Develop a Detailed Plan
 - Outline a specific, simple, and verifiable sequence of steps to fix the problem.
-- Create a todo list in markdown format using the `todo_list` tool to track your progress.
+- Create a todo list in markdown format using the `update_todo_list` tool to track your progress.
 - Each time you complete a step, check it off using `[x]` syntax.
 - Each time you check off a step, display the updated todo list to the user.
 - Make sure that you ACTUALLY continue on to the next step after checking off a step instead of ending your turn and asking the user what they want to do next.
 
 ## 5. Making Code Changes
-- **Delegate via `mcp1_ai_edit`:** Never modify application code directly. All changes must be delegated.
+- **Delegate via `ai_edit`:** Never modify application code directly. All changes must be delegated. Use the `devtools` server's `ai_edit` tool.
     - Pass the absolute `repo_path`.
     - Default to `continue_thread=true` for related steps.
     - Provide exact file paths and all necessary context in the prompt.
     - Keep changes atomic and focused on a single task.
 - **Use File Tools for Non-Code:** Use file editing tools (`write_to_file`, etc.) only for non-code assets like documentation or agent rules when appropriate.
-- **Read for Context:** Before editing, always read the relevant file contents or section to ensure complete context. Always read 2000 lines of code at a time to ensure you have enough context.
-- **Iterate:** If a patch is not applied correctly, provide corrective feedback and re-run `mcp1_ai_edit`. Make small, testable, incremental changes that logically follow from your investigation and plan.
+- **Read for Context:** Before editing, always read the relevant file contents or section using `read_file` to ensure complete context. Always read 2000 lines of code at a time to ensure you have enough context.
+- **Iterate:** If a patch is not applied correctly, provide corrective feedback and re-run `ai_edit`. Make small, testable, incremental changes that logically follow from your investigation and plan.
 
 ## 6. Debugging
 - Make code changes only if you have high confidence they can solve the problem.
 - When debugging, try to determine the root cause rather than addressing symptoms.
-- **Run Tests and Type Checks:** Use the `run_command` tool to execute `npm run type` and `npm test --silent` to surface issues and verify changes.
-- **Search the Codebase:** Use `grep_search` to scan for error messages, function definitions, or TODOs to trace the problem.
+- **Run Tests and Type Checks:** Use the `execute_command` tool (from the `devtools` server) to execute `npm run type` and `npm test --silent` to surface issues and verify changes.
+- **Search the Codebase:** Use `search_files` to scan for error messages, function definitions, or TODOs to trace the problem.
 - **Isolate the Issue:** Add logging statements or write focused tests to inspect program state and test hypotheses.
 - Revisit your assumptions if unexpected behavior occurs.
 
 # Codebase Navigation
 Use the available tools to explore the codebase effectively:
-- `find_by_name`: Locate files or directories by name.
-- `grep_search`: Search for text or patterns within files.
-- `Read` or `mcp1_read_file`: Read the contents of files.
-- `list_dir`: List the contents of a directory.
+- `search_files`: Locate files or directories by name, or search for text or patterns within files.
+- `read_file`: Read the contents of files.
+- `list_files`: List the contents of a directory.
 
 # Running Commands
-- Use the `run_command` tool to execute shell commands.
-- **Set the Working Directory:** Always set the `Cwd` (Current Working Directory) field to the repository root or appropriate subdirectory. Never include `cd` in the command itself.
+- Use the `execute_command` tool (from the `devtools` server) to execute shell commands.
+- **Set the Working Directory:** The command will be executed in the repository root or appropriate subdirectory.
 - **Safety:** Only auto-run commands that are known to be safe (e.g., `npm test`, `ls`, `grep`).
 
 # Commit Discipline
 - Stage and commit every atomic step to maintain a clean history.
-- **Prefer `mcp1_git_stage_and_commit`:** This tool correctly formats the commit message and includes the mandatory trailer: `Co-authored-by: gpt-5-high (planning) && gemini-2.5-pro-low (coding) <189301087+windsurf-bot[bot]@users.noreply.github.com>`.
-- **Shell Fallback:** If you must use shell, use the `printf` pattern to ensure correct formatting: `printf "type(task): update some stuff\n\n- Add/refresh stuff to align with some past/future stuff\n- These changes are part of the big stuff\n\nCo-authored-by: gpt-5-high (planning) && gemini-2.5-pro-low (coding) <189301087+windsurf-bot[bot]@users.noreply.github.com>\n" > .git/COMMIT_MSG && git commit -F .git/COMMIT_MSG`
+- **Prefer `git_stage_and_commit`:** This tool (from the `devtools` server) correctly formats the commit message and includes the mandatory trailer: `Co-authored-by: gemini-2.5-pro-high (planning) && gemini-2.5-pro-low (coding) <219738659+roomote[bot]@users.noreply.github.com>`.
+- **Shell Fallback:** If you must use shell, use the `printf` pattern to ensure correct formatting: `printf "type(task): update some stuff\n\n- Add/refresh stuff to align with some past/future stuff\n- These changes are part of the big stuff\n\nCo-authored-by: gemini-2.5-pro-high (planning) && gemini-2.5-pro-low (coding) <219738659+roomote[bot]@users.noreply.github.com>\n" > .git/COMMIT_MSG && git commit -F .git/COMMIT_MSG`
 - For more details, see [.windsurf/rules/llm-tagger-v0.md](.windsurf/rules/llm-tagger-v0.md).
 
 # Code Hygiene
-- Always run lint and type checks locally before committing: `npm run lint` and `npm run type`. Use the `run_command` tool as needed.
+- Always run lint and type checks locally before committing: `npm run lint` and `npm run type`. Use the `execute_command` tool from the `devtools` server as needed.
 - Do not rely on Husky for enforcement; Husky is a safeguard, not a workflow.
 - Fix lint errors proactively; keep the codebase consistent and warning-free.
 - Keep CI stable: local lint/type must be green prior to commits.
@@ -119,18 +119,8 @@ Use the available tools to explore the codebase effectively:
 - Avoid overtesting: do not test trivial re-exports, TypeScript types, or framework internals unlikely to break.
 - Always run `npm run type` and `npm test --silent` after test changes to validate stability.
 
-# Fetch Webpage
-Use the `fetch_webpage` tool when the user provides a URL. Follow these steps exactly.
-
-1. Use the `fetch_webpage` tool to retrieve the content of the provided URL.
-2. After fetching, review the content returned by the fetch tool.
-3. If you find any additional URLs or links that are relevant, use the `fetch_webpage` tool again to retrieve those links.
-4. Go back to step 2 and repeat until you have all the information you need.
-
-IMPORTANT: Recursively fetching links is crucial. You are not allowed to skip this step, as it ensures you have all the necessary context to complete the task.
-
 # How to create a Todo List
-Use the following format to create a todo list:
+Use the following format to create a todo list with the `update_todo_list` tool:
 ```markdown
 - [ ] Step 1: Description of the first step
 - [ ] Step 2: Description of the second step
