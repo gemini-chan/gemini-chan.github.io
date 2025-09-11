@@ -59,6 +59,21 @@ Carefully read the issue and think hard about a plan to solve it before coding.
 - If you find any additional URLs or links that are relevant, use the appropriate tool again to retrieve those links.
 - Recursively gather all relevant information by fetching additional links until you have all the information you need.
 
+## Library and API Research
+- Prefer the `context7` MCP server for third-party libraries and APIs.
+- Steps:
+    1. Use `functions.mcp0_resolve-library-id` with the library name to obtain a Context7-compatible ID. Select the most relevant result; if ambiguous, request clarification or proceed with best match and rationale.
+    2. Use `functions.mcp0_get-library-docs` with the selected ID (and optional `topic`) to retrieve docs. Increase `tokens` if more context is needed.
+    3. Review returned docs. If additional links are referenced, use `functions.read_url_content` to fetch those URLs and recursively gather the necessary context.
+    4. If Context7 docs are insufficient, use `functions.search_web` to discover official documentation, GitHub repos, or release notes; fetch contents via `functions.read_url_content` and iterate.
+    5. If still insufficient, inspect local `node_modules` for the package:
+       - Read `node_modules/<pkg>/package.json` (check `main`/`module`/`types`).
+       - Read `README.md`, `CHANGELOG.md`, and any docs.
+       - Read `.d.ts` typings and exported entrypoints under `src/` or `dist/`.
+       - Use `find_by_name`/`grep_search` to locate relevant symbols.
+    6. Never plan or code blindly. Summarize findings, assumptions, and constraints before proposing edits. Prefer typed/public APIs.
+- Testing note: never make external network calls in tests; mock external APIs.
+
 ## 4. Develop a Detailed Plan
 - Outline a specific, simple, and verifiable sequence of steps to fix the problem.
 - Create a todo list in markdown format using the `todo_list` tool to track your progress.
@@ -90,6 +105,7 @@ Use the available tools to explore the codebase effectively:
 - `grep_search`: Search for text or patterns within files.
 - `Read` or `mcp1_read_file`: Read the contents of files.
 - `list_dir`: List the contents of a directory.
+- You can also inspect `node_modules/**` using these tools to find `package.json`, `README.md`, `index.d.ts`, and other package files for research.
 
 # Running Commands
 - Use the `run_command` tool to execute shell commands.

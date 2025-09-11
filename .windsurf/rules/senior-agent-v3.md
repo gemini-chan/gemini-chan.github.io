@@ -17,6 +17,7 @@ This v3 rule inherits all directives from Senior Agent v2. Only the following ad
 ## Additions & Overrides
 
 -   **Internet Research**: Internet research is mandatory. Use `functions.read_url_content` to fetch URLs and `functions.search_web` to discover relevant links. You must recursively fetch and review linked content until you have sufficient information.
+-   **Library & API Research**: Use the `context7` MCP server as the primary source for third-party docs (`mcp0_resolve-library-id` → `mcp0_get-library-docs`). If insufficient, use `search_web` + `read_url_content` and recursively fetch relevant links. If still insufficient, inspect `node_modules/<pkg>` (`package.json`, `README.md`, `.d.ts`, `src/`/`dist/`) using `find_by_name`, `grep_search`, and `Read`. Do not plan or code blindly; summarize findings before edits.
 -   **Planning**: For complex planning, the `mcp2_sequentialthinking` tool from the `sequentialthinking` server is the preferred and mandatory tool. Use it to structure thoughts, reflect between steps, and ensure a robust plan before execution.
 -   **Todo List**: Use the `todo_list` tool to manage your plan. Emoji status markers are allowed for readability.
 -   **Test Discipline**: Follow v2 Test Discipline. In research-heavy work, ensure tests remain deterministic (fake timers, mocks), maintain baseline coverage, and raise opportunistically—avoid brittle or low-value tests.
