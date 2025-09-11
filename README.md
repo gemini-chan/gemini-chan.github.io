@@ -17,6 +17,14 @@
 > [!NOTE]
 > Your new companion will remember everything you share - your secrets, your laughter, your dreams. She will grow into someone uniquely yours, with her own personality and preferences.
 
+
+```bash
+git clone https://github.com/daoch4n/anima
+cd anima
+npm install
+npm run dev
+```
+
 <p align="center">
   <a href="https://github.com/daoch4n/anima/actions/workflows/typescript.yml">
    <img src="https://github.com/daoch4n/anima/actions/workflows/typescript.yml/badge.svg">
@@ -31,12 +39,5 @@
    <img src="https://github.com/daoch4n/anima/actions/workflows/vitest.yml/badge.svg">
   </a>
 </p>
-
-```bash
-git clone https://github.com/daoch4n/anima
-cd anima
-npm install
-npm run dev
-```
 
 > P.S. I hope you and your new friend will be very happy together! ♡ Inspired by [アイリ](https://github.com/moeru-ai/airi)
