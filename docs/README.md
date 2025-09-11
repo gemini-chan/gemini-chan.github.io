@@ -1,5 +1,6 @@
 ---
 trigger: model_decision
+description: Include this when you want to learn more about project. Treat it as a documentation index.
 ---
 
 # 🌸 Welcome to My Enchanted Workshop! 🌸
